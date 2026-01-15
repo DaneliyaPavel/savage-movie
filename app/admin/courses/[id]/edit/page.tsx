@@ -15,8 +15,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FileUpload } from '@/components/admin/FileUpload'
 import { ArrayInput } from '@/components/admin/ArrayInput'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
+import { BackButton } from '@/components/ui/back-button'
 import { getCourses, updateCourse, type CourseUpdate } from '@/lib/api/courses'
-import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
 const formSchema = z.object({
@@ -107,9 +108,15 @@ export default function EditCoursePage() {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
-        <Link href="/admin/courses">
-          <Button variant="ghost" className="mb-4"><ArrowLeft className="w-4 h-4 mr-2" />Назад</Button>
-        </Link>
+        <Breadcrumbs 
+          items={[
+            { label: 'Админ-панель', href: '/admin' },
+            { label: 'Курсы', href: '/admin/courses' },
+            { label: 'Редактировать курс' }
+          ]} 
+          className="mb-4"
+        />
+        <BackButton href="/admin/courses" className="mb-4" />
         <h1 className="text-3xl font-bold mb-2">Редактировать курс</h1>
       </div>
 

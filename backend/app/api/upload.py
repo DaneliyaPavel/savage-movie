@@ -4,7 +4,6 @@ API роуты для загрузки файлов
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import JSONResponse
 from pathlib import Path
-import os
 import uuid
 from typing import List
 
@@ -14,16 +13,27 @@ from app.models.user import User
 router = APIRouter(prefix="/api/upload", tags=["upload"])
 
 # Настройки
-UPLOAD_DIR = Path("uploads")
+# Определяем путь к uploads автоматически
+# В Docker: /app/backend/uploads (монтируется как volume)
+# Локально: uploads относительно корня backend
+import os
+UPLOAD_BASE = os.getenv("UPLOAD_DIR")
+if UPLOAD_BASE:
+    UPLOAD_DIR = Path(UPLOAD_BASE)
+else:
+    # Автоматическое определение: если мы в Docker (/app), используем /app/backend/uploads
+    # Иначе используем uploads относительно текущего файла
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent
+    UPLOAD_DIR = BASE_DIR / "uploads"
 MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10MB
 MAX_VIDEO_SIZE = 50 * 1024 * 1024  # 50MB
 ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"]
 ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/x-msvideo"]
 
 # Создаем директорию для загрузок если её нет
-UPLOAD_DIR.mkdir(exist_ok=True)
-(UPLOAD_DIR / "images").mkdir(exist_ok=True)
-(UPLOAD_DIR / "videos").mkdir(exist_ok=True)
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+(UPLOAD_DIR / "images").mkdir(parents=True, exist_ok=True)
+(UPLOAD_DIR / "videos").mkdir(parents=True, exist_ok=True)
 
 
 def get_file_extension(content_type: str) -> str:
@@ -75,7 +85,7 @@ async def upload_image(
     with open(file_path, "wb") as f:
         f.write(contents)
     
-    # Возвращаем URL файла
+    # Возвращаем URL файла (относительный путь для Next.js API route)
     file_url = f"/uploads/images/{file_name}"
     
     return JSONResponse({
@@ -122,7 +132,7 @@ async def upload_video(
     with open(file_path, "wb") as f:
         f.write(contents)
     
-    # Возвращаем URL файла
+    # Возвращаем URL файла (относительный путь для Next.js API route)
     file_url = f"/uploads/videos/{file_name}"
     
     return JSONResponse({

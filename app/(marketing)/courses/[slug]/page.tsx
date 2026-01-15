@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
+import { BackButton } from '@/components/ui/back-button'
 import { CheckCircle2, Clock, User, Star } from 'lucide-react'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
@@ -81,6 +83,14 @@ export default async function CourseDetailPage({
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-8">
+            <Breadcrumbs 
+              items={[
+                { label: 'Курсы', href: '/courses' },
+                { label: course.title }
+              ]} 
+              className="mb-4"
+            />
+            <BackButton href="/courses" className="mb-4" />
             <div className="flex items-center gap-4 mb-4">
               <Badge variant="secondary">
                 {categoryLabels[course.category]}

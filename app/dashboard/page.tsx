@@ -6,6 +6,7 @@ import { getEnrollmentsServer } from '@/lib/api/enrollments'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import Link from 'next/link'
 import { Play, Award } from 'lucide-react'
 import { redirect } from 'next/navigation'
@@ -44,6 +45,12 @@ export default async function DashboardPage() {
     <div className="min-h-screen py-12 px-4">
       <div className="container mx-auto max-w-6xl">
         <div className="mb-8">
+          <Breadcrumbs 
+            items={[
+              { label: 'Личный кабинет' }
+            ]} 
+            className="mb-4"
+          />
           <h1 className="font-heading font-bold text-4xl md:text-5xl mb-2">
             Личный кабинет
           </h1>

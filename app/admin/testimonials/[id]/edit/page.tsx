@@ -9,8 +9,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
+import { BackButton } from '@/components/ui/back-button'
 import { getTestimonials, updateTestimonial } from '@/lib/api/testimonials'
-import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
 const formSchema = z.object({
@@ -66,7 +67,15 @@ export default function EditTestimonialPage() {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
-        <Link href="/admin/testimonials"><Button variant="ghost" className="mb-4"><ArrowLeft className="w-4 h-4 mr-2" />Назад</Button></Link>
+        <Breadcrumbs 
+          items={[
+            { label: 'Админ-панель', href: '/admin' },
+            { label: 'Отзывы', href: '/admin/testimonials' },
+            { label: 'Редактировать отзыв' }
+          ]} 
+          className="mb-4"
+        />
+        <BackButton href="/admin/testimonials" className="mb-4" />
         <h1 className="text-3xl font-bold mb-2">Редактировать отзыв</h1>
       </div>
       <Form {...form}>

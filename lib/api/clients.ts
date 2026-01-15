@@ -1,7 +1,14 @@
 /**
- * API функции для клиентов
+ * API функции для клиентов/режиссеров
  */
 import { apiGet, apiPost, apiPut, apiDelete } from './client'
+
+export interface PortfolioVideo {
+  url?: string
+  playback_id?: string
+  title?: string
+  thumbnail?: string
+}
 
 export interface Client {
   id: string
@@ -9,6 +16,13 @@ export interface Client {
   description: string | null
   logo_url: string | null
   order: number
+  // Поля для Directors
+  slug: string | null
+  video_url: string | null
+  video_playback_id: string | null
+  portfolio_videos: PortfolioVideo[] | null
+  bio: string | null
+  role: string | null
   created_at: string
   updated_at: string
 }
@@ -18,6 +32,13 @@ export interface ClientCreate {
   description?: string | null
   logo_url?: string | null
   order?: number
+  // Поля для Directors
+  slug?: string | null
+  video_url?: string | null
+  video_playback_id?: string | null
+  portfolio_videos?: PortfolioVideo[] | null
+  bio?: string | null
+  role?: string | null
 }
 
 export interface ClientUpdate {
@@ -25,6 +46,25 @@ export interface ClientUpdate {
   description?: string | null
   logo_url?: string | null
   order?: number
+  // Поля для Directors
+  slug?: string | null
+  video_url?: string | null
+  video_playback_id?: string | null
+  portfolio_videos?: PortfolioVideo[] | null
+  bio?: string | null
+  role?: string | null
+}
+
+/**
+ * Получить режиссера по slug
+ */
+export async function getClientBySlug(slug: string): Promise<Client | null> {
+  try {
+    return await apiGet<Client>(`/api/clients/by-slug/${slug}`)
+  } catch (error) {
+    console.error('Ошибка загрузки клиента по slug:', error)
+    return null
+  }
 }
 
 /**

@@ -7,6 +7,8 @@ import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
+import { BackButton } from '@/components/ui/back-button'
 import { getSettings, updateSettings } from '@/lib/api/settings'
 import { Loader2 } from 'lucide-react'
 
@@ -75,6 +77,14 @@ export default function SettingsPage() {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
+        <Breadcrumbs 
+          items={[
+            { label: 'Админ-панель', href: '/admin' },
+            { label: 'Настройки' }
+          ]} 
+          className="mb-4"
+        />
+        <BackButton href="/admin" className="mb-4" />
         <h1 className="text-3xl font-bold mb-2">Настройки сайта</h1>
         <p className="text-muted-foreground">Управление настройками главной страницы</p>
       </div>

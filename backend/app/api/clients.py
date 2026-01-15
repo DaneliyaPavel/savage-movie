@@ -28,6 +28,26 @@ async def get_clients(
     return clients
 
 
+@router.get("/by-slug/{slug}", response_model=ClientSchema)
+async def get_client_by_slug(
+    slug: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """Получить клиента/режиссера по slug"""
+    result = await db.execute(
+        select(Client).where(Client.slug == slug)
+    )
+    client = result.scalar_one_or_none()
+    
+    if not client:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Клиент не найден"
+        )
+    
+    return client
+
+
 @router.post("", response_model=ClientSchema, status_code=status.HTTP_201_CREATED)
 async def create_client(
     client_data: ClientCreate,

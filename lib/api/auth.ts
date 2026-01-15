@@ -32,22 +32,33 @@ export interface RegisterData {
 }
 
 /**
- * Сохраняет токены в localStorage
+ * Сохраняет токены в localStorage и cookies
  */
 function saveTokens(tokens: TokenResponse) {
   if (typeof window !== 'undefined') {
+    // Сохраняем в localStorage для клиентской части
     localStorage.setItem('access_token', tokens.access_token)
     localStorage.setItem('refresh_token', tokens.refresh_token)
+    
+    // Сохраняем в cookies для server-side доступа
+    // Устанавливаем cookie с максимальным сроком действия (7 дней)
+    const maxAge = 7 * 24 * 60 * 60 // 7 дней в секундах
+    document.cookie = `access_token=${tokens.access_token}; path=/; max-age=${maxAge}; SameSite=Lax`
+    document.cookie = `refresh_token=${tokens.refresh_token}; path=/; max-age=${maxAge}; SameSite=Lax`
   }
 }
 
 /**
- * Удаляет токены из localStorage
+ * Удаляет токены из localStorage и cookies
  */
 export function clearTokens() {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
+    
+    // Удаляем cookies
+    document.cookie = 'access_token=; path=/; max-age=0'
+    document.cookie = 'refresh_token=; path=/; max-age=0'
   }
 }
 

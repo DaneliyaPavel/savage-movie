@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Film, GraduationCap, Calendar, Mail, Users, MessageSquare, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { getProjects } from '@/lib/api/projects'
 import { getCourses } from '@/lib/api/courses'
 import { getClients } from '@/lib/api/clients'
@@ -58,6 +59,7 @@ export default function AdminPage() {
     <div className="min-h-screen py-12 px-4">
       <div className="container mx-auto max-w-6xl">
         <div className="mb-8">
+          <Breadcrumbs items={[{ label: 'Админ-панель' }]} className="mb-4" />
           <h1 className="font-heading font-bold text-4xl md:text-5xl mb-2">
             Админ-панель
           </h1>

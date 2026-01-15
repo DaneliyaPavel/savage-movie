@@ -1,14 +1,16 @@
 /**
- * Упрощенная секция проектов в стиле The Up&Up Group
+ * Секция проектов на главной в премиум стиле Freshman.tv
  */
 'use client'
 
 import { useState } from 'react'
 import { ProjectCard } from '@/components/features/ProjectCard'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { FilterChips } from '@/components/ui/filter-chips'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 import type { Project } from '@/lib/api/projects'
+import { SectionTitle } from '@/components/ui/section-title'
 
 interface ProjectsGridProps {
   projects: Project[]
@@ -29,22 +31,28 @@ export function ProjectsGrid({ projects }: ProjectsGridProps) {
     : projects.filter(p => p.category === selectedCategory)
 
   return (
-    <section id="projects" className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden border-t border-border/30">
+    <section id="projects" className="relative py-24 md:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden border-t border-[#1A1A1A] bg-[#000000]">
       <div className="container mx-auto max-w-7xl">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="mb-12"
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="mb-16 md:mb-24 editorial-spacing"
         >
-          <h2 className="font-heading font-bold text-5xl md:text-6xl lg:text-7xl mb-6 text-foreground">
-            Наши проекты
-          </h2>
-          <p className="text-xl md:text-2xl text-muted-foreground font-light max-w-3xl">
+          <SectionTitle mark="plus" markPosition="top-left" size="xl" className="text-[#FFFFFF] mb-8">
+            Избранные проекты
+          </SectionTitle>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="text-editorial text-[#FFFFFF]/60 font-light max-w-3xl"
+          >
             Посмотрите нашу работу и убедитесь в качестве
-          </p>
+          </motion.p>
         </motion.div>
 
         {/* Filters */}
@@ -52,26 +60,18 @@ export function ProjectsGrid({ projects }: ProjectsGridProps) {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-12"
+          transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="mb-12 md:mb-16"
         >
-          <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-            <TabsList className="bg-transparent border-b border-border/30 rounded-none h-auto p-0">
-              {categoryFilters.map((filter) => (
-                <TabsTrigger
-                  key={filter.value}
-                  value={filter.value}
-                  className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-foreground data-[state=active]:text-foreground rounded-none border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {filter.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          <FilterChips
+            filters={categoryFilters}
+            activeFilter={selectedCategory}
+            onFilterChange={setSelectedCategory}
+          />
         </motion.div>
 
         {/* Projects Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-12 md:mb-16">
           {filteredProjects.map((project) => (
             <ProjectCard
               key={project.id}
@@ -87,24 +87,30 @@ export function ProjectsGrid({ projects }: ProjectsGridProps) {
 
         {filteredProjects.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Проекты не найдены</p>
+            <p className="text-[#FFFFFF]/60">Проекты не найдены</p>
           </div>
         )}
 
         {/* View All Link */}
         {filteredProjects.length > 0 && (
           <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
+            transition={{ duration: 0.6, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="text-center border-t border-[#1A1A1A] pt-12"
           >
-            <Link
-              href="/projects"
-              className="inline-block text-foreground/70 hover:text-foreground border-b border-foreground/30 hover:border-foreground transition-colors text-lg font-medium"
-            >
-              Смотреть все проекты →
+            <Link href="/projects">
+              <motion.div
+                className="inline-flex items-center gap-3 group"
+                whileHover={{ x: 5 }}
+                transition={{ duration: 0.3 }}
+              >
+                <span className="text-lg md:text-xl font-medium text-[#FFFFFF]/60 group-hover:text-[#FFFFFF] transition-colors">
+                  Смотреть все проекты
+                </span>
+                <ArrowRight className="w-5 h-5 text-[#FFFFFF]/40 group-hover:text-[#CCFF00] transition-colors" />
+              </motion.div>
             </Link>
           </motion.div>
         )}

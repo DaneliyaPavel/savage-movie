@@ -3,8 +3,8 @@
  */
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,10 +16,21 @@ import Link from 'next/link'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    // Показываем сообщение об ошибке, если есть
+    const errorParam = searchParams.get('error')
+    if (errorParam === 'auth_failed') {
+      setError('Требуется авторизация для доступа к админ-панели')
+    } else if (errorParam === 'insufficient_permissions') {
+      setError('У вас нет прав администратора')
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,7 +39,12 @@ export default function LoginPage() {
 
     try {
       await login({ email, password })
-      router.push('/dashboard')
+      
+      // Проверяем, есть ли redirect параметр
+      const searchParams = new URLSearchParams(window.location.search)
+      const redirectTo = searchParams.get('redirect') || '/dashboard'
+      
+      router.push(redirectTo)
       router.refresh()
     } catch (err: any) {
       setError(err.message || 'Ошибка входа')

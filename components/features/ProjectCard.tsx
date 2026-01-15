@@ -1,14 +1,15 @@
 /**
- * Карточка проекта для отображения в grid
+ * Карточка проекта для главной страницы в премиум стиле Freshman.tv
+ * Poster-like карточка с hover видео эффектами
  */
 'use client'
 
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { useState } from 'react'
+import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
-import { Play } from 'lucide-react'
+import { VideoPlayer } from './VideoPlayer'
+import { GrainOverlay } from '@/components/ui/grain-overlay'
 
 interface ProjectCardProps {
   id: string
@@ -17,6 +18,7 @@ interface ProjectCardProps {
   category: 'commercial' | 'ai-content' | 'music-video' | 'other'
   thumbnail?: string
   videoUrl?: string
+  videoPlaybackId?: string
 }
 
 const categoryLabels: Record<string, string> = {
@@ -26,11 +28,12 @@ const categoryLabels: Record<string, string> = {
   other: 'Другое',
 }
 
-const categoryColors: Record<string, string> = {
-  commercial: 'bg-primary',
-  'ai-content': 'bg-accent',
-  'music-video': 'bg-secondary',
-  other: 'bg-muted',
+// Извлекаем playback ID из Mux URL
+const getPlaybackId = (url: string | null): string | null => {
+  if (!url) return null
+  const muxMatch = url.match(/mux\.com\/([^/?]+)/)
+  if (muxMatch) return muxMatch[1]
+  return null
 }
 
 export function ProjectCard({
@@ -39,68 +42,109 @@ export function ProjectCard({
   category,
   thumbnail,
   videoUrl,
+  videoPlaybackId: propsVideoPlaybackId,
 }: ProjectCardProps) {
+  const [isHovered, setIsHovered] = useState(false)
+  
+  // Определяем playback ID
+  const playbackId = propsVideoPlaybackId || (videoUrl ? getPlaybackId(videoUrl) : null)
+  const hasVideo = !!playbackId || !!videoUrl
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      whileHover={{ y: -8 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="group h-full flex flex-col"
     >
       <Link href={`/projects/${slug}`}>
-        <Card className="group cursor-pointer overflow-hidden border-border/50 hover:border-primary/50 transition-all duration-300 bg-card/80 backdrop-blur-sm shadow-lg hover:shadow-2xl hover:shadow-primary/10">
-          <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-muted to-muted/50">
-            {thumbnail ? (
-              <>
-                <Image
-                  src={thumbnail}
-                  alt={title}
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10">
-                <Play className="w-16 h-16 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
+        <div className="relative overflow-hidden bg-[#050505] border border-[#1A1A1A] hover:border-[#FFFFFF]/30 transition-all duration-500 h-full flex flex-col">
+          <div className="relative aspect-video overflow-hidden bg-[#000000]">
+            {/* Thumbnail */}
+            {thumbnail && !isHovered && (
+              <Image
+                src={thumbnail}
+                alt={title}
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+              />
             )}
-            {videoUrl && (
+
+            {/* Hover видео */}
+            {isHovered && hasVideo && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileHover={{ opacity: 1, scale: 1 }}
-                className="absolute inset-0 bg-black/60 flex items-center justify-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="absolute inset-0"
               >
-                <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center shadow-lg shadow-primary/50"
-                >
-                  <Play className="w-10 h-10 text-white ml-1" fill="currentColor" />
-                </motion.div>
+                {playbackId ? (
+                  <VideoPlayer
+                    playbackId={playbackId}
+                    autoplay
+                    muted
+                    loop
+                    controls={false}
+                    className="w-full h-full object-cover"
+                  />
+                ) : videoUrl ? (
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="w-full h-full object-cover"
+                  >
+                    <source src={videoUrl} type="video/mp4" />
+                  </video>
+                ) : null}
               </motion.div>
             )}
-            <motion.div
-              initial={{ opacity: 0, x: 10 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="absolute top-4 right-4"
-            >
-              <Badge className={`${categoryColors[category]} shadow-lg backdrop-blur-sm`}>
-                {categoryLabels[category]}
-              </Badge>
-            </motion.div>
+
+            {/* Placeholder */}
+            {!thumbnail && !hasVideo && (
+              <div className="w-full h-full flex items-center justify-center bg-[#050505]">
+                <GrainOverlay />
+                <span className="text-6xl font-heading font-bold text-[#FFFFFF]/10">
+                  {title.charAt(0)}
+                </span>
+              </div>
+            )}
+
+            <GrainOverlay />
+            
+            {/* Overlay с градиентом */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#000000]/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+            {/* Category Badge */}
+            <div className="absolute top-4 right-4">
+              <div className="px-3 py-1 bg-[#000000]/80 backdrop-blur-sm border border-[#1A1A1A]">
+                <span className="text-xs font-medium text-[#FFFFFF]/60 uppercase tracking-wider">
+                  {categoryLabels[category]}
+                </span>
+              </div>
+            </div>
           </div>
-          <CardContent className="p-6">
-            <h3 className="font-heading font-bold text-xl group-hover:text-primary transition-colors duration-300">
+
+          <div className="p-6 md:p-8 flex-1 flex flex-col">
+            {/* Title - крупный */}
+            <h3 className="text-xl md:text-2xl lg:text-3xl font-heading font-bold text-[#FFFFFF] mb-2 group-hover:text-[#CCFF00] transition-colors leading-tight">
               {title}
             </h3>
+            
+            {/* Подчеркивание при hover */}
             <motion.div
-              className="mt-2 h-0.5 w-0 bg-primary group-hover:w-full transition-all duration-300"
+              className="mt-4 h-[1px] bg-[#FFFFFF]"
+              initial={{ width: 0 }}
+              whileHover={{ width: '100%' }}
+              transition={{ duration: 0.4 }}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </Link>
     </motion.div>
   )

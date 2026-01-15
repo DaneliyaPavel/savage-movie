@@ -9,6 +9,8 @@ import { VideoPlayer } from '@/components/features/VideoPlayer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
+import { BackButton } from '@/components/ui/back-button'
 import { CheckCircle2, Clock, Play } from 'lucide-react'
 import type { Course } from '@/lib/api/courses'
 import { cookies } from 'next/headers'
@@ -62,6 +64,14 @@ export default async function DashboardCoursePage({
     <div className="min-h-screen py-12 px-4">
       <div className="container mx-auto max-w-6xl">
         <div className="mb-8">
+          <Breadcrumbs 
+            items={[
+              { label: 'Личный кабинет', href: '/dashboard' },
+              { label: course.title }
+            ]} 
+            className="mb-4"
+          />
+          <BackButton href="/dashboard" className="mb-4" />
           <h1 className="font-heading font-bold text-4xl md:text-5xl mb-2">
             {course.title}
           </h1>

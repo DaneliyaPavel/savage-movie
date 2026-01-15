@@ -28,8 +28,9 @@ import {
 } from '@/components/ui/select'
 import { FileUpload } from '@/components/admin/FileUpload'
 import { ArrayInput } from '@/components/admin/ArrayInput'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
+import { BackButton } from '@/components/ui/back-button'
 import { getProjects, updateProject, type ProjectUpdate } from '@/lib/api/projects'
-import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
 const formSchema = z.object({
@@ -126,12 +127,15 @@ export default function EditProjectPage() {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
-        <Link href="/admin/projects">
-          <Button variant="ghost" className="mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Назад к списку
-          </Button>
-        </Link>
+        <Breadcrumbs 
+          items={[
+            { label: 'Админ-панель', href: '/admin' },
+            { label: 'Проекты', href: '/admin/projects' },
+            { label: 'Редактировать проект' }
+          ]} 
+          className="mb-4"
+        />
+        <BackButton href="/admin/projects" className="mb-4" />
         <h1 className="text-3xl font-bold mb-2">Редактировать проект</h1>
         <p className="text-muted-foreground">Измените данные проекта</p>
       </div>

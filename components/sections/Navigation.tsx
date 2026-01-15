@@ -1,107 +1,101 @@
 /**
- * Минималистичная навигация в стиле The Up&Up Group
+ * Премиум навигация с Venetian Blinds меню в стиле Freshman.tv
  */
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Menu, X } from 'lucide-react'
+import { Menu, LogIn } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { UserMenu } from './UserMenu'
+import { FullscreenMenuOverlay } from '@/components/ui/fullscreen-menu-overlay'
+import type { User } from '@/lib/api/auth'
 
 interface NavigationProps {
   onBookClick?: () => void
+  user?: User | null
 }
 
+// Пункты меню "ступеньками" от левого края до правого
 const navItems = [
-  { href: '/about', label: 'О нас' },
-  { href: '/projects', label: 'Проекты' },
-  { href: '/courses', label: 'Курсы' },
-  { href: '/contact', label: 'Контакты' },
+  { href: '/about', label: 'О нас', offsetX: '0%' }, // Слева
+  { href: '/projects', label: 'Проекты', offsetX: '20%' }, // Немного правее
+  { href: '/courses', label: 'Курсы', offsetX: '40%' }, // Еще правее
+  { href: '/contact', label: 'Контакты', offsetX: '60%' }, // Еще правее
 ]
 
-export function Navigation({ onBookClick }: NavigationProps) {
-  const [isOpen, setIsOpen] = useState(false)
+export function Navigation({ onBookClick, user }: NavigationProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Формируем пункты меню для FullscreenMenuOverlay
+  // Добавляем CTA в конец если есть
+  const menuItems = [
+    ...navItems,
+    ...(onBookClick ? [{
+      href: '#',
+      label: 'Обсудить проект',
+      offsetX: '75%',
+      isCTA: true as const,
+    }] : []),
+  ]
+
+  const handleCTAClick = () => {
+    if (onBookClick) {
+      setIsMenuOpen(false)
+      onBookClick()
+    }
+  }
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border/30">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo */}
+    <>
+      {/* Header - минималистичный, логотип слева, кнопка меню справа */}
+      <nav className="fixed top-0 left-0 right-0 z-[102] bg-transparent pointer-events-none">
+        {/* Логотип слева - размером как меню */}
+        <div className="absolute top-0 left-0 z-[102] pointer-events-auto">
           <Link 
             href="/" 
-            className="font-heading font-bold text-xl md:text-2xl text-foreground hover:text-primary transition-colors"
+            className="block px-4 md:px-6 py-3 md:py-4 font-heading font-bold text-sm md:text-base text-[#FFFFFF] hover:text-[#CCFF00] transition-colors"
+            onClick={() => setIsMenuOpen(false)}
           >
             SAVAGE MOVIE
           </Link>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="text-sm font-medium text-foreground/70 hover:text-foreground transition-colors"
-              >
-                {item.label}
-              </Link>
-            ))}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onBookClick}
-              className="border-foreground/30 hover:bg-foreground hover:text-background rounded-none"
-            >
-              Обсудить проект
-            </Button>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </Button>
         </div>
-      </div>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t border-border/30 bg-background"
+        {/* Кнопка меню справа */}
+        <div className="absolute top-0 right-0 z-[102] pointer-events-auto">
+          {/* Кнопка меню в стиле "+ МЕНЮ" / "X ЗАКРЫТЬ" в правом верхнем углу */}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="flex items-center gap-2 px-4 md:px-6 py-3 md:py-4 text-[#FFFFFF] hover:text-[#CCFF00] transition-colors group"
+            aria-label={isMenuOpen ? "Закрыть меню" : "Меню"}
+            aria-expanded={isMenuOpen}
           >
-            <div className="container mx-auto px-4 py-6 space-y-4">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="block text-sm font-medium text-foreground/70 hover:text-foreground transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  {item.label}
-                </Link>
-              ))}
-              <Button
-                variant="outline"
-                className="w-full mt-4 rounded-none"
-                onClick={() => {
-                  setIsOpen(false)
-                  onBookClick?.()
-                }}
-              >
-                Обсудить проект
-              </Button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </nav>
+            {/* Plus/Cross icon с плавным вращением - всегда показываем плюс, вращаем на 45° */}
+            <motion.span
+              animate={{ rotate: isMenuOpen ? 45 : 0 }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              className="text-xl md:text-2xl font-light leading-none relative w-6 h-6 flex items-center justify-center"
+              style={{ transformOrigin: 'center' }}
+            >
+              <span>+</span>
+            </motion.span>
+            {/* МЕНЮ / ЗАКРЫТЬ text - одинаковый размер */}
+            <span className="text-sm md:text-base font-medium uppercase tracking-wider">
+              {isMenuOpen ? 'ЗАКРЫТЬ' : 'МЕНЮ'}
+            </span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Fullscreen Venetian Blinds Menu */}
+      <FullscreenMenuOverlay
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        items={menuItems}
+        onCTAClick={onBookClick ? handleCTAClick : undefined}
+      />
+    </>
   )
 }

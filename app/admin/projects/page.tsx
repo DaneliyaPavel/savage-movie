@@ -7,6 +7,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/admin/DataTable'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
+import { BackButton } from '@/components/ui/back-button'
 import { getProjects, deleteProject, type Project } from '@/lib/api/projects'
 import { Plus, Trash2 } from 'lucide-react'
 import {
@@ -91,6 +93,14 @@ export default function ProjectsPage() {
 
   return (
     <div className="p-8">
+      <div className="mb-6">
+        <Breadcrumbs 
+          items={[
+            { label: 'Админ-панель', href: '/admin' },
+            { label: 'Проекты' }
+          ]} 
+        />
+      </div>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold mb-2">Проекты</h1>

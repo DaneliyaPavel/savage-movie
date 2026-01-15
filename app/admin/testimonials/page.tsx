@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/admin/DataTable'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { getTestimonials, deleteTestimonial, type Testimonial } from '@/lib/api/testimonials'
 import { Plus } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -51,6 +52,14 @@ export default function TestimonialsPage() {
 
   return (
     <div className="p-8">
+      <div className="mb-6">
+        <Breadcrumbs 
+          items={[
+            { label: 'Админ-панель', href: '/admin' },
+            { label: 'Отзывы' }
+          ]} 
+        />
+      </div>
       <div className="flex items-center justify-between mb-8">
         <div><h1 className="text-3xl font-bold mb-2">Отзывы</h1><p className="text-muted-foreground">Управление отзывами</p></div>
         <Link href="/admin/testimonials/new"><Button><Plus className="w-4 h-4 mr-2" />Добавить</Button></Link>

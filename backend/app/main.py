@@ -4,7 +4,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.api import auth, projects, courses, enrollments, contact, sitemap, upload, clients, testimonials, settings
+from app.api import auth, projects, courses, enrollments, contact, sitemap, upload, clients, testimonials, settings as settings_api
 
 app = FastAPI(
     title="SAVAGE MOVIE API",
@@ -31,7 +31,7 @@ app.include_router(sitemap.router)
 app.include_router(upload.router)
 app.include_router(clients.router)
 app.include_router(testimonials.router)
-app.include_router(settings.router)
+app.include_router(settings_api.router)
 
 
 @app.get("/")

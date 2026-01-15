@@ -52,59 +52,59 @@
 }
 
 .dark {
-  /* Фон - почти черный */
-  --background: 10 10 10; /* #0A0A0A */
+  /* Фон - чистый черный #000000 */
+  --background: 0 0 0; /* #000000 */
   --foreground: 255 255 255; /* #FFFFFF */
   
-  /* Карточки */
-  --card: 20 20 20;
+  /* Карточки - очень темные */
+  --card: 5 5 5; /* #050505 */
   --card-foreground: 255 255 255;
   
   /* Popover */
-  --popover: 20 20 20;
+  --popover: 10 10 10; /* #0A0A0A */
   --popover-foreground: 255 255 255;
   
-  /* Primary - оранжевый/красный #FF6B35 */
-  --primary: 255 107 53;
-  --primary-foreground: 255 255 255;
+  /* Primary - электрический лайм #CCFF00 (можно изменить на cobalt #0066FF или purple #9D4EDD) */
+  --primary: 204 255 0; /* #CCFF00 */
+  --primary-foreground: 0 0 0; /* Черный текст на лаймовом */
   
-  /* Secondary - золотистый #F7931E */
-  --secondary: 247 147 30;
-  --secondary-foreground: 10 10 10;
+  /* Secondary - используется редко, можно убрать или сделать очень темным */
+  --secondary: 64 64 64; /* #404040 */
+  --secondary-foreground: 255 255 255;
   
-  /* Muted */
-  --muted: 30 30 30;
-  --muted-foreground: 224 224 224; /* #E0E0E0 */
+  /* Muted - темно-серый для второстепенного */
+  --muted: 64 64 64; /* #404040 */
+  --muted-foreground: 200 200 200; /* #C8C8C8 */
   
-  /* Accent - голубой #00D9FF */
-  --accent: 0 217 255;
-  --accent-foreground: 10 10 10;
+  /* Accent - тот же что primary (или можно сделать отдельный) */
+  --accent: 204 255 0; /* #CCFF00 */
+  --accent-foreground: 0 0 0;
   
   /* Destructive */
   --destructive: 239 68 68;
   --destructive-foreground: 255 255 255;
   
-  /* Border и Input */
-  --border: 40 40 40;
-  --input: 40 40 40;
-  --ring: 255 107 53;
+  /* Border и Input - очень темные границы */
+  --border: 26 26 26; /* #1A1A1A */
+  --input: 26 26 26; /* #1A1A1A */
+  --ring: 204 255 0; /* Accent цвет для focus */
   
   /* Sidebar */
-  --sidebar: 20 20 20;
+  --sidebar: 5 5 5;
   --sidebar-foreground: 255 255 255;
-  --sidebar-primary: 255 107 53;
-  --sidebar-primary-foreground: 255 255 255;
-  --sidebar-accent: 30 30 30;
+  --sidebar-primary: 204 255 0;
+  --sidebar-primary-foreground: 0 0 0;
+  --sidebar-accent: 26 26 26;
   --sidebar-accent-foreground: 255 255 255;
-  --sidebar-border: 40 40 40;
-  --sidebar-ring: 255 107 53;
+  --sidebar-border: 26 26 26;
+  --sidebar-ring: 204 255 0;
   
   /* Charts */
-  --chart-1: 255 107 53;
-  --chart-2: 247 147 30;
-  --chart-3: 0 217 255;
-  --chart-4: 255 255 255;
-  --chart-5: 224 224 224;
+  --chart-1: 204 255 0;
+  --chart-2: 255 255 255;
+  --chart-3: 200 200 200;
+  --chart-4: 150 150 150;
+  --chart-5: 100 100 100;
 }
 
 @layer base {
@@ -122,6 +122,22 @@
     font-weight: 700;
     letter-spacing: -0.03em;
     line-height: 1.1;
+    color: var(--foreground);
+  }
+
+  /* Handwritten font для editorial corrections */
+  @import url('https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Caveat:wght@400;500;600;700&display=swap');
+  
+  /* Respect prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
   
   /* Smooth scrolling */
@@ -141,6 +157,21 @@
   }
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-primary/50;
+  }
+
+  /* Custom scrollbar для thumb rail */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
   }
 }
 
@@ -170,23 +201,155 @@
     }
   }
 
-  /* Creative typography utilities */
+  /* Premium typography utilities - Freshman.tv style */
   .text-hero {
-    font-size: clamp(3rem, 8vw, 12rem);
+    font-size: clamp(4rem, 12vw, 16rem);
+    line-height: 0.85;
+    letter-spacing: -0.05em;
+    font-weight: 700;
+  }
+
+  .text-display {
+    font-size: clamp(3rem, 8vw, 10rem);
     line-height: 0.9;
     letter-spacing: -0.04em;
     font-weight: 700;
   }
 
   .text-section-title {
-    font-size: clamp(2.5rem, 5vw, 5rem);
-    line-height: 1.1;
+    font-size: clamp(2.5rem, 6vw, 7rem);
+    line-height: 1.0;
     letter-spacing: -0.03em;
     font-weight: 700;
+  }
+
+  .text-editorial {
+    font-size: clamp(1.125rem, 1.5vw, 1.5rem);
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+    font-weight: 400;
+  }
+
+  /* Editorial spacing - большие отступы между блоками */
+  .editorial-spacing {
+    margin-bottom: clamp(4rem, 10vw, 12rem);
   }
 
   /* Word splitting utility for creative layouts */
   .word-split {
     display: inline-block;
+  }
+
+  /* Strikethrough text utility */
+  .strikethrough-text {
+    position: relative;
+  }
+
+  .strikethrough-text::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: currentColor;
+    transform: translateY(-50%);
+  }
+
+  /* Smooth reveal animations */
+  .reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  }
+
+  .reveal-on-scroll.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Page transition utilities */
+  .page-transition-enter {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .page-transition-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+  }
+
+  .page-transition-exit {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .page-transition-exit-active {
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s ease-in, transform 0.3s ease-in;
+  }
+
+  /* Hover video container utility */
+  .hover-video-container {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hover-video-container video,
+  .hover-video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  .hover-video-container:hover video,
+  .hover-video-container:hover iframe {
+    opacity: 1;
+  }
+
+  /* Creative underline animation */
+  .creative-underline {
+    position: relative;
+    display: inline-block;
+  }
+
+  .creative-underline::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: currentColor;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .creative-underline:hover::after {
+    width: 100%;
+  }
+
+  /* Full-screen video overlay */
+  .fullscreen-video-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background-color: rgba(0, 0, 0, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Animation timing functions */
+  :root {
+    --ease-in-out-cubic: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out-back: cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
 }

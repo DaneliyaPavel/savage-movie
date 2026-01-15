@@ -3,7 +3,7 @@
  */
 import { redirect } from 'next/navigation'
 import { getCurrentUserServer } from '@/lib/api/auth'
-import { Navigation } from '@/components/sections/Navigation'
+import { NavigationWrapper } from '@/components/sections/NavigationWrapper'
 import { cookies } from 'next/headers'
 
 export default async function AdminLayout({
@@ -18,20 +18,23 @@ export default async function AdminLayout({
     const user = await getCurrentUserServer(cookieStore)
     
     if (!user) {
-      redirect('/')
+      // Перенаправляем на страницу логина вместо главной
+      redirect('/login?redirect=/admin')
     }
 
     // Проверяем, является ли пользователь администратором
     if (user.role !== 'admin') {
-      redirect('/')
+      redirect('/login?redirect=/admin&error=insufficient_permissions')
     }
-  } catch {
-    redirect('/')
+  } catch (error) {
+    // Логируем ошибку для отладки
+    console.error('Ошибка проверки аутентификации в админ-панели:', error)
+    redirect('/login?redirect=/admin&error=auth_failed')
   }
 
   return (
     <>
-      <Navigation />
+      <NavigationWrapper />
       <main className="pt-16 md:pt-20">
         {children}
       </main>

@@ -1,7 +1,7 @@
 # Dockerfile для Next.js Frontend
 FROM node:20-alpine AS base
 
-# Установка зависимостей только если они нужны
+# Установка зависимостей только при необходимости
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
@@ -16,10 +16,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Отключение telemetry
+# Отключение telemetry во время сборки
 ENV NEXT_TELEMETRY_DISABLED 1
 
-# Сборка
 RUN npm run build
 
 # Production образ

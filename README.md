@@ -17,6 +17,32 @@
 
 ## Установка
 
+### Вариант 1: Docker (Рекомендуется)
+
+Самый быстрый способ запустить весь проект:
+
+```bash
+# 1. Клонируйте репозиторий
+git clone <repository-url>
+cd savage-movie
+
+# 2. Запустите скрипт инициализации (создаст .env и запустит контейнеры)
+./scripts/init-docker.sh
+
+# Или запустите вручную
+./docker-start.sh dev
+```
+
+Проект будет доступен:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
+- Admin Panel: http://localhost:3000/admin
+
+**Подробная инструкция по Docker:** см. [DOCKER_SETUP.md](DOCKER_SETUP.md)
+
+### Вариант 2: Локальная установка
+
 1. Клонируйте репозиторий:
 ```bash
 git clone <repository-url>
@@ -50,6 +76,7 @@ cp .env.example .env
 # Заполните переменные окружения в backend/.env
 # Создайте БД PostgreSQL и выполните миграции
 psql -U postgres -d savage_movie -f scripts/init_db.sql
+psql -U postgres -d savage_movie -f scripts/add_admin_tables.sql
 # Запустите API сервер
 uvicorn app.main:app --reload --port 8000
 ```

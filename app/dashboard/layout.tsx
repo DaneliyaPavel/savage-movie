@@ -3,7 +3,7 @@
  */
 import { redirect } from 'next/navigation'
 import { getCurrentUserServer } from '@/lib/api/auth'
-import { Navigation } from '@/components/sections/Navigation'
+import { NavigationWrapper } from '@/components/sections/NavigationWrapper'
 import { cookies } from 'next/headers'
 
 export default async function DashboardLayout({
@@ -26,7 +26,7 @@ export default async function DashboardLayout({
 
   return (
     <>
-      <Navigation />
+      <NavigationWrapper />
       <main className="pt-16 md:pt-20">
         {children}
       </main>

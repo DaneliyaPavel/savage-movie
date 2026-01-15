@@ -10,8 +10,9 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { FileUpload } from '@/components/admin/FileUpload'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
+import { BackButton } from '@/components/ui/back-button'
 import { createClient } from '@/lib/api/clients'
-import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
 const formSchema = z.object({ name: z.string().min(1), description: z.string().optional(), order: z.number().default(0) })
@@ -37,7 +38,15 @@ export default function NewClientPage() {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
-        <Link href="/admin/clients"><Button variant="ghost" className="mb-4"><ArrowLeft className="w-4 h-4 mr-2" />Назад</Button></Link>
+        <Breadcrumbs 
+          items={[
+            { label: 'Админ-панель', href: '/admin' },
+            { label: 'Клиенты', href: '/admin/clients' },
+            { label: 'Создать клиента' }
+          ]} 
+          className="mb-4"
+        />
+        <BackButton href="/admin/clients" className="mb-4" />
         <h1 className="text-3xl font-bold mb-2">Создать клиента</h1>
       </div>
       <Form {...form}>

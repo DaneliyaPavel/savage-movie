@@ -1,105 +1,164 @@
 /**
- * Упрощенный footer в стиле The Up&Up Group
+ * Footer с reveal анимацией в премиум стиле Freshman.tv
+ * Минималистичный дизайн, появляется при скролле
  */
 'use client'
 
+import { useRef } from 'react'
 import Link from 'next/link'
 import { Mail, Phone, MessageCircle, Instagram, Youtube } from 'lucide-react'
+import { motion, useInView } from 'framer-motion'
+import { GrainOverlay } from '@/components/ui/grain-overlay'
 
 export function Footer() {
+  const ref = useRef<HTMLElement>(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
+
   return (
-    <footer className="border-t border-border/30 bg-background">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+    <footer ref={ref} className="border-t border-[#1A1A1A] bg-[#000000] overflow-hidden relative">
+      <GrainOverlay />
+      <motion.div
+        initial={{ opacity: 0, y: 50 }}
+        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20 relative z-10"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16 mb-16 md:mb-20">
           {/* Brand */}
-          <div>
-            <h3 className="font-heading font-bold text-2xl mb-4 text-foreground">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
+            transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <h3 className="font-heading font-bold text-2xl md:text-3xl mb-6 text-[#FFFFFF]">
               SAVAGE MOVIE
             </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
+            <p className="text-sm md:text-base text-[#FFFFFF]/60 font-light leading-relaxed max-w-xs">
               Полный цикл видеопродакшна от разработки креативной концепции до публикации.
             </p>
-          </div>
+          </motion.div>
 
           {/* Navigation */}
-          <div>
-            <h4 className="font-heading font-semibold mb-4 text-sm uppercase tracking-wider text-foreground/70">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+            transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <h4 className="font-heading font-semibold mb-6 text-xs md:text-sm uppercase tracking-wider text-[#FFFFFF]/40">
               Навигация
             </h4>
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-3 md:space-y-4">
               {[
                 { href: '/about', label: 'О нас' },
                 { href: '/projects', label: 'Проекты' },
                 { href: '/courses', label: 'Курсы' },
                 { href: '/contact', label: 'Контакты' },
-              ].map((item) => (
-                <li key={item.href}>
+              ].map((item, index) => (
+                <motion.li
+                  key={item.href}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+                  transition={{ duration: 0.5, delay: 0.3 + index * 0.05, ease: [0.16, 1, 0.3, 1] }}
+                >
                   <Link
                     href={item.href}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-base md:text-lg text-[#FFFFFF]/60 hover:text-[#FFFFFF] transition-colors relative group inline-block"
                   >
                     {item.label}
+                    <motion.span
+                      className="absolute bottom-0 left-0 h-[1px] bg-[#FFFFFF]"
+                      initial={{ width: 0 }}
+                      whileHover={{ width: '100%' }}
+                      transition={{ duration: 0.3 }}
+                    />
                   </Link>
-                </li>
+                </motion.li>
               ))}
             </ul>
-          </div>
+          </motion.div>
 
           {/* Contacts */}
-          <div>
-            <h4 className="font-heading font-semibold mb-4 text-sm uppercase tracking-wider text-foreground/70">
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
+            transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <h4 className="font-heading font-semibold mb-6 text-xs md:text-sm uppercase tracking-wider text-[#FFFFFF]/40">
               Контакты
             </h4>
-            <ul className="space-y-3 text-sm">
-              <li>
+            <ul className="space-y-4 md:space-y-5 text-sm md:text-base">
+              <motion.li
+                initial={{ opacity: 0, y: 10 }}
+                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+                transition={{ duration: 0.5, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              >
                 <a
                   href="mailto:savage.movie@yandex.ru"
-                  className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+                  className="text-[#FFFFFF]/60 hover:text-[#FFFFFF] transition-colors flex items-center gap-3 group"
                 >
-                  <Mail className="w-4 h-4" />
-                  savage.movie@yandex.ru
+                  <Mail className="w-5 h-5 group-hover:text-[#CCFF00] transition-colors shrink-0" />
+                  <span>savage.movie@yandex.ru</span>
                 </a>
-              </li>
-              <li>
+              </motion.li>
+              <motion.li
+                initial={{ opacity: 0, y: 10 }}
+                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+                transition={{ duration: 0.5, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              >
                 <a
                   href="tel:+79214021839"
-                  className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+                  className="text-[#FFFFFF]/60 hover:text-[#FFFFFF] transition-colors flex items-center gap-3 group"
                 >
-                  <Phone className="w-4 h-4" />
-                  +7 921 402-18-39
+                  <Phone className="w-5 h-5 group-hover:text-[#CCFF00] transition-colors shrink-0" />
+                  <span>+7 921 402-18-39</span>
                 </a>
-              </li>
-              <li className="flex items-center gap-3 pt-2">
+              </motion.li>
+              <motion.li
+                initial={{ opacity: 0, y: 10 }}
+                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+                transition={{ duration: 0.5, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                className="flex items-center gap-4 pt-2"
+              >
                 {[
                   { href: 'https://t.me/mariseven', icon: MessageCircle, label: 'Telegram' },
                   { href: 'https://www.instagram.com/mari.seven/', icon: Instagram, label: 'Instagram' },
                   { href: 'https://youtube.com/@savagemovie', icon: Youtube, label: 'YouTube' },
-                ].map((social) => {
+                ].map((social, index) => {
                   const Icon = social.icon
                   return (
-                    <a
+                    <motion.a
                       key={social.label}
                       href={social.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      className="text-[#FFFFFF]/60 hover:text-[#CCFF00] transition-colors"
                       aria-label={social.label}
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
+                      transition={{ duration: 0.3, delay: 0.7 + index * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       <Icon className="w-5 h-5" />
-                    </a>
+                    </motion.a>
                   )
                 })}
-              </li>
+              </motion.li>
             </ul>
-          </div>
+          </motion.div>
         </div>
 
-        <div className="border-t border-border/30 pt-8 text-center">
-          <p className="text-sm text-muted-foreground">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ duration: 0.6, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="border-t border-[#1A1A1A] pt-8 text-center"
+        >
+          <p className="text-sm text-[#FFFFFF]/40 font-light">
             &copy; {new Date().getFullYear()} SAVAGE MOVIE. Все права защищены.
           </p>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </footer>
   )
 }

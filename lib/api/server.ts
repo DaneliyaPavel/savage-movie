@@ -1,8 +1,10 @@
 /**
  * Server-side API клиент для Next.js
  * Используется в Server Components и API routes
+ * 
+ * В Docker используем имя сервиса 'backend', на хосте - localhost
  */
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export interface ApiError {
   detail: string

@@ -39,7 +39,7 @@ CORS_ORIGINS=http://localhost:3000,http://localhost:3001
 
 # App URLs
 APP_URL=http://localhost:3000
-NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_API_URL=http://localhost:8001
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # Email
@@ -50,12 +50,12 @@ RESEND_FROM_EMAIL=noreply@savagemovie.ru
 # OAuth (заполните при необходимости)
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
-GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/oauth/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:8001/api/auth/oauth/google/callback
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=
 
 YANDEX_CLIENT_ID=
 YANDEX_CLIENT_SECRET=
-YANDEX_REDIRECT_URI=http://localhost:8000/api/auth/oauth/yandex/callback
+YANDEX_REDIRECT_URI=http://localhost:8001/api/auth/oauth/yandex/callback
 NEXT_PUBLIC_YANDEX_CLIENT_ID=
 
 # Payments
@@ -79,31 +79,36 @@ fi
 # Создание директории для uploads
 mkdir -p backend/uploads/images backend/uploads/videos
 
+COMPOSE_CMD="docker-compose"
+if ! command -v docker-compose &> /dev/null; then
+    COMPOSE_CMD="docker compose"
+fi
+
 echo "🐳 Запуск Docker контейнеров..."
-docker-compose up -d db
+$COMPOSE_CMD -f docker-compose.dev.yml up -d db
 
 echo "⏳ Ожидание готовности базы данных..."
 sleep 10
 
 echo "📦 Выполнение миграций базы данных..."
-docker-compose exec -T db psql -U postgres -d savage_movie -f /docker-entrypoint-initdb.d/init_db.sql || echo "⚠️  init_db.sql уже выполнен или не найден"
-docker-compose exec -T db psql -U postgres -d savage_movie -f /docker-entrypoint-initdb.d/add_admin_tables.sql || echo "⚠️  add_admin_tables.sql уже выполнен или не найден"
+$COMPOSE_CMD -f docker-compose.dev.yml exec -T db psql -U postgres -d savage_movie -f /docker-entrypoint-initdb.d/01_init_db.sql || echo "⚠️  init_db.sql уже выполнен или не найден"
+$COMPOSE_CMD -f docker-compose.dev.yml exec -T db psql -U postgres -d savage_movie -f /docker-entrypoint-initdb.d/02_add_admin_tables.sql || echo "⚠️  add_admin_tables.sql уже выполнен или не найден"
 
 echo "🚀 Запуск всех сервисов..."
-docker-compose up -d
+$COMPOSE_CMD -f docker-compose.dev.yml up -d
 
 echo ""
 echo "✅ Проект запущен!"
 echo ""
 echo "📋 Доступные сервисы:"
 echo "   - Frontend: http://localhost:3000"
-echo "   - Backend API: http://localhost:8000"
-echo "   - API Docs: http://localhost:8000/docs"
+echo "   - Backend API: http://localhost:8001"
+echo "   - API Docs: http://localhost:8001/docs"
 echo "   - Admin Panel: http://localhost:3000/admin"
 echo ""
 echo "📝 Полезные команды:"
-echo "   - Просмотр логов: docker-compose logs -f"
-echo "   - Остановка: docker-compose down"
-echo "   - Перезапуск: docker-compose restart"
-echo "   - Очистка: docker-compose down -v"
+echo "   - Просмотр логов: $COMPOSE_CMD -f docker-compose.dev.yml logs -f"
+echo "   - Остановка: $COMPOSE_CMD -f docker-compose.dev.yml down"
+echo "   - Перезапуск: $COMPOSE_CMD -f docker-compose.dev.yml restart"
+echo "   - Очистка: $COMPOSE_CMD -f docker-compose.dev.yml down -v"
 echo ""
