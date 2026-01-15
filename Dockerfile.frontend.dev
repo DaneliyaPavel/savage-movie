@@ -1,0 +1,18 @@
+# Development Dockerfile для Next.js Frontend
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Установка зависимостей
+RUN apk add --no-cache libc6-compat
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Копирование кода (будет перезаписан volume в dev режиме)
+COPY . .
+
+EXPOSE 3000
+
+ENV NEXT_TELEMETRY_DISABLED 1
+
+CMD ["npm", "run", "dev"]
