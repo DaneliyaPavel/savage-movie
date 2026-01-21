@@ -10,6 +10,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Star } from 'lucide-react'
 import { VideoPlayer } from '@/components/features/VideoPlayer'
 import { motion } from 'framer-motion'
+import { EditorialCorrection } from '@/components/ui/editorial-correction'
+import { GrainOverlay } from '@/components/ui/grain-overlay'
+import { HoverNote } from '@/components/ui/hover-note'
 
 interface Testimonial {
   id: string
@@ -55,42 +58,42 @@ export function TestimonialsSection({ testimonials: propsTestimonials }: Testimo
     }
   }, [propsTestimonials])
   return (
-    <section className="relative py-32 px-4 overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent" />
-      
-      <div className="container mx-auto relative z-10">
+    <section className="relative py-24 md:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden border-t border-[#1A1A1A] bg-[#000000]">
+      <GrainOverlay />
+      <div className="container mx-auto max-w-7xl relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-16"
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center mb-16 md:mb-24 editorial-spacing"
         >
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            className="font-heading font-bold text-5xl md:text-7xl lg:text-8xl mb-6 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent"
-          >
-            Отзывы клиентов
-          </motion.h2>
+          <HoverNote text="testimonials" position="top">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="mb-8"
+            >
+              <EditorialCorrection wrong="Отзывы клиентов" correct="Что говорят" size="xl" delay={0.2} />
+            </motion.div>
+          </HoverNote>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-muted-foreground text-xl md:text-2xl max-w-3xl mx-auto font-light"
+            transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="text-editorial text-[#FFFFFF]/60 font-light max-w-3xl mx-auto"
           >
             Что говорят о нас наши клиенты
           </motion.p>
         </motion.div>
 
         {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Загрузка отзывов...</div>
+          <div className="text-center py-12 text-[#FFFFFF]/60">Загрузка отзывов...</div>
         ) : testimonials.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">Отзывы не добавлены</div>
+          <div className="text-center py-12 text-[#FFFFFF]/60">Отзывы не добавлены</div>
         ) : (
           <Carousel className="w-full max-w-6xl mx-auto">
             <CarouselContent className="-ml-2 md:-ml-4">
@@ -103,7 +106,7 @@ export function TestimonialsSection({ testimonials: propsTestimonials }: Testimo
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                   whileHover={{ y: -8 }}
                 >
-                  <Card className="relative h-full overflow-hidden border-border/50 hover:border-primary/50 transition-all duration-300 bg-card/80 backdrop-blur-sm shadow-xl hover:shadow-2xl hover:shadow-primary/10 group">
+                  <Card className="relative h-full overflow-hidden border-[#1A1A1A] hover:border-[#FFFFFF]/30 transition-all duration-300 bg-[#050505] shadow-xl hover:shadow-2xl group">
                     {/* Decorative gradient */}
                     <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                     
@@ -147,8 +150,8 @@ export function TestimonialsSection({ testimonials: propsTestimonials }: Testimo
                       </div>
 
                       {testimonial.text && (
-                        <p className="text-base text-foreground/90 mb-6 leading-relaxed">
-                          "{testimonial.text}"
+                        <p className="text-base text-[#FFFFFF]/90 mb-6 leading-relaxed">
+                          &quot;{testimonial.text}&quot;
                         </p>
                       )}
 
@@ -163,11 +166,11 @@ export function TestimonialsSection({ testimonials: propsTestimonials }: Testimo
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-semibold text-base">{testimonial.name}</p>
+                          <p className="font-semibold text-base text-[#FFFFFF]">{testimonial.name}</p>
                           {testimonial.company && (
-                            <p className="text-sm text-muted-foreground">{testimonial.company}</p>
+                            <p className="text-sm text-[#FFFFFF]/60">{testimonial.company}</p>
                           )}
-                          <p className="text-sm text-primary/80">{testimonial.projectType}</p>
+                          <p className="text-sm text-[#ff2936]/80">{testimonial.projectType}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -176,8 +179,8 @@ export function TestimonialsSection({ testimonials: propsTestimonials }: Testimo
               </CarouselItem>
             ))}
             </CarouselContent>
-            <CarouselPrevious className="left-0 bg-background/80 backdrop-blur-sm border-border/50 hover:bg-background" />
-            <CarouselNext className="right-0 bg-background/80 backdrop-blur-sm border-border/50 hover:bg-background" />
+            <CarouselPrevious className="left-0 bg-[#050505]/80 backdrop-blur-sm border-[#1A1A1A] hover:bg-[#050505] hover:border-[#FFFFFF]/30" />
+            <CarouselNext className="right-0 bg-[#050505]/80 backdrop-blur-sm border-[#1A1A1A] hover:bg-[#050505] hover:border-[#FFFFFF]/30" />
           </Carousel>
         )}
       </div>

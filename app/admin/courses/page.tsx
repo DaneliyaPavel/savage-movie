@@ -8,9 +8,9 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/admin/DataTable'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
-import { BackButton } from '@/components/ui/back-button'
-import { getCourses, deleteCourse, type Course } from '@/lib/api/courses'
-import { Plus } from 'lucide-react'
+import { getCourses, deleteCourse, updateCoursesOrder, type Course } from '@/lib/api/courses'
+import { SortableList } from '@/components/admin/SortableList'
+import { Plus, Pencil, Trash2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -35,11 +35,36 @@ export default function CoursesPage() {
   const loadCourses = async () => {
     try {
       const data = await getCourses()
-      setCourses(data)
+      // Сортируем по display_order, затем по created_at
+      const sorted = [...data].sort((a, b) => {
+        const orderA = a.display_order ?? 0
+        const orderB = b.display_order ?? 0
+        if (orderA !== orderB) return orderA - orderB
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      })
+      setCourses(sorted)
     } catch (error) {
       console.error('Ошибка загрузки курсов:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleReorder = async (reorderedCourses: Course[]) => {
+    // Обновляем локальное состояние
+    setCourses(reorderedCourses)
+    
+    // Обновляем порядок на сервере
+    try {
+      const updates = reorderedCourses.map((course, index) => ({
+        id: course.id,
+        display_order: index,
+      }))
+      await updateCoursesOrder(updates)
+    } catch (error) {
+      console.error('Ошибка обновления порядка:', error)
+      alert('Ошибка сохранения порядка. Перезагрузите страницу.')
+      loadCourses() // Восстанавливаем исходный порядок
     }
   }
 
@@ -105,23 +130,69 @@ export default function CoursesPage() {
         </Link>
       </div>
 
-      <DataTable
-        data={courses}
-        columns={columns}
-        onEdit={(course) => router.push(`/admin/courses/${course.id}/edit`)}
-        onDelete={(course) => {
-          setCourseToDelete(course)
-          setDeleteDialogOpen(true)
-        }}
-        getRowId={(course) => course.id}
-      />
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-4">Упорядочить курсы</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Перетащите курсы для изменения порядка отображения на сайте
+        </p>
+        <SortableList
+          items={courses}
+          onReorder={handleReorder}
+          getItemId={(course) => course.id}
+          className="max-w-2xl"
+        >
+          {(course) => (
+            <div className="flex items-center justify-between w-full">
+              <div>
+                <div className="font-medium">{course.title}</div>
+                <div className="text-sm text-muted-foreground">
+                  {course.category} • {course.price.toLocaleString('ru-RU')} ₽
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => router.push(`/admin/courses/${course.id}/edit`)}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setCourseToDelete(course)
+                    setDeleteDialogOpen(true)
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </SortableList>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Все курсы (таблица)</h2>
+        <DataTable
+          data={courses}
+          columns={columns}
+          onEdit={(course) => router.push(`/admin/courses/${course.id}/edit`)}
+          onDelete={(course) => {
+            setCourseToDelete(course)
+            setDeleteDialogOpen(true)
+          }}
+          getRowId={(course) => course.id}
+        />
+      </div>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Удалить курс?</DialogTitle>
             <DialogDescription>
-              Вы уверены, что хотите удалить курс "{courseToDelete?.title}"? Это действие нельзя отменить.
+              Вы уверены, что хотите удалить курс &quot;{courseToDelete?.title}&quot;? Это действие нельзя отменить.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

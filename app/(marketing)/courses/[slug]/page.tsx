@@ -2,16 +2,15 @@
  * Детальная страница курса
  */
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import { getCourseBySlug } from '@/lib/api/courses'
 import { VideoPlayer } from '@/components/features/VideoPlayer'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
-import { CheckCircle2, Clock, User, Star } from 'lucide-react'
-import Link from 'next/link'
+import { CheckCircle2, Clock, User } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { CourseEnrollmentButton } from '@/components/features/CourseEnrollmentButton'
 import type { Course } from '@/lib/api/courses'
@@ -71,10 +70,12 @@ export default async function CourseDetailPage({
             className="w-full h-full object-cover"
           />
         ) : course.cover_image ? (
-          <img
+          <Image
             src={course.cover_image}
             alt={course.title}
-            className="w-full h-full object-cover"
+            fill
+            sizes="100vw"
+            className="object-cover"
           />
         ) : null}
       </div>

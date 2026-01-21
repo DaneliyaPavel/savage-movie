@@ -32,19 +32,51 @@ export interface RegisterData {
 }
 
 /**
- * Сохраняет токены в localStorage и cookies
+ * Сохраняет токены в localStorage
  */
 function saveTokens(tokens: TokenResponse) {
   if (typeof window !== 'undefined') {
     // Сохраняем в localStorage для клиентской части
     localStorage.setItem('access_token', tokens.access_token)
     localStorage.setItem('refresh_token', tokens.refresh_token)
-    
-    // Сохраняем в cookies для server-side доступа
-    // Устанавливаем cookie с максимальным сроком действия (7 дней)
-    const maxAge = 7 * 24 * 60 * 60 // 7 дней в секундах
-    document.cookie = `access_token=${tokens.access_token}; path=/; max-age=${maxAge}; SameSite=Lax`
-    document.cookie = `refresh_token=${tokens.refresh_token}; path=/; max-age=${maxAge}; SameSite=Lax`
+  }
+}
+
+/**
+ * Синхронизирует токены с HttpOnly cookies для server-side доступа
+ */
+export async function syncAuthCookies(tokens?: TokenResponse): Promise<void> {
+  if (typeof window === 'undefined') return
+
+  const accessToken = tokens?.access_token ?? localStorage.getItem('access_token')
+  const refreshToken = tokens?.refresh_token ?? localStorage.getItem('refresh_token')
+
+  if (!accessToken || !refreshToken) return
+
+  try {
+    await fetch('/api/auth/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      }),
+    })
+  } catch {
+    // Если не удалось синхронизировать cookies, остаемся на localStorage.
+  }
+}
+
+/**
+ * Очищает HttpOnly cookies для server-side доступа
+ */
+async function clearAuthCookies(): Promise<void> {
+  if (typeof window === 'undefined') return
+
+  try {
+    await fetch('/api/auth/session', { method: 'DELETE' })
+  } catch {
+    // Не блокируем logout, даже если cookies не очистились.
   }
 }
 
@@ -55,8 +87,8 @@ export function clearTokens() {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
-    
-    // Удаляем cookies
+
+    // На случай старых non-HttpOnly cookies.
     document.cookie = 'access_token=; path=/; max-age=0'
     document.cookie = 'refresh_token=; path=/; max-age=0'
   }
@@ -78,6 +110,7 @@ export function getAccessToken(): string | null {
 export async function register(data: RegisterData): Promise<TokenResponse> {
   const tokens = await apiPost<TokenResponse>('/api/auth/register', data)
   saveTokens(tokens)
+  await syncAuthCookies(tokens)
   return tokens
 }
 
@@ -87,6 +120,7 @@ export async function register(data: RegisterData): Promise<TokenResponse> {
 export async function login(credentials: LoginCredentials): Promise<TokenResponse> {
   const tokens = await apiPost<TokenResponse>('/api/auth/login', credentials)
   saveTokens(tokens)
+  await syncAuthCookies(tokens)
   return tokens
 }
 
@@ -104,7 +138,9 @@ export async function getCurrentUser(): Promise<User | null> {
 /**
  * Получение информации о текущем пользователе (server-side)
  */
-export async function getCurrentUserServer(cookies?: any): Promise<User | null> {
+export async function getCurrentUserServer(
+  cookies?: { get: (name: string) => { value: string } | undefined }
+): Promise<User | null> {
   try {
     const { apiGet: apiGetServer } = await import('./server')
     return await apiGetServer<User>('/api/auth/me', cookies)
@@ -129,6 +165,7 @@ export async function refreshToken(): Promise<TokenResponse> {
     refresh_token: refreshToken,
   })
   saveTokens(tokens)
+  await syncAuthCookies(tokens)
   return tokens
 }
 
@@ -138,6 +175,7 @@ export async function refreshToken(): Promise<TokenResponse> {
 export async function logout(): Promise<void> {
   try {
     await apiPost('/api/auth/logout')
+    await clearAuthCookies()
   } finally {
     clearTokens()
   }

@@ -8,6 +8,7 @@ import { BookingModal } from '@/components/sections/BookingModal'
 import { Preloader } from '@/components/ui/preloader'
 import { PageTransitions } from '@/components/providers/page-transitions'
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 
 interface MarketingLayoutClientProps {
   children: React.ReactNode
@@ -16,6 +17,8 @@ interface MarketingLayoutClientProps {
 
 export function MarketingLayoutClient({ children, navigation }: MarketingLayoutClientProps) {
   const [showContent, setShowContent] = useState(false)
+  const pathname = usePathname()
+  const isHomePage = pathname === '/'
 
   return (
     <>
@@ -24,11 +27,13 @@ export function MarketingLayoutClient({ children, navigation }: MarketingLayoutC
         <>
           {navigation}
           <PageTransitions>
-            <main className="pt-16 md:pt-20 bg-[#000000] min-h-screen">
+            {/* Home page - fullscreen, no padding. Other pages - standard layout */}
+            <main className={isHomePage ? "bg-[#000000] min-h-screen" : "pt-16 md:pt-20 bg-[#000000] min-h-screen"}>
               {children}
             </main>
           </PageTransitions>
-          <Footer />
+          {/* Footer only on non-home pages, or make it optional */}
+          {!isHomePage && <Footer />}
           <BookingModal />
         </>
       )}

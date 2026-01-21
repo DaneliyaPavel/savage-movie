@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Montserrat } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 const inter = Inter({
@@ -12,6 +13,30 @@ const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin", "cyrillic"],
   display: "swap",
+});
+
+// Handwritten font "Sa No Rules Regular" - fallback to system fonts if file not found
+const saNoRules = localFont({
+  src: [
+    {
+      path: "../public/fonts/SANoRulesRegular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/SANoRulesRegular.woff",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/SANoRulesRegular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+  ],
+  variable: "--font-handwritten",
+  display: "swap",
+  fallback: ["Kalam", "Caveat", "cursive"],
 });
 
 export const metadata: Metadata = {
@@ -28,7 +53,7 @@ export default function RootLayout({
   return (
     <html lang="ru" className="dark">
       <body
-        className={`${inter.variable} ${montserrat.variable} font-sans antialiased`}
+        className={`${inter.variable} ${montserrat.variable} ${saNoRules.variable} font-sans antialiased`}
       >
         {children}
       </body>

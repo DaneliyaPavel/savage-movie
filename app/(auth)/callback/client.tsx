@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { syncAuthCookies } from '@/lib/api/auth'
 
 interface AuthCallbackClientProps {
   searchParams: Promise<{ access_token?: string; refresh_token?: string }>
@@ -15,11 +16,16 @@ export function AuthCallbackClient({ searchParams }: AuthCallbackClientProps) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    searchParams.then((params) => {
+    searchParams.then(async (params) => {
       if (params.access_token && params.refresh_token) {
         // Сохраняем токены
         localStorage.setItem('access_token', params.access_token)
         localStorage.setItem('refresh_token', params.refresh_token)
+        await syncAuthCookies({
+          access_token: params.access_token,
+          refresh_token: params.refresh_token,
+          token_type: 'bearer',
+        })
 
         // Редиректим в dashboard
         router.push('/dashboard')

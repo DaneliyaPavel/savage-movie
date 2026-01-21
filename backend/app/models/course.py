@@ -23,6 +23,10 @@ class Course(Base):
     category = Column(String, nullable=False)
     requirements = Column(ARRAY(Text), nullable=True)
     what_you_learn = Column(ARRAY(Text), nullable=True)
+    level = Column(String, nullable=True)  # 'beginner', 'intermediate', 'advanced'
+    certificate = Column(String, nullable=True)  # 'yes', 'no'
+    format = Column(String, nullable=True)  # 'online', 'offline', 'hybrid', 'online+live'
+    display_order = Column(Integer, nullable=True, default=0)  # Порядок отображения
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

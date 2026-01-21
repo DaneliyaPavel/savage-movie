@@ -109,7 +109,7 @@ export function ProjectsGrid({ projects }: ProjectsGridProps) {
                 <span className="text-lg md:text-xl font-medium text-[#FFFFFF]/60 group-hover:text-[#FFFFFF] transition-colors">
                   Смотреть все проекты
                 </span>
-                <ArrowRight className="w-5 h-5 text-[#FFFFFF]/40 group-hover:text-[#CCFF00] transition-colors" />
+                <ArrowRight className="w-5 h-5 text-[#FFFFFF]/40 group-hover:text-[#ff2936] transition-colors" />
               </motion.div>
             </Link>
           </motion.div>

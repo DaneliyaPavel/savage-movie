@@ -22,7 +22,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Textarea } from '@/components/ui/textarea'
 import { CheckCircle2, Loader2 } from 'lucide-react'
-import { motion, AnimatePresence, useSpring, useMotionValue } from 'framer-motion'
+import { motion, useSpring, useMotionValue } from 'framer-motion'
+import { HoverNote } from '@/components/ui/hover-note'
 
 const formSchema = z.object({
   name: z.string().min(2, 'Имя должно содержать минимум 2 символа'),
@@ -43,7 +44,7 @@ export function ContactForm({ className = '' }: ContactFormProps) {
   const [isSuccess, setIsSuccess] = useState(false)
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema) as any,
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       email: '',
@@ -103,6 +104,7 @@ export function ContactForm({ className = '' }: ContactFormProps) {
         setIsSuccess(false)
       }, 5000)
     } catch (error) {
+      // В клиентских компонентах оставляем console для отладки в браузере
       console.error('Ошибка отправки формы:', error)
     } finally {
       setIsSubmitting(false)
@@ -146,7 +148,7 @@ export function ContactForm({ className = '' }: ContactFormProps) {
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", delay: 0.2, stiffness: 200, damping: 15 }}
               >
-                <CheckCircle2 className="w-20 h-20 text-[#CCFF00] mb-6" />
+                <CheckCircle2 className="w-20 h-20 text-[#ff2936] mb-6" />
               </motion.div>
               <h3 className="text-3xl md:text-4xl font-heading font-bold mb-3 text-[#FFFFFF]">
                 Спасибо за заявку!
@@ -284,12 +286,14 @@ export function ContactForm({ className = '' }: ContactFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <div className="flex items-center justify-between mb-4 md:mb-6">
-                          <FormLabel className="text-base md:text-lg font-medium text-[#FFFFFF]/80">
-                            Бюджет проекта
-                          </FormLabel>
+                          <HoverNote text="budget" position="top">
+                            <FormLabel className="text-base md:text-lg font-medium text-[#FFFFFF]/80 cursor-help">
+                              Бюджет проекта
+                            </FormLabel>
+                          </HoverNote>
                           {/* Крупный numeric readout с плавной анимацией */}
                           <motion.div
-                            className="text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-[#CCFF00] tabular-nums"
+                            className="text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-[#ff2936] tabular-nums"
                             key={displayBudget}
                             animate={{ scale: [1, 1.02, 1] }}
                             transition={{ duration: 0.2 }}
@@ -298,14 +302,16 @@ export function ContactForm({ className = '' }: ContactFormProps) {
                           </motion.div>
                         </div>
                         <FormControl>
-                          <PremiumSlider
-                            min={10000}
-                            max={1000000}
-                            step={10000}
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            className="w-full"
-                          />
+                          <HoverNote text="scope" position="top" className="w-full">
+                            <PremiumSlider
+                              min={10000}
+                              max={1000000}
+                              step={10000}
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              className="w-full"
+                            />
+                          </HoverNote>
                         </FormControl>
                         <div className="flex justify-between text-sm text-[#FFFFFF]/40 mt-4">
                           <span>10 000 ₽</span>

@@ -1,12 +1,12 @@
 /**
  * Страница списка Clients в стиле Freshman.tv
  */
-import { ClientsList } from '@/components/sections/ClientsList'
 import { getClients } from '@/lib/api/clients'
+import type { Client } from '@/lib/api/clients'
 import { ClientsPageClient } from './client'
 
 export default async function ClientsPage() {
-  let clients = []
+  let clients: Client[] = []
   
   try {
     clients = await getClients()

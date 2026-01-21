@@ -1,21 +1,13 @@
 /**
  * Layout для маркетинговых страниц (главная, проекты, курсы и т.д.)
- * Серверный компонент для получения данных, клиентский для анимаций
+ * Портируем из v0 reference - используем I18nProvider и MenuProvider
  */
-import { NavigationWrapper } from '@/components/sections/NavigationWrapper'
-import { MarketingLayoutClient } from '@/components/sections/MarketingLayoutClient'
+import { MarketingLayoutClient } from "./layout-client"
 
 export default function MarketingLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // NavigationWrapper - серверный компонент, получает пользователя
-  const navigation = <NavigationWrapper />
-
-  return (
-    <MarketingLayoutClient navigation={navigation}>
-      {children}
-    </MarketingLayoutClient>
-  )
+  return <MarketingLayoutClient>{children}</MarketingLayoutClient>
 }

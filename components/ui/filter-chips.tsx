@@ -27,7 +27,7 @@ export function FilterChip({ label, isActive, onClick }: FilterChipProps) {
       {isActive && (
         <motion.div
           layoutId="activeFilter"
-          className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#CCFF00]"
+          className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#ff2936]"
           initial={false}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         />

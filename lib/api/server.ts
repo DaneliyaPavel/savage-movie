@@ -4,16 +4,18 @@
  * 
  * В Docker используем имя сервиса 'backend', на хосте - localhost
  */
-const API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+import { baseApiRequest } from './base'
+import { publicEnv } from '@/lib/env'
+import { serverEnv } from '@/lib/env.server'
 
-export interface ApiError {
-  detail: string
-}
+const API_URL = serverEnv.API_URL || publicEnv.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+
+export type { ApiError } from './base'
 
 /**
  * Получает токен из cookies (для server-side)
  */
-function getTokenFromCookies(cookies: any): string | null {
+function getTokenFromCookies(cookies: { get: (name: string) => { value: string } | undefined }): string | null {
   return cookies.get('access_token')?.value || null
 }
 
@@ -23,40 +25,31 @@ function getTokenFromCookies(cookies: any): string | null {
 export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {},
-  cookies?: any
+  cookies?: { get: (name: string) => { value: string } | undefined }
 ): Promise<T> {
   const url = `${API_URL}${endpoint}`
   
   const token = cookies ? getTokenFromCookies(cookies) : null
+  const requestOptions: RequestInit = { ...options }
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> || {}),
+  if (token && !requestOptions.cache) {
+    // Отключаем кеш для запросов с авторизацией, чтобы не ловить устаревшие ответы.
+    requestOptions.cache = 'no-store'
   }
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
-
-  const response = await fetch(url, {
-    ...options,
-    headers,
+  return baseApiRequest<T>(url, {
+    ...requestOptions,
+    token,
   })
-
-  if (!response.ok) {
-    const error: ApiError = await response.json().catch(() => ({
-      detail: `HTTP ${response.status}: ${response.statusText}`,
-    }))
-    throw new Error(error.detail || 'Ошибка запроса к API')
-  }
-
-  return response.json()
 }
 
 /**
  * GET запрос (server-side)
  */
-export async function apiGet<T>(endpoint: string, cookies?: any): Promise<T> {
+export async function apiGet<T>(
+  endpoint: string,
+  cookies?: { get: (name: string) => { value: string } | undefined }
+): Promise<T> {
   return apiRequest<T>(endpoint, { method: 'GET' }, cookies)
 }
 
@@ -66,7 +59,7 @@ export async function apiGet<T>(endpoint: string, cookies?: any): Promise<T> {
 export async function apiPost<T>(
   endpoint: string,
   data?: unknown,
-  cookies?: any
+  cookies?: { get: (name: string) => { value: string } | undefined }
 ): Promise<T> {
   return apiRequest<T>(
     endpoint,

@@ -4,7 +4,7 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { VideoPlayer } from './VideoPlayer'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
@@ -24,15 +24,11 @@ export function FullScreenVideoPlayer({
   playbackId,
   title,
 }: FullScreenVideoPlayerProps) {
-  const [isReady, setIsReady] = useState(false)
-
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
-      setIsReady(true)
     } else {
       document.body.style.overflow = 'unset'
-      setIsReady(false)
     }
 
     return () => {
@@ -75,7 +71,7 @@ export function FullScreenVideoPlayer({
               e.stopPropagation()
               onClose()
             }}
-            className="absolute top-6 right-6 md:top-8 md:right-8 z-20 w-12 h-12 md:w-14 md:h-14 flex items-center justify-center text-[#FFFFFF] hover:text-[#CCFF00] transition-colors group"
+            className="absolute top-6 right-6 md:top-8 md:right-8 z-20 w-12 h-12 md:w-14 md:h-14 flex items-center justify-center text-[#FFFFFF] hover:text-[#ff2936] transition-colors group"
             aria-label="Закрыть"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -104,26 +100,24 @@ export function FullScreenVideoPlayer({
             className="relative w-full h-full flex items-center justify-center p-4 md:p-8 lg:p-16"
             onClick={(e) => e.stopPropagation()}
           >
-            {isReady && (
-              <div className="w-full max-w-7xl aspect-video relative">
-                {playbackId ? (
-                  <VideoPlayer
-                    playbackId={playbackId}
-                    title={title}
-                    controls
-                    autoplay
-                    className="w-full h-full"
-                  />
-                ) : videoUrl ? (
-                  <video
-                    src={videoUrl}
-                    controls
-                    autoPlay
-                    className="w-full h-full"
-                  />
-                ) : null}
-              </div>
-            )}
+            <div className="w-full max-w-7xl aspect-video relative">
+              {playbackId ? (
+                <VideoPlayer
+                  playbackId={playbackId}
+                  title={title}
+                  controls
+                  autoplay
+                  className="w-full h-full"
+                />
+              ) : videoUrl ? (
+                <video
+                  src={videoUrl}
+                  controls
+                  autoPlay
+                  className="w-full h-full"
+                />
+              ) : null}
+            </div>
           </motion.div>
 
           {/* Заголовок (если есть) */}

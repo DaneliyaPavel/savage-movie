@@ -3,7 +3,10 @@
  */
 'use client'
 
+import type React from 'react'
 import MuxPlayer from '@mux/mux-player-react'
+
+type MuxStyle = React.CSSProperties & Record<`--${string}`, string>
 
 interface VideoPlayerProps {
   playbackId: string
@@ -35,6 +38,11 @@ export function VideoPlayer({
         autoPlay={autoplay}
         muted={muted}
         loop={loop}
+        style={
+          {
+            '--controls': controls ? 'flex' : 'none',
+          } as MuxStyle
+        }
         className="w-full h-full"
       />
     </div>

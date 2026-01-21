@@ -6,10 +6,12 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import { ProjectThumbRail } from './ProjectThumbRail'
 import { VideoStage } from './VideoStage'
 import { ProjectMetaPanel } from './ProjectMetaPanel'
-import { SectionTitle } from '@/components/ui/section-title'
+import { EditorialCorrection } from '@/components/ui/editorial-correction'
+import { HoverNote } from '@/components/ui/hover-note'
 import type { Project } from '@/lib/api/projects'
 
 interface ProjectPlayerWallProps {
@@ -21,13 +23,12 @@ interface ProjectPlayerWallProps {
 const getPlaybackId = (url: string | null): string | null => {
   if (!url) return null
   const muxMatch = url.match(/mux\.com\/([^/?]+)/)
-  if (muxMatch) return muxMatch[1]
-  return null
+  return muxMatch?.[1] ?? null
 }
 
 export function ProjectPlayerWall({ projects, initialProjectId }: ProjectPlayerWallProps) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(
-    projects.find(p => p.id === initialProjectId) || projects[0] || null
+    projects.find(p => p.id === initialProjectId) ?? projects[0] ?? null
   )
   const [selectedIndex, setSelectedIndex] = useState(
     projects.findIndex(p => p.id === initialProjectId) !== -1
@@ -48,18 +49,22 @@ export function ProjectPlayerWall({ projects, initialProjectId }: ProjectPlayerW
       if (e.key === 'ArrowUp') {
         e.preventDefault()
         const newIndex = selectedIndex > 0 ? selectedIndex - 1 : projects.length - 1
+        const nextProject = projects[newIndex]
+        if (!nextProject) return
         setSelectedIndex(newIndex)
-        setSelectedProject(projects[newIndex])
+        setSelectedProject(nextProject)
         // Скролл к выбранному элементу в thumb rail
-        const thumbElement = document.querySelector(`[data-project-id="${projects[newIndex].id}"]`)
+        const thumbElement = document.querySelector(`[data-project-id="${nextProject.id}"]`)
         thumbElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
       } else if (e.key === 'ArrowDown') {
         e.preventDefault()
         const newIndex = selectedIndex < projects.length - 1 ? selectedIndex + 1 : 0
+        const nextProject = projects[newIndex]
+        if (!nextProject) return
         setSelectedIndex(newIndex)
-        setSelectedProject(projects[newIndex])
+        setSelectedProject(nextProject)
         // Скролл к выбранному элементу в thumb rail
-        const thumbElement = document.querySelector(`[data-project-id="${projects[newIndex].id}"]`)
+        const thumbElement = document.querySelector(`[data-project-id="${nextProject.id}"]`)
         thumbElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
       } else if (e.key === 'Enter' && selectedProject) {
         window.location.href = `/projects/${selectedProject.slug}`
@@ -82,7 +87,7 @@ export function ProjectPlayerWall({ projects, initialProjectId }: ProjectPlayerW
 
   const selectedVideoUrl = selectedProject?.video_url || undefined
   const selectedPlaybackId = selectedProject?.video_url
-    ? getPlaybackId(selectedProject.video_url)
+    ? (getPlaybackId(selectedProject.video_url) ?? undefined)
     : undefined
   const selectedPoster = selectedProject?.images?.[0]
 
@@ -100,9 +105,11 @@ export function ProjectPlayerWall({ projects, initialProjectId }: ProjectPlayerW
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="mb-12 md:mb-16"
         >
-          <SectionTitle mark="arrow" markPosition="top-left" size="xl" className="text-[#FFFFFF] mb-12">
-            Наши работы
-          </SectionTitle>
+          <HoverNote text="featured" position="top">
+            <div className="mb-12">
+              <EditorialCorrection wrong="Наши работы" correct="Избранное" size="lg" inline delay={0.2} />
+            </div>
+          </HoverNote>
         </motion.div>
 
         {/* 3-колоночная layout */}
@@ -125,17 +132,19 @@ export function ProjectPlayerWall({ projects, initialProjectId }: ProjectPlayerW
                         onClick={() => handleProjectSelect(project)}
                         className={`relative shrink-0 w-32 h-20 overflow-hidden bg-[#050505] border transition-all ${
                           isSelected
-                            ? 'border-[#CCFF00] scale-105'
+                            ? 'border-[#ff2936] scale-105'
                             : 'border-[#1A1A1A] hover:border-[#FFFFFF]/30'
                         }`}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
                         {thumbnail ? (
-                          <img
+                          <Image
                             src={thumbnail}
                             alt={project.title}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="128px"
+                            className="object-cover"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
@@ -145,7 +154,7 @@ export function ProjectPlayerWall({ projects, initialProjectId }: ProjectPlayerW
                           </div>
                         )}
                         {isSelected && (
-                          <div className="absolute inset-0 bg-[#CCFF00]/10" />
+                          <div className="absolute inset-0 bg-[#ff2936]/10" />
                         )}
                       </motion.button>
                     )

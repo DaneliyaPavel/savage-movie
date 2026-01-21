@@ -8,9 +8,9 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/admin/DataTable'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
-import { BackButton } from '@/components/ui/back-button'
-import { getProjects, deleteProject, type Project } from '@/lib/api/projects'
-import { Plus, Trash2 } from 'lucide-react'
+import { getProjects, deleteProject, updateProjectsOrder, type Project } from '@/lib/api/projects'
+import { SortableList } from '@/components/admin/SortableList'
+import { Plus, Trash2, Pencil } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -35,11 +35,36 @@ export default function ProjectsPage() {
   const loadProjects = async () => {
     try {
       const data = await getProjects()
-      setProjects(data)
+      // Сортируем по display_order, затем по created_at
+      const sorted = [...data].sort((a, b) => {
+        const orderA = a.display_order ?? 0
+        const orderB = b.display_order ?? 0
+        if (orderA !== orderB) return orderA - orderB
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      })
+      setProjects(sorted)
     } catch (error) {
       console.error('Ошибка загрузки проектов:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleReorder = async (reorderedProjects: Project[]) => {
+    // Обновляем локальное состояние
+    setProjects(reorderedProjects)
+    
+    // Обновляем порядок на сервере
+    try {
+      const updates = reorderedProjects.map((project, index) => ({
+        id: project.id,
+        display_order: index,
+      }))
+      await updateProjectsOrder(updates)
+    } catch (error) {
+      console.error('Ошибка обновления порядка:', error)
+      alert('Ошибка сохранения порядка. Перезагрузите страницу.')
+      loadProjects() // Восстанавливаем исходный порядок
     }
   }
 
@@ -114,23 +139,69 @@ export default function ProjectsPage() {
         </Link>
       </div>
 
-      <DataTable
-        data={projects}
-        columns={columns}
-        onEdit={(project) => router.push(`/admin/projects/${project.id}/edit`)}
-        onDelete={(project) => {
-          setProjectToDelete(project)
-          setDeleteDialogOpen(true)
-        }}
-        getRowId={(project) => project.id}
-      />
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-4">Упорядочить проекты</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Перетащите проекты для изменения порядка отображения на сайте
+        </p>
+        <SortableList
+          items={projects}
+          onReorder={handleReorder}
+          getItemId={(project) => project.id}
+          className="max-w-2xl"
+        >
+          {(project) => (
+            <div className="flex items-center justify-between w-full">
+              <div>
+                <div className="font-medium">{project.title}</div>
+                <div className="text-sm text-muted-foreground">
+                  {project.category} • {new Date(project.created_at).toLocaleDateString('ru-RU')}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => router.push(`/admin/projects/${project.id}/edit`)}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setProjectToDelete(project)
+                    setDeleteDialogOpen(true)
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </SortableList>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Все проекты (таблица)</h2>
+        <DataTable
+          data={projects}
+          columns={columns}
+          onEdit={(project) => router.push(`/admin/projects/${project.id}/edit`)}
+          onDelete={(project) => {
+            setProjectToDelete(project)
+            setDeleteDialogOpen(true)
+          }}
+          getRowId={(project) => project.id}
+        />
+      </div>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Удалить проект?</DialogTitle>
             <DialogDescription>
-              Вы уверены, что хотите удалить проект "{projectToDelete?.title}"? Это действие нельзя отменить.
+              Вы уверены, что хотите удалить проект &quot;{projectToDelete?.title}&quot;? Это действие нельзя отменить.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

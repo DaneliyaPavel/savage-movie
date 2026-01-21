@@ -32,7 +32,7 @@ const RowContent = ({
   <div className="relative h-full overflow-hidden">
       {/* Hover highlight - акцентная полоса от пунктирной линии до пунктирной линии */}
       <div
-        className="absolute top-0 left-0 right-0 bottom-0 bg-[#CCFF00] opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-[0.16,1,0.3,1]"
+        className="absolute top-0 left-0 right-0 bottom-0 bg-[#ff2936] opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-[0.16,1,0.3,1]"
       />
 
       {/* Контент строки - текст выровнен по вертикали между пунктирными линиями (с небольшим смещением вниз), по горизонтали - ступеньками */}
@@ -118,7 +118,7 @@ export function MenuRow({
       {isCTA || href === '#' ? (
         <button
           onClick={handleClick}
-          className="relative block h-full w-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#CCFF00] focus-visible:ring-offset-2 focus-visible:ring-offset-[#000000] text-left"
+          className="relative block h-full w-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff2936] focus-visible:ring-offset-2 focus-visible:ring-offset-[#000000] text-left"
         >
           <RowContent label={label} count={count} isCTA={isCTA} offsetX={offsetX} />
         </button>
@@ -126,7 +126,7 @@ export function MenuRow({
         <Link
           href={href}
           onClick={handleClick}
-          className="relative block h-full w-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#CCFF00] focus-visible:ring-offset-2 focus-visible:ring-offset-[#000000]"
+          className="relative block h-full w-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff2936] focus-visible:ring-offset-2 focus-visible:ring-offset-[#000000]"
         >
           <RowContent label={label} count={count} isCTA={isCTA} offsetX={offsetX} />
         </Link>

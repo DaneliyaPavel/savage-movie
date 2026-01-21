@@ -1,0 +1,39 @@
+<svg width="800" height="1000" viewBox="0 0 800 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="800" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B0B0B"/>
+      <stop offset="1" stop-color="#111111"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(380 420) rotate(90) scale(420 420)">
+      <stop stop-color="#66D9FF" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#66D9FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="body" x1="190" y1="200" x2="610" y2="860" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#191919"/>
+      <stop offset="1" stop-color="#0D0D0D"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg)"/>
+  <rect width="800" height="1000" fill="url(#glow)"/>
+
+  <!-- Cat-ish alien -->
+  <path d="M235 250L315 170L330 285" fill="#0F0F0F" stroke="#2A2A2A" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M565 250L485 170L470 285" fill="#0F0F0F" stroke="#2A2A2A" stroke-width="4" stroke-linejoin="round"/>
+
+  <path d="M400 185C530 185 635 285 635 410C635 545 535 625 400 625C265 625 165 545 165 410C165 285 270 185 400 185Z" fill="url(#body)" stroke="#2A2A2A" stroke-width="4"/>
+
+  <path d="M245 610C300 720 350 900 400 900C450 900 500 720 555 610C585 550 625 520 675 520C730 520 760 565 760 620C760 780 615 960 400 960C185 960 40 780 40 620C40 565 70 520 125 520C175 520 215 550 245 610Z" fill="url(#body)" stroke="#2A2A2A" stroke-width="4"/>
+
+  <circle cx="315" cy="410" r="46" fill="#080808" stroke="#2A2A2A" stroke-width="4"/>
+  <circle cx="485" cy="410" r="46" fill="#080808" stroke="#2A2A2A" stroke-width="4"/>
+  <circle cx="315" cy="410" r="16" fill="#66D9FF" fill-opacity="0.9"/>
+  <circle cx="485" cy="410" r="16" fill="#66D9FF" fill-opacity="0.9"/>
+
+  <path d="M365 485C385 505 415 505 435 485" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="7" stroke-linecap="round"/>
+  <path d="M250 560C310 600 345 620 400 620C455 620 490 600 550 560" stroke="#66D9FF" stroke-opacity="0.6" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- Floating moon -->
+  <circle cx="640" cy="210" r="34" fill="#66D9FF" fill-opacity="0.14" stroke="#66D9FF" stroke-opacity="0.35" stroke-width="3"/>
+  <circle cx="655" cy="200" r="8" fill="#0B0B0B" fill-opacity="0.6"/>
+</svg>
+

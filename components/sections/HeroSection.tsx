@@ -30,12 +30,12 @@ export function HeroSection({
       const loadSettings = async () => {
         try {
           const settings = await getSettings()
-          if (settings.hero_video_url) {
-            setVideoUrl(settings.hero_video_url)
-          }
-          if (settings.hero_video_playback_id) {
-            setVideoPlaybackId(settings.hero_video_playback_id)
-          }
+          const heroVideoUrl = typeof settings.hero_video_url === 'string' ? settings.hero_video_url : null
+          const heroPlaybackId =
+            typeof settings.hero_video_playback_id === 'string' ? settings.hero_video_playback_id : null
+
+          if (heroVideoUrl) setVideoUrl(heroVideoUrl)
+          if (heroPlaybackId) setVideoPlaybackId(heroPlaybackId)
         } catch (error) {
           console.error('Ошибка загрузки настроек:', error)
         }
@@ -122,7 +122,7 @@ export function HeroSection({
                   initial={{ opacity: 0, x: 50 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.9, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="text-[#CCFF00]"
+                  className="text-[#ff2936]"
                 >
                   ПОДНИМАЕТ
                 </motion.span>
@@ -162,7 +162,7 @@ export function HeroSection({
               onClick={scrollToProjects}
               whileHover={{ x: 5 }}
               whileTap={{ scale: 0.98 }}
-              className="text-xl md:text-2xl font-medium text-[#FFFFFF] hover:text-[#CCFF00] transition-colors relative group"
+              className="text-xl md:text-2xl font-medium text-[#FFFFFF] hover:text-[#ff2936] transition-colors relative group"
             >
               Смотреть работы
               <motion.span
@@ -176,7 +176,7 @@ export function HeroSection({
               onClick={handleBookClick}
               whileHover={{ x: 5 }}
               whileTap={{ scale: 0.98 }}
-              className="text-xl md:text-2xl font-medium text-[#FFFFFF] hover:text-[#CCFF00] transition-colors relative group"
+              className="text-xl md:text-2xl font-medium text-[#FFFFFF] hover:text-[#ff2936] transition-colors relative group"
             >
               Обсудить проект
               <motion.span

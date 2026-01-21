@@ -11,6 +11,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models.project import Project
 from app.models.course import Course
+from app.models.blog_post import BlogPost
 
 router = APIRouter(prefix="/api/sitemap", tags=["sitemap"])
 
@@ -42,3 +43,16 @@ async def get_courses_for_sitemap(db: AsyncSession = Depends(get_db)):
     courses = result.all()
     
     return [SitemapItem(slug=slug, updated_at=updated_at) for slug, updated_at in courses]
+
+
+@router.get("/blog", response_model=List[SitemapItem])
+async def get_blog_for_sitemap(db: AsyncSession = Depends(get_db)):
+    """Получить список опубликованных статей для sitemap"""
+    result = await db.execute(
+        select(BlogPost.slug, BlogPost.updated_at)
+        .where(BlogPost.is_published.is_(True))
+        .order_by(BlogPost.updated_at.desc())
+    )
+    posts = result.all()
+
+    return [SitemapItem(slug=slug, updated_at=updated_at) for slug, updated_at in posts]

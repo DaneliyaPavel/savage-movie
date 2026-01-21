@@ -39,11 +39,26 @@ export default function SettingsPage() {
       try {
         const settings = await getSettings()
         form.reset({
-          hero_video_url: settings.hero_video_url || '',
-          hero_video_playback_id: settings.hero_video_playback_id || '',
-          stats_projects: String(settings.stats_projects || '100'),
-          stats_clients: String(settings.stats_clients || '50'),
-          stats_years: String(settings.stats_years || '15'),
+          hero_video_url: typeof settings.hero_video_url === 'string' ? settings.hero_video_url : '',
+          hero_video_playback_id:
+            typeof settings.hero_video_playback_id === 'string'
+              ? settings.hero_video_playback_id
+              : '',
+          stats_projects: String(
+            typeof settings.stats_projects === 'number' || typeof settings.stats_projects === 'string'
+              ? settings.stats_projects
+              : '100'
+          ),
+          stats_clients: String(
+            typeof settings.stats_clients === 'number' || typeof settings.stats_clients === 'string'
+              ? settings.stats_clients
+              : '50'
+          ),
+          stats_years: String(
+            typeof settings.stats_years === 'number' || typeof settings.stats_years === 'string'
+              ? settings.stats_years
+              : '15'
+          ),
         })
       } catch (error) {
         console.error('Ошибка загрузки настроек:', error)
@@ -52,7 +67,7 @@ export default function SettingsPage() {
       }
     }
     load()
-  }, [])
+  }, [form])
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true)
@@ -65,7 +80,7 @@ export default function SettingsPage() {
         stats_years: values.stats_years,
       })
       alert('Настройки сохранены!')
-    } catch (error) {
+    } catch {
       alert('Ошибка сохранения настроек')
     } finally {
       setIsSubmitting(false)

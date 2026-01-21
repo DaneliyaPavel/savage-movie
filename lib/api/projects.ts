@@ -16,23 +16,71 @@ export interface Project {
   role: string | null
   tools: string[] | null
   behind_scenes: string[] | null
+  is_featured: boolean
+  mux_playback_id: string | null
+  title_ru: string | null
+  title_en: string | null
+  description_ru: string | null
+  description_en: string | null
+  thumbnail_url: string | null
+  cover_image_url: string | null
+  year: number | null
+  display_order: number | null
   created_at: string
   updated_at: string
 }
 
 /**
- * Получить список проектов
+ * Получить список проектов (client-side)
  */
-export async function getProjects(category?: string): Promise<Project[]> {
-  const params = category && category !== 'all' ? `?category=${category}` : ''
-  return apiGet<Project[]>(`/api/projects${params}`)
+export async function getProjects(category?: string, featured?: boolean): Promise<Project[]> {
+  const params = new URLSearchParams()
+  if (category && category !== 'all') {
+    params.append('category', category)
+  }
+  if (featured !== undefined) {
+    params.append('featured', featured.toString())
+  }
+  const queryString = params.toString()
+  return apiGet<Project[]>(`/api/projects${queryString ? `?${queryString}` : ''}`)
 }
 
 /**
- * Получить проект по slug
+ * Получить список проектов (server-side)
+ */
+export async function getProjectsServer(
+  category?: string, 
+  featured?: boolean,
+  cookies?: { get: (name: string) => { value: string } | undefined }
+): Promise<Project[]> {
+  const { apiGet: apiGetServer } = await import('./server')
+  const params = new URLSearchParams()
+  if (category && category !== 'all') {
+    params.append('category', category)
+  }
+  if (featured !== undefined) {
+    params.append('featured', featured.toString())
+  }
+  const queryString = params.toString()
+  return apiGetServer<Project[]>(`/api/projects${queryString ? `?${queryString}` : ''}`, cookies)
+}
+
+/**
+ * Получить проект по slug (client-side)
  */
 export async function getProjectBySlug(slug: string): Promise<Project> {
   return apiGet<Project>(`/api/projects/${slug}`)
+}
+
+/**
+ * Получить проект по slug (server-side)
+ */
+export async function getProjectBySlugServer(
+  slug: string,
+  cookies?: { get: (name: string) => { value: string } | undefined }
+): Promise<Project> {
+  const { apiGet: apiGetServer } = await import('./server')
+  return apiGetServer<Project>(`/api/projects/${slug}`, cookies)
 }
 
 export interface ProjectCreate {
@@ -47,6 +95,15 @@ export interface ProjectCreate {
   role?: string | null
   tools?: string[] | null
   behind_scenes?: string[] | null
+  is_featured?: boolean
+  mux_playback_id?: string | null
+  title_ru?: string | null
+  title_en?: string | null
+  description_ru?: string | null
+  description_en?: string | null
+  thumbnail_url?: string | null
+  cover_image_url?: string | null
+  year?: number | null
 }
 
 export interface ProjectUpdate {
@@ -61,6 +118,23 @@ export interface ProjectUpdate {
   role?: string | null
   tools?: string[] | null
   behind_scenes?: string[] | null
+  is_featured?: boolean
+  mux_playback_id?: string | null
+  title_ru?: string | null
+  title_en?: string | null
+  description_ru?: string | null
+  description_en?: string | null
+  thumbnail_url?: string | null
+  cover_image_url?: string | null
+  year?: number | null
+  display_order?: number | null
+}
+
+/**
+ * Обновить порядок проектов
+ */
+export async function updateProjectsOrder(updates: Array<{ id: string; display_order: number }>): Promise<void> {
+  return apiPost<void>('/api/projects/reorder', { updates })
 }
 
 /**

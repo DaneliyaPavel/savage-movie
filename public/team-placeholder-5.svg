@@ -1,0 +1,37 @@
+<svg width="800" height="1000" viewBox="0 0 800 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="800" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B0B0B"/>
+      <stop offset="1" stop-color="#111111"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(410 430) rotate(90) scale(430 430)">
+      <stop stop-color="#FFD166" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#FFD166" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="body" x1="190" y1="210" x2="610" y2="860" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A1A1A"/>
+      <stop offset="1" stop-color="#0E0E0E"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg)"/>
+  <rect width="800" height="1000" fill="url(#glow)"/>
+
+  <!-- Little bird/creature -->
+  <path d="M400 180C545 180 660 295 660 440C660 585 545 690 400 690C255 690 140 585 140 440C140 295 255 180 400 180Z" fill="url(#body)" stroke="#2A2A2A" stroke-width="4"/>
+  <path d="M300 355C325 310 360 285 400 285C440 285 475 310 500 355" stroke="#FFD166" stroke-opacity="0.55" stroke-width="7" stroke-linecap="round"/>
+
+  <circle cx="315" cy="430" r="44" fill="#080808" stroke="#2A2A2A" stroke-width="4"/>
+  <circle cx="485" cy="430" r="44" fill="#080808" stroke="#2A2A2A" stroke-width="4"/>
+  <circle cx="315" cy="430" r="14" fill="#FFD166" fill-opacity="0.9"/>
+  <circle cx="485" cy="430" r="14" fill="#FFD166" fill-opacity="0.9"/>
+
+  <!-- beak -->
+  <path d="M385 505L400 535L415 505" fill="#FFD166" fill-opacity="0.35" stroke="#FFD166" stroke-opacity="0.55" stroke-width="4" stroke-linejoin="round"/>
+
+  <path d="M240 640C300 750 350 910 400 910C450 910 500 750 560 640C595 575 635 545 685 545C740 545 770 590 770 640C770 805 620 980 400 980C180 980 30 805 30 640C30 590 60 545 115 545C165 545 205 575 240 640Z" fill="url(#body)" stroke="#2A2A2A" stroke-width="4"/>
+
+  <!-- wing doodles -->
+  <path d="M235 540C180 575 165 640 210 685" stroke="#FFD166" stroke-opacity="0.35" stroke-width="6" stroke-linecap="round"/>
+  <path d="M565 540C620 575 635 640 590 685" stroke="#FFD166" stroke-opacity="0.35" stroke-width="6" stroke-linecap="round"/>
+</svg>
+

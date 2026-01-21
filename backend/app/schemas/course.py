@@ -58,6 +58,10 @@ class CourseBase(BaseModel):
     category: str
     requirements: Optional[List[str]] = None
     what_you_learn: Optional[List[str]] = None
+    level: Optional[str] = None  # 'beginner', 'intermediate', 'advanced'
+    certificate: Optional[str] = None  # 'yes', 'no'
+    format: Optional[str] = None  # 'online', 'offline', 'hybrid', 'online+live'
+    display_order: Optional[int] = None
 
 
 class CourseCreate(CourseBase):
@@ -76,6 +80,10 @@ class CourseUpdate(BaseModel):
     category: Optional[str] = None
     requirements: Optional[List[str]] = None
     what_you_learn: Optional[List[str]] = None
+    level: Optional[str] = None
+    certificate: Optional[str] = None
+    format: Optional[str] = None
+    display_order: Optional[int] = None
     instructor_id: Optional[UUID] = None
 
 

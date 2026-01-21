@@ -7,6 +7,7 @@ from app.models.contact import ContactSubmission
 from app.models.client import Client
 from app.models.testimonial import Testimonial
 from app.models.setting import Setting
+from app.models.blog_post import BlogPost
 
 __all__ = [
     "User",
@@ -20,4 +21,5 @@ __all__ = [
     "Client",
     "Testimonial",
     "Setting",
+    "BlogPost",
 ]

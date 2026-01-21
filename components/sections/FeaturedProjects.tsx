@@ -8,7 +8,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { WorkCard } from '@/components/features/WorkCard'
-import { SectionTitle } from '@/components/ui/section-title'
+import { EditorialCorrection } from '@/components/ui/editorial-correction'
 import type { Project } from '@/lib/api/projects'
 
 interface FeaturedProjectsProps {
@@ -31,14 +31,14 @@ export function FeaturedProjects({ projects }: FeaturedProjectsProps) {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="mb-16 md:mb-24 editorial-spacing"
         >
-          <SectionTitle mark="plus" markPosition="top-left" size="xl" className="text-[#FFFFFF] mb-8">
-            Избранные проекты
-          </SectionTitle>
+          <div className="mb-8">
+            <EditorialCorrection wrong="Избранные проекты" correct="Лучшие работы" size="xl" delay={0.2} />
+          </div>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
             className="text-editorial text-[#FFFFFF]/60 font-light max-w-3xl"
           >
             Посмотрите нашу работу и убедитесь в качестве
@@ -70,7 +70,7 @@ export function FeaturedProjects({ projects }: FeaturedProjectsProps) {
                 <span className="text-lg md:text-xl font-medium text-[#FFFFFF]/60 group-hover:text-[#FFFFFF] transition-colors">
                   Смотреть все проекты
                 </span>
-                <ArrowRight className="w-5 h-5 text-[#FFFFFF]/40 group-hover:text-[#CCFF00] transition-colors" />
+                <ArrowRight className="w-5 h-5 text-[#FFFFFF]/40 group-hover:text-[#ff2936] transition-colors" />
               </motion.div>
             </Link>
           </motion.div>

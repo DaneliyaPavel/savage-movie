@@ -15,11 +15,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Загружаем проекты и курсы для sitemap из API
   let projects: SitemapItem[] = []
   let courses: SitemapItem[] = []
+  let blogPosts: SitemapItem[] = []
   
   try {
-    [projects, courses] = await Promise.all([
+    [projects, courses, blogPosts] = await Promise.all([
       apiGet<SitemapItem[]>('/api/sitemap/projects'),
       apiGet<SitemapItem[]>('/api/sitemap/courses'),
+      apiGet<SitemapItem[]>('/api/sitemap/blog'),
     ])
   } catch (error) {
     console.warn('Ошибка загрузки данных для sitemap:', error)
@@ -84,5 +86,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }))
 
-  return [...staticPages, ...projectPages, ...coursePages]
+  const blogPages: MetadataRoute.Sitemap = blogPosts.map((post) => ({
+    url: `${baseUrl}/blog/${post.slug}`,
+    lastModified: new Date(post.updated_at),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }))
+
+  return [...staticPages, ...projectPages, ...coursePages, ...blogPages]
 }

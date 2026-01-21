@@ -4,7 +4,6 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Slider } from '@/components/ui/slider'
@@ -22,6 +21,7 @@ import * as z from 'zod'
 import { Textarea } from '@/components/ui/textarea'
 import { CheckCircle2, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { logger } from '@/lib/utils/logger'
 
 const formSchema = z.object({
   name: z.string().min(2, 'Имя должно содержать минимум 2 символа'),
@@ -38,7 +38,7 @@ export function CTASection() {
   const [isSuccess, setIsSuccess] = useState(false)
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema) as any,
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       email: '',
@@ -74,7 +74,7 @@ export function CTASection() {
         setIsSuccess(false)
       }, 5000)
     } catch (error) {
-      console.error('Ошибка отправки формы:', error)
+      logger.error('Ошибка отправки формы', error, { component: 'CTASection' })
       // Здесь можно добавить toast уведомление об ошибке
     } finally {
       setIsSubmitting(false)
@@ -279,7 +279,7 @@ export function CTASection() {
                           <FormLabel className="text-base font-medium mb-4 flex items-center justify-between">
                             <span>Бюджет проекта</span>
                             <span className="text-2xl font-heading font-bold text-primary">
-                              {field.value[0].toLocaleString('ru-RU')} ₽
+                              {(field.value?.[0] ?? 0).toLocaleString('ru-RU')} ₽
                             </span>
                           </FormLabel>
                           <FormControl>

@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 import { VideoPlayer } from './VideoPlayer'
 import { FullScreenVideoPlayer } from './FullScreenVideoPlayer'
 import { Maximize2 } from 'lucide-react'
@@ -21,8 +22,7 @@ interface VideoStageProps {
 const getPlaybackId = (url: string | null): string | null => {
   if (!url) return null
   const muxMatch = url.match(/mux\.com\/([^/?]+)/)
-  if (muxMatch) return muxMatch[1]
-  return null
+  return muxMatch?.[1] ?? null
 }
 
 export function VideoStage({ videoUrl, playbackId, poster, title }: VideoStageProps) {
@@ -34,17 +34,27 @@ export function VideoStage({ videoUrl, playbackId, poster, title }: VideoStagePr
 
   // Сбрасываем состояние при смене видео
   useEffect(() => {
-    setIsVideoLoaded(false)
-    setShowPoster(true)
+    const resetTimer = window.setTimeout(() => {
+      setIsVideoLoaded(false)
+      setShowPoster(true)
+    }, 0)
     
     // После небольшой задержки показываем видео
+    let showVideoTimer: number | undefined
+    let hidePosterTimer: number | undefined
+
     if (resolvedPlaybackId || videoUrl) {
-      const timer = setTimeout(() => {
+      showVideoTimer = window.setTimeout(() => {
         setIsVideoLoaded(true)
         // Плавное переключение с poster на video
-        setTimeout(() => setShowPoster(false), 300)
+        hidePosterTimer = window.setTimeout(() => setShowPoster(false), 300)
       }, 100)
-      return () => clearTimeout(timer)
+    }
+
+    return () => {
+      window.clearTimeout(resetTimer)
+      if (showVideoTimer !== undefined) window.clearTimeout(showVideoTimer)
+      if (hidePosterTimer !== undefined) window.clearTimeout(hidePosterTimer)
     }
   }, [resolvedPlaybackId, videoUrl, poster])
 
@@ -67,10 +77,12 @@ export function VideoStage({ videoUrl, playbackId, poster, title }: VideoStagePr
               transition={{ duration: 0.5 }}
               className="absolute inset-0"
             >
-              <img
+              <Image
                 src={poster}
                 alt={title || 'Video poster'}
-                className="w-full h-full object-cover"
+                fill
+                sizes="100vw"
+                className="object-cover"
               />
             </motion.div>
           )}
@@ -119,7 +131,7 @@ export function VideoStage({ videoUrl, playbackId, poster, title }: VideoStagePr
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleFullscreen}
-            className="absolute bottom-4 right-4 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-[#000000]/80 hover:bg-[#000000] border border-[#FFFFFF]/20 hover:border-[#CCFF00] text-[#FFFFFF] hover:text-[#CCFF00] transition-all opacity-0 group-hover:opacity-100"
+            className="absolute bottom-4 right-4 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-[#000000]/80 hover:bg-[#000000] border border-[#FFFFFF]/20 hover:border-[#ff2936] text-[#FFFFFF] hover:text-[#ff2936] transition-all opacity-0 group-hover:opacity-100"
             aria-label="Полноэкранный режим"
           >
             <Maximize2 className="w-5 h-5 md:w-6 md:h-6" />

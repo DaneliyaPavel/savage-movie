@@ -5,45 +5,49 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Film, GraduationCap, Calendar, Mail, Users, MessageSquare, Settings } from 'lucide-react'
+import { Film, GraduationCap, Settings, Info, PlusCircle, FileText } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { getProjects } from '@/lib/api/projects'
 import { getCourses } from '@/lib/api/courses'
-import { getClients } from '@/lib/api/clients'
-import { getTestimonials } from '@/lib/api/testimonials'
+import { getSettings, type JsonValue } from '@/lib/api/settings'
+import { getBlogPosts } from '@/lib/api/blog'
+import type { LucideIcon } from 'lucide-react'
+
+function isTeamArray(v: JsonValue | undefined): v is JsonValue[] {
+  return Array.isArray(v)
+}
 
 export default function AdminPage() {
-  const [stats, setStats] = useState([
-    { title: 'Проекты', value: 0, icon: Film, href: '/admin/projects' },
-    { title: 'Курсы', value: 0, icon: GraduationCap, href: '/admin/courses' },
-    { title: 'Клиенты', value: 0, icon: Users, href: '/admin/clients' },
-    { title: 'Отзывы', value: 0, icon: MessageSquare, href: '/admin/testimonials' },
-    { title: 'Бронирования', value: 0, icon: Calendar, href: '/admin/bookings' },
-    { title: 'Заявки', value: 0, icon: Mail, href: '/admin/submissions' },
-  ])
+  const [counts, setCounts] = useState({
+    projects: 0,
+    courses: 0,
+    blog: 0,
+  })
+  const [teamCount, setTeamCount] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const [projects, courses, clients, testimonials] = await Promise.all([
+        const [projects, courses, blogPosts, settings] = await Promise.all([
           getProjects().catch(() => []),
           getCourses().catch(() => []),
-          getClients().catch(() => []),
-          getTestimonials().catch(() => []),
+          getBlogPosts().catch(() => []),
+          getSettings().catch(() => ({})),
         ])
-        setStats([
-          { title: 'Проекты', value: projects.length, icon: Film, href: '/admin/projects' },
-          { title: 'Курсы', value: courses.length, icon: GraduationCap, href: '/admin/courses' },
-          { title: 'Клиенты', value: clients.length, icon: Users, href: '/admin/clients' },
-          { title: 'Отзывы', value: testimonials.length, icon: MessageSquare, href: '/admin/testimonials' },
-          { title: 'Бронирования', value: 0, icon: Calendar, href: '/admin/bookings' },
-          { title: 'Заявки', value: 0, icon: Mail, href: '/admin/submissions' },
-        ])
+        setCounts({
+          projects: projects.length,
+          courses: courses.length,
+          blog: blogPosts.length,
+        })
+
+        const rawTeam = (settings as { about_team?: JsonValue }).about_team
+        setTeamCount(isTeamArray(rawTeam) ? rawTeam.length : 0)
       } catch (error) {
         console.error('Ошибка загрузки статистики:', error)
+        setTeamCount(0)
       } finally {
         setLoading(false)
       }
@@ -54,6 +58,71 @@ export default function AdminPage() {
   if (loading) {
     return <div className="min-h-screen py-12 px-4 flex items-center justify-center">Загрузка...</div>
   }
+
+  const sectionGroups: Array<{
+    title: string
+    description: string
+    items: Array<{
+      title: string
+      description: string
+      value?: number | string | null
+      href: string
+      icon: LucideIcon
+    }>
+  }> = [
+    {
+      title: 'Контент',
+      description: 'Основные разделы сайта, которые видит посетитель.',
+      items: [
+        {
+          title: 'Проекты',
+          description: 'Портфолио и кейсы на странице проектов.',
+          value: counts.projects,
+          href: '/admin/projects',
+          icon: Film,
+        },
+        {
+          title: 'Курсы',
+          description: 'Обучающие программы и карточки курсов.',
+          value: counts.courses,
+          href: '/admin/courses',
+          icon: GraduationCap,
+        },
+      ],
+    },
+    {
+      title: 'Блоки сайта',
+      description: 'Дополнительные секции, которые поддерживают доверие.',
+      items: [
+        {
+          title: 'Команда',
+          description: 'Раздел «О нас» и список команды.',
+          value: teamCount ?? '-',
+          href: '/admin/about',
+          icon: Info,
+        },
+        {
+          title: 'Блог',
+          description: 'Публикации и статьи для блога.',
+          value: counts.blog,
+          href: '/admin/blog',
+          icon: FileText,
+        },
+      ],
+    },
+    {
+      title: 'Настройки сайта',
+      description: 'Контакты, статистика и базовые параметры.',
+      items: [
+        {
+          title: 'Настройки',
+          description: 'Контакты, соцсети, цифры и тексты.',
+          href: '/admin/settings',
+          icon: Settings,
+        },
+      ],
+    },
+  ]
 
   return (
     <div className="min-h-screen py-12 px-4">
@@ -68,40 +137,39 @@ export default function AdminPage() {
           </p>
         </div>
 
-        {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {stats.map((stat) => {
-            const Icon = stat.icon
-            return (
-              <Link key={stat.title} href={stat.href}>
-                <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      {stat.title}
-                    </CardTitle>
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stat.value}</div>
-                  </CardContent>
-                </Card>
-              </Link>
-            )
-          })}
-          <Link href="/admin/settings">
-            <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Настройки
-                </CardTitle>
-                <Settings className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">-</div>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
+        {sectionGroups.map((group) => (
+          <div key={group.title} className="mb-10">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold">{group.title}</h2>
+              <p className="text-sm text-muted-foreground">{group.description}</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {group.items.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Link key={item.title} href={item.href}>
+                    <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                          {item.title}
+                        </CardTitle>
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          {item.value ?? '—'}
+                        </div>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          {item.description}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        ))}
 
         {/* Quick Actions */}
         <Card>
@@ -114,19 +182,28 @@ export default function AdminPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <Link href="/admin/projects/new">
-                <Button className="w-full">Добавить проект</Button>
+                <Button className="w-full">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Добавить проект
+                </Button>
               </Link>
               <Link href="/admin/courses/new">
-                <Button className="w-full">Добавить курс</Button>
+                <Button className="w-full">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Добавить курс
+                </Button>
               </Link>
-              <Link href="/admin/clients/new">
-                <Button className="w-full">Добавить клиента</Button>
-              </Link>
-              <Link href="/admin/testimonials/new">
-                <Button className="w-full">Добавить отзыв</Button>
+              <Link href="/admin/blog/new">
+                <Button className="w-full">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Добавить статью
+                </Button>
               </Link>
               <Link href="/admin/settings">
                 <Button className="w-full" variant="outline">Настройки сайта</Button>
+              </Link>
+              <Link href="/admin/about">
+                <Button className="w-full" variant="outline">О нас: команда</Button>
               </Link>
             </div>
           </CardContent>

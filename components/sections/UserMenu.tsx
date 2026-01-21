@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { User, LogOut, LayoutDashboard, Settings, ChevronDown } from 'lucide-react'
+import { LogOut, LayoutDashboard, Settings, ChevronDown } from 'lucide-react'
 import { logout } from '@/lib/api/auth'
 import type { User as UserType } from '@/lib/api/auth'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -56,7 +56,7 @@ export function UserMenu({ user }: UserMenuProps) {
         .join('')
         .toUpperCase()
         .slice(0, 2)
-    : user.email[0].toUpperCase()
+    : (user.email[0]?.toUpperCase() ?? '?')
 
   return (
     <div className="relative" ref={menuRef}>
