@@ -3,8 +3,11 @@
  */
 import { apiGet, apiPut } from './client'
 
+export type JsonPrimitive = string | number | boolean | null
+export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
+
 export interface Settings {
-  [key: string]: any
+  [key: string]: JsonValue | undefined
 }
 
 export interface SettingsResponse {
@@ -26,8 +29,10 @@ export async function getSettings(): Promise<Settings> {
 /**
  * Получить конкретную настройку по ключу
  */
-export async function getSetting(key: string): Promise<any> {
-  const response = await apiGet<{ key: string; value: any }>(`/api/settings/${key}`)
+export async function getSetting(key: string): Promise<JsonValue | null> {
+  const response = await apiGet<{ key: string; value: JsonValue | null }>(
+    `/api/settings/${key}`
+  )
   return response.value
 }
 

@@ -3,7 +3,7 @@ API роуты для курсов
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from typing import Optional, List
 from uuid import UUID
@@ -32,7 +32,12 @@ async def get_courses(
     if category and category != "all":
         query = query.where(Course.category == category)
     
-    query = query.order_by(Course.created_at.desc()).limit(limit).offset(offset)
+    # Сортируем по display_order (если есть), затем по created_at
+    # NULL значения идут первыми (0), затем по возрастанию display_order
+    query = query.order_by(
+        func.coalesce(Course.display_order, 0).asc(),
+        Course.created_at.desc()
+    ).limit(limit).offset(offset)
     
     result = await db.execute(query)
     courses = result.scalars().all()
@@ -173,3 +178,33 @@ async def update_course(
     updated_course = result.scalar_one()
     
     return updated_course
+
+
+@router.post("/reorder", status_code=status.HTTP_200_OK)
+async def reorder_courses(
+    updates: dict,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Обновить порядок курсов (только для админов)"""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Только администраторы могут изменять порядок курсов"
+        )
+    
+    updates_list = updates.get("updates", [])
+    
+    for update in updates_list:
+        course_id = UUID(update["id"])
+        display_order = update["display_order"]
+        
+        result = await db.execute(select(Course).where(Course.id == course_id))
+        course = result.scalar_one_or_none()
+        
+        if course:
+            course.display_order = display_order
+    
+    await db.commit()
+    
+    return {"message": "Порядок курсов обновлен"}

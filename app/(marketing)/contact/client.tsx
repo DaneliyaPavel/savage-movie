@@ -7,7 +7,8 @@ import { ContactForm } from '@/components/sections/ContactForm'
 import { Mail, Phone, MessageCircle, Instagram, Youtube } from 'lucide-react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { SectionTitle } from '@/components/ui/section-title'
+import { EditorialCorrection } from '@/components/ui/editorial-correction'
+import { HoverNote } from '@/components/ui/hover-note'
 
 export function ContactPageClient() {
   return (
@@ -20,9 +21,9 @@ export function ContactPageClient() {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="mb-20 md:mb-32 editorial-spacing"
         >
-          <SectionTitle size="xl" className="text-[#FFFFFF] mb-8">
-            Контакты
-          </SectionTitle>
+          <div className="mb-8">
+            <EditorialCorrection wrong="Контакты" correct="Давайте обсудим" size="xl" delay={0.2} />
+          </div>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -42,9 +43,11 @@ export function ContactPageClient() {
             viewport={{ once: true }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
-            <h2 className="font-heading font-bold text-3xl md:text-4xl mb-12 text-[#FFFFFF]">
-              Контактная информация
-            </h2>
+            <HoverNote text="trusted by" position="top">
+              <h2 className="font-heading font-bold text-3xl md:text-4xl mb-12 text-[#FFFFFF]">
+                Контактная информация
+              </h2>
+            </HoverNote>
             <div className="space-y-8">
               <motion.a
                 href="mailto:savage.movie@yandex.ru"
@@ -56,11 +59,11 @@ export function ContactPageClient() {
                 className="flex items-center gap-4 group"
               >
                 <div className="w-12 h-12 flex items-center justify-center border border-[#1A1A1A] group-hover:border-[#FFFFFF] transition-colors">
-                  <Mail className="w-5 h-5 text-[#FFFFFF]/60 group-hover:text-[#CCFF00] transition-colors" />
+                  <Mail className="w-5 h-5 text-[#FFFFFF]/60 group-hover:text-[#ff2936] transition-colors" />
                 </div>
                 <div>
                   <p className="text-xs md:text-sm text-[#FFFFFF]/40 mb-1 uppercase tracking-wider">Email</p>
-                  <p className="text-base md:text-lg font-medium text-[#FFFFFF] group-hover:text-[#CCFF00] transition-colors">
+                  <p className="text-base md:text-lg font-medium text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">
                     savage.movie@yandex.ru
                   </p>
                 </div>
@@ -75,11 +78,11 @@ export function ContactPageClient() {
                 className="flex items-center gap-4 group"
               >
                 <div className="w-12 h-12 flex items-center justify-center border border-[#1A1A1A] group-hover:border-[#FFFFFF] transition-colors">
-                  <Phone className="w-5 h-5 text-[#FFFFFF]/60 group-hover:text-[#CCFF00] transition-colors" />
+                  <Phone className="w-5 h-5 text-[#FFFFFF]/60 group-hover:text-[#ff2936] transition-colors" />
                 </div>
                 <div>
                   <p className="text-xs md:text-sm text-[#FFFFFF]/40 mb-1 uppercase tracking-wider">Телефон</p>
-                  <p className="text-base md:text-lg font-medium text-[#FFFFFF] group-hover:text-[#CCFF00] transition-colors">
+                  <p className="text-base md:text-lg font-medium text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">
                     +7 921 402-18-39
                   </p>
                 </div>
@@ -119,9 +122,9 @@ export function ContactPageClient() {
                       className="flex items-center gap-4 group"
                     >
                       <div className="w-12 h-12 flex items-center justify-center border border-[#1A1A1A] group-hover:border-[#FFFFFF] transition-colors">
-                        <Icon className="w-5 h-5 text-[#FFFFFF]/60 group-hover:text-[#CCFF00] transition-colors" />
+                        <Icon className="w-5 h-5 text-[#FFFFFF]/60 group-hover:text-[#ff2936] transition-colors" />
                       </div>
-                      <span className="text-base md:text-lg font-medium text-[#FFFFFF] group-hover:text-[#CCFF00] transition-colors">
+                      <span className="text-base md:text-lg font-medium text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">
                         {social.label}
                       </span>
                     </Link>

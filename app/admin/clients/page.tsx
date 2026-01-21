@@ -36,7 +36,7 @@ export default function ClientsPage() {
       setClients(clients.filter(c => c.id !== clientToDelete.id))
       setDeleteDialogOpen(false)
       setClientToDelete(null)
-    } catch (error) {
+    } catch {
       alert('Ошибка удаления клиента')
     }
   }

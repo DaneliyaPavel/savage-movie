@@ -2,7 +2,7 @@
  * Детальная страница проекта в премиум стиле Freshman.tv
  */
 import { notFound } from 'next/navigation'
-import { getProjectBySlug, getProjects } from '@/lib/api/projects'
+import { getProjectBySlugServer, getProjectsServer } from '@/lib/api/projects'
 import { ProjectDetailClient } from './client'
 
 export default async function ProjectDetailPage({
@@ -14,7 +14,7 @@ export default async function ProjectDetailPage({
   let project = null
   
   try {
-    project = await getProjectBySlug(slug)
+    project = await getProjectBySlugServer(slug)
   } catch (error) {
     console.warn('Ошибка загрузки проекта:', error)
   }
@@ -24,17 +24,17 @@ export default async function ProjectDetailPage({
   }
 
   // Загружаем все проекты для навигации к следующему
-  let allProjects = []
+  let allProjects: Awaited<ReturnType<typeof getProjectsServer>> = []
   try {
-    allProjects = await getProjects()
+    allProjects = await getProjectsServer()
   } catch (error) {
     console.warn('Ошибка загрузки всех проектов:', error)
   }
 
   const currentIndex = allProjects.findIndex(p => p.id === project.id)
   const nextProject = currentIndex >= 0 && currentIndex < allProjects.length - 1
-    ? allProjects[currentIndex + 1]
-    : allProjects[0] || null
+    ? (allProjects[currentIndex + 1] ?? null)
+    : (allProjects[0] ?? null)
 
   return <ProjectDetailClient project={project} nextProject={nextProject} />
 }

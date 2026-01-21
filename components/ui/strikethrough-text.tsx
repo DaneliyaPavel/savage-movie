@@ -37,7 +37,7 @@ export function StrikethroughText({
   onHover = false,
 }: StrikethroughTextProps) {
   const [isHovered, setIsHovered] = useState(false)
-  const [shouldAnimate, setShouldAnimate] = useState(false)
+  const [scrollTriggered, setScrollTriggered] = useState(false)
   const textRef = useRef<HTMLSpanElement>(null)
   const pathLength = useMotionValue(0)
   const springPathLength = useSpring(pathLength, {
@@ -66,27 +66,24 @@ export function StrikethroughText({
   }
 
   useEffect(() => {
-    if (!textRef.current || !animate) return
+    if (!textRef.current || !animate || onHover) return
 
-    // Триггер анимации при hover или scroll
-    if (onHover) {
-      setShouldAnimate(isHovered)
-    } else {
-      // Intersection Observer для триггера при скролле
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              setShouldAnimate(true)
-            }
-          })
-        },
-        { threshold: 0.5 }
-      )
-      observer.observe(textRef.current)
-      return () => observer.disconnect()
-    }
-  }, [animate, onHover, isHovered])
+    // Intersection Observer для триггера при скролле
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setScrollTriggered(true)
+          }
+        })
+      },
+      { threshold: 0.5 }
+    )
+    observer.observe(textRef.current)
+    return () => observer.disconnect()
+  }, [animate, onHover])
+
+  const shouldAnimate = onHover ? isHovered : scrollTriggered
 
   useEffect(() => {
     if (shouldAnimate) {
@@ -100,10 +97,13 @@ export function StrikethroughText({
   const [pathWidth, setPathWidth] = useState(0)
 
   useEffect(() => {
-    if (textRef.current) {
-      const width = textRef.current.offsetWidth
-      setPathWidth(width || 100)
-    }
+    const rafId = requestAnimationFrame(() => {
+      if (textRef.current) {
+        const width = textRef.current.offsetWidth
+        setPathWidth(width || 100)
+      }
+    })
+    return () => cancelAnimationFrame(rafId)
   }, [mainText])
 
   const path = createPath(pathWidth || 100)

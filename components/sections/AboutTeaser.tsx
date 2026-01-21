@@ -8,6 +8,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { SectionTitle } from '@/components/ui/section-title'
+import { EditorialCorrection } from '@/components/ui/editorial-correction'
 
 interface AboutTeaserProps {
   onBookClick?: () => void
@@ -37,8 +38,8 @@ export function AboutTeaser({ onBookClick }: AboutTeaserProps) {
               О нас
             </SectionTitle>
             <p className="text-editorial text-[#FFFFFF]/80 font-light leading-relaxed mb-8">
-              Мы работаем так, чтобы люди смотрели, а вам всегда хотелось сказать: 
-              "Это именно то, что нужно!"
+              Мы работаем так, чтобы люди <EditorialCorrection wrong="смотрели" correct="зависали" size="sm" inline delay={0.5} />, а вам всегда хотелось сказать: 
+              &quot;Это именно то, что нужно!&quot;
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link href="/about">
@@ -50,14 +51,14 @@ export function AboutTeaser({ onBookClick }: AboutTeaserProps) {
                   <span className="text-lg font-medium text-[#FFFFFF]/60 group-hover:text-[#FFFFFF] transition-colors">
                     Узнать больше
                   </span>
-                  <ArrowRight className="w-5 h-5 text-[#FFFFFF]/40 group-hover:text-[#CCFF00] transition-colors" />
+                  <ArrowRight className="w-5 h-5 text-[#FFFFFF]/40 group-hover:text-[#ff2936] transition-colors" />
                 </motion.div>
               </Link>
               <motion.button
                 onClick={handleBookClick}
                 whileHover={{ x: 5 }}
                 whileTap={{ scale: 0.98 }}
-                className="text-lg font-medium text-[#FFFFFF] hover:text-[#CCFF00] transition-colors relative group inline-flex items-center"
+                className="text-lg font-medium text-[#FFFFFF] hover:text-[#ff2936] transition-colors relative group inline-flex items-center"
               >
                 Обсудить проект
                 <motion.span

@@ -6,10 +6,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X } from 'lucide-react'
-import Link from 'next/link'
 import { MenuRow } from './menu-row'
 import { GrainOverlay } from './grain-overlay'
+import { LanguageToggle } from './language-toggle'
 
 interface MenuItem {
   label: string
@@ -37,14 +36,16 @@ export function FullscreenMenuOverlay({
 
   // Блокируем скролл при открытом меню
   useEffect(() => {
+    let resetTimer: number | undefined
     if (isOpen) {
       document.body.style.overflow = 'hidden'
       // Сброс фокуса
-      setFocusedIndex(0)
+      resetTimer = window.setTimeout(() => setFocusedIndex(0), 0)
     } else {
       document.body.style.overflow = 'unset'
     }
     return () => {
+      if (resetTimer !== undefined) window.clearTimeout(resetTimer)
       document.body.style.overflow = 'unset'
     }
   }, [isOpen])
@@ -133,54 +134,7 @@ export function FullscreenMenuOverlay({
             {/* Top bar: Language toggle (кнопка закрыть теперь в Navigation) */}
             <div className="flex items-center justify-between px-6 md:px-8 lg:px-12 pt-6 md:pt-8 lg:pt-12 pb-4">
               {/* Language Toggle - Top Left */}
-              <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                whileHover={{ scale: 1.05, rotate: 2 }}
-                whileTap={{ scale: 0.95 }}
-                className="relative w-12 h-12 md:w-14 md:h-14 flex items-center justify-center group cursor-pointer"
-                aria-label="Переключить язык"
-              >
-                {/* Circle outline - animated draw */}
-                <motion.svg
-                  width="56"
-                  height="56"
-                  viewBox="0 0 56 56"
-                  className="absolute inset-0"
-                >
-                  <motion.circle
-                    cx="28"
-                    cy="28"
-                    r="26"
-                    stroke="#FFFFFF"
-                    strokeWidth="1"
-                    fill="none"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{ pathLength: 1, opacity: 0.4 }}
-                    transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                    whileHover={{ opacity: 0.6 }}
-                  />
-                  {/* Inner dashed circle on hover */}
-                  <motion.circle
-                    cx="28"
-                    cy="28"
-                    r="22"
-                    stroke="#CCFF00"
-                    strokeWidth="1"
-                    fill="none"
-                    strokeDasharray="3 3"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    whileHover={{ pathLength: 1, opacity: 0.6 }}
-                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                  />
-                </motion.svg>
-                
-                {/* Text */}
-                <span className="text-xs md:text-sm font-medium text-[#FFFFFF]/70 group-hover:text-[#CCFF00] transition-colors relative z-10">
-                  RU
-                </span>
-              </motion.button>
+              <LanguageToggle />
 
               {/* Правая сторона пустая - кнопка закрыть теперь в Navigation */}
               <div className="w-12 h-12 md:w-14 md:h-14" />

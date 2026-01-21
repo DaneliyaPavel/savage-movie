@@ -7,6 +7,7 @@
 import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import { VideoPlayer } from '@/components/features/VideoPlayer'
 import type { Client } from '@/lib/api/clients'
 
@@ -87,12 +88,16 @@ export function ClientsList({ clients }: ClientsListProps) {
                         <source src={client.video_url} type="video/mp4" />
                       </video>
                     ) : client.logo_url ? (
-                      <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
-                        <img
-                          src={client.logo_url}
-                          alt={client.name}
-                          className="max-w-full max-h-full object-contain"
-                        />
+                      <div className="relative w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+                        <div className="relative w-full h-full">
+                          <Image
+                            src={client.logo_url}
+                            alt={client.name}
+                            fill
+                            sizes="(min-width: 768px) 50vw, 100vw"
+                            className="object-contain"
+                          />
+                        </div>
                       </div>
                     ) : null}
                   </motion.div>

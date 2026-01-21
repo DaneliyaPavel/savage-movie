@@ -38,6 +38,11 @@ export function CourseEnrollmentButton({
         }),
       })
 
+      if (response.status === 401) {
+        router.push('/login')
+        return
+      }
+
       if (!response.ok) {
         throw new Error('Ошибка создания платежа')
       }

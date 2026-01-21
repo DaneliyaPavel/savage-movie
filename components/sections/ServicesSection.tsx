@@ -7,6 +7,7 @@
 import { motion } from 'framer-motion'
 import { SectionTitle } from '@/components/ui/section-title'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
+import { EditorialCorrection } from '@/components/ui/editorial-correction'
 
 const services = [
   { title: 'Коммерческий видеопродакшн', description: 'Рекламные ролики, брендовые фильмы, корпоративные видео' },
@@ -29,7 +30,7 @@ export function ServicesSection() {
           className="mb-16 md:mb-24 editorial-spacing"
         >
           <SectionTitle mark="arrow" markPosition="top-left" size="xl" className="text-[#FFFFFF] mb-8">
-            Услуги
+            <EditorialCorrection wrong="Услуги" correct="Возможности" size="lg" inline delay={0.3} />
           </SectionTitle>
           <motion.p
             initial={{ opacity: 0, y: 20 }}

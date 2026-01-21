@@ -19,10 +19,10 @@ const formSchema = z.object({
   company: z.string().optional(),
   project_type: z.string().optional(),
   text: z.string().optional(),
-  rating: z.number().min(1).max(5).default(5),
+  rating: z.number().int().min(1).max(5),
   video_url: z.string().url().optional().or(z.literal('')),
   video_playback_id: z.string().optional(),
-  order: z.number().default(0),
+  order: z.number().int().min(0),
 })
 
 export default function NewTestimonialPage() {
@@ -35,7 +35,7 @@ export default function NewTestimonialPage() {
     try {
       await createTestimonial({ ...values, video_url: values.video_url || null, video_playback_id: values.video_playback_id || null })
       router.push('/admin/testimonials')
-    } catch (error) {
+    } catch {
       alert('Ошибка создания отзыва')
     } finally {
       setIsSubmitting(false)

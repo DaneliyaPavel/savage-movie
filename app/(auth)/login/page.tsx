@@ -4,7 +4,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,7 +15,6 @@ import { Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
 export default function LoginPage() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -40,14 +39,37 @@ export default function LoginPage() {
     try {
       await login({ email, password })
       
-      // Проверяем, есть ли redirect параметр
-      const searchParams = new URLSearchParams(window.location.search)
-      const redirectTo = searchParams.get('redirect') || '/dashboard'
+      // Проверяем, что токены сохранены
+      if (typeof window !== 'undefined') {
+        const savedToken = localStorage.getItem('access_token')
+        if (!savedToken) {
+          throw new Error('Токен не был сохранен. Попробуйте снова.')
+        }
+      }
       
-      router.push(redirectTo)
-      router.refresh()
-    } catch (err: any) {
-      setError(err.message || 'Ошибка входа')
+      // Проверяем, есть ли redirect параметр
+      const redirectTo = searchParams.get('redirect') || '/admin'
+      
+      // Используем window.location для полного перезапуска страницы
+      window.location.href = redirectTo
+    } catch (err: unknown) {
+      // Извлекаем сообщение об ошибке из ответа API
+      let errorMessage = 'Ошибка входа'
+      if (err instanceof Error) {
+        errorMessage = err.message
+      } else if (typeof err === 'string') {
+        errorMessage = err
+      } else if (typeof err === 'object' && err) {
+        const anyErr = err as { response?: { data?: { detail?: string } }; data?: { detail?: string }; message?: string }
+        if (anyErr.response?.data?.detail) {
+          errorMessage = anyErr.response.data.detail
+        } else if (anyErr.data?.detail) {
+          errorMessage = anyErr.data.detail
+        } else if (anyErr.message) {
+          errorMessage = anyErr.message
+        }
+      }
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }

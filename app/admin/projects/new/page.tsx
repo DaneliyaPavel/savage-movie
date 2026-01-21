@@ -42,13 +42,23 @@ const formSchema = z.object({
   video_url: z.string().url('Некорректный URL').optional().or(z.literal('')),
   duration: z.number().optional(),
   role: z.string().optional(),
+  is_featured: z.boolean().optional(),
+  mux_playback_id: z.string().optional(),
+  title_ru: z.string().optional(),
+  title_en: z.string().optional(),
+  description_ru: z.string().optional(),
+  description_en: z.string().optional(),
+  thumbnail_url: z.string().url('Некорректный URL').optional().or(z.literal('')),
+  cover_image_url: z.string().url('Некорректный URL').optional().or(z.literal('')),
+  year: z.number().optional(),
 })
 
 export default function NewProjectPage() {
   const router = useRouter()
-  const [images, setImages] = useState<string[]>([])
+  const [images, setImages] = useState<string[]>([]) // Первые 5 для thumbnail strip, остальные для галереи
   const [tools, setTools] = useState<string[]>([])
-  const [behindScenes, setBehindScenes] = useState<string[]>([])
+  const [behindScenes, setBehindScenes] = useState<string[]>([]) // URL изображений для behind the scenes
+  const [behindScenesFiles, setBehindScenesFiles] = useState<string[]>([]) // Загруженные файлы для behind the scenes
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -62,6 +72,15 @@ export default function NewProjectPage() {
       video_url: '',
       duration: undefined,
       role: '',
+      is_featured: false,
+      mux_playback_id: '',
+      title_ru: '',
+      title_en: '',
+      description_ru: '',
+      description_en: '',
+      thumbnail_url: '',
+      cover_image_url: '',
+      year: undefined,
     },
   })
 
@@ -89,13 +108,25 @@ export default function NewProjectPage() {
         video_url: values.video_url || null,
         images: images.length > 0 ? images : null,
         tools: tools.length > 0 ? tools : null,
-        behind_scenes: behindScenes.length > 0 ? behindScenes : null,
+        behind_scenes: [...behindScenes, ...behindScenesFiles].length > 0 
+          ? [...behindScenes, ...behindScenesFiles] 
+          : null,
+        is_featured: values.is_featured || false,
+        mux_playback_id: values.mux_playback_id || null,
+        title_ru: values.title_ru || null,
+        title_en: values.title_en || null,
+        description_ru: values.description_ru || null,
+        description_en: values.description_en || null,
+        thumbnail_url: values.thumbnail_url || null,
+        cover_image_url: values.cover_image_url || null,
+        year: values.year || null,
       }
       await createProject(projectData)
       router.push('/admin/projects')
     } catch (error) {
       console.error('Ошибка создания проекта:', error)
-      alert('Ошибка создания проекта')
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка создания проекта'
+      alert(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -114,7 +145,13 @@ export default function NewProjectPage() {
         />
         <BackButton href="/admin/projects" className="mb-4" />
         <h1 className="text-3xl font-bold mb-2">Создать проект</h1>
-        <p className="text-muted-foreground">Заполните форму для создания нового проекта</p>
+        <p className="text-muted-foreground mb-4">Заполните форму для создания нового проекта</p>
+        <div className="bg-muted/50 p-4 rounded-lg text-sm">
+          <p className="font-medium mb-2">💡 Подсказка:</p>
+          <p className="text-muted-foreground">
+            Для отображения проекта на главной странице обязательно заполните: <strong>Mux Playback ID</strong>, <strong>URL миниатюры</strong> и отметьте <strong>&quot;Показать на главной странице&quot;</strong>.
+          </p>
+        </div>
       </div>
 
       <Form {...form}>
@@ -206,29 +243,184 @@ export default function NewProjectPage() {
             />
           </div>
 
-          <FormField
-            control={form.control}
-            name="video_url"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>URL видео</FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder="https://example.com/video.mp4" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">Изображения</label>
-            <FileUpload
-              type="images"
-              multiple
-              existingFiles={images}
-              onMultipleUpload={(urls) => setImages(urls)}
-              onRemove={(url) => setImages(images.filter(i => i !== url))}
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="video_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL видео</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="https://example.com/video.mp4" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
+
+            <FormField
+              control={form.control}
+              name="mux_playback_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Mux Playback ID ⭐</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Qf6mbMSob4v5nv7c6Mbf7TAipjM01PfHe01bDaDC1otOM" />
+                  </FormControl>
+                  <FormMessage />
+                  <p className="text-xs text-muted-foreground">Обязательно для отображения на главной странице</p>
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="thumbnail_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL миниатюры (для carousel) ⭐</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="https://example.com/thumbnail.jpg" />
+                  </FormControl>
+                  <FormMessage />
+                  <p className="text-xs text-muted-foreground">Обязательно для отображения на главной странице</p>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="cover_image_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL обложки</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="https://example.com/cover.jpg" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Раздел: Изображения */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold mb-4">Изображения проекта</h3>
+            
+            {/* Thumbnail Strip - для левого столбца на /projects */}
+            <div className="mb-6 p-4 bg-muted/30 rounded-lg border border-border">
+              <label className="text-sm font-medium mb-2 block">
+                📸 Изображения для левого столбца (Thumbnail Strip) ⭐
+              </label>
+              <p className="text-xs text-muted-foreground mb-3">
+                <strong>Где отображается:</strong> Левый столбец на странице <code className="text-xs bg-background px-1 py-0.5 rounded">/projects</code> (до 5 изображений)
+              </p>
+              <p className="text-xs text-muted-foreground mb-3">
+                <strong>Что загружать:</strong> Скриншоты/кадры из видео проекта. Первые 5 изображений будут использоваться для thumbnail strip.
+              </p>
+              <div className="mb-2">
+                <FileUpload
+                  type="images"
+                  multiple
+                  existingFiles={images.slice(0, 5)}
+                  onMultipleUpload={(urls) => {
+                    // Дополняем существующие изображения новыми (первые 5 для thumbnail strip)
+                    const currentThumbnails = images.slice(0, 5)
+                    const newThumbnails = [...currentThumbnails, ...urls].slice(0, 5) // Берем только первые 5
+                    const galleryImages = images.slice(5)
+                    setImages([...newThumbnails, ...galleryImages])
+                  }}
+                  onRemove={(url) => {
+                    const index = images.indexOf(url)
+                    if (index !== -1) {
+                      setImages(images.filter((_, i) => i !== index))
+                    }
+                  }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Загружено: {images.slice(0, 5).length}/5 (первые 5 используются для thumbnail strip)
+              </p>
+            </div>
+
+            {/* Gallery Images - для детальной страницы */}
+            <div className="mb-6 p-4 bg-muted/30 rounded-lg border border-border">
+              <label className="text-sm font-medium mb-2 block">
+                🖼️ Галерея проекта (для детальной страницы)
+              </label>
+              <p className="text-xs text-muted-foreground mb-3">
+                <strong>Где отображается:</strong> Секция &quot;Галерея&quot; на странице конкретного проекта <code className="text-xs bg-background px-1 py-0.5 rounded">/projects/[slug]</code>
+              </p>
+              <p className="text-xs text-muted-foreground mb-3">
+                <strong>Что загружать:</strong> Основные изображения проекта, финальные кадры, постеры. Все изображения, начиная с 6-го, будут показаны в галерее.
+              </p>
+              <div className="mb-2">
+                <FileUpload
+                  type="images"
+                  multiple
+                  existingFiles={images.slice(5)}
+                  onMultipleUpload={(urls) => {
+                    // Дополняем галерею новыми изображениями (первые 5 остаются для thumbnail strip)
+                    const thumbnails = images.slice(0, 5)
+                    const gallery = images.slice(5)
+                    setImages([...thumbnails, ...gallery, ...urls])
+                  }}
+                  onRemove={(url) => {
+                    const index = images.indexOf(url)
+                    if (index !== -1 && index >= 5) {
+                      setImages(images.filter((_, i) => i !== index))
+                    }
+                  }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Загружено для галереи: {images.slice(5).length} изображений
+              </p>
+            </div>
+
+            {/* Behind the Scenes */}
+            <div className="p-4 bg-muted/30 rounded-lg border border-border">
+              <label className="text-sm font-medium mb-2 block">
+                🎬 За кадром (Behind the Scenes)
+              </label>
+              <p className="text-xs text-muted-foreground mb-3">
+                <strong>Где отображается:</strong> Секция &quot;За кадром&quot; на странице конкретного проекта <code className="text-xs bg-background px-1 py-0.5 rounded">/projects/[slug]</code>
+              </p>
+              <p className="text-xs text-muted-foreground mb-3">
+                <strong>Что загружать:</strong> Фото со съемочной площадки, процесс работы, бекстейдж, рабочие моменты.
+              </p>
+              
+              {/* Загрузка файлов для behind the scenes */}
+              <div className="mb-4">
+                <FileUpload
+                  type="images"
+                  multiple
+                  existingFiles={behindScenesFiles}
+                  onMultipleUpload={(urls) => {
+                    // Дополняем существующие файлы новыми
+                    setBehindScenesFiles([...behindScenesFiles, ...urls])
+                  }}
+                  onRemove={(url) => setBehindScenesFiles(behindScenesFiles.filter(i => i !== url))}
+                />
+              </div>
+              
+              {/* Или введите URL вручную */}
+              <div className="mt-4">
+                <p className="text-xs text-muted-foreground mb-2">Или введите URL изображений вручную:</p>
+                <ArrayInput
+                  label=""
+                  value={behindScenes}
+                  onChange={setBehindScenes}
+                  placeholder="URL изображения за кадром"
+                />
+              </div>
+              
+              <p className="text-xs text-muted-foreground mt-2">
+                Всего загружено: {behindScenes.length + behindScenesFiles.length} изображений
+              </p>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -263,6 +455,118 @@ export default function NewProjectPage() {
                 </FormItem>
               )}
             />
+          </div>
+
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold mb-2">Мультиязычность</h3>
+            <p className="text-sm text-muted-foreground mb-4">Опционально. Если не заполнено, будет использоваться основное поле &quot;Название&quot; и &quot;Описание&quot;</p>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="title_ru"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Название (RU)</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Русское название" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="title_en"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Название (EN)</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="English title" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <FormField
+                control={form.control}
+                name="description_ru"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Описание (RU)</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} rows={4} placeholder="Русское описание" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description_en"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Описание (EN)</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} rows={4} placeholder="English description" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold mb-2">Дополнительно</h3>
+            <p className="text-sm text-muted-foreground mb-4">Дополнительная информация о проекте</p>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="year"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Год проекта</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                        placeholder="2025"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="is_featured"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Показать на главной странице ⭐</FormLabel>
+                      <p className="text-xs text-muted-foreground">
+                        Отображается в carousel на главной странице. Рекомендуется отмечать только лучшие проекты (до 6 штук)
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
 
           <ArrayInput

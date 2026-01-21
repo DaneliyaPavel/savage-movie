@@ -19,6 +19,15 @@ class ProjectBase(BaseModel):
     role: Optional[str] = None
     tools: Optional[List[str]] = None
     behind_scenes: Optional[List[str]] = None
+    is_featured: Optional[bool] = False
+    mux_playback_id: Optional[str] = None
+    title_ru: Optional[str] = None
+    title_en: Optional[str] = None
+    description_ru: Optional[str] = None
+    description_en: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
+    year: Optional[int] = None
 
 
 class ProjectCreate(ProjectBase):
@@ -37,6 +46,16 @@ class ProjectUpdate(BaseModel):
     role: Optional[str] = None
     tools: Optional[List[str]] = None
     behind_scenes: Optional[List[str]] = None
+    is_featured: Optional[bool] = None
+    mux_playback_id: Optional[str] = None
+    title_ru: Optional[str] = None
+    title_en: Optional[str] = None
+    description_ru: Optional[str] = None
+    description_en: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
+    year: Optional[int] = None
+    display_order: Optional[int] = None
 
 
 class Project(ProjectBase):

@@ -1,6 +1,7 @@
 /**
  * Интеграция с ЮKassa для обработки платежей
  */
+import { serverEnv } from '@/lib/env.server'
 
 interface PaymentRequest {
   amount: {
@@ -33,8 +34,8 @@ export async function createPayment(
   returnUrl: string,
   metadata?: Record<string, string>
 ): Promise<PaymentResponse> {
-  const shopId = process.env.YOOKASSA_SHOP_ID
-  const secretKey = process.env.YOOKASSA_SECRET_KEY
+  const shopId = serverEnv.YOOKASSA_SHOP_ID
+  const secretKey = serverEnv.YOOKASSA_SECRET_KEY
 
   if (!shopId || !secretKey) {
     throw new Error('ЮKassa credentials не настроены')
@@ -75,8 +76,8 @@ export async function createPayment(
  * Проверяет статус платежа
  */
 export async function checkPaymentStatus(paymentId: string): Promise<PaymentResponse> {
-  const shopId = process.env.YOOKASSA_SHOP_ID
-  const secretKey = process.env.YOOKASSA_SECRET_KEY
+  const shopId = serverEnv.YOOKASSA_SHOP_ID
+  const secretKey = serverEnv.YOOKASSA_SECRET_KEY
 
   if (!shopId || !secretKey) {
     throw new Error('ЮKassa credentials не настроены')

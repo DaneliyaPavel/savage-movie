@@ -1,25 +1,16 @@
-/**
- * Страница со списком всех проектов в стиле Freshman.tv
- */
-import { getProjects } from '@/lib/api/projects'
-import { ProjectsPageClient } from './client'
+import { getProjectsServer } from "@/lib/api/projects"
+import { toMarketingProject } from "@/lib/marketing-mappers"
+import ProjectsPageClient from "./projects-client"
 
-export default async function ProjectsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ category?: string; search?: string }>
-}) {
-  const params = await searchParams
-  const category = params.category || 'all'
-  
-  let projects = []
-  
+export const revalidate = 60
+
+export default async function ProjectsPage() {
   try {
-    const allProjects = await getProjects(category === 'all' ? undefined : category)
-    projects = allProjects
+    const apiProjects = await getProjectsServer()
+    const projects = apiProjects.map(toMarketingProject)
+    return <ProjectsPageClient initialProjects={projects} />
   } catch (error) {
-    console.warn('Ошибка загрузки проектов:', error)
+    console.error("Ошибка загрузки проектов (server)", error)
+    return <ProjectsPageClient initialProjects={[]} />
   }
-
-  return <ProjectsPageClient projects={projects} category={category} />
 }

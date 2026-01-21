@@ -16,7 +16,7 @@ export async function NavigationWrapper({ onBookClick }: NavigationWrapperProps)
 
   try {
     user = await getCurrentUserServer(cookieStore)
-  } catch (error) {
+  } catch {
     // Игнорируем ошибки аутентификации - просто показываем незалогиненную навигацию
   }
 

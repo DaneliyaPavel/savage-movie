@@ -3,12 +3,9 @@
  */
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Menu, LogIn } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { UserMenu } from './UserMenu'
+import { motion } from 'framer-motion'
 import { FullscreenMenuOverlay } from '@/components/ui/fullscreen-menu-overlay'
 import type { User } from '@/lib/api/auth'
 
@@ -27,7 +24,7 @@ const navItems = [
 
 export function Navigation({ onBookClick, user }: NavigationProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
+  void user
 
   // Формируем пункты меню для FullscreenMenuOverlay
   // Добавляем CTA в конец если есть
@@ -56,7 +53,7 @@ export function Navigation({ onBookClick, user }: NavigationProps) {
         <div className="absolute top-0 left-0 z-[102] pointer-events-auto">
           <Link 
             href="/" 
-            className="block px-4 md:px-6 py-3 md:py-4 font-heading font-bold text-sm md:text-base text-[#FFFFFF] hover:text-[#CCFF00] transition-colors"
+            className="block px-4 md:px-6 py-3 md:py-4 font-heading font-bold text-sm md:text-base text-[#FFFFFF] hover:text-[#ff2936] transition-colors"
             onClick={() => setIsMenuOpen(false)}
           >
             SAVAGE MOVIE
@@ -68,7 +65,7 @@ export function Navigation({ onBookClick, user }: NavigationProps) {
           {/* Кнопка меню в стиле "+ МЕНЮ" / "X ЗАКРЫТЬ" в правом верхнем углу */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="flex items-center gap-2 px-4 md:px-6 py-3 md:py-4 text-[#FFFFFF] hover:text-[#CCFF00] transition-colors group"
+            className="flex items-center gap-2 px-4 md:px-6 py-3 md:py-4 text-[#FFFFFF] hover:text-[#ff2936] transition-colors group"
             aria-label={isMenuOpen ? "Закрыть меню" : "Меню"}
             aria-expanded={isMenuOpen}
           >

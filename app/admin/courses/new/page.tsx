@@ -29,6 +29,9 @@ const formSchema = z.object({
   cover_image: z.string().optional(),
   video_promo_url: z.string().url().optional().or(z.literal('')),
   category: z.enum(['ai', 'shooting', 'editing', 'production']),
+  level: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
+  certificate: z.enum(['yes', 'no']).optional(),
+  format: z.enum(['online', 'offline', 'hybrid', 'online+live']).optional(),
 })
 
 export default function NewCoursePage() {
@@ -49,6 +52,9 @@ export default function NewCoursePage() {
       cover_image: '',
       video_promo_url: '',
       category: 'ai',
+      level: undefined,
+      certificate: undefined,
+      format: undefined,
     },
   })
 
@@ -66,12 +72,16 @@ export default function NewCoursePage() {
         video_promo_url: values.video_promo_url || null,
         requirements: requirements.length > 0 ? requirements : null,
         what_you_learn: whatYouLearn.length > 0 ? whatYouLearn : null,
+        level: values.level || null,
+        certificate: values.certificate || null,
+        format: values.format || null,
       }
       await createCourse(courseData)
       router.push('/admin/courses')
     } catch (error) {
       console.error('Ошибка создания курса:', error)
-      alert('Ошибка создания курса')
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка создания курса'
+      alert(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -143,14 +153,105 @@ export default function NewCoursePage() {
             )} />
           </div>
 
-          <div>
-            <label className="text-sm font-medium mb-2 block">Обложка</label>
-            <FileUpload type="image" existingFiles={coverImage ? [coverImage] : []} onUpload={setCoverImage} onRemove={() => setCoverImage('')} />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField control={form.control} name="duration" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Продолжительность (недели)</FormLabel>
+                <FormControl>
+                  <Input type="number" {...field} value={field.value || ''} onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="level" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Уровень сложности</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value || ''}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Выберите уровень" /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    <SelectItem value="beginner">Начальный</SelectItem>
+                    <SelectItem value="intermediate">Средний</SelectItem>
+                    <SelectItem value="advanced">Продвинутый</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
           </div>
 
-          <FormField control={form.control} name="video_promo_url" render={({ field }) => (
-            <FormItem><FormLabel>URL промо видео</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-          )} />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField control={form.control} name="certificate" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Сертификат</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value || ''}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Выберите" /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    <SelectItem value="yes">Да</SelectItem>
+                    <SelectItem value="no">Нет</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="format" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Формат обучения</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value || ''}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Выберите формат" /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    <SelectItem value="online">Онлайн</SelectItem>
+                    <SelectItem value="offline">Офлайн</SelectItem>
+                    <SelectItem value="hybrid">Гибридный</SelectItem>
+                    <SelectItem value="online+live">Онлайн + живые сессии</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
+
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold mb-4">Медиа контент</h3>
+            
+            <div className="mb-6 p-4 bg-muted/30 rounded-lg border border-border">
+              <label className="text-sm font-medium mb-2 block">
+                🖼️ Обложка курса
+              </label>
+              <p className="text-xs text-muted-foreground mb-3">
+                <strong>Где отображается:</strong> Карточка курса на странице <code className="text-xs bg-background px-1 py-0.5 rounded">/courses</code> и детальная страница курса
+              </p>
+              <p className="text-xs text-muted-foreground mb-3">
+                <strong>Что загружать:</strong> Главное изображение курса, постер, обложка. Рекомендуемый размер: 16:9.
+              </p>
+              <FileUpload 
+                type="image" 
+                existingFiles={coverImage ? [coverImage] : []} 
+                onUpload={setCoverImage} 
+                onRemove={() => setCoverImage('')} 
+              />
+            </div>
+
+            <div className="p-4 bg-muted/30 rounded-lg border border-border">
+              <FormField 
+                control={form.control} 
+                name="video_promo_url" 
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>URL промо видео</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="https://example.com/promo.mp4 или Mux URL" />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      <strong>Где отображается:</strong> Hero секция на детальной странице курса <code className="text-xs bg-background px-1 py-0.5 rounded">/courses/[slug]</code>
+                    </p>
+                  </FormItem>
+                )} 
+              />
+            </div>
+          </div>
 
           <ArrayInput label="Требования" value={requirements} onChange={setRequirements} />
           <ArrayInput label="Чему научитесь" value={whatYouLearn} onChange={setWhatYouLearn} />

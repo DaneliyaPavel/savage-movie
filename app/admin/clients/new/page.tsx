@@ -15,7 +15,11 @@ import { BackButton } from '@/components/ui/back-button'
 import { createClient } from '@/lib/api/clients'
 import Link from 'next/link'
 
-const formSchema = z.object({ name: z.string().min(1), description: z.string().optional(), order: z.number().default(0) })
+const formSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  order: z.number().int().min(0),
+})
 
 export default function NewClientPage() {
   const router = useRouter()
@@ -28,7 +32,7 @@ export default function NewClientPage() {
     try {
       await createClient({ ...values, logo_url: logoUrl || null })
       router.push('/admin/clients')
-    } catch (error) {
+    } catch {
       alert('Ошибка создания клиента')
     } finally {
       setIsSubmitting(false)

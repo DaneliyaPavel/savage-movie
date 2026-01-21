@@ -43,7 +43,7 @@ export function ProjectThumbRail({ projects, selectedId, onSelect }: ProjectThum
             <div
               className={`relative aspect-video overflow-hidden bg-[#050505] border transition-all ${
                 isSelected
-                  ? 'border-[#CCFF00]'
+                  ? 'border-[#ff2936]'
                   : 'border-[#1A1A1A] hover:border-[#FFFFFF]/30'
               }`}
             >
@@ -69,7 +69,7 @@ export function ProjectThumbRail({ projects, selectedId, onSelect }: ProjectThum
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="absolute inset-0 bg-[#CCFF00]/10"
+                  className="absolute inset-0 bg-[#ff2936]/10"
                 />
               )}
 

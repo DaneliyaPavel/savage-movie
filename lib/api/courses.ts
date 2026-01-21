@@ -38,6 +38,10 @@ export interface Course {
   requirements: string[] | null
   what_you_learn: string[] | null
   modules: CourseModule[] | null
+  level: string | null
+  certificate: string | null
+  format: string | null
+  display_order: number | null
   created_at: string
   updated_at: string
 }
@@ -60,7 +64,10 @@ export async function getCourseBySlug(slug: string): Promise<Course> {
 /**
  * Получить курс по slug (server-side)
  */
-export async function getCourseBySlugServer(slug: string, cookies?: any): Promise<Course> {
+export async function getCourseBySlugServer(
+  slug: string,
+  cookies?: { get: (name: string) => { value: string } | undefined }
+): Promise<Course> {
   const { apiGet: apiGetServer } = await import('./server')
   return apiGetServer<Course>(`/api/courses/${slug}`, cookies)
 }
@@ -90,6 +97,10 @@ export interface CourseCreate {
   requirements?: string[] | null
   what_you_learn?: string[] | null
   modules?: CourseModuleCreate[]
+  level?: string | null
+  certificate?: string | null
+  format?: string | null
+  display_order?: number | null
 }
 
 export interface CourseUpdate {
@@ -103,6 +114,10 @@ export interface CourseUpdate {
   category?: 'ai' | 'shooting' | 'editing' | 'production'
   requirements?: string[] | null
   what_you_learn?: string[] | null
+  level?: string | null
+  certificate?: string | null
+  format?: string | null
+  display_order?: number | null
 }
 
 /**
@@ -124,4 +139,11 @@ export async function updateCourse(id: string, data: CourseUpdate): Promise<Cour
  */
 export async function deleteCourse(id: string): Promise<void> {
   return apiDelete<void>(`/api/courses/${id}`)
+}
+
+/**
+ * Обновить порядок курсов
+ */
+export async function updateCoursesOrder(updates: Array<{ id: string; display_order: number }>): Promise<void> {
+  return apiPost<void>('/api/courses/reorder', { updates })
 }

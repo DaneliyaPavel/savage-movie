@@ -15,7 +15,11 @@ import { BackButton } from '@/components/ui/back-button'
 import { getClients, updateClient } from '@/lib/api/clients'
 import Link from 'next/link'
 
-const formSchema = z.object({ name: z.string().min(1), description: z.string().optional(), order: z.number().default(0) })
+const formSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  order: z.number().int().min(0),
+})
 
 export default function EditClientPage() {
   const router = useRouter()
@@ -42,14 +46,14 @@ export default function EditClientPage() {
       }
     }
     load()
-  }, [clientId])
+  }, [clientId, form])
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true)
     try {
       await updateClient(clientId, { ...values, logo_url: logoUrl || null })
       router.push('/admin/clients')
-    } catch (error) {
+    } catch {
       alert('Ошибка обновления клиента')
     } finally {
       setIsSubmitting(false)

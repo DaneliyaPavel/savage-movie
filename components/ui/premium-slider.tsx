@@ -6,7 +6,7 @@
 
 import * as React from 'react'
 import * as SliderPrimitive from '@radix-ui/react-slider'
-import { motion, useSpring, useTransform } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 interface PremiumSliderProps {
@@ -39,7 +39,7 @@ function PremiumSlider({
     [value, defaultValue, min, max]
   )
 
-  const currentValue = _values[0]
+  const currentValue = _values[0] ?? min
   const progress = ((currentValue - min) / (max - min)) * 100
 
   return (
@@ -72,7 +72,7 @@ function PremiumSlider({
         <SliderPrimitive.Thumb
           data-slot="slider-thumb"
           key={index}
-          className="block size-4 shrink-0 rounded-full border-2 border-[#FFFFFF] bg-[#000000] shadow-sm transition-colors hover:border-[#CCFF00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#CCFF00] focus-visible:ring-offset-2 focus-visible:ring-offset-[#000000] disabled:pointer-events-none disabled:opacity-50"
+          className="block size-4 shrink-0 rounded-full border-2 border-[#FFFFFF] bg-[#000000] shadow-sm transition-colors hover:border-[#ff2936] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff2936] focus-visible:ring-offset-2 focus-visible:ring-offset-[#000000] disabled:pointer-events-none disabled:opacity-50"
         />
       ))}
     </SliderPrimitive.Root>

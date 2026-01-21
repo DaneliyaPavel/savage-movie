@@ -2,6 +2,7 @@
  * Интеграция с Resend для отправки email
  */
 import { Resend } from 'resend'
+import { logger } from '@/lib/utils/logger'
 
 const resend = process.env.RESEND_API_KEY 
   ? new Resend(process.env.RESEND_API_KEY)
@@ -42,7 +43,7 @@ export async function sendEmail(options: EmailOptions) {
 
     return data
   } catch (error) {
-    console.error('Ошибка отправки email:', error)
+    logger.error('Ошибка отправки email', error, { function: 'sendEmail', to: options.to })
     throw error
   }
 }

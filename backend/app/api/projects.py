@@ -3,7 +3,7 @@ API роуты для проектов
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from typing import Optional, List
 from uuid import UUID
 
@@ -19,6 +19,7 @@ router = APIRouter(prefix="/api/projects", tags=["projects"])
 @router.get("", response_model=List[ProjectSchema])
 async def get_projects(
     category: Optional[str] = Query(None),
+    featured: Optional[bool] = Query(None),
     limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db)
@@ -29,7 +30,15 @@ async def get_projects(
     if category and category != "all":
         query = query.where(Project.category == category)
     
-    query = query.order_by(Project.created_at.desc()).limit(limit).offset(offset)
+    if featured is not None:
+        query = query.where(Project.is_featured == featured)
+    
+    # Сортируем по display_order (если есть), затем по created_at
+    # NULL значения идут первыми (0), затем по возрастанию display_order
+    query = query.order_by(
+        func.coalesce(Project.display_order, 0).asc(),
+        Project.created_at.desc()
+    ).limit(limit).offset(offset)
     
     result = await db.execute(query)
     projects = result.scalars().all()
@@ -143,3 +152,33 @@ async def delete_project(
     await db.commit()
     
     return None
+
+
+@router.post("/reorder", status_code=status.HTTP_200_OK)
+async def reorder_projects(
+    updates: dict,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Обновить порядок проектов (только для админов)"""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Только администраторы могут изменять порядок проектов"
+        )
+    
+    updates_list = updates.get("updates", [])
+    
+    for update in updates_list:
+        project_id = UUID(update["id"])
+        display_order = update["display_order"]
+        
+        result = await db.execute(select(Project).where(Project.id == project_id))
+        project = result.scalar_one_or_none()
+        
+        if project:
+            project.display_order = display_order
+    
+    await db.commit()
+    
+    return {"message": "Порядок проектов обновлен"}

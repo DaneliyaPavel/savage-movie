@@ -36,7 +36,7 @@ export function ProjectRow({ project, index }: ProjectRowProps) {
           {/* Левая часть - название и категория */}
           <div className="flex-1">
             <div className="flex items-center gap-4 md:gap-6 mb-2">
-              <h3 className="text-xl md:text-2xl lg:text-3xl font-heading font-bold text-[#FFFFFF] group-hover:text-[#CCFF00] transition-colors">
+              <h3 className="text-xl md:text-2xl lg:text-3xl font-heading font-bold text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">
                 {project.title}
               </h3>
               {project.category && (
@@ -69,7 +69,7 @@ export function ProjectRow({ project, index }: ProjectRowProps) {
             </div>
             {/* Стрелка */}
             <motion.div
-              className="text-[#FFFFFF]/40 group-hover:text-[#CCFF00] transition-colors"
+              className="text-[#FFFFFF]/40 group-hover:text-[#ff2936] transition-colors"
               whileHover={{ x: 5 }}
               transition={{ duration: 0.3 }}
             >

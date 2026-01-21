@@ -127,7 +127,7 @@ export function ProjectMetaPanel({ project }: ProjectMetaPanelProps) {
             <span className="text-lg md:text-xl font-medium text-[#FFFFFF]/60 group-hover:text-[#FFFFFF] transition-colors">
               Смотреть полностью
             </span>
-            <ArrowRight className="w-5 h-5 text-[#FFFFFF]/40 group-hover:text-[#CCFF00] transition-colors" />
+            <ArrowRight className="w-5 h-5 text-[#FFFFFF]/40 group-hover:text-[#ff2936] transition-colors" />
           </motion.div>
         </Link>
       </div>

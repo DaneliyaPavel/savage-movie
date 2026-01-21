@@ -27,7 +27,9 @@ export async function getEnrollments(): Promise<Enrollment[]> {
 /**
  * Получить список записей пользователя (server-side)
  */
-export async function getEnrollmentsServer(cookies?: any): Promise<Enrollment[]> {
+export async function getEnrollmentsServer(
+  cookies?: { get: (name: string) => { value: string } | undefined }
+): Promise<Enrollment[]> {
   const { apiGet: apiGetServer } = await import('./server')
   return apiGetServer<Enrollment[]>('/api/enrollments', cookies)
 }
@@ -42,7 +44,10 @@ export async function getEnrollmentByCourse(courseId: string): Promise<Enrollmen
 /**
  * Получить запись на конкретный курс (server-side)
  */
-export async function getEnrollmentByCourseServer(courseId: string, cookies?: any): Promise<Enrollment> {
+export async function getEnrollmentByCourseServer(
+  courseId: string,
+  cookies?: { get: (name: string) => { value: string } | undefined }
+): Promise<Enrollment> {
   const { apiGet: apiGetServer } = await import('./server')
   return apiGetServer<Enrollment>(`/api/enrollments/${courseId}`, cookies)
 }

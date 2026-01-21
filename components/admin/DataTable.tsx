@@ -32,7 +32,7 @@ interface DataTableProps<T> {
   getRowId: (item: T) => string
 }
 
-export function DataTable<T extends Record<string, any>>({
+export function DataTable<T extends object>({
   data,
   columns,
   onEdit,

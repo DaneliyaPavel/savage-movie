@@ -96,7 +96,7 @@ export function Footer() {
                   href="mailto:savage.movie@yandex.ru"
                   className="text-[#FFFFFF]/60 hover:text-[#FFFFFF] transition-colors flex items-center gap-3 group"
                 >
-                  <Mail className="w-5 h-5 group-hover:text-[#CCFF00] transition-colors shrink-0" />
+                  <Mail className="w-5 h-5 group-hover:text-[#ff2936] transition-colors shrink-0" />
                   <span>savage.movie@yandex.ru</span>
                 </a>
               </motion.li>
@@ -109,7 +109,7 @@ export function Footer() {
                   href="tel:+79214021839"
                   className="text-[#FFFFFF]/60 hover:text-[#FFFFFF] transition-colors flex items-center gap-3 group"
                 >
-                  <Phone className="w-5 h-5 group-hover:text-[#CCFF00] transition-colors shrink-0" />
+                  <Phone className="w-5 h-5 group-hover:text-[#ff2936] transition-colors shrink-0" />
                   <span>+7 921 402-18-39</span>
                 </a>
               </motion.li>
@@ -131,7 +131,7 @@ export function Footer() {
                       href={social.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#FFFFFF]/60 hover:text-[#CCFF00] transition-colors"
+                      className="text-[#FFFFFF]/60 hover:text-[#ff2936] transition-colors"
                       aria-label={social.label}
                       initial={{ opacity: 0, scale: 0 }}
                       animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}

@@ -1,0 +1,37 @@
+<svg width="800" height="1000" viewBox="0 0 800 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="800" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B0B0B"/>
+      <stop offset="1" stop-color="#111111"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(420 420) rotate(90) scale(420 420)">
+      <stop stop-color="#FF4D9D" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#FF4D9D" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="body" x1="210" y1="210" x2="590" y2="860" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A1A1A"/>
+      <stop offset="1" stop-color="#0E0E0E"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg)"/>
+  <rect width="800" height="1000" fill="url(#glow)"/>
+
+  <!-- Bear-like blob -->
+  <circle cx="280" cy="240" r="55" fill="#0F0F0F" stroke="#2A2A2A" stroke-width="4"/>
+  <circle cx="520" cy="240" r="55" fill="#0F0F0F" stroke="#2A2A2A" stroke-width="4"/>
+  <path d="M400 170C540 170 650 280 650 420C650 565 545 650 400 650C255 650 150 565 150 420C150 280 260 170 400 170Z" fill="url(#body)" stroke="#2A2A2A" stroke-width="4"/>
+
+  <path d="M235 640C300 760 350 920 400 920C450 920 500 760 565 640C600 575 640 545 690 545C740 545 770 590 770 640C770 805 620 980 400 980C180 980 30 805 30 640C30 590 60 545 110 545C160 545 200 575 235 640Z" fill="url(#body)" stroke="#2A2A2A" stroke-width="4"/>
+
+  <circle cx="325" cy="420" r="44" fill="#080808" stroke="#2A2A2A" stroke-width="4"/>
+  <circle cx="475" cy="420" r="44" fill="#080808" stroke="#2A2A2A" stroke-width="4"/>
+  <circle cx="325" cy="420" r="14" fill="#FF4D9D" fill-opacity="0.9"/>
+  <circle cx="475" cy="420" r="14" fill="#FF4D9D" fill-opacity="0.9"/>
+
+  <path d="M380 485C395 470 405 470 420 485" stroke="#FF4D9D" stroke-opacity="0.75" stroke-width="7" stroke-linecap="round"/>
+  <path d="M350 520C375 550 425 550 450 520" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- Accent ribbon -->
+  <path d="M250 600C305 615 350 625 400 625C450 625 495 615 550 600" stroke="#FF4D9D" stroke-opacity="0.55" stroke-width="7" stroke-linecap="round"/>
+</svg>
+

@@ -4,7 +4,7 @@
  */
 'use client'
 
-import { motion, useMotionValue, useSpring } from 'framer-motion'
+import { motion, useMotionValue } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 
 interface StorylineTextProps {
@@ -36,11 +36,6 @@ export function StorylineText({
   const wordRef = useRef<HTMLSpanElement>(null)
   const [pathWidth, setPathWidth] = useState(0)
   const pathLength = useMotionValue(0)
-  const springPathLength = useSpring(pathLength, {
-    damping: 20,
-    stiffness: 300,
-    mass: 0.5,
-  })
 
   // Разбиваем текст на части
   const parts = text.split(new RegExp(`(${crossedWord})`, 'gi'))
@@ -65,10 +60,13 @@ export function StorylineText({
 
   // Обновляем ширину для SVG path
   useEffect(() => {
-    if (wordRef.current) {
-      const width = wordRef.current.offsetWidth
-      setPathWidth(width || 100)
-    }
+    const rafId = requestAnimationFrame(() => {
+      if (wordRef.current) {
+        const width = wordRef.current.offsetWidth
+        setPathWidth(width || 100)
+      }
+    })
+    return () => cancelAnimationFrame(rafId)
   }, [crossedWord])
 
   // Анимация зачеркивания
@@ -162,7 +160,7 @@ export function StorylineText({
                   delay: delay + 0.6, 
                   ease: [0.16, 1, 0.3, 1] 
                 }}
-                className="absolute top-full left-0 text-sm md:text-base lg:text-lg italic text-[#CCFF00] whitespace-nowrap transform rotate-[-1deg] mt-1"
+                className="absolute top-full left-0 text-sm md:text-base lg:text-lg italic text-[#ff2936] whitespace-nowrap transform rotate-[-1deg] mt-1"
                 style={{
                   fontFamily: '"Kalam", "Caveat", cursive',
                   fontWeight: 400,

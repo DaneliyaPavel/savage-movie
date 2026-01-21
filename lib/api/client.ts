@@ -1,16 +1,17 @@
 /**
- * Базовый клиент для работы с API
+ * Базовый клиент для работы с API (client-side)
  */
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+import { baseApiRequest } from './base'
+import { publicEnv } from '@/lib/env'
 
-export interface ApiError {
-  detail: string
-}
+const API_URL = publicEnv.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+
+export type { ApiError } from './base'
 
 /**
- * Базовая функция для запросов к API
+ * Базовая функция для запросов к API (client-side)
  */
-async function apiRequest<T>(
+export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
@@ -20,28 +21,10 @@ async function apiRequest<T>(
     ? localStorage.getItem('access_token') 
     : null
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> || {}),
-  }
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
-
-  const response = await fetch(url, {
+  return baseApiRequest<T>(url, {
     ...options,
-    headers,
+    token,
   })
-
-  if (!response.ok) {
-    const error: ApiError = await response.json().catch(() => ({
-      detail: `HTTP ${response.status}: ${response.statusText}`,
-    }))
-    throw new Error(error.detail || 'Ошибка запроса к API')
-  }
-
-  return response.json()
 }
 
 /**
@@ -82,4 +65,14 @@ export async function apiPut<T>(
  */
 export async function apiDelete<T>(endpoint: string): Promise<T> {
   return apiRequest<T>(endpoint, { method: 'DELETE' })
+}
+
+/**
+ * POST FormData (например, загрузка файлов)
+ */
+export async function apiPostForm<T>(endpoint: string, formData: FormData): Promise<T> {
+  return apiRequest<T>(endpoint, {
+    method: 'POST',
+    body: formData,
+  })
 }

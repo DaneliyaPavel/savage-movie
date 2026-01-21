@@ -4,7 +4,7 @@
  */
 'use client'
 
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import { ReactNode } from 'react'
 
@@ -12,7 +12,10 @@ interface PageTransitionsProps {
   children: ReactNode
 }
 
-const pageVariants = {
+const EASE_OUT_EXPO: [number, number, number, number] = [0.16, 1, 0.3, 1]
+const EASE_IN: [number, number, number, number] = [0.4, 0, 1, 1]
+
+const pageVariants: Variants = {
   initial: {
     opacity: 0,
     y: 20,
@@ -24,7 +27,7 @@ const pageVariants = {
     filter: 'blur(0px)',
     transition: {
       duration: 0.6,
-      ease: [0.16, 1, 0.3, 1], // ease-out-expo
+      ease: EASE_OUT_EXPO, // ease-out-expo
     },
   },
   exit: {
@@ -33,7 +36,7 @@ const pageVariants = {
     filter: 'blur(10px)',
     transition: {
       duration: 0.4,
-      ease: [0.4, 0, 1, 1], // ease-in
+      ease: EASE_IN, // ease-in
     },
   },
 }

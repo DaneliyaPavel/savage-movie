@@ -1,7 +1,7 @@
 /**
  * API функции для загрузки файлов
  */
-import { apiPost } from './client'
+import { apiPostForm } from './client'
 
 export interface UploadResponse {
   url: string
@@ -20,28 +20,7 @@ export interface MultipleUploadResponse {
 export async function uploadImage(file: File): Promise<UploadResponse> {
   const formData = new FormData()
   formData.append('file', file)
-
-  const token = typeof window !== 'undefined' 
-    ? localStorage.getItem('access_token') 
-    : null
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-  const response = await fetch(`${API_URL}/api/upload/image`, {
-    method: 'POST',
-    headers: token ? {
-      'Authorization': `Bearer ${token}`,
-    } : {},
-    body: formData,
-  })
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({
-      detail: `HTTP ${response.status}: ${response.statusText}`,
-    }))
-    throw new Error(error.detail || 'Ошибка загрузки файла')
-  }
-
-  return response.json()
+  return apiPostForm<UploadResponse>('/api/upload/image', formData)
 }
 
 /**
@@ -50,28 +29,7 @@ export async function uploadImage(file: File): Promise<UploadResponse> {
 export async function uploadVideo(file: File): Promise<UploadResponse> {
   const formData = new FormData()
   formData.append('file', file)
-
-  const token = typeof window !== 'undefined' 
-    ? localStorage.getItem('access_token') 
-    : null
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-  const response = await fetch(`${API_URL}/api/upload/video`, {
-    method: 'POST',
-    headers: token ? {
-      'Authorization': `Bearer ${token}`,
-    } : {},
-    body: formData,
-  })
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({
-      detail: `HTTP ${response.status}: ${response.statusText}`,
-    }))
-    throw new Error(error.detail || 'Ошибка загрузки файла')
-  }
-
-  return response.json()
+  return apiPostForm<UploadResponse>('/api/upload/video', formData)
 }
 
 /**
@@ -82,26 +40,5 @@ export async function uploadImages(files: File[]): Promise<MultipleUploadRespons
   files.forEach(file => {
     formData.append('files', file)
   })
-
-  const token = typeof window !== 'undefined' 
-    ? localStorage.getItem('access_token') 
-    : null
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-  const response = await fetch(`${API_URL}/api/upload/images`, {
-    method: 'POST',
-    headers: token ? {
-      'Authorization': `Bearer ${token}`,
-    } : {},
-    body: formData,
-  })
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({
-      detail: `HTTP ${response.status}: ${response.statusText}`,
-    }))
-    throw new Error(error.detail || 'Ошибка загрузки файлов')
-  }
-
-  return response.json()
+  return apiPostForm<MultipleUploadResponse>('/api/upload/images', formData)
 }

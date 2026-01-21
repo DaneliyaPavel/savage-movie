@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     # JWT
     JWT_SECRET: str = ""
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 720
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     # OAuth Google
@@ -36,6 +36,17 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
     ADMIN_EMAIL: str = "savage.movie@yandex.ru"
     
+    # Dev helpers (НЕ включать в production)
+    # Если SEED_ADMIN=true, то при старте backend будет создан/обновлён админ-пользователь.
+    SEED_ADMIN: bool = False
+    SEED_ADMIN_EMAIL: str = ""
+    SEED_ADMIN_PASSWORD: str = ""
+    SEED_ADMIN_FORCE_PASSWORD: bool = False
+
+    # Payments (YooKassa)
+    YOOKASSA_SHOP_ID: str = ""
+    YOOKASSA_SECRET_KEY: str = ""
+
     # App URL
     APP_URL: str = "http://localhost:3000"
     
@@ -45,7 +56,12 @@ class Settings(BaseSettings):
     
     @property
     def cors_origins_list(self) -> List[str]:
-        return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
+        origins = []
+        for origin in self.CORS_ORIGINS.split(","):
+            cleaned = origin.strip().rstrip("/")
+            if cleaned:
+                origins.append(cleaned)
+        return origins
     
     class Config:
         env_file = ".env"

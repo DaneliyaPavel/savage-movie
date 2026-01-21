@@ -11,7 +11,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
-import { CheckCircle2, Clock, Play } from 'lucide-react'
+import { CheckCircle2, Play } from 'lucide-react'
 import type { Course } from '@/lib/api/courses'
 import { cookies } from 'next/headers'
 
@@ -44,7 +44,7 @@ export default async function DashboardCoursePage({
   let enrollment = null
   try {
     enrollment = await getEnrollmentByCourseServer(course.id, cookieStore)
-  } catch (error) {
+  } catch {
     // Если запись не найдена, редиректим на страницу курса
     redirect(`/courses/${params.slug}`)
   }
@@ -56,8 +56,7 @@ export default async function DashboardCoursePage({
   const getPlaybackId = (url: string | null) => {
     if (!url) return null
     const muxMatch = url.match(/mux\.com\/([^/?]+)/)
-    if (muxMatch) return muxMatch[1]
-    return null
+    return muxMatch?.[1] ?? null
   }
 
   return (
@@ -144,7 +143,6 @@ export default async function DashboardCoursePage({
                       <AccordionContent>
                         <ul className="space-y-2 mt-2">
                           {module.lessons?.map((lesson) => {
-                            const playbackId = lesson.video_url ? getPlaybackId(lesson.video_url) : null
                             return (
                               <li key={lesson.id}>
                                 <button className="w-full text-left flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors">

@@ -31,8 +31,9 @@ export default function RegisterPage() {
       await register({ email, password, full_name: fullName || undefined })
       router.push('/dashboard')
       router.refresh()
-    } catch (err: any) {
-      setError(err.message || 'Ошибка регистрации')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Ошибка регистрации'
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }

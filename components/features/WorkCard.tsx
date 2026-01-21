@@ -9,6 +9,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { VideoPlayer } from './VideoPlayer'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
+import { HoverNote } from '@/components/ui/hover-note'
 import { useState } from 'react'
 import type { Project } from '@/lib/api/projects'
 
@@ -27,8 +28,7 @@ const categoryLabels: Record<string, string> = {
 const getPlaybackId = (url: string | null): string | null => {
   if (!url) return null
   const muxMatch = url.match(/mux\.com\/([^/?]+)/)
-  if (muxMatch) return muxMatch[1]
-  return null
+  return muxMatch?.[1] ?? null
 }
 
 export function WorkCard({ project }: WorkCardProps) {
@@ -36,16 +36,17 @@ export function WorkCard({ project }: WorkCardProps) {
   const playbackId = project.video_url ? getPlaybackId(project.video_url) : null
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="group relative"
-    >
-      <Link href={`/projects/${project.slug}`}>
+    <HoverNote text="watch" position="top" className="w-full">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className="group relative"
+      >
+        <Link href={`/projects/${project.slug}`}>
         <div className="relative aspect-video overflow-hidden bg-[#050505] border border-[#1A1A1A] hover:border-[#FFFFFF]/30 transition-colors duration-500">
           {/* Thumbnail или видео */}
           {project.images?.[0] && !isHovered && (
@@ -135,5 +136,6 @@ export function WorkCard({ project }: WorkCardProps) {
         </div>
       </Link>
     </motion.div>
+    </HoverNote>
   )
 }

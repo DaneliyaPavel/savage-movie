@@ -1,0 +1,57 @@
+# CodeRabbit Configuration
+# Configuration file for CodeRabbit CLI code review
+
+# Review settings
+review:
+  # Type of review: all, committed, uncommitted
+  type: uncommitted
+  
+  # Base branch for comparison (default: main)
+  base: main
+  
+  # Output format: plain, prompt-only, default
+  format: plain
+
+# Paths to include/exclude
+paths:
+  # Include patterns
+  include:
+    - "app/**/*.{ts,tsx,js,jsx}"
+    - "components/**/*.{ts,tsx,js,jsx}"
+    - "lib/**/*.{ts,tsx,js,jsx}"
+    - "backend/app/**/*.py"
+    - "backend/app/api/**/*.py"
+    - "backend/app/models/**/*.py"
+    - "backend/app/schemas/**/*.py"
+    - "backend/app/services/**/*.py"
+  
+  # Exclude patterns
+  exclude:
+    - "node_modules/**"
+    - ".next/**"
+    - "backend/venv/**"
+    - "backend/__pycache__/**"
+    - "**/*.test.{ts,tsx,js,jsx,py}"
+    - "**/*.spec.{ts,tsx,js,jsx,py}"
+    - "**/migrations/**"
+    - "**/*.d.ts"
+    - "public/**"
+    - "*.config.{js,ts,mjs}"
+    - "next-env.d.ts"
+
+# Language-specific settings
+languages:
+  typescript:
+    enabled: true
+  javascript:
+    enabled: true
+  python:
+    enabled: true
+
+# Review focus areas
+focus:
+  - security
+  - performance
+  - best-practices
+  - code-quality
+  - maintainability

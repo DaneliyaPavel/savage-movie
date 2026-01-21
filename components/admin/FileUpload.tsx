@@ -4,13 +4,14 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Upload, X, Loader2 } from 'lucide-react'
-import { uploadImage, uploadVideo, uploadImages, type UploadResponse } from '@/lib/api/upload'
+import { uploadImage, uploadVideo, uploadImages } from '@/lib/api/upload'
 import { cn } from '@/lib/utils'
 
 interface FileUploadProps {
-  onUpload: (url: string) => void
+  onUpload?: (url: string) => void
   onMultipleUpload?: (urls: string[]) => void
   accept?: string
   multiple?: boolean
@@ -18,6 +19,21 @@ interface FileUploadProps {
   className?: string
   existingFiles?: string[]
   onRemove?: (url: string) => void
+}
+
+function ExistingFilePreviewImage({ src, alt }: { src: string; alt: string }) {
+  const [hasError, setHasError] = useState(false)
+
+  return (
+    <Image
+      src={hasError ? '/placeholder.svg' : src}
+      alt={alt}
+      width={640}
+      height={256}
+      className="w-full h-32 object-cover rounded-lg border border-border"
+      onError={() => setHasError(true)}
+    />
+  )
 }
 
 export function FileUpload({
@@ -34,29 +50,42 @@ export function FileUpload({
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
 
-  const handleFile = useCallback(async (file: File) => {
+  const handleFiles = useCallback(async (files: File[]) => {
+    if (files.length === 0) return
+    const firstFile = files[0]
+    if (!firstFile) return
+    
     setIsUploading(true)
     setUploadProgress(0)
 
     try {
-      let response: UploadResponse | { files: UploadResponse[] }
-
-      if (type === 'images' && multiple) {
-        // Множественная загрузка изображений
-        const files = Array.from((document.getElementById('file-input') as HTMLInputElement)?.files || [])
-        response = await uploadImages(files)
+      if (type === 'images' && multiple && files.length > 1) {
+        // Множественная загрузка изображений - все сразу пачкой
+        const response = await uploadImages(files)
         if (onMultipleUpload && 'files' in response) {
           onMultipleUpload(response.files.map(f => f.url))
         }
-      } else if (type === 'video') {
-        response = await uploadVideo(file)
-        if ('url' in response) {
+      } else if (type === 'images' && multiple && files.length === 1) {
+        // Одно изображение при множественной загрузке
+        const response = await uploadImage(firstFile)
+        if (onMultipleUpload && 'url' in response) {
+          onMultipleUpload([response.url])
+        } else if (onUpload && 'url' in response) {
           onUpload(response.url)
         }
-      } else {
-        response = await uploadImage(file)
+      } else if (type === 'video') {
+        // Видео - только один файл
+        const response = await uploadVideo(firstFile)
         if ('url' in response) {
-          onUpload(response.url)
+          if (onUpload) onUpload(response.url)
+          else if (onMultipleUpload) onMultipleUpload([response.url])
+        }
+      } else {
+        // Одно изображение
+        const response = await uploadImage(firstFile)
+        if ('url' in response) {
+          if (onUpload) onUpload(response.url)
+          else if (onMultipleUpload) onMultipleUpload([response.url])
         }
       }
     } catch (error) {
@@ -74,13 +103,16 @@ export function FileUpload({
 
     const files = Array.from(e.dataTransfer.files)
     if (files.length > 0) {
-      if (multiple && type === 'images') {
-        files.forEach(file => handleFile(file))
-      } else {
-        handleFile(files[0])
+      // Фильтруем только изображения если type === 'images'
+      const filteredFiles = type === 'images' 
+        ? files.filter(f => f.type.startsWith('image/'))
+        : files
+      
+      if (filteredFiles.length > 0) {
+        handleFiles(filteredFiles)
       }
     }
-  }, [handleFile, multiple, type])
+  }, [handleFiles, type])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -95,13 +127,19 @@ export function FileUpload({
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (files.length > 0) {
-      if (multiple && type === 'images') {
-        files.forEach(file => handleFile(file))
-      } else {
-        handleFile(files[0])
+      // Фильтруем только изображения если type === 'images'
+      const filteredFiles = type === 'images' 
+        ? files.filter(f => f.type.startsWith('image/'))
+        : files
+      
+      if (filteredFiles.length > 0) {
+        handleFiles(filteredFiles)
       }
     }
-  }, [handleFile, multiple, type])
+    
+    // Сбрасываем input чтобы можно было загрузить те же файлы снова
+    e.target.value = ''
+  }, [handleFiles, type])
 
   const defaultAccept = type === 'video' 
     ? 'video/mp4,video/quicktime,video/x-msvideo'
@@ -115,10 +153,9 @@ export function FileUpload({
           {existingFiles.map((url, index) => (
             <div key={index} className="relative group">
               {type === 'image' || type === 'images' ? (
-                <img
-                  src={url}
+                <ExistingFilePreviewImage
+                  src={url.startsWith('http') ? url : url.startsWith('/') ? url : `/${url}`}
                   alt={`Upload ${index + 1}`}
-                  className="w-full h-32 object-cover rounded-lg border border-border"
                 />
               ) : (
                 <div className="w-full h-32 bg-muted rounded-lg border border-border flex items-center justify-center">
@@ -161,13 +198,30 @@ export function FileUpload({
           {isUploading ? (
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Загрузка...</p>
+              <p className="text-sm text-muted-foreground">Загрузка на сервер...</p>
+              {uploadProgress > 0 && (
+                <div className="w-full max-w-xs">
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">
               <Upload className="w-8 h-8 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
-                Перетащите файл{multiple ? 'ы' : ''} сюда или нажмите для выбора
+                {multiple && type === 'images' 
+                  ? 'Перетащите до 5 изображений сюда или нажмите для выбора'
+                  : `Перетащите файл${multiple ? 'ы' : ''} сюда или нажмите для выбора`}
+              </p>
+              <p className="text-xs text-muted-foreground/70">
+                {multiple && type === 'images' 
+                  ? 'Можно выбрать несколько файлов сразу (Ctrl/Cmd + клик) или перетащить папку'
+                  : 'Файлы загружаются на сервер и сохраняются локально'}
               </p>
               <Button type="button" variant="outline" size="sm">
                 Выбрать файл{multiple ? 'ы' : ''}

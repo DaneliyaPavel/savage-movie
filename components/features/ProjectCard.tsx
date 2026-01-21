@@ -32,8 +32,7 @@ const categoryLabels: Record<string, string> = {
 const getPlaybackId = (url: string | null): string | null => {
   if (!url) return null
   const muxMatch = url.match(/mux\.com\/([^/?]+)/)
-  if (muxMatch) return muxMatch[1]
-  return null
+  return muxMatch?.[1] ?? null
 }
 
 export function ProjectCard({
@@ -132,7 +131,7 @@ export function ProjectCard({
 
           <div className="p-6 md:p-8 flex-1 flex flex-col">
             {/* Title - крупный */}
-            <h3 className="text-xl md:text-2xl lg:text-3xl font-heading font-bold text-[#FFFFFF] mb-2 group-hover:text-[#CCFF00] transition-colors leading-tight">
+            <h3 className="text-xl md:text-2xl lg:text-3xl font-heading font-bold text-[#FFFFFF] mb-2 group-hover:text-[#ff2936] transition-colors leading-tight">
               {title}
             </h3>
             
