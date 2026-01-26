@@ -25,8 +25,8 @@ export function TopBar() {
         <span
           className={
             isHomePage
-              ? "text-2xl md:text-3xl font-black italic tracking-tight text-white"
-              : "text-xl font-medium tracking-tight text-white"
+              ? "text-2xl md:text-3xl font-brand tracking-tight text-white"
+              : "text-xl font-brand tracking-tight text-white"
           }
         >
           {logoText}

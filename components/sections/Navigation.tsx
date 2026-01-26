@@ -53,7 +53,7 @@ export function Navigation({ onBookClick, user }: NavigationProps) {
         <div className="absolute top-0 left-0 z-[102] pointer-events-auto">
           <Link 
             href="/" 
-            className="block px-4 md:px-6 py-3 md:py-4 font-heading font-bold text-sm md:text-base text-[#FFFFFF] hover:text-[#ff2936] transition-colors"
+            className="block px-4 md:px-6 py-3 md:py-4 font-brand text-sm md:text-base text-[#FFFFFF] hover:text-[#ff2936] transition-colors"
             onClick={() => setIsMenuOpen(false)}
           >
             SAVAGE MOVIE

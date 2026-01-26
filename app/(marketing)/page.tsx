@@ -17,15 +17,17 @@ export default async function HomePage() {
     titleEn: string
     directorRu: string
     directorEn: string
+    client: string | null
     thumbnail: string
     playbackId: string
+    slug?: string
   }> = []
 
   try {
     // Получаем только featured проекты для главной страницы (server-side)
     const featuredProjects = await getProjectsServer(undefined, true)
     // Преобразуем проекты в формат для ShowreelHero
-    projects = featuredProjects.slice(0, 6).map((p) => {
+    projects = featuredProjects.map((p) => {
       // Определяем thumbnail: сначала thumbnail_url, потом cover_image_url, потом первое изображение из массива
       let thumbnail = "/placeholder.svg"
       if (p.thumbnail_url) {
@@ -42,6 +44,7 @@ export default async function HomePage() {
         titleEn: p.title_en || p.title || "",
         directorRu: "", // TODO: добавить связь с директорами если нужно
         directorEn: "",
+        client: p.client || null,
         thumbnail: thumbnail,
         playbackId: p.mux_playback_id || SHOWREEL_PLAYBACK_ID,
         slug: p.slug,

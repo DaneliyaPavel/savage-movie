@@ -12,6 +12,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { VideoPlayer } from './VideoPlayer'
 import type { Project } from '@/lib/api/projects'
+import { HorizontalProjectMediaCard, VerticalProjectMediaCard } from '@/components/features/ProjectMediaCard'
+import { getProjectOrientation } from '@/lib/projects/orientation'
 
 interface ProjectRow3ColumnProps {
   project: Project
@@ -41,6 +43,13 @@ export function ProjectRow3Column({ project, index }: ProjectRow3ColumnProps) {
   const playbackId = project.video_url ? getPlaybackId(project.video_url) : null
   const screenshots = project.images || []
   const categoryLabel = project.category ? categoryLabels[project.category] : ''
+  const orientation = getProjectOrientation(project)
+  const isVertical = orientation === 'vertical'
+  const MediaCard = isVertical ? VerticalProjectMediaCard : HorizontalProjectMediaCard
+  const screenshotAspectClass = isVertical ? 'aspect-[9/16]' : 'aspect-video'
+  const mediaAspectClass = 'aspect-video'
+  const mediaCardClassName = 'w-full border border-[#1A1A1A]'
+  const mediaFitClassName = isVertical ? 'object-contain' : 'object-cover'
 
   // Обработка hover для видео
   const handleMouseEnter = () => {
@@ -105,7 +114,7 @@ export function ProjectRow3Column({ project, index }: ProjectRow3ColumnProps) {
                 {screenshots.slice(0, 4).map((image, imgIndex) => (
                   <div
                     key={imgIndex}
-                    className="relative aspect-video overflow-hidden bg-[#050505] border border-[#1A1A1A]"
+                    className={`relative ${screenshotAspectClass} overflow-hidden bg-[#050505] border border-[#1A1A1A]`}
                   >
                     <Image
                       src={image}
@@ -126,7 +135,7 @@ export function ProjectRow3Column({ project, index }: ProjectRow3ColumnProps) {
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
-            <div className="relative w-full aspect-video bg-[#000000] overflow-hidden border border-[#1A1A1A]">
+            <MediaCard className={mediaCardClassName} aspectClassName={mediaAspectClass}>
               {/* Poster/Thumbnail - показываем когда не hover или видео не играет */}
               {(!isHovered || !isVideoPlaying) && screenshots[0] && (
                 <motion.div
@@ -139,7 +148,7 @@ export function ProjectRow3Column({ project, index }: ProjectRow3ColumnProps) {
                     src={screenshots[0]}
                     alt={project.title}
                     fill
-                    className="object-cover"
+                    className={mediaFitClassName}
                   />
                 </motion.div>
               )}
@@ -158,6 +167,7 @@ export function ProjectRow3Column({ project, index }: ProjectRow3ColumnProps) {
                     muted={true}
                     loop={true}
                     controls={false}
+                    objectFit={isVertical ? 'contain' : 'cover'}
                     className="w-full h-full"
                   />
                 </motion.div>
@@ -174,7 +184,7 @@ export function ProjectRow3Column({ project, index }: ProjectRow3ColumnProps) {
                     muted
                     loop
                     playsInline
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full ${mediaFitClassName}`}
                     preload="metadata"
                   />
                 </motion.div>
@@ -199,7 +209,7 @@ export function ProjectRow3Column({ project, index }: ProjectRow3ColumnProps) {
                   смотреть
                 </span>
               </motion.div>
-            </div>
+            </MediaCard>
           </div>
 
           {/* Колонка 3: Название, описание + тематика */}

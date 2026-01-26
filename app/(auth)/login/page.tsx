@@ -3,7 +3,7 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +15,14 @@ import { Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginFallback />}>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -152,6 +160,22 @@ export default function LoginPage() {
               Зарегистрироваться
             </Link>
           </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function LoginFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-2xl font-heading">Вход</CardTitle>
+          <CardDescription>Загрузка...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-32 rounded-md bg-muted animate-pulse" />
         </CardContent>
       </Card>
     </div>

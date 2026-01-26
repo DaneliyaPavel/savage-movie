@@ -14,6 +14,7 @@ interface Project {
   titleEn: string
   directorRu: string
   directorEn: string
+  client?: string | null
   thumbnail: string
   playbackId: string
   slug?: string
@@ -51,6 +52,7 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
     ...p,
     title: getTitle(p),
     director: getDirector(p),
+    client: p.client,
   }))
 
   return (
@@ -95,7 +97,7 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
         className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
       >
         <div className="text-center px-6">
-          <h1 className="text-hero font-heading font-black italic uppercase text-white tracking-tight leading-[0.82] drop-shadow-[0_20px_60px_rgba(0,0,0,0.65)]">
+          <h1 className="text-hero font-brand uppercase text-white tracking-tight leading-[0.82] drop-shadow-[0_20px_60px_rgba(0,0,0,0.65)]">
             <span className="block">SAVAGE</span>
             <span className="block -mt-[0.12em]">MOVIE</span>
           </h1>

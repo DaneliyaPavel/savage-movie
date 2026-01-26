@@ -1,6 +1,6 @@
 ---
-name: coderabbit-review-loop
 description: This is a new rule
+alwaysApply: false
 ---
 
 # CodeRabbit review workflow
@@ -28,4 +28,3 @@ description: This is a new rule
 5. После исправлений можно ещё раз запустить CodeRabbit
    на тех же изменениях, но не более 3 полных циклов ревью.
    Если после 3 циклов проблемы остаются, опиши, что осталось нерешённым.
-

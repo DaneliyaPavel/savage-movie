@@ -35,13 +35,7 @@ pip install -r requirements.txt
 CREATE DATABASE savage_movie;
 ```
 
-2. Создайте файл `.env` на основе `.env.example`:
-
-```bash
-cp .env.example .env
-```
-
-3. Заполните переменные окружения в `.env`:
+2. Настройте переменные окружения (см. `.env.example`):
 
 ```env
 DB_HOST=localhost
@@ -73,18 +67,18 @@ ADMIN_EMAIL=savage.movie@yandex.ru
 APP_URL=http://localhost:3000
 ```
 
-### 3. Инициализация базы данных
+### 3. Инициализация базы данных (Alembic)
 
-Запустите SQL скрипт для создания таблиц:
+Для новой базы данных:
 
 ```bash
-psql -U postgres -d savage_movie -f scripts/init_db.sql
+alembic -c alembic.ini upgrade head
 ```
 
-Или используйте Python скрипт:
+Если база уже создана старыми SQL-скриптами и соответствует текущей модели:
 
 ```bash
-python scripts/init_db.py
+alembic -c alembic.ini stamp head
 ```
 
 ### 4. Запуск сервера
@@ -162,14 +156,14 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 3. Включите Google+ API
 4. Создайте OAuth 2.0 Client ID
 5. Добавьте authorized redirect URI: `http://localhost:8000/api/auth/oauth/google/callback`
-6. Скопируйте Client ID и Client Secret в `.env`
+6. Скопируйте Client ID и Client Secret в переменные окружения
 
 ### Yandex OAuth
 
 1. Перейдите в [Yandex OAuth](https://oauth.yandex.ru/)
 2. Создайте новое приложение
 3. Добавьте redirect URI: `http://localhost:8000/api/auth/oauth/yandex/callback`
-4. Скопируйте Client ID и Client Secret в `.env`
+4. Скопируйте Client ID и Client Secret в переменные окружения
 
 ## Деплой на VPS
 
@@ -230,12 +224,18 @@ server {
 
 ## Миграции
 
-Для управления миграциями БД рекомендуется использовать Alembic:
+Используем Alembic. Конфиг: `backend/alembic.ini`.
+
+Создать новую миграцию:
 
 ```bash
-alembic init alembic
-alembic revision --autogenerate -m "Initial migration"
-alembic upgrade head
+alembic -c alembic.ini revision --autogenerate -m "Describe change"
+```
+
+Применить миграции:
+
+```bash
+alembic -c alembic.ini upgrade head
 ```
 
 ## Тестирование

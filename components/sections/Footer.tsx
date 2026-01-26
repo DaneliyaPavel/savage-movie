@@ -30,7 +30,7 @@ export function Footer() {
             animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
             transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           >
-            <h3 className="font-heading font-bold text-2xl md:text-3xl mb-6 text-[#FFFFFF]">
+            <h3 className="font-brand text-2xl md:text-3xl mb-6 text-[#FFFFFF]">
               SAVAGE MOVIE
             </h3>
             <p className="text-sm md:text-base text-[#FFFFFF]/60 font-light leading-relaxed max-w-xs">
@@ -155,7 +155,8 @@ export function Footer() {
           className="border-t border-[#1A1A1A] pt-8 text-center"
         >
           <p className="text-sm text-[#FFFFFF]/40 font-light">
-            &copy; {new Date().getFullYear()} SAVAGE MOVIE. Все права защищены.
+            &copy; {new Date().getFullYear()}{" "}
+            <span className="font-brand">SAVAGE MOVIE</span>. Все права защищены.
           </p>
         </motion.div>
       </motion.div>

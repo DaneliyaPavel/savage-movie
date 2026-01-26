@@ -15,6 +15,7 @@ interface VideoPlayerProps {
   muted?: boolean
   loop?: boolean
   controls?: boolean
+  objectFit?: 'cover' | 'contain'
   className?: string
 }
 
@@ -25,8 +26,14 @@ export function VideoPlayer({
   muted = false,
   loop = false,
   controls = true,
+  objectFit,
   className,
 }: VideoPlayerProps) {
+  const playerStyle = {
+    '--controls': controls ? 'flex' : 'none',
+    ...(objectFit ? { '--media-object-fit': objectFit } : {}),
+  } as MuxStyle
+
   return (
     <div className={className}>
       <MuxPlayer
@@ -38,11 +45,7 @@ export function VideoPlayer({
         autoPlay={autoplay}
         muted={muted}
         loop={loop}
-        style={
-          {
-            '--controls': controls ? 'flex' : 'none',
-          } as MuxStyle
-        }
+        style={playerStyle}
         className="w-full h-full"
       />
     </div>

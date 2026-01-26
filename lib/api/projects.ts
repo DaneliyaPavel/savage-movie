@@ -2,6 +2,7 @@
  * API функции для проектов
  */
 import { apiGet, apiPost, apiPut, apiDelete } from './client'
+import type { ProjectOrientation } from '@/lib/projects/orientation'
 
 export interface Project {
   id: string
@@ -11,6 +12,7 @@ export interface Project {
   client: string | null
   category: 'commercial' | 'ai-content' | 'music-video' | 'other'
   video_url: string | null
+  orientation?: ProjectOrientation | null
   images: string[] | null
   duration: number | null
   role: string | null
@@ -90,6 +92,7 @@ export interface ProjectCreate {
   client?: string | null
   category: 'commercial' | 'ai-content' | 'music-video' | 'other'
   video_url?: string | null
+  orientation?: ProjectOrientation | null
   images?: string[] | null
   duration?: number | null
   role?: string | null
@@ -113,6 +116,7 @@ export interface ProjectUpdate {
   client?: string | null
   category?: 'commercial' | 'ai-content' | 'music-video' | 'other'
   video_url?: string | null
+  orientation?: ProjectOrientation | null
   images?: string[] | null
   duration?: number | null
   role?: string | null

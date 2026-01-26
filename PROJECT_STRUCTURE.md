@@ -139,56 +139,74 @@ savage-movie/
 │
 ├── backend/                      # Python FastAPI Backend
 │   ├── app/
-│   │   ├── api/                  # API эндпоинты
-│   │   │   ├── auth.py           # Аутентификация
-│   │   │   ├── clients.py        # Клиенты
-│   │   │   ├── contact.py        # Контакты
-│   │   │   ├── courses.py        # Курсы
-│   │   │   ├── enrollments.py    # Записи на курсы
-│   │   │   ├── projects.py       # Проекты
-│   │   │   ├── settings.py       # Настройки
-│   │   │   ├── sitemap.py        # Sitemap
-│   │   │   ├── testimonials.py   # Отзывы
-│   │   │   └── upload.py         # Загрузка файлов
+│   │   ├── delivery/             # Delivery слой (FastAPI)
+│   │   │   └── api/              # API эндпоинты
+│   │   │       ├── auth.py       # Аутентификация
+│   │   │       ├── clients.py    # Клиенты
+│   │   │       ├── contact.py    # Контакты
+│   │   │       ├── courses.py    # Курсы
+│   │   │       ├── enrollments.py # Записи на курсы
+│   │   │       ├── projects.py   # Проекты
+│   │   │       ├── settings.py   # Настройки
+│   │   │       ├── sitemap.py    # Sitemap
+│   │   │       ├── testimonials.py # Отзывы
+│   │   │       └── upload.py     # Загрузка файлов
 │   │   │
-│   │   ├── models/               # SQLAlchemy модели
-│   │   │   ├── booking.py        # Бронирования
-│   │   │   ├── client.py         # Клиенты
-│   │   │   ├── contact.py        # Контакты
-│   │   │   ├── course.py         # Курсы
-│   │   │   ├── enrollment.py     # Записи на курсы
-│   │   │   ├── project.py        # Проекты
-│   │   │   ├── setting.py        # Настройки
-│   │   │   ├── testimonial.py    # Отзывы
-│   │   │   └── user.py           # Пользователи
+│   │   ├── application/          # Application слой
+│   │   │   └── services/         # Application сервисы
+│   │   │       └── auth_service.py # JWT и токены
 │   │   │
-│   │   ├── schemas/              # Pydantic схемы
-│   │   │   ├── client.py
-│   │   │   ├── course.py
-│   │   │   ├── enrollment.py
-│   │   │   ├── project.py
-│   │   │   ├── setting.py
-│   │   │   ├── testimonial.py
-│   │   │   └── user.py
+│   │   ├── infrastructure/       # Инфраструктура
+│   │   │   ├── db/               # БД и ORM
+│   │   │   │   ├── session.py    # Подключение к БД
+│   │   │   │   ├── models/       # SQLAlchemy модели
+│   │   │   │       ├── booking.py        # Бронирования
+│   │   │   │       ├── client.py         # Клиенты
+│   │   │   │       ├── contact.py        # Контакты
+│   │   │   │       ├── course.py         # Курсы
+│   │   │   │       ├── enrollment.py     # Записи на курсы
+│   │   │   │       ├── project.py        # Проекты
+│   │   │   │       ├── setting.py        # Настройки
+│   │   │   │       ├── testimonial.py    # Отзывы
+│   │   │   │       └── user.py           # Пользователи
+│   │   │   │   └── repositories/ # Репозитории БД
+│   │   │   │       ├── clients.py  # Клиенты
+│   │   │   │       ├── blog.py  # Блог
+│   │   │   │       ├── courses.py  # Курсы
+│   │   │   │       ├── enrollments.py # Записи
+│   │   │   │       ├── projects.py # Проекты
+│   │   │   │       ├── sitemap.py # Sitemap
+│   │   │   │       ├── settings.py # Настройки
+│   │   │   │       ├── testimonials.py # Отзывы
+│   │   │   │       └── users.py # Пользователи
+│   │   │   └── integrations/    # Внешние интеграции
+│   │   │       ├── email_service.py  # Email сервис
+│   │   │       └── oauth_service.py  # OAuth сервис
 │   │   │
-│   │   ├── services/             # Бизнес-логика
-│   │   │   ├── auth_service.py   # Сервис аутентификации
-│   │   │   ├── email_service.py  # Email сервис
-│   │   │   └── oauth_service.py  # OAuth сервис
+│   │   ├── interfaces/           # DTO и адаптеры
+│   │   │   └── schemas/          # Pydantic схемы
+│   │   │       ├── client.py
+│   │   │       ├── contact.py
+│   │   │       ├── course.py
+│   │   │       ├── enrollment.py
+│   │   │       ├── project.py
+│   │   │       ├── setting.py
+│   │   │       ├── testimonial.py
+│   │   │       └── user.py
 │   │   │
 │   │   ├── utils/                # Утилиты
 │   │   │   └── security.py       # Безопасность (JWT, пароли)
 │   │   │
 │   │   ├── middleware/           # Middleware
 │   │   ├── config.py            # Конфигурация
-│   │   ├── database.py          # Подключение к БД
 │   │   └── main.py              # Точка входа FastAPI
 │   │
-│   ├── scripts/                  # Скрипты инициализации
-│   │   ├── init_db.py           # Инициализация БД
-│   │   ├── init_db.sql          # SQL скрипты
-│   │   ├── add_admin_tables.sql # Добавление админ таблиц
-│   │   └── add_directors_fields.sql
+│   ├── alembic/                  # Alembic миграции
+│   │   └── versions/             # Версии миграций
+│   │
+│   ├── scripts/                  # SQL утилиты для поддержки/восстановления
+│   │   ├── check_data.sql        # Проверка данных
+│   │   └── fix_display_order.sql # Исправление порядка отображения
 │   │
 │   ├── uploads/                  # Загруженные файлы
 │   │   ├── images/               # Изображения
@@ -296,22 +314,14 @@ savage-movie/
 │   ├── payments/                 # Платежи
 │   │   └── yookassa.ts
 │   │
-│   ├── supabase/                 # Supabase клиенты
-│   │   ├── client.ts            # Клиентский
-│   │   └── server.ts            # Серверный
-│   │
 │   └── utils.ts                  # Общие утилиты
 │
-├── types/                        # TypeScript типы
-│   └── database.ts              # Типы базы данных
+├── types/                        # TypeScript типы (зарезервировано)
 │
 ├── public/                       # Статические файлы
 │   ├── robots.txt
 │   └── [svg иконки]
 │
-├── supabase/                     # Supabase конфигурация
-│   └── migrations/
-│       └── 001_initial_schema.sql
 │
 ├── scripts/                      # Скрипты развертывания
 │   ├── create-admin-*.sh        # Создание админа

@@ -4,13 +4,14 @@
  */
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ProjectRow3Column } from '@/components/features/ProjectRow3Column'
 import { FilterChips } from '@/components/ui/filter-chips'
 import { useRouter } from 'next/navigation'
 import { CreativeStrikethrough } from '@/components/ui/creative-strikethrough'
 import type { Project } from '@/lib/api/projects'
+import { filterProjectsByOrientation, type ProjectOrientationFilter } from '@/lib/projects/orientation'
 
 interface ProjectsPageClientProps {
   projects: Project[]
@@ -27,6 +28,7 @@ const categoryFilters = [
 
 export function ProjectsPageClient({ projects, category: initialCategory }: ProjectsPageClientProps) {
   const [category, setCategory] = useState(initialCategory)
+  const [orientationFilter, setOrientationFilter] = useState<ProjectOrientationFilter>('all')
   const router = useRouter()
 
   const handleCategoryChange = (value: string) => {
@@ -38,9 +40,20 @@ export function ProjectsPageClient({ projects, category: initialCategory }: Proj
     router.push(`/projects${params.toString() ? `?${params.toString()}` : ''}`)
   }
 
-  const filteredProjects = category === 'all'
-    ? projects
-    : projects.filter(p => p.category === category)
+  const categoryFilteredProjects = useMemo(() => (
+    category === 'all'
+      ? projects
+      : projects.filter(p => p.category === category)
+  ), [category, projects])
+  const filteredProjects = useMemo(
+    () => filterProjectsByOrientation(categoryFilteredProjects, orientationFilter),
+    [categoryFilteredProjects, orientationFilter]
+  )
+  const orientationFilters = [
+    { value: 'all', label: 'Все' },
+    { value: 'horizontal', label: 'Горизонтальные' },
+    { value: 'vertical', label: 'Вертикальные' },
+  ] as const
 
   return (
     <div className="min-h-screen pt-0 pb-20 bg-[#000000]">
@@ -72,6 +85,45 @@ export function ProjectsPageClient({ projects, category: initialCategory }: Proj
             activeFilter={category}
             onFilterChange={handleCategoryChange}
           />
+          <div className="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="text-xs md:text-sm uppercase tracking-[0.35em] text-[#FFFFFF]/50">
+              Ориентация
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {orientationFilters.map((filter) => {
+                const isActive = orientationFilter === filter.value
+                const shapeBase = 'rounded-[2px] border border-current/40 bg-current/10'
+                const horizontalShape = `${shapeBase} h-3 md:h-3.5 aspect-[16/9]`
+                const verticalShape = `${shapeBase} h-5 md:h-6 aspect-[9/16]`
+
+                return (
+                  <button
+                    key={filter.value}
+                    type="button"
+                    onClick={() => setOrientationFilter(filter.value)}
+                    aria-pressed={isActive}
+                    className={`group inline-flex items-center gap-3 rounded-md border px-4 py-3 text-[10px] md:text-xs uppercase tracking-[0.25em] transition ${
+                      isActive
+                        ? 'border-[#ff2936]/70 bg-[#ff2936]/10 text-white shadow-[0_10px_30px_rgba(255,41,54,0.18)]'
+                        : 'border-white/10 bg-white/5 text-white/60 hover:border-white/30 hover:text-white'
+                    }`}
+                  >
+                    {filter.value === 'all' ? (
+                      <span className="flex items-end gap-1">
+                        <span className={horizontalShape} />
+                        <span className={verticalShape} />
+                      </span>
+                    ) : filter.value === 'vertical' ? (
+                      <span className={verticalShape} />
+                    ) : (
+                      <span className={horizontalShape} />
+                    )}
+                    <span>{filter.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         </motion.div>
 
         {/* Projects - 3-колоночный layout */}

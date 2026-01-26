@@ -36,7 +36,6 @@
   ],
   "exclude": [
     "node_modules",
-    "__v0_reference__",
     "**/__tests__/**",
     "**/*.test.ts",
     "**/*.test.tsx",

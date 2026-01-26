@@ -39,6 +39,7 @@ const saNoRules = localFont({
   fallback: ["Kalam", "Caveat", "cursive"],
 });
 
+
 export const metadata: Metadata = {
   title: "SAVAGE MOVIE | Видеопродакшн | ИИ-генерация | Обучение",
   description: "Полный цикл видеопродакшна от разработки креативной концепции до публикации. Реклама, клипы, имиджевые видео. Обучение ИИ-генерации, съемке и монтажу.",

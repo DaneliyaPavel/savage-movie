@@ -1,5 +1,6 @@
 import type { Course as ApiCourse } from '@/lib/api/courses'
 import type { Project as ApiProject } from '@/lib/api/projects'
+import { normalizeProjectOrientation, type ProjectOrientation } from '@/lib/projects/orientation'
 
 export type MarketingCourseLevel = 'beginner' | 'intermediate' | 'advanced' | 'all'
 
@@ -84,6 +85,7 @@ export interface MarketingProject {
   videoUrl: string
   descriptionRu: string
   descriptionEn: string
+  orientation: ProjectOrientation
   isAI?: boolean
 }
 
@@ -128,6 +130,7 @@ export function toMarketingProject(project: ApiProject): MarketingProject {
     videoUrl: project.video_url && project.video_url.trim() !== '' ? project.video_url : '',
     descriptionRu: description || 'Описание проекта',
     descriptionEn: description || 'Project description',
+    orientation: normalizeProjectOrientation(project.orientation),
     isAI: project.category === 'ai-content',
   }
 }
