@@ -1,46 +1,30 @@
-# Инструкция по применению миграции
+# Инструкция по миграциям (Alembic)
 
-## Проблема
-После добавления drag-and-drop функциональности курсы и проекты могут не отображаться, если миграция не применена.
+## Когда нужно
+Если после изменений схемы курсы/проекты не отображаются или admin drag-and-drop не работает, проверьте, что миграции Alembic применены.
 
-## Решение
+## Для новой БД (рекомендуемый путь)
 
-### 1. Применить SQL миграцию
-
-Выполните следующую команду в терминале:
-
+Локально:
 ```bash
-docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie < backend/scripts/add_course_and_project_fields.sql
+alembic -c backend/alembic.ini upgrade head
 ```
 
-Или подключитесь к базе данных и выполните SQL вручную:
-
-```sql
--- Добавление полей для курсов: level, certificate, format, display_order
-ALTER TABLE courses 
-ADD COLUMN IF NOT EXISTS level VARCHAR,
-ADD COLUMN IF NOT EXISTS certificate VARCHAR,
-ADD COLUMN IF NOT EXISTS format VARCHAR,
-ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
-
--- Добавление поля display_order для проектов
-ALTER TABLE projects 
-ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
-
--- Создание индексов для оптимизации сортировки
-CREATE INDEX IF NOT EXISTS idx_courses_display_order ON courses(display_order);
-CREATE INDEX IF NOT EXISTS idx_projects_display_order ON projects(display_order);
-```
-
-### 2. Перезапустить backend
-
-После применения миграции перезапустите backend контейнер:
-
+В Docker (backend контейнер):
 ```bash
-docker-compose -f docker-compose.dev.yml restart backend
+docker exec savage_movie_backend_dev alembic -c /app/backend/alembic.ini upgrade head
 ```
 
-### 3. Проверить работу
+## Для существующей БД (созданной SQL-скриптами)
+
+Если база уже создана старыми SQL-скриптами и соответствует текущей модели:
+```bash
+alembic -c backend/alembic.ini stamp head
+```
+
+Это пометит схему как актуальную без повторного создания таблиц.
+
+## Проверка
 
 Откройте сайт и проверьте:
 - `/projects` - должны отображаться проекты
@@ -60,7 +44,7 @@ docker logs savage_movie_backend_dev
 docker logs savage_movie_frontend_dev
 ```
 
-3. Проверьте, что поля добавлены в БД:
+3. Проверьте таблицы:
 ```bash
 docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie -c "\d courses"
 docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie -c "\d projects"

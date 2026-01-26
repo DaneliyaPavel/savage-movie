@@ -9,13 +9,6 @@ services:
       POSTGRES_DB: savage_movie
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/scripts/init_db.sql:/docker-entrypoint-initdb.d/01_init_db.sql:ro
-      - ./backend/scripts/add_admin_tables.sql:/docker-entrypoint-initdb.d/02_add_admin_tables.sql:ro
-      # Миграции для актуальных полей (важно для /api/projects и carousel на главной)
-      - ./backend/scripts/add_project_fields.sql:/docker-entrypoint-initdb.d/03_add_project_fields.sql:ro
-      - ./backend/scripts/add_course_and_project_fields.sql:/docker-entrypoint-initdb.d/04_add_course_and_project_fields.sql:ro
-      - ./backend/scripts/add_directors_fields.sql:/docker-entrypoint-initdb.d/05_add_directors_fields.sql:ro
-      - ./backend/scripts/add_blog_posts.sql:/docker-entrypoint-initdb.d/06_add_blog_posts.sql:ro
     ports:
       - "5433:5432"  # Используем 5433 на хосте, чтобы не конфликтовать с локальным PostgreSQL
     healthcheck:
@@ -64,13 +57,7 @@ services:
         condition: service_healthy
     networks:
       - savage_movie_network
-    command: >
-      sh -c "
-        echo 'Waiting for database...' &&
-        sleep 5 &&
-        cd /app/backend &&
-        uvicorn app.main:app --host 0.0.0.0 --port 8000
-      "
+    command: sh -c "cd /app/backend && alembic -c /app/backend/alembic.ini upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
 
   # Next.js Frontend
   frontend:

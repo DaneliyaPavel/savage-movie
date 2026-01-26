@@ -64,7 +64,6 @@ class Settings(BaseSettings):
         return origins
     
     class Config:
-        env_file = ".env"
         case_sensitive = True
 
 

@@ -28,7 +28,7 @@
 git clone <repository-url>
 cd savage-movie
 
-# 2. Запустите скрипт инициализации (создаст .env и запустит контейнеры)
+# 2. Запустите скрипт инициализации (использует переменные окружения и запустит контейнеры)
 ./scripts/init-docker.sh
 
 # Или запустите вручную
@@ -65,7 +65,8 @@ cd savage-movie
 npm install
 ```
 
-3. Создайте файл `.env.local` на основе `.env.example`:
+3. При необходимости задайте переменные окружения (см. `.env.example`).
+Для фронтенда можно использовать локальный файл:
 
 ```bash
 cp .env.example .env.local
@@ -78,11 +79,11 @@ cp .env.example .env.local
 ```bash
 cd backend
 pip install -r requirements.txt
-cp .env.example .env
-# Заполните переменные окружения в backend/.env
-# Создайте БД PostgreSQL и выполните миграции
-psql -U postgres -d savage_movie -f scripts/init_db.sql
-psql -U postgres -d savage_movie -f scripts/add_admin_tables.sql
+# Переменные окружения задаются через окружение (см. backend/.env.example)
+# Создайте БД PostgreSQL и примените миграции Alembic
+alembic -c alembic.ini upgrade head
+# Если база уже создана SQL-скриптами:
+# alembic -c alembic.ini stamp head
 # Запустите API сервер
 uvicorn app.main:app --reload --port 8000
 ```
@@ -132,9 +133,10 @@ docker exec -it savage_movie_db_dev psql -U postgres -d savage_movie -c \
 
 ## Настройка переменных окружения
 
-### Frontend (`.env.local`)
+### Frontend (переменные окружения)
 
-Создайте файл `.env.local` в корне проекта:
+Используйте `.env.example` как список необходимых переменных.
+Для локальной разработки можно создать `.env.local` в корне проекта:
 
 ```env
 # Python API
@@ -168,9 +170,10 @@ NEXT_PUBLIC_GA_MEASUREMENT_ID=your_ga_measurement_id
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-### Backend (`backend/.env`)
+### Backend (переменные окружения)
 
-Создайте файл `backend/.env`:
+Список переменных — в `backend/.env.example`. Задавайте их через окружение
+или используйте локальный способ (Docker Compose, export и т.д.).
 
 ```env
 # Database
@@ -276,15 +279,22 @@ savage-movie/
 ├── types/                  # TypeScript типы
 ├── backend/                # Python FastAPI backend
 │   ├── app/               # Приложение FastAPI
-│   │   ├── api/           # API роуты
-│   │   ├── models/        # SQLAlchemy модели
-│   │   ├── schemas/       # Pydantic схемы
-│   │   └── services/      # Бизнес-логика
-│   └── scripts/           # Скрипты (миграции БД)
-└── supabase/              # Старые Supabase миграции (для референса)
+│   │   ├── delivery/      # Delivery слой (API роуты)
+│   │   ├── interfaces/    # DTO и адаптеры
+│   │   │   └── schemas/   # Pydantic схемы
+│   │   ├── application/   # Application слой
+│   │   │   └── services/  # Application сервисы
+│   │   ├── infrastructure/ # Инфраструктура
+│   │   │   ├── db/        # БД и ORM
+│   │   │   │   └── models/ # SQLAlchemy модели
+│   │   │   └── integrations/ # Внешние интеграции
+│   ├── alembic/           # Alembic миграции
+│   └── scripts/           # SQL утилиты (поддержка/восстановление)
 ```
 
-Подробная структура проекта: см. [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)
+Подробная структура проекта: см. [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md).
+Архитектура и решения: [ARCHITECTURE.md](ARCHITECTURE.md), [TARGET_STRUCTURE.md](TARGET_STRUCTURE.md).
+История изменений: [CHANGELOG.md](CHANGELOG.md).
 
 ## Основные функции
 
@@ -358,6 +368,16 @@ savage-movie/
    - A-запись для API (например, api.savagemovie.ru)
    - CNAME для frontend (например, savagemovie.ru)
 3. SSL сертификаты будут выданы автоматически (Vercel) или через Let's Encrypt (VPS)
+
+## Коммит и пуш
+
+Скрипт для сбора изменений, коммита и пуша в Git:
+
+```bash
+bash scripts/git-commit-and-push.sh
+```
+
+При первом пуше задайте remote: `git remote add origin <URL>`.
 
 ## Лицензия
 

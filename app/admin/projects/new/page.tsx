@@ -40,6 +40,7 @@ const formSchema = z.object({
   client: z.string().optional(),
   category: z.enum(['commercial', 'ai-content', 'music-video', 'other']),
   video_url: z.string().url('Некорректный URL').optional().or(z.literal('')),
+  orientation: z.enum(['horizontal', 'vertical']).optional(),
   duration: z.number().optional(),
   role: z.string().optional(),
   is_featured: z.boolean().optional(),
@@ -70,6 +71,7 @@ export default function NewProjectPage() {
       client: '',
       category: 'commercial',
       video_url: '',
+      orientation: 'horizontal',
       duration: undefined,
       role: '',
       is_featured: false,
@@ -106,6 +108,7 @@ export default function NewProjectPage() {
         description: values.description || null,
         client: values.client || null,
         video_url: values.video_url || null,
+        orientation: values.orientation || 'horizontal',
         images: images.length > 0 ? images : null,
         tools: tools.length > 0 ? tools : null,
         behind_scenes: [...behindScenes, ...behindScenesFiles].length > 0 
@@ -273,6 +276,29 @@ export default function NewProjectPage() {
               )}
             />
           </div>
+
+          <FormField
+            control={form.control}
+            name="orientation"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Ориентация видео</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="horizontal">Горизонтальное (16:9)</SelectItem>
+                    <SelectItem value="vertical">Вертикальное (9:16)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+                <p className="text-xs text-muted-foreground">Используется для корректного отображения в списке проектов</p>
+              </FormItem>
+            )}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <FormField

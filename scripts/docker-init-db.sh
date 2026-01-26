@@ -1,15 +1,21 @@
 #!/bin/bash
-# Скрипт для инициализации БД в Docker контейнере
+# Скрипт для применения миграций Alembic в Docker
 
 set -e
 
-echo "Waiting for PostgreSQL to be ready..."
-sleep 5
+COMPOSE_FILE="${1:-docker-compose.dev.yml}"
 
-echo "Running initial database migration..."
-psql -U postgres -d savage_movie -f /docker-entrypoint-initdb.d/init_db.sql
+COMPOSE_CMD="docker-compose"
+if ! command -v docker-compose &> /dev/null; then
+    if command -v docker &> /dev/null && docker compose version &> /dev/null; then
+        COMPOSE_CMD="docker compose"
+    else
+        echo "Docker Compose is not installed."
+        exit 1
+    fi
+fi
 
-echo "Running admin tables migration..."
-psql -U postgres -d savage_movie -f /docker-entrypoint-initdb.d/add_admin_tables.sql
+echo "Running Alembic migrations..."
+$COMPOSE_CMD -f "$COMPOSE_FILE" run --rm backend alembic -c /app/backend/alembic.ini upgrade head
 
-echo "Database initialization complete!"
+echo "Database migration complete!"

@@ -44,20 +44,20 @@ export function ProjectsJalousieFooter() {
           </div>
 
           {/* Subtitle */}
-          <p className="text-background/80 text-sm md:text-base mb-8 tracking-wide font-cinzel-bold">
+          <p className="text-background/80 text-sm md:text-base mb-8 tracking-wide font-secondary">
             {language === 'ru' ? 'Креативная продакшн-студия' : 'Creative Production Company'}
           </p>
 
           {/* Large Logo */}
           <div className="relative mb-8">
-            <h2 className="text-[15vw] md:text-[12vw] font-black italic text-background leading-none tracking-tight">
+            <h2 className="text-[15vw] md:text-[12vw] font-brand text-background leading-none tracking-tight">
               savage movie
             </h2>
             <span className="absolute -top-2 -right-4 md:-right-8 text-background text-xl md:text-2xl">®</span>
           </div>
 
           {/* Newsletter text */}
-          <p className="text-background/80 text-center max-w-xl mb-6 text-sm md:text-base leading-relaxed font-cinzel">
+          <p className="text-background/80 text-center max-w-xl mb-6 text-sm md:text-base leading-relaxed font-secondary">
             {language === 'ru'
               ? 'Будьте в курсе. Узнавайте первыми о наших новых работах, обновлениях и всём интересном, что происходит в Savage Movie. Подпишитесь на рассылку.'
               : "Keep in the loop. Be the first to know about our latest work, exciting updates, and everything else that's happening at Savage Movie. Subscribe to our newsletter."}
@@ -101,13 +101,13 @@ export function ProjectsJalousieFooter() {
               </div>
             </div>
 
-            <div className="text-center font-cinzel">
-              <span className="uppercase tracking-[0.25em] font-cinzel-bold">
+            <div className="text-center font-secondary">
+              <span className="uppercase tracking-[0.25em] font-secondary">
                 {new Date().getFullYear()}© {language === 'ru' ? 'Видим смысл' : 'See the meaning'}
               </span>
             </div>
 
-            <div className="flex items-center gap-4 uppercase tracking-[0.25em] text-[0.7rem] md:text-xs font-cinzel">
+            <div className="flex items-center gap-4 uppercase tracking-[0.25em] text-[0.7rem] md:text-xs font-secondary">
               <a href="/privacy" className="hover:text-background transition-colors">
                 {language === 'ru' ? 'Политика' : 'Privacy'}
               </a>

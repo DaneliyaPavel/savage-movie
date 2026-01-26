@@ -1,6 +1,6 @@
 ---
-name: coderabbit-run
 description: This is a new rule
+alwaysApply: false
 ---
 
 # Running the CodeRabbit CLI

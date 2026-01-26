@@ -4,11 +4,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.api import auth, projects, courses, enrollments, contact, sitemap, upload, clients, testimonials, settings as settings_api, payments, blog
+from app.delivery.api import auth, projects, courses, enrollments, contact, sitemap, upload, clients, testimonials, settings as settings_api, payments, blog
 
 from sqlalchemy import select
-from app.database import AsyncSessionLocal
-from app.models.user import User
+from app.infrastructure.db.session import AsyncSessionLocal
+from app.infrastructure.db.models.user import User
 from app.utils.security import hash_password
 
 app = FastAPI(

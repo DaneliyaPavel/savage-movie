@@ -7,47 +7,16 @@
 ### Вариант 1: Автоматическая инициализация
 
 ```bash
-# Запустить скрипт инициализации (создаст .env и запустит контейнеры)
+# Запустить скрипт инициализации (использует переменные окружения и запустит контейнеры)
 ./scripts/init-docker.sh
 ```
 
 ### Вариант 2: Ручная настройка
 
-### 1. Создайте файл `.env` в корне проекта
+### 1. Настройте переменные окружения (опционально)
 
-```env
-# Database
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=savage_movie
-
-# JWT
-JWT_SECRET=your_very_secret_jwt_key_change_in_production
-
-# OAuth
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-YANDEX_CLIENT_ID=your_yandex_client_id
-YANDEX_CLIENT_SECRET=your_yandex_client_secret
-
-# Frontend
-NEXT_PUBLIC_API_URL=http://localhost:8001
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id
-NEXT_PUBLIC_YANDEX_CLIENT_ID=your_yandex_client_id
-
-# Payments
-YOOKASSA_SHOP_ID=your_shop_id
-YOOKASSA_SECRET_KEY=your_secret_key
-
-# Other services
-NEXT_PUBLIC_CALENDLY_URL=your_calendly_url
-MUX_TOKEN_ID=your_mux_token_id
-MUX_TOKEN_SECRET=your_mux_token_secret
-NEXT_PUBLIC_MUX_ENV_KEY=your_mux_env_key
-RESEND_API_KEY=your_resend_api_key
-RESEND_FROM_EMAIL=noreply@savagemovie.ru
-ADMIN_EMAIL=savage.movie@yandex.ru
-```
+Используйте `.env.example` как список необходимых переменных. Для Docker можно
+передать их через окружение или через ваш способ управления секретами.
 
 ### 2. Запуск в режиме разработки
 
@@ -122,36 +91,22 @@ ports:
 
 ## Выполнение миграций БД
 
-Миграции выполняются **автоматически** при первом запуске контейнера БД через volume mount `/docker-entrypoint-initdb.d`.
+Миграции выполняются **автоматически** при старте backend контейнера через Alembic.
 
-Скрипты выполняются в порядке:
-
-1. `01_init_db.sql` - основные таблицы
-2. `02_add_admin_tables.sql` - таблицы админ-панели
-
-**Важно:** Миграции выполняются только при первом создании volume. Если volume уже существует, миграции не выполнятся автоматически.
-
-Для ручного выполнения (если нужно):
+Для ручного запуска (если нужно):
 
 ```bash
-# Войти в контейнер БД
-docker exec -it savage_movie_db_dev bash
+# Dev окружение
+docker exec savage_movie_backend_dev alembic -c /app/backend/alembic.ini upgrade head
 
-# Выполнить миграции
-psql -U postgres -d savage_movie -f /docker-entrypoint-initdb.d/init_db.sql
-psql -U postgres -d savage_movie -f /docker-entrypoint-initdb.d/add_admin_tables.sql
+# Prod окружение
+docker exec savage_movie_backend_prod alembic -c /app/backend/alembic.ini upgrade head
 ```
 
-Или из хоста:
+Если база уже создана старыми SQL-скриптами и соответствует текущей модели, пометьте её как актуальную:
 
 ```bash
-# Для dev окружения
-docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie < backend/scripts/init_db.sql
-docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie < backend/scripts/add_admin_tables.sql
-
-# Для prod окружения
-docker exec -i savage_movie_db_prod psql -U postgres -d savage_movie < backend/scripts/init_db.sql
-docker exec -i savage_movie_db_prod psql -U postgres -d savage_movie < backend/scripts/add_admin_tables.sql
+docker exec savage_movie_backend_dev alembic -c /app/backend/alembic.ini stamp head
 ```
 
 ### Пересоздание БД с миграциями
@@ -162,7 +117,7 @@ docker exec -i savage_movie_db_prod psql -U postgres -d savage_movie < backend/s
 # Остановить и удалить volumes (ОСТОРОЖНО: удалит все данные!)
 docker-compose -f docker-compose.dev.yml down -v
 
-# Запустить заново (миграции выполнятся автоматически)
+# Запустить заново (миграции применятся через Alembic)
 docker-compose -f docker-compose.dev.yml up -d
 ```
 
@@ -308,8 +263,7 @@ lsof -ti:8000 | xargs kill -9
 Выполните вручную:
 
 ```bash
-docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie < backend/scripts/init_db.sql
-docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie < backend/scripts/add_admin_tables.sql
+docker exec savage_movie_backend_dev alembic -c /app/backend/alembic.ini upgrade head
 ```
 
 ### Очистка и перезапуск

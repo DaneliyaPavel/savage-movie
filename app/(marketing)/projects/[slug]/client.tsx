@@ -135,7 +135,7 @@ export function ProjectDetailClient({ project, nextProject }: ProjectDetailClien
               className="mb-12 md:mb-16 text-center"
             >
               {project.client && (
-                <div className="text-sm md:text-base text-[#FFFFFF]/70 uppercase tracking-[0.35em] font-cinzel-bold">
+                <div className="text-sm md:text-base text-[#FFFFFF]/70 uppercase tracking-[0.35em] font-secondary">
                   {project.client}
                 </div>
               )}
@@ -157,7 +157,7 @@ export function ProjectDetailClient({ project, nextProject }: ProjectDetailClien
                 >
                   (Описание)
                 </div>
-                <div className="max-w-3xl mx-auto text-center text-[#FFFFFF]/80 font-cinzel text-base md:text-lg leading-relaxed">
+                <div className="max-w-3xl mx-auto text-center text-[#FFFFFF]/80 font-secondary text-base md:text-lg leading-relaxed">
                   <ReactMarkdown
                     components={{
                       p: ({ children }) => <p className="mb-5 last:mb-0">{children}</p>,
@@ -253,7 +253,7 @@ export function ProjectDetailClient({ project, nextProject }: ProjectDetailClien
                     transition={{ duration: 0.3 }}
                   >
                     <div>
-                      <div className="text-xs md:text-sm text-[#FFFFFF]/40 uppercase tracking-wider mb-2 font-cinzel-bold">
+                      <div className="text-xs md:text-sm text-[#FFFFFF]/40 uppercase tracking-wider mb-2 font-secondary">
                         Следующий проект
                       </div>
                       <div className="text-2xl md:text-3xl font-cinzel-bold text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">

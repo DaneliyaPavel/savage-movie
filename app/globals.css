@@ -75,8 +75,10 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-secondary: "Roboto Thin";
+  --font-sans: var(--font-secondary), var(--font-inter), system-ui, sans-serif;
   --font-heading: var(--font-montserrat), system-ui, sans-serif;
+  --font-brand: "Montserrat Black Italic", var(--font-montserrat), system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --font-handwritten: "Sa No Rules Regular", "Comic Sans MS", cursive;
   --color-background: var(--background);
@@ -190,10 +192,44 @@
   font-display: swap;
 }
 
+/* Montserrat Black Italic font face */
+@font-face {
+  font-family: "Montserrat Black Italic";
+  src: url("/fonts/Montserrat-BlackItalic.ttf") format("truetype");
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+
 @font-face {
   font-family: "Cinzel";
   src: url("/fonts/Cinzel-Bold.ttf") format("truetype");
   font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Roboto Thin font faces */
+@font-face {
+  font-family: "Roboto Thin";
+  src: url("/fonts/Roboto-Thin.ttf") format("truetype");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Roboto Thin";
+  src: url("/fonts/Roboto-Thin.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Roboto Thin";
+  src: url("/fonts/Roboto-Thin.ttf") format("truetype");
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
@@ -227,6 +263,17 @@
   .font-cinzel-bold {
     font-family: "Cinzel", serif;
     font-weight: 700;
+  }
+
+  .font-secondary {
+    font-family: var(--font-secondary), var(--font-sans);
+    font-weight: 100;
+  }
+
+  .font-brand {
+    font-family: var(--font-brand);
+    font-weight: 900;
+    font-style: italic;
   }
 
   .glass {
@@ -277,6 +324,7 @@
     line-height: 1.6;
     letter-spacing: -0.01em;
     font-weight: 400;
+    font-family: var(--font-secondary), var(--font-sans);
   }
 
   /* Editorial spacing - большие отступы между блоками */
