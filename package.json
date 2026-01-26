@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "commit": "bash scripts/git-commit-and-push.sh",
+    "gc": "bash scripts/git-commit-and-push.sh",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
