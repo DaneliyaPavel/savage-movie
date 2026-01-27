@@ -10,7 +10,7 @@ services:
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data
     ports:
-      - "${DB_PORT:-5433}:5432"  # Используем 5433 на хосте по умолчанию
+      - "127.0.0.1:${DB_PORT:-5433}:5432"  # Только локальный доступ
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 10s
@@ -51,7 +51,7 @@ services:
     volumes:
       - backend_uploads:/app/backend/uploads
     ports:
-      - "${BACKEND_PORT:-8001}:8000"  # Используем 8001 на хосте по умолчанию
+      - "127.0.0.1:${BACKEND_PORT:-8001}:8000"  # Только локальный доступ
     depends_on:
       db:
         condition: service_healthy
@@ -64,6 +64,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8001}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+        NEXT_PUBLIC_CALENDLY_URL: ${NEXT_PUBLIC_CALENDLY_URL:-}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+        NEXT_PUBLIC_YANDEX_CLIENT_ID: ${NEXT_PUBLIC_YANDEX_CLIENT_ID:-}
+        NEXT_PUBLIC_MUX_ENV_KEY: ${NEXT_PUBLIC_MUX_ENV_KEY:-}
+        NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
+        NEXT_PUBLIC_SHOWREEL_PLAYBACK_ID: ${NEXT_PUBLIC_SHOWREEL_PLAYBACK_ID:-}
     container_name: savage_movie_frontend_prod
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8001}
@@ -81,10 +90,28 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-savage.movie@yandex.ru}
       NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    volumes:
+      - backend_uploads:/app/backend/uploads
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
     depends_on:
       - backend
+    networks:
+      - savage_movie_network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: savage_movie_nginx
+    depends_on:
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./infra/letsencrypt:/etc/letsencrypt:ro
+      - ./infra/letsencrypt/www:/var/www/certbot
     networks:
       - savage_movie_network
     restart: unless-stopped

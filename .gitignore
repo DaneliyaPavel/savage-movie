@@ -29,6 +29,11 @@ yarn-error.log*
 .env*.local
 .env
 
+# deployment artifacts
+backups/
+infra/letsencrypt/
+infra/nginx/conf.d/app.conf
+
 # vercel
 .vercel
 
