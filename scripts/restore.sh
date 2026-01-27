@@ -94,10 +94,9 @@ done; \
 exit 1'
 
 echo "Recreate database..."
-$COMPOSE_CMD -f "$COMPOSE_FILE" exec -T db sh -c '\
-psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d postgres -v target="$POSTGRES_DB" -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = :'\''target'\'' AND pid <> pg_backend_pid();" \
-&& dropdb -U "$POSTGRES_USER" --if-exists "$POSTGRES_DB" \
-&& createdb -U "$POSTGRES_USER" -O "$POSTGRES_USER" "$POSTGRES_DB"'
+$COMPOSE_CMD -f "$COMPOSE_FILE" exec -T db sh -c "psql -v ON_ERROR_STOP=1 -U \"$POSTGRES_USER\" -d postgres -c \"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$POSTGRES_DB' AND pid <> pg_backend_pid();\" \
+&& dropdb -U \"$POSTGRES_USER\" --if-exists \"$POSTGRES_DB\" \
+&& createdb -U \"$POSTGRES_USER\" -O \"$POSTGRES_USER\" \"$POSTGRES_DB\""
 
 echo "Restore database..."
 $COMPOSE_CMD -f "$COMPOSE_FILE" exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" "$POSTGRES_DB"' < "$BACKUP_DIR/db.sql"
