@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_FILE="$ROOT_DIR/docker-compose.prod.yml"
+ENV_FILE="$ROOT_DIR/.env"
 BACKUP_DIR=""
 
 usage() {
@@ -56,6 +57,15 @@ if [ ! -f "$COMPOSE_FILE" ]; then
   exit 1
 fi
 
+if [ -f "$ENV_FILE" ]; then
+  set -a
+  . "$ENV_FILE"
+  set +a
+fi
+
+DB_USER="${DB_USER:-postgres}"
+DB_NAME="${DB_NAME:-savage_movie}"
+
 if [ ! -d "$BACKUP_DIR" ]; then
   echo "Каталог бэкапа не найден: $BACKUP_DIR"
   exit 1
@@ -94,12 +104,12 @@ done; \
 exit 1'
 
 echo "Recreate database..."
-$COMPOSE_CMD -f "$COMPOSE_FILE" exec -T db sh -c "psql -v ON_ERROR_STOP=1 -U \"$POSTGRES_USER\" -d postgres -c \"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$POSTGRES_DB' AND pid <> pg_backend_pid();\" \
-&& dropdb -U \"$POSTGRES_USER\" --if-exists \"$POSTGRES_DB\" \
-&& createdb -U \"$POSTGRES_USER\" -O \"$POSTGRES_USER\" \"$POSTGRES_DB\""
+$COMPOSE_CMD -f "$COMPOSE_FILE" exec -T db sh -c "psql -v ON_ERROR_STOP=1 -U \"$DB_USER\" -d postgres -c \"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$DB_NAME' AND pid <> pg_backend_pid();\" \
+&& dropdb -U \"$DB_USER\" --if-exists \"$DB_NAME\" \
+&& createdb -U \"$DB_USER\" -O \"$DB_USER\" \"$DB_NAME\""
 
 echo "Restore database..."
-$COMPOSE_CMD -f "$COMPOSE_FILE" exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" "$POSTGRES_DB"' < "$BACKUP_DIR/db.sql"
+$COMPOSE_CMD -f "$COMPOSE_FILE" exec -T db sh -c "psql -v ON_ERROR_STOP=1 -U \"$DB_USER\" \"$DB_NAME\"" < "$BACKUP_DIR/db.sql"
 
 echo "Restore uploads..."
 $COMPOSE_CMD -f "$COMPOSE_FILE" exec -T backend sh -c 'mkdir -p /app/backend/uploads'
