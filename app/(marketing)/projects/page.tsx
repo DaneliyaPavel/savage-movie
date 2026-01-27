@@ -1,5 +1,5 @@
-import { getProjectsServer } from "@/lib/api/projects"
-import { toMarketingProject } from "@/lib/marketing-mappers"
+import { getProjectsServer } from "@/features/projects/api"
+import { toMarketingProject } from "@/features/projects/mappers"
 import ProjectsPageClient from "./projects-client"
 
 export const revalidate = 60

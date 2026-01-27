@@ -3,16 +3,16 @@
  */
 import { notFound, redirect } from 'next/navigation'
 import { getCurrentUserServer } from '@/lib/api/auth'
-import { getCourseBySlugServer } from '@/lib/api/courses'
+import { getCourseBySlugServer } from '@/features/courses/api'
 import { getEnrollmentByCourseServer } from '@/lib/api/enrollments'
-import { VideoPlayer } from '@/components/features/VideoPlayer'
+import { VideoPlayer } from '@/features/projects/components/VideoPlayer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
 import { CheckCircle2, Play } from 'lucide-react'
-import type { Course } from '@/lib/api/courses'
+import type { Course } from '@/features/courses/api'
 import { cookies } from 'next/headers'
 
 export default async function DashboardCoursePage({

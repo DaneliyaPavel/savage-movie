@@ -17,7 +17,7 @@ import { FileUpload } from '@/components/admin/FileUpload'
 import { ArrayInput } from '@/components/admin/ArrayInput'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
-import { getCourses, updateCourse, type CourseUpdate } from '@/lib/api/courses'
+import { getCourses, updateCourse, type CourseUpdate } from '@/features/courses/api'
 import Link from 'next/link'
 
 const formSchema = z.object({

@@ -6,12 +6,12 @@
 
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ProjectRow3Column } from '@/components/features/ProjectRow3Column'
+import { ProjectRow3Column } from '@/features/projects/components/ProjectRow3Column'
 import { FilterChips } from '@/components/ui/filter-chips'
 import { useRouter } from 'next/navigation'
 import { CreativeStrikethrough } from '@/components/ui/creative-strikethrough'
-import type { Project } from '@/lib/api/projects'
-import { filterProjectsByOrientation, type ProjectOrientationFilter } from '@/lib/projects/orientation'
+import type { Project } from '@/features/projects/api'
+import { filterProjectsByOrientation, type ProjectOrientationFilter } from '@/features/projects/utils'
 
 interface ProjectsPageClientProps {
   projects: Project[]

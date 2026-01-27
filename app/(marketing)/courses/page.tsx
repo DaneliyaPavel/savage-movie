@@ -10,8 +10,8 @@ import { JalousieMenu } from "@/components/ui/jalousie-menu"
 import { SvgMark } from "@/components/ui/svg-mark"
 import { HoverNote } from "@/components/ui/hover-note"
 import { useI18n } from "@/lib/i18n-context"
-import { getCourses } from "@/lib/api/courses"
-import { toMarketingCourse, type MarketingCourse } from "@/lib/marketing-mappers"
+import { getCourses } from "@/features/courses/api"
+import { toMarketingCourse, type MarketingCourse } from "@/features/courses/mappers"
 
 function AnimatedSection({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   const ref = useRef(null)

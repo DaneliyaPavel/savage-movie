@@ -3,8 +3,8 @@
  */
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
-import { getCourseBySlug } from '@/lib/api/courses'
-import { VideoPlayer } from '@/components/features/VideoPlayer'
+import { getCourseBySlug } from '@/features/courses/api'
+import { VideoPlayer } from '@/features/projects/components/VideoPlayer'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
@@ -12,8 +12,8 @@ import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
 import { CheckCircle2, Clock, User } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
-import { CourseEnrollmentButton } from '@/components/features/CourseEnrollmentButton'
-import type { Course } from '@/lib/api/courses'
+import { CourseEnrollmentButton } from '@/features/courses/components/CourseEnrollmentButton'
+import type { Course } from '@/features/courses/api'
 
 export default async function CourseDetailPage({
   params,

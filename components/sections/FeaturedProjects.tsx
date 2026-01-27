@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { WorkCard } from '@/components/features/WorkCard'
 import { EditorialCorrection } from '@/components/ui/editorial-correction'
-import type { Project } from '@/lib/api/projects'
+import type { Project } from '@/features/projects/api'
 
 interface FeaturedProjectsProps {
   projects: Project[]

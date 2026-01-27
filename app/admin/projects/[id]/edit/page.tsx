@@ -30,7 +30,7 @@ import { FileUpload } from '@/components/admin/FileUpload'
 import { ArrayInput } from '@/components/admin/ArrayInput'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
-import { getProjects, updateProject, type ProjectUpdate } from '@/lib/api/projects'
+import { getProjects, updateProject, type ProjectUpdate } from '@/features/projects/api'
 import Link from 'next/link'
 
 const formSchema = z.object({

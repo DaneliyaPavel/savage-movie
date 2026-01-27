@@ -2,7 +2,7 @@
  * Детальная страница проекта в премиум стиле Freshman.tv
  */
 import { notFound } from 'next/navigation'
-import { getProjectBySlugServer, getProjectsServer } from '@/lib/api/projects'
+import { getProjectBySlugServer, getProjectsServer } from '@/features/projects/api'
 import { ProjectDetailClient } from './client'
 
 export default async function ProjectDetailPage({

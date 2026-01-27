@@ -9,7 +9,7 @@ import { FilterChips } from '@/components/ui/filter-chips'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import type { Project } from '@/lib/api/projects'
+import type { Project } from '@/features/projects/api'
 import { SectionTitle } from '@/components/ui/section-title'
 
 interface ProjectsGridProps {
