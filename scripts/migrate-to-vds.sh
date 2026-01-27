@@ -86,6 +86,8 @@ done
 
 TOTAL_STEPS=6
 if [ "$UPDATE_REPO" -eq 1 ]; then
+  TOTAL_STEPS=8
+else
   TOTAL_STEPS=7
 fi
 STEP=1
@@ -124,9 +126,9 @@ ssh "$REMOTE_USER@$REMOTE_HOST" "mkdir -p $REMOTE_PATH/backups"
 if [ "$UPDATE_REPO" -eq 1 ]; then
   log_step "Обновляю репозиторий на VDS..."
   if [ -n "$UPDATE_BRANCH" ]; then
-    ssh "$REMOTE_USER@$REMOTE_HOST" "cd $REMOTE_PATH && git fetch --all && git reset --hard origin/$UPDATE_BRANCH"
+    ssh "$REMOTE_USER@$REMOTE_HOST" "cd $REMOTE_PATH && git fetch --all && git reset --hard origin/$UPDATE_BRANCH && chmod +x up scripts/*.sh"
   else
-    ssh "$REMOTE_USER@$REMOTE_HOST" "cd $REMOTE_PATH && git fetch --all && if git show-ref --verify --quiet refs/remotes/origin/main; then git reset --hard origin/main; elif git show-ref --verify --quiet refs/remotes/origin/master; then git reset --hard origin/master; else git reset --hard HEAD; fi"
+    ssh "$REMOTE_USER@$REMOTE_HOST" "cd $REMOTE_PATH && git fetch --all && if git show-ref --verify --quiet refs/remotes/origin/main; then git reset --hard origin/main; elif git show-ref --verify --quiet refs/remotes/origin/master; then git reset --hard origin/master; else git reset --hard HEAD; fi && chmod +x up scripts/*.sh"
   fi
 fi
 
@@ -156,6 +158,26 @@ if [[ "$REMOTE_DOMAIN" == http://* || "$REMOTE_DOMAIN" == https://* ]]; then
   FINAL_URL="$REMOTE_DOMAIN"
 else
   FINAL_URL="http://$REMOTE_DOMAIN"
+fi
+
+log_step "Проверяю доступность сайта..."
+if command -v curl &> /dev/null; then
+  OK=0
+  for i in $(seq 1 30); do
+    CODE=$(curl -o /dev/null -s -m 5 -w "%{http_code}" "$FINAL_URL" || true)
+    if [ "$CODE" -ge 200 ] && [ "$CODE" -lt 400 ]; then
+      OK=1
+      break
+    fi
+    sleep 2
+  done
+  if [ "$OK" -eq 1 ]; then
+    echo "Проверка доступности: OK ($FINAL_URL)"
+  else
+    echo "Проверка доступности: FAIL (последний статус $CODE)"
+  fi
+else
+  echo "curl не найден, проверку доступности пропускаю."
 fi
 
 log_step "Готово."
