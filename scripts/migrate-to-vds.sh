@@ -9,13 +9,16 @@ REMOTE_PATH="~/savage-movie"
 BACKUP_DIR=""
 NO_BUILD=0
 RESTART_AFTER_RESTORE=1
+UPDATE_REPO=0
+UPDATE_BRANCH=""
 
 usage() {
-  echo "Usage: $0 --host <ip_or_domain> [--user <user>] [--path <remote_path>] [--backup <dir>] [--dev|--prod] [--no-build] [--no-restart]"
+  echo "Usage: $0 --host <ip_or_domain> [--user <user>] [--path <remote_path>] [--backup <dir>] [--dev|--prod] [--no-build] [--no-restart] [--update] [--branch <name>]"
 }
 
 log_step() {
-  echo "==> $1"
+  echo "==> $STEP/$TOTAL_STEPS $1"
+  STEP=$((STEP + 1))
 }
 
 make_abs_path() {
@@ -61,6 +64,14 @@ while [ $# -gt 0 ]; do
       RESTART_AFTER_RESTORE=0
       shift
       ;;
+    --update)
+      UPDATE_REPO=1
+      shift
+      ;;
+    --branch)
+      UPDATE_BRANCH="${2:-}"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -72,6 +83,12 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
+
+TOTAL_STEPS=6
+if [ "$UPDATE_REPO" -eq 1 ]; then
+  TOTAL_STEPS=7
+fi
+STEP=1
 
 if [ -z "$REMOTE_HOST" ]; then
   echo "Не указан --host"
@@ -85,7 +102,7 @@ if ! command -v ssh &> /dev/null || ! command -v scp &> /dev/null; then
 fi
 
 if [ -z "$BACKUP_DIR" ]; then
-  log_step "1/6 Создаю бэкап ($MODE)..."
+  log_step "Создаю бэкап ($MODE)..."
   if [ "$MODE" = "prod" ]; then
     "$ROOT_DIR/scripts/backup.sh" --prod
   else
@@ -101,13 +118,22 @@ fi
 
 BACKUP_NAME=$(basename "$BACKUP_DIR")
 
-log_step "2/6 Готовлю каталог на VDS..."
+log_step "Готовлю каталог на VDS..."
 ssh "$REMOTE_USER@$REMOTE_HOST" "mkdir -p $REMOTE_PATH/backups"
 
-log_step "3/6 Копирую бэкап на VDS..."
+if [ "$UPDATE_REPO" -eq 1 ]; then
+  log_step "Обновляю репозиторий на VDS..."
+  if [ -n "$UPDATE_BRANCH" ]; then
+    ssh "$REMOTE_USER@$REMOTE_HOST" "cd $REMOTE_PATH && git fetch --all && git reset --hard origin/$UPDATE_BRANCH"
+  else
+    ssh "$REMOTE_USER@$REMOTE_HOST" "cd $REMOTE_PATH && git fetch --all && if git show-ref --verify --quiet refs/remotes/origin/main; then git reset --hard origin/main; elif git show-ref --verify --quiet refs/remotes/origin/master; then git reset --hard origin/master; else git reset --hard HEAD; fi"
+  fi
+fi
+
+log_step "Копирую бэкап на VDS..."
 scp -r "$BACKUP_DIR" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/backups/"
 
-log_step "4/6 Запускаю контейнеры и восстанавливаю данные на VDS..."
+log_step "Запускаю контейнеры и восстанавливаю данные на VDS..."
 REMOTE_CMD="cd $REMOTE_PATH && ./up"
 if [ "$NO_BUILD" -eq 1 ]; then
   REMOTE_CMD="$REMOTE_CMD --no-build"
@@ -119,7 +145,7 @@ fi
 
 ssh "$REMOTE_USER@$REMOTE_HOST" "$REMOTE_CMD"
 
-log_step "5/6 Проверяю домен для итоговой ссылки..."
+log_step "Проверяю домен для итоговой ссылки..."
 REMOTE_DOMAIN=$(ssh "$REMOTE_USER@$REMOTE_HOST" "cd $REMOTE_PATH && if [ -f .env ]; then . ./.env >/dev/null 2>&1; echo \${APP_DOMAIN:-}; fi")
 
 if [ -z "$REMOTE_DOMAIN" ]; then
@@ -132,5 +158,5 @@ else
   FINAL_URL="http://$REMOTE_DOMAIN"
 fi
 
-log_step "6/6 Готово."
+log_step "Готово."
 echo "Итоговая ссылка: $FINAL_URL"
