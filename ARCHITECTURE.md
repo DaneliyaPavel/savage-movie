@@ -1,53 +1,53 @@
 # ARCHITECTURE
 
 ## Overview
+- **Frontend**: Next.js 16 App Router (`app/`), UI primitives (`components/ui`), shared logic (`lib/`).
+- **Backend**: FastAPI (`backend/app`) с базовой слоистой структурой (delivery/application/infrastructure/interfaces).
+- **Database**: PostgreSQL 16 + SQLAlchemy (async) + Alembic.
+- **Uploads**: файлы хранятся в `backend/uploads`, раздаются через Next API route `/api/uploads`.
 
-- Frontend: Next.js App Router in `app/`, UI primitives in `components/`, shared logic in `lib/`.
-- Backend: FastAPI in `backend/app` with a layered structure aligned to Clean Architecture.
-- Database: PostgreSQL with SQLAlchemy (async) and Alembic migrations.
+## Frontend (Next.js)
+- **Entry points**: `app/layout.tsx` (RootLayout), `app/(marketing)/page.tsx` (главная), `app/admin/*`, `app/dashboard/*`.
+- **Server Components**: по умолчанию, данные берутся через `lib/api/server.ts`.
+- **Client Components**: помечены `use client`, чаще используют `lib/api/client.ts`.
+- **API routes (Next)**:
+  - `/api/contact` — валидация и проксирование на FastAPI.
+  - `/api/payments/create` — создание платежа (YooKassa) на стороне Next.
+  - `/api/payments/webhook` — прокси webhook в FastAPI.
+  - `/api/auth/session` — синхронизация JWT в HttpOnly cookies.
+  - `/api/uploads/[...path]` — отдача файлов из `backend/uploads`.
 
-## Backend Layers (Clean-ish)
+## Backend (FastAPI)
+- **Entry point**: `backend/app/main.py`.
+- **Routers**: `backend/app/delivery/api/*`.
+- **Schemas (DTO)**: `backend/app/interfaces/schemas/*`.
+- **Repositories + ORM**: `backend/app/infrastructure/db/*`.
+- **Integrations**: `backend/app/infrastructure/integrations/*` (email, oauth, payments).
+- **Auth**: JWT в `backend/app/application/services/auth_service.py`.
 
-- `backend/app/delivery/`: HTTP entrypoints (FastAPI routers).
-- `backend/app/interfaces/`: DTOs and Pydantic schemas.
-- `backend/app/application/`: application services and use-case orchestration.
-- `backend/app/infrastructure/`: DB session, SQLAlchemy models, repositories, and external integrations.
+## Request Flows
+### SSR/Server Components
+1. Next Server Component -> `lib/api/server.ts`.
+2. `API_URL` (server env) -> FastAPI `/api/*`.
+3. Ответ возвращается в рендер.
 
-Dependency intent:
+### Client Components
+1. Браузер -> `lib/api/client.ts`.
+2. `NEXT_PUBLIC_API_URL` -> FastAPI `/api/*` (CORS обязателен).
 
-- Delivery depends on Interfaces + Application (+ Infrastructure for repositories).
-- Application should not depend on Delivery.
-- Infrastructure is isolated and accessed via repositories.
-- A dedicated Domain layer is not carved out yet; business rules live in Application and repositories.
+### Next API Routes
+1. Браузер -> `/api/*` (Next).
+2. Next вызывает FastAPI или внешнюю интеграцию.
+3. Ответ возвращается пользователю.
 
-If domain complexity grows, introduce `backend/app/domain` and move pure business logic there.
+## Contracts
+- Контракты API дублируются: Pydantic в backend и TS-интерфейсы в `lib/api/*`.
+- Общего источника типов нет (риски рассинхронизации).
 
-## Request Flow (Backend)
+## Infrastructure
+- Docker Compose (`docker-compose*.yml`) поднимает db/backend/frontend.
+- Backend стартует с `alembic upgrade head`.
+- Frontend использует `API_URL` (server) и `NEXT_PUBLIC_API_URL` (client).
 
-1. HTTP request -> `delivery/api/*` router.
-2. Request validation via `interfaces/schemas/*`.
-3. Business logic in `application/services/*` and `infrastructure/db/repositories/*`.
-4. SQLAlchemy models persist data.
-5. Response serialized with DTOs.
-
-## Database & Migrations
-
-- Alembic config: `backend/alembic.ini`.
-- Migrations: `backend/alembic/versions/*`.
-- Apply migrations: `alembic -c backend/alembic.ini upgrade head`.
-
-## Frontend Structure
-
-- `app/(marketing)` and `app/admin` contain user-facing pages.
-- Reusable UI is in `components/`.
-- API clients live in `lib/api`.
-
-## Operational Notes
-
-- Docker Compose runs Alembic migrations on backend start.
-- Legacy SQL bootstrap scripts were removed; restore from git history if needed.
-
-## References
-
-- `PROJECT_STRUCTURE.md` for a full tree.
-- `TARGET_STRUCTURE.md` for the intended layout and decisions.
+## Notes
+- Разделение ответственности между Next API и FastAPI требует явной фиксации (контактная форма, платежи, webhook, uploads).

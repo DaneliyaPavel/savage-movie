@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { VideoPlayer } from "@/components/features/mux-player"
-import { FilmstripCarousel } from "@/components/features/filmstrip-carousel"
+import { VideoPlayer } from "@/features/projects/components/mux-player"
+import { FilmstripCarousel } from "@/features/projects/components/filmstrip-carousel"
 import { TopBar } from "@/components/ui/top-bar"
 import { JalousieMenu } from "@/components/ui/jalousie-menu"
 import { useI18n } from "@/lib/i18n-context"

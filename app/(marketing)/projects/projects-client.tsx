@@ -8,15 +8,15 @@ import { TopBar } from "@/components/ui/top-bar"
 import { JalousieMenu } from "@/components/ui/jalousie-menu"
 import { useI18n } from "@/lib/i18n-context"
 import { ProjectsJalousieFooter } from "@/components/sections/ProjectsJalousieFooter"
-import { HorizontalProjectMediaCard, VerticalProjectMediaCard } from "@/components/features/ProjectMediaCard"
+import { HorizontalProjectMediaCard, VerticalProjectMediaCard } from "@/features/projects/components/ProjectMediaCard"
 import MuxPlayer, { type MuxCSSProperties, type MuxPlayerRefAttributes } from "@mux/mux-player-react"
-import { getProjects } from "@/lib/api/projects"
-import { toMarketingProject, type MarketingProject } from "@/lib/marketing-mappers"
+import { getProjects } from "@/features/projects/api"
+import { toMarketingProject, type MarketingProject } from "@/features/projects/mappers"
 import {
   filterProjectsByOrientation,
   getProjectOrientation,
   type ProjectOrientationFilter,
-} from "@/lib/projects/orientation"
+} from "@/features/projects/utils"
 import { logger } from "@/lib/utils/logger"
 
 const THUMBNAIL_SIZES = "(min-width: 1024px) 10vw, (min-width: 768px) 12vw, 20vw"

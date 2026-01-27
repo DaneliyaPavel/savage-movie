@@ -8,7 +8,7 @@ import { useState, useCallback } from 'react'
 import { ShowreelHero } from '@/components/sections/ShowreelHero'
 import { HomeGalleryCarousel } from '@/components/sections/HomeGalleryCarousel'
 import { PremiumFullscreenPlayer } from '@/components/ui/premium-fullscreen-player'
-import type { Project } from '@/lib/api/projects'
+import type { Project } from '@/features/projects/api'
 
 interface HomePageClientProps {
   showreelPlaybackId: string

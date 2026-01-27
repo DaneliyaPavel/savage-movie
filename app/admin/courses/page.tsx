@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/admin/DataTable'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
-import { getCourses, deleteCourse, updateCoursesOrder, type Course } from '@/lib/api/courses'
+import { getCourses, deleteCourse, updateCoursesOrder, type Course } from '@/features/courses/api'
 import { SortableList } from '@/components/admin/SortableList'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import {

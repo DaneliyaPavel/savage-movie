@@ -4,11 +4,11 @@
  */
 'use client'
 
-import { CourseCard } from '@/components/features/CourseCard'
+import { CourseCard } from '@/features/courses/components/CourseCard'
 import { FilterChips } from '@/components/ui/filter-chips'
 import { SectionTitle } from '@/components/ui/section-title'
 import { motion } from 'framer-motion'
-import type { Course } from '@/lib/api/courses'
+import type { Course } from '@/features/courses/api'
 import { useRouter } from 'next/navigation'
 
 interface CoursesPageClientProps {

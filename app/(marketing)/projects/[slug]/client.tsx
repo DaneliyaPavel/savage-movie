@@ -5,8 +5,8 @@
 
 import { useRef, useState, type MouseEvent } from 'react'
 import { motion, useMotionValue, useSpring } from 'framer-motion'
-import { VideoPlayer } from '@/components/features/VideoPlayer'
-import { FullScreenVideoPlayer } from '@/components/features/FullScreenVideoPlayer'
+import { VideoPlayer } from '@/features/projects/components/VideoPlayer'
+import { FullScreenVideoPlayer } from '@/features/projects/components/FullScreenVideoPlayer'
 import { TopBar } from '@/components/ui/top-bar'
 import { JalousieMenu } from '@/components/ui/jalousie-menu'
 import { BackButton } from '@/components/ui/back-button'
@@ -15,7 +15,7 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { ProjectsJalousieFooter } from '@/components/sections/ProjectsJalousieFooter'
-import type { Project } from '@/lib/api/projects'
+import type { Project } from '@/features/projects/api'
 
 interface ProjectDetailClientProps {
   project: Project

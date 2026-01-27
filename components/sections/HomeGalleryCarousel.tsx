@@ -9,7 +9,7 @@ import useEmblaCarousel from 'embla-carousel-react'
 import { motion } from 'framer-motion'
 import { HoverNote } from '@/components/ui/hover-note'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
-import type { Project } from '@/lib/api/projects'
+import type { Project } from '@/features/projects/api'
 import { Play } from 'lucide-react'
 import NextImage from 'next/image'
 

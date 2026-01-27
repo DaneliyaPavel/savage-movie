@@ -5,8 +5,8 @@ import Link from "next/link"
 import { useMenu } from "./menu-context"
 import { useEffect, useMemo, useState } from "react"
 import { useI18n } from "@/lib/i18n-context"
-import { getProjects } from "@/lib/api/projects"
-import { getCourses } from "@/lib/api/courses"
+import { getProjects } from "@/features/projects/api"
+import { getCourses } from "@/features/courses/api"
 import { getBlogPosts } from "@/lib/api/blog"
 
 export function JalousieMenu() {

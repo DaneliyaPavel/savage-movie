@@ -3,11 +3,12 @@
  * Fullscreen showreel hero + filmstrip carousel внизу
  */
 import { ShowreelHero } from "@/components/sections/showreel-hero"
-import { getProjectsServer } from "@/lib/api/projects"
+import { getProjectsServer } from "@/features/projects/api"
+import { publicEnv } from "@/lib/env"
 
 // Mux Playback ID для showreel - из env или fallback
 const SHOWREEL_PLAYBACK_ID =
-  process.env.NEXT_PUBLIC_SHOWREEL_PLAYBACK_ID || "Qf6mbMSob4v5nv7c6Mbf7TAipjM01PfHe01bDaDC1otOM"
+  publicEnv.NEXT_PUBLIC_SHOWREEL_PLAYBACK_ID || "Qf6mbMSob4v5nv7c6Mbf7TAipjM01PfHe01bDaDC1otOM"
 
 export default async function HomePage() {
   // Загружаем проекты для filmstrip carousel

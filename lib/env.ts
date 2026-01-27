@@ -16,6 +16,7 @@ const PublicEnvSchema = z.object({
   NEXT_PUBLIC_YANDEX_CLIENT_ID: optionalNonEmptyString,
   NEXT_PUBLIC_MUX_ENV_KEY: optionalNonEmptyString,
   NEXT_PUBLIC_GA_MEASUREMENT_ID: optionalNonEmptyString,
+  NEXT_PUBLIC_SHOWREEL_PLAYBACK_ID: optionalNonEmptyString,
 })
 
 export const publicEnv = PublicEnvSchema.parse({
@@ -26,5 +27,6 @@ export const publicEnv = PublicEnvSchema.parse({
   NEXT_PUBLIC_YANDEX_CLIENT_ID: process.env.NEXT_PUBLIC_YANDEX_CLIENT_ID,
   NEXT_PUBLIC_MUX_ENV_KEY: process.env.NEXT_PUBLIC_MUX_ENV_KEY,
   NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
+  NEXT_PUBLIC_SHOWREEL_PLAYBACK_ID: process.env.NEXT_PUBLIC_SHOWREEL_PLAYBACK_ID,
 })
 
