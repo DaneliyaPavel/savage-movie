@@ -1,49 +1,150 @@
 #!/usr/bin/env bash
-# Сбор изменений, коммит и пуш в Git.
-# Запуск из корня проекта:
-#   bash scripts/git-commit-and-push.sh
-# или: chmod +x scripts/git-commit-and-push.sh && ./scripts/git-commit-and-push.sh
+# Интерактивный коммит и пуш в Git.
+# Запуск:  npm run commit   или   npm run gc
+# Альтернатива:  bash scripts/git-commit-and-push.sh
 
 set -e
 cd "$(dirname "$0")/.."
 
-# Инициализация Git, если репозитория нет
-if ! git rev-parse --git-dir > /dev/null 2>&1; then
-  echo "Инициализация Git-репозитория..."
-  git init
+# ---- Цвета (если терминал поддерживает) ----
+if [ -t 1 ]; then
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[1;33m'
+  CYAN='\033[0;36m'
+  BOLD='\033[1m'
+  NC='\033[0m'
+else
+  RED= GREEN= YELLOW= CYAN= BOLD= NC=
 fi
 
-# Добавляем все изменения (учитывая .gitignore)
+print_step() { printf "\n${CYAN}${BOLD}▸ %s${NC}\n\n" "$1"; }
+print_ok()   { printf "${GREEN}✓ %s${NC}\n" "$1"; }
+print_warn() { printf "${YELLOW}%s${NC}\n" "$1"; }
+print_err()  { printf "${RED}%s${NC}\n" "$1"; }
+
+ask() {
+  local default="$1" prompt="$2"
+  local var
+  if [ -n "$default" ]; then
+    read -r -p "${prompt} [${default}]: " var
+    echo "${var:-$default}"
+  else
+    read -r -p "${prompt} " var
+    echo "$var"
+  fi
+}
+
+confirm() {
+  local default="${1:-y}" prompt="$2"
+  local c
+  read -r -p "${prompt} [${default}]: " c
+  c=${c:-$default}
+  c=$(echo "$c" | tr '[:upper:]' '[:lower:]')
+  case "$c" in
+    n|no|н|нет) return 1 ;;
+    y|yes|yep|da|д|да) return 0 ;;
+    *) [ "$default" = "y" ] ;;
+  esac
+}
+
+# ---- 1. Git init и добавление файлов ----
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+  print_step "Инициализация Git"
+  git init
+  print_ok "Репозиторий создан."
+fi
+
+print_step "Добавление изменений"
 git add -A
 
-# Проверка наличия изменений для коммита
 if [ -z "$(git status --porcelain)" ]; then
-  echo "Нет изменений для коммита."
+  print_warn "Нет изменений для коммита. Рабочая директория чиста."
   exit 0
 fi
 
+echo "Изменённые файлы:"
 git status --short
+echo ""
+if ! confirm "y" "Включить эти файлы в коммит? (y/n)"; then
+  print_warn "Отменено."
+  exit 0
+fi
 
-# Коммит с сообщением по CHANGELOG (Unreleased)
-COMMIT_MSG="chore: backend reorg, Alembic migrations, Docker updates
+# ---- 2. Тип коммита ----
+print_step "Тип коммита"
+echo "  feat     — новая возможность"
+echo "  fix      — исправление бага"
+echo "  chore    — рутина, сборка, зависимости"
+echo "  docs     — только документация"
+echo "  style    — форматирование, без изменений логики"
+echo "  refactor — рефакторинг кода"
+echo ""
+TYPE=$(ask "chore" "Тип (feat|fix|chore|docs|style|refactor):")
 
-- Add Alembic migrations and config for backend DB
-- Add repository layer for DB access
-- Add ARCHITECTURE.md with layered model
-- Docker Compose: run Alembic migrations on backend startup
-- Backend: delivery/application/infrastructure/interfaces
-- init-docker.sh: no longer generates .env, load from environment
-- Remove legacy SQL bootstrap, Supabase refs, __v0_reference__"
+# ---- 3. Краткое описание (subject) ----
+print_step "Краткое описание"
+echo "Одна строка, до ~50 символов, без точки в конце. Например:"
+echo "  «add Alembic migrations» или «fix contact form validation»"
+echo ""
+while true; do
+  SUBJECT=$(ask "" "Краткое описание (обязательно):")
+  SUBJECT=$(echo "$SUBJECT" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+  if [ -n "$SUBJECT" ]; then break; fi
+  print_err "Нельзя оставить пустым. Введи описание."
+done
 
-git commit -m "$COMMIT_MSG"
+# ---- 4. Детали (body) ----
+print_step "Детали коммита"
+echo "Необязательно. Перечисли пункты, что сделано (каждый с новой строки)."
+echo "Пустая строка — конец. Сразу Enter — пропустить."
+echo ""
+BODY=""
+while read -r -p "> " line; do
+  [ -z "$line" ] && break
+  [ -n "$BODY" ] && BODY="$BODY"$'\n'"$line" || BODY="$line"
+done
 
-# Пуш (требуется настроенный remote)
-if git remote get-url origin > /dev/null 2>&1; then
-  echo "Пуш в origin..."
-  git push -u origin HEAD 2>/dev/null || git push origin HEAD
+# ---- 5. Сборка сообщения и превью ----
+if [ -n "$BODY" ]; then
+  MSG="${TYPE}: ${SUBJECT}"$'\n\n'"${BODY}"
 else
-  echo "Remote 'origin' не задан. Добавьте его и запушьте вручную:"
+  MSG="${TYPE}: ${SUBJECT}"
+fi
+
+print_step "Превью коммита"
+echo "----------------------------------------"
+printf "${BOLD}%s${NC}\n" "$MSG"
+echo "----------------------------------------"
+echo ""
+if ! confirm "y" "Всё верно? Коммитить? (y/n)"; then
+  print_warn "Отменено. Коммит не создан."
+  exit 0
+fi
+
+# ---- 6. Коммит ----
+git commit -m "$MSG"
+print_ok "Коммит создан: $(git rev-parse --short HEAD)"
+
+# ---- 7. Пуш ----
+print_step "Пуш в remote"
+if ! git remote get-url origin > /dev/null 2>&1; then
+  print_warn "Remote 'origin' не задан. Добавь и запушь вручную:"
   echo "  git remote add origin <URL>"
-  echo "  git push -u origin main"
-  echo "  # или: git push -u origin master"
+  echo "  git push -u origin \$(git branch --show-current)"
+  exit 0
+fi
+
+echo "Origin: $(git remote get-url origin)"
+echo ""
+if ! confirm "y" "Пушить в origin? (y/n)"; then
+  print_ok "Коммит сохранён локально. Пуш пропущен."
+  exit 0
+fi
+
+if git push -u origin HEAD 2>/dev/null || git push origin HEAD; then
+  print_ok "Успешно запушено в origin."
+else
+  print_err "Ошибка при пуше. Проверь remote и доступ."
+  exit 1
 fi
