@@ -86,7 +86,7 @@ else
   "$ROOT_DIR/scripts/nginx-generate.sh" --http-only
 fi
 
-UP_ARGS=("-d")
+UP_ARGS=("-d" "--force-recreate" "--remove-orphans")
 if [ "$NO_BUILD" -eq 0 ]; then
   UP_ARGS+=("--build")
 fi

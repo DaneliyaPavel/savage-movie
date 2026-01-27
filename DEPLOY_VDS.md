@@ -28,8 +28,9 @@ cp .env.example .env
 
 Отредактируйте `.env`:
 - `APP_DOMAIN` и `LETSENCRYPT_EMAIL`
-- `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL` и `API_URL`
+- `NEXT_PUBLIC_API_URL` (только домен, без `/api`), `NEXT_PUBLIC_APP_URL` и `API_URL`
 - `CORS_ORIGINS` (должен совпадать с доменом)
+- `DB_PASSWORD` (иначе Postgres не стартует)
 - ключи: Resend, YooKassa, Google/Yandex, Mux и т.д.
 
 Если SSL пока не нужен, можно задать `APP_DOMAIN` как IP VDS и просто запустить `./up`.

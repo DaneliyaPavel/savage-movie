@@ -46,7 +46,7 @@ export async function baseApiRequest<T>(
     console.error('URL:', url)
     if (error instanceof TypeError) {
       if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
-        throw new Error(`Не удалось подключиться к серверу (${url}). Проверьте, что backend запущен на порту 8001 и доступен.`)
+        throw new Error(`Не удалось подключиться к серверу (${url}). Проверьте, что backend запущен и доступен.`)
       }
     }
     throw error
