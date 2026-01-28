@@ -17,7 +17,7 @@ import { FileUpload } from '@/components/admin/FileUpload'
 import { ArrayInput } from '@/components/admin/ArrayInput'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
-import { getCourses, updateCourse, type CourseUpdate } from '@/features/courses/api'
+import { getCourseById, updateCourse, type CourseUpdate } from '@/features/courses/api'
 import Link from 'next/link'
 
 const formSchema = z.object({
@@ -42,6 +42,7 @@ export default function EditCoursePage() {
   const [coverImage, setCoverImage] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -62,8 +63,7 @@ export default function EditCoursePage() {
   useEffect(() => {
     const loadCourse = async () => {
       try {
-        const courses = await getCourses()
-        const course = courses.find(c => c.id === courseId)
+        const course = await getCourseById(courseId)
         if (course) {
           form.reset({
             title: course.title,
@@ -80,9 +80,13 @@ export default function EditCoursePage() {
           setCoverImage(course.cover_image || '')
           setRequirements(course.requirements || [])
           setWhatYouLearn(course.what_you_learn || [])
+        } else {
+          console.error('Курс не найден:', courseId)
+          setError('Курс не найден')
         }
       } catch (error) {
         console.error('Ошибка загрузки курса:', error)
+        setError('Не удалось загрузить курс')
       } finally {
         setLoading(false)
       }
@@ -116,6 +120,7 @@ export default function EditCoursePage() {
   }
 
   if (loading) return <div className="p-8">Загрузка...</div>
+  if (error) return <div className="p-8">{error}</div>
 
   return (
     <div className="p-8 max-w-4xl mx-auto">

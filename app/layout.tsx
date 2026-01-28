@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
-// Handwritten font "Sa No Rules Regular" - fallback to system fonts if file not found
+// Handwritten font "Sa No Rules Regular" - next/font/local fails build if files are missing; fallback is runtime only.
 const saNoRules = localFont({
   src: [
     {
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   icons: {
     icon: "/sm-logo.svg",
     shortcut: "/sm-logo.svg",
-    apple: "/sm-logo.svg",
+    apple: "/apple-touch-icon.png",
   },
 };
 

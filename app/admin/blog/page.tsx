@@ -33,6 +33,7 @@ export default function BlogAdminPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [postToDelete, setPostToDelete] = useState<BlogPost | null>(null)
   const [publishingId, setPublishingId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     loadPosts()
@@ -52,7 +53,8 @@ export default function BlogAdminPage() {
   }
 
   const handleDelete = async () => {
-    if (!postToDelete) return
+    if (!postToDelete || isDeleting) return
+    setIsDeleting(true)
     try {
       await deleteBlogPost(postToDelete.id)
       setPosts((prev) => prev.filter((post) => post.id !== postToDelete.id))
@@ -60,8 +62,8 @@ export default function BlogAdminPage() {
       setDeleteDialogOpen(false)
     } catch {
       setError('Ошибка удаления статьи. Попробуйте еще раз.')
-      setDeleteDialogOpen(false)
-      setPostToDelete(null)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -194,8 +196,8 @@ export default function BlogAdminPage() {
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               Отмена
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Удалить
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? 'Удаление...' : 'Удалить'}
             </Button>
           </DialogFooter>
         </DialogContent>

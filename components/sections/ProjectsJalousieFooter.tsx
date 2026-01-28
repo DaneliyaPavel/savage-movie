@@ -3,7 +3,7 @@
  */
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 import { useI18n } from '@/lib/i18n-context'
@@ -11,6 +11,7 @@ import { useI18n } from '@/lib/i18n-context'
 export function ProjectsJalousieFooter() {
   const { language } = useI18n()
   const [email, setEmail] = useState('')
+  const [error, setError] = useState('')
   const ref = useRef<HTMLElement>(null)
 
   const { scrollYProgress } = useScroll({
@@ -22,6 +23,24 @@ export function ProjectsJalousieFooter() {
   const contentOpacity = useTransform(scrollYProgress, [0, 1], [0, 1])
   const footerRowY = useTransform(scrollYProgress, [0, 1], ['30%', '0%'])
   const footerRowOpacity = useTransform(scrollYProgress, [0, 1], [0, 1])
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError('')
+    const trimmed = email.trim()
+    if (!trimmed) {
+      setError(language === 'ru' ? 'Введите email' : 'Please enter an email')
+      return
+    }
+    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)
+    if (!isValid) {
+      setError(language === 'ru' ? 'Некорректный email' : 'Invalid email address')
+      return
+    }
+    // TODO: подключить реальный API рассылки
+    console.log('Subscribe:', trimmed)
+    setEmail('')
+  }
 
   return (
     <section ref={ref} className="relative h-screen bg-[#ff2936]">
@@ -64,7 +83,10 @@ export function ProjectsJalousieFooter() {
           </p>
 
           {/* Email input - handwritten style */}
-          <div className="flex items-center gap-4 border-b border-background/40 pb-2 w-full max-w-xs">
+          <form
+            onSubmit={handleSubmit}
+            className="flex items-center gap-4 border-b border-background/40 pb-2 w-full max-w-xs"
+          >
             <input
               type="email"
               value={email}
@@ -73,10 +95,19 @@ export function ProjectsJalousieFooter() {
               className="bg-transparent text-background placeholder:text-background/50 outline-none flex-1 text-base"
               style={{ fontFamily: 'var(--font-handwritten), cursive' }}
             />
-            <button className="text-background hover:translate-x-1 transition-transform" aria-label="Submit email">
+            <button
+              type="submit"
+              className="text-background hover:translate-x-1 transition-transform"
+              aria-label="Submit email"
+            >
               <ArrowRight className="w-5 h-5" />
             </button>
-          </div>
+          </form>
+          {error && (
+            <p className="mt-3 text-sm text-background/80 font-secondary">
+              {error}
+            </p>
+          )}
         </motion.div>
 
         <motion.div
@@ -86,7 +117,7 @@ export function ProjectsJalousieFooter() {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 text-sm md:text-base">
             <div className="flex flex-col gap-2 uppercase tracking-[0.25em]">
               <span className="text-xs md:text-sm text-background/70" style={{ fontFamily: 'var(--font-handwritten), cursive' }}>
-                (соцсети)
+                {language === 'ru' ? '(соцсети)' : '(socials)'}
               </span>
               <div className="flex items-center gap-4">
                 <a href="#" className="hover:opacity-70 transition-opacity">

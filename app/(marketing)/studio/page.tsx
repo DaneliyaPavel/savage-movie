@@ -215,7 +215,7 @@ export default function StudioPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-20 gap-y-12">
           {SERVICES.map((service, index) => (
             <motion.article
-              key={language === "ru" ? service.titleRu : service.titleEn}
+              key={index}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}

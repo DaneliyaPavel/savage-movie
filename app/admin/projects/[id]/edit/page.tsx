@@ -30,7 +30,7 @@ import { FileUpload } from '@/components/admin/FileUpload'
 import { ArrayInput } from '@/components/admin/ArrayInput'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
-import { getProjects, updateProject, type ProjectUpdate } from '@/features/projects/api'
+import { getProjectById, updateProject, type ProjectUpdate } from '@/features/projects/api'
 import Link from 'next/link'
 
 const formSchema = z.object({
@@ -92,8 +92,7 @@ export default function EditProjectPage() {
   useEffect(() => {
     const loadProject = async () => {
       try {
-        const projects = await getProjects()
-        const project = projects.find(p => p.id === projectId)
+        const project = await getProjectById(projectId)
         if (project) {
           form.reset({
             title: project.title,
@@ -132,7 +131,8 @@ export default function EditProjectPage() {
     }
 
     loadProject()
-  }, [projectId, form])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId])
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true)
@@ -310,7 +310,7 @@ export default function EditProjectPage() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Ориентация видео</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue />

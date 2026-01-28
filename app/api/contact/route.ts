@@ -14,23 +14,18 @@ interface ContactFormBody {
   budget?: unknown
 }
 
-interface ApiError {
-  message?: string
-  detail?: string
-}
-
 // Валидация email
 function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email)
 }
 
-// Валидация и санитизация строки
+// Валидация строки: ограничение длины и очистка пробелов
 function sanitizeString(value: unknown, maxLength: number = 1000): string {
   if (typeof value !== 'string') {
     return ''
   }
-  // Удаляем потенциально опасные символы и ограничиваем длину
+  // Ограничиваем длину и удаляем лишние пробелы
   return value.slice(0, maxLength).trim()
 }
 
@@ -99,10 +94,9 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ success: true })
     } catch (apiError: unknown) {
-      const error = apiError as ApiError
-      logger.error('Ошибка отправки на API', error, { route: '/api/contact', method: 'POST' })
+      logger.error('Ошибка отправки на API', apiError, { route: '/api/contact', method: 'POST' })
       return NextResponse.json(
-        { error: error?.message || error?.detail || 'Ошибка обработки заявки' },
+        { error: 'Ошибка обработки заявки' },
         { status: 500 }
       )
     }

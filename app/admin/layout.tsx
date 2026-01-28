@@ -26,7 +26,7 @@ export default async function AdminLayout({
 
   // Проверяем, является ли пользователь администратором
   if (user.role !== 'admin') {
-    redirect('/login?redirect=/admin&error=insufficient_permissions')
+    redirect('/?error=insufficient_permissions')
   }
 
   return (

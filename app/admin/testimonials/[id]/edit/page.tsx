@@ -31,6 +31,7 @@ export default function EditTestimonialPage() {
   const testimonialId = params.id as string
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const form = useForm<z.infer<typeof formSchema>>({ resolver: zodResolver(formSchema), defaultValues: { name: '', company: '', project_type: '', text: '', rating: 5, video_url: '', video_playback_id: '', order: 0 } })
 
@@ -41,12 +42,15 @@ export default function EditTestimonialPage() {
         const testimonial = testimonials.find(t => t.id === testimonialId)
         if (testimonial) {
           form.reset({ name: testimonial.name, company: testimonial.company || '', project_type: testimonial.project_type || '', text: testimonial.text || '', rating: testimonial.rating, video_url: testimonial.video_url || '', video_playback_id: testimonial.video_playback_id || '', order: testimonial.order })
+        } else {
+          setLoadError('Отзыв не найден.')
         }
       } catch (error) {
         // В production используйте логирование на сервере
         if (process.env.NODE_ENV === 'development') {
           console.error('Ошибка загрузки отзыва:', error)
         }
+        setLoadError('Не удалось загрузить отзыв.')
       } finally {
         setLoading(false)
       }
@@ -68,6 +72,7 @@ export default function EditTestimonialPage() {
   }
 
   if (loading) return <div className="p-8">Загрузка...</div>
+  if (loadError) return <div className="p-8">{loadError}</div>
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
@@ -91,6 +96,7 @@ export default function EditTestimonialPage() {
             size="sm"
             className="ml-2 h-auto p-0 text-red-500 hover:text-red-700"
             onClick={() => setError(null)}
+            aria-label="Закрыть"
           >
             ✕
           </Button>

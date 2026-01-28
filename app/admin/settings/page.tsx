@@ -67,7 +67,8 @@ export default function SettingsPage() {
       }
     }
     load()
-  }, [form])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true)

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { motion, useInView } from "framer-motion"
 import { TopBar } from "@/components/ui/top-bar"
 import { JalousieMenu } from "@/components/ui/jalousie-menu"
@@ -35,12 +35,29 @@ export default function ContactPage() {
     { key: "other", labelRu: "Другое", labelEn: "Other" },
   ]
 
+  const budgetConfig =
+    language === "ru"
+      ? { min: 10000, max: 500000, step: 5000, defaultValue: 50000, minLabel: "10К ₽", maxLabel: "500К+ ₽" }
+      : { min: 1000, max: 50000, step: 1000, defaultValue: 5000, minLabel: "$1K", maxLabel: "$50K+" }
+
+  useEffect(() => {
+    setBudget((prev) =>
+      prev < budgetConfig.min || prev > budgetConfig.max ? budgetConfig.defaultValue : prev
+    )
+  }, [budgetConfig.min, budgetConfig.max, budgetConfig.defaultValue])
+
   const formatBudget = (value: number) => {
     if (value >= 1000000) {
       return language === "ru" ? `${(value / 1000000).toFixed(1)}М+ ₽` : `$${(value / 1000000).toFixed(1)}M+`
     }
     return language === "ru" ? `${(value / 1000).toFixed(0)}К ₽` : `$${(value / 1000).toFixed(0)}K`
   }
+
+  const SOCIAL_LINKS = [
+    { name: "Instagram", url: "https://www.instagram.com/mari.seven/" },
+    { name: "Vimeo", url: "" },
+    { name: "Telegram", url: "https://t.me/mariseven" },
+  ].filter((social) => Boolean(social.url))
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -81,10 +98,11 @@ export default function ContactPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
             {/* Name */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <label className="text-xs uppercase tracking-widest text-muted-foreground mb-3 block">
+              <label htmlFor="contact-name" className="text-xs uppercase tracking-widest text-muted-foreground mb-3 block">
                 {t("contact.name")}
               </label>
               <input
+                id="contact-name"
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -96,15 +114,16 @@ export default function ContactPage() {
 
             {/* Email */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              <label className="text-xs uppercase tracking-widest text-muted-foreground mb-3 block">
+              <label htmlFor="contact-email" className="text-xs uppercase tracking-widest text-muted-foreground mb-3 block">
                 {t("contact.email")}
               </label>
               <input
+                id="contact-email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full bg-transparent border-b border-border py-3 text-lg focus:outline-none focus:border-accent transition-colors"
-                placeholder="your@email.com"
+                placeholder={t("contact.emailPlaceholder")}
                 required
               />
             </motion.div>
@@ -116,10 +135,11 @@ export default function ContactPage() {
               transition={{ delay: 0.4 }}
               className="md:col-span-2"
             >
-              <label className="text-xs uppercase tracking-widest text-muted-foreground mb-3 block">
+              <label htmlFor="contact-company" className="text-xs uppercase tracking-widest text-muted-foreground mb-3 block">
                 {t("contact.company")}
               </label>
               <input
+                id="contact-company"
                 type="text"
                 value={formData.company}
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
@@ -191,9 +211,9 @@ export default function ContactPage() {
             <div className="relative">
               <input
                 type="range"
-                min="10000"
-                max="500000"
-                step="5000"
+                min={budgetConfig.min}
+                max={budgetConfig.max}
+                step={budgetConfig.step}
                 value={budget}
                 onChange={(e) => setBudget(Number(e.target.value))}
                 className="premium-slider w-full"
@@ -201,13 +221,13 @@ export default function ContactPage() {
               {/* Track progress fill */}
               <div
                 className="absolute left-0 top-1/2 h-0.5 bg-accent pointer-events-none -translate-y-1/2"
-                style={{ width: `${((budget - 10000) / (500000 - 10000)) * 100}%` }}
+                style={{ width: `${((budget - budgetConfig.min) / (budgetConfig.max - budgetConfig.min)) * 100}%` }}
               />
             </div>
 
             <div className="flex justify-between mt-4 text-xs text-muted-foreground">
-              <span>{language === "ru" ? "10К ₽" : "$10K"}</span>
-              <span>{language === "ru" ? "500К+ ₽" : "$500K+"}</span>
+              <span>{budgetConfig.minLabel}</span>
+              <span>{budgetConfig.maxLabel}</span>
             </div>
           </motion.div>
 
@@ -218,10 +238,11 @@ export default function ContactPage() {
             transition={{ delay: 0.6 }}
             className="mb-12"
           >
-            <label className="text-xs uppercase tracking-widest text-muted-foreground mb-3 block">
+            <label htmlFor="contact-message" className="text-xs uppercase tracking-widest text-muted-foreground mb-3 block">
               {t("contact.message")}
             </label>
             <textarea
+              id="contact-message"
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               className="w-full bg-transparent border border-border rounded-sm p-4 text-lg focus:outline-none focus:border-accent transition-colors resize-none min-h-[200px]"
@@ -276,9 +297,9 @@ export default function ContactPage() {
           <div>
             <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-4">{t("contact.social")}</h3>
             <div className="flex gap-4">
-              {["Instagram", "Vimeo", "Telegram"].map((social) => (
-                <a key={social} href="#" className="text-lg hover:text-accent transition-colors">
-                  {social}
+              {SOCIAL_LINKS.map((social) => (
+                <a key={social.name} href={social.url} className="text-lg hover:text-accent transition-colors" target="_blank" rel="noopener noreferrer">
+                  {social.name}
                 </a>
               ))}
             </div>

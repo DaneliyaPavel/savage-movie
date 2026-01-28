@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
-import { getBlogPosts, updateBlogPost } from '@/lib/api/blog'
+import { getBlogPost, updateBlogPost } from '@/lib/api/blog'
 import { slugify } from '@/lib/utils/slugify'
 
 const formSchema = z.object({
@@ -46,9 +46,11 @@ type FormValues = z.infer<typeof formSchema>
 export default function EditBlogPostPage() {
   const router = useRouter()
   const params = useParams()
-  const postId = params.id as string
+  const rawPostId = params.id
+  const postId = Array.isArray(rawPostId) ? rawPostId[0] : rawPostId
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -66,10 +68,14 @@ export default function EditBlogPostPage() {
   const normalize = (value?: string) => (value && value.trim() ? value.trim() : null)
 
   useEffect(() => {
+    if (!postId) {
+      setError('Некорректный ID статьи')
+      setLoading(false)
+      return
+    }
     const load = async () => {
       try {
-        const posts = await getBlogPosts()
-        const post = posts.find((item) => item.id === postId)
+        const post = await getBlogPost(postId)
         if (post) {
           form.reset({
             title: post.title,
@@ -81,9 +87,12 @@ export default function EditBlogPostPage() {
             content: post.content || '',
             status: post.is_published ? 'published' : 'draft',
           })
+        } else {
+          setError('Статья не найдена')
         }
-      } catch {
-        // ignore, handled by loading state
+      } catch (err) {
+        console.error('Ошибка загрузки статьи:', err)
+        setError('Ошибка загрузки статьи')
       } finally {
         setLoading(false)
       }
@@ -98,6 +107,7 @@ export default function EditBlogPostPage() {
   }
 
   const onSubmit = async (values: FormValues) => {
+    if (!postId) return
     setIsSubmitting(true)
     try {
       await updateBlogPost(postId, {
@@ -111,7 +121,8 @@ export default function EditBlogPostPage() {
         is_published: values.status === 'published',
       })
       router.push('/admin/blog')
-    } catch {
+    } catch (err) {
+      console.error('Ошибка обновления статьи:', err)
       alert('Ошибка обновления статьи')
     } finally {
       setIsSubmitting(false)
@@ -119,6 +130,7 @@ export default function EditBlogPostPage() {
   }
 
   if (loading) return <div className="p-8">Загрузка...</div>
+  if (error) return <div className="p-8">{error}</div>
 
   return (
     <div className="p-8 max-w-4xl mx-auto">

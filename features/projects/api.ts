@@ -48,6 +48,13 @@ export async function getProjects(category?: string, featured?: boolean): Promis
 }
 
 /**
+ * Получить проект по ID (client-side)
+ */
+export async function getProjectById(id: string): Promise<Project> {
+  return apiGet<Project>(`/api/projects/${id}`)
+}
+
+/**
  * Получить список проектов (server-side)
  */
 export async function getProjectsServer(

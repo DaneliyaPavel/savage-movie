@@ -51,6 +51,8 @@ export function HomeGalleryCarousel({
                         project.video_url.match(/playbackId=([^&]+)/)
         const playbackId = muxMatch?.[1] ?? null
         onThumbnailChange(playbackId)
+      } else {
+        onThumbnailChange(null)
       }
     }
   }, [emblaApi, projects, onThumbnailChange])

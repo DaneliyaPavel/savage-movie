@@ -55,6 +55,13 @@ export async function getCourses(category?: string): Promise<Course[]> {
 }
 
 /**
+ * Получить курс по ID (client-side)
+ */
+export async function getCourseById(id: string): Promise<Course> {
+  return apiGet<Course>(`/api/courses/${id}`)
+}
+
+/**
  * Получить курс по slug (client-side)
  */
 export async function getCourseBySlug(slug: string): Promise<Course> {

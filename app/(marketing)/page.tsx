@@ -63,10 +63,12 @@ export default async function HomePage() {
       }
     }
   } catch (error) {
-    // В production используйте логирование на сервере
+    console.error(
+      "❌ Ошибка загрузки featured проектов:",
+      error instanceof Error ? error.message : String(error)
+    )
     if (process.env.NODE_ENV === "development") {
-      console.error("❌ Ошибка загрузки featured проектов:", error)
-      console.error("Детали ошибки:", error instanceof Error ? error.message : String(error))
+      console.error("Детали ошибки:", error)
     }
   }
   

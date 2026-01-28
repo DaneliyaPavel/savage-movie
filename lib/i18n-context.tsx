@@ -21,12 +21,15 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.blog": "Блог",
     "nav.menu": "Меню",
     "nav.close": "Закрыть",
+    "nav.openMenu": "Открыть меню",
+    "nav.closeMenu": "Закрыть меню",
 
     // Home
     "home.nowPlaying": "Сейчас играет",
     "home.directedBy": "Режиссёр",
     "home.scroll": "Скролл",
     "home.heroSubtitle": "Продакшн-студия, создающая сильные истории для брендов и артистов.",
+    "home.noFeaturedProjects": "Нет избранных проектов для отображения в карусели",
 
     // Projects
     "projects.label": "Избранные работы",
@@ -102,6 +105,8 @@ const translations: Record<Language, Record<string, string>> = {
     "courses.yes": "Да",
     "courses.whatYouLearn": "Чему вы научитесь",
     "courses.forWhom": "Для кого этот курс",
+    "courses.loading": "Загрузка курсов...",
+    "courses.loadError": "Ошибка загрузки курсов",
 
     // Contact
     "contact.label": "Связаться",
@@ -110,6 +115,7 @@ const translations: Record<Language, Record<string, string>> = {
     "contact.name": "Имя",
     "contact.namePlaceholder": "Ваше имя",
     "contact.email": "Email",
+    "contact.emailPlaceholder": "ваш@email.com",
     "contact.company": "Компания (опционально)",
     "contact.companyPlaceholder": "Ваша компания",
     "contact.projectType": "Тип проекта",
@@ -149,12 +155,15 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.blog": "Blog",
     "nav.menu": "Menu",
     "nav.close": "Close",
+    "nav.openMenu": "Open menu",
+    "nav.closeMenu": "Close menu",
 
     // Home
     "home.nowPlaying": "Now Playing",
     "home.directedBy": "Directed by",
     "home.scroll": "Scroll",
     "home.heroSubtitle": "A production studio creating high-impact stories for brands and artists.",
+    "home.noFeaturedProjects": "No featured projects to display in carousel",
 
     // Projects
     "projects.label": "Selected Works",
@@ -230,6 +239,8 @@ const translations: Record<Language, Record<string, string>> = {
     "courses.yes": "Yes",
     "courses.whatYouLearn": "What You'll Learn",
     "courses.forWhom": "Who This Course Is For",
+    "courses.loading": "Loading courses...",
+    "courses.loadError": "Failed to load courses",
 
     // Contact
     "contact.label": "Get in Touch",
@@ -239,6 +250,7 @@ const translations: Record<Language, Record<string, string>> = {
     "contact.name": "Name",
     "contact.namePlaceholder": "Your name",
     "contact.email": "Email",
+    "contact.emailPlaceholder": "your@email.com",
     "contact.company": "Company (Optional)",
     "contact.companyPlaceholder": "Your company",
     "contact.projectType": "Project Type",

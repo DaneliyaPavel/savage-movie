@@ -139,7 +139,7 @@ export function ProjectDetailClient({ project, nextProject }: ProjectDetailClien
                   {project.client}
                 </div>
               )}
-              <h1 className="mt-4 text-4xl md:text-6xl lg:text-7xl text-[#FFFFFF] leading-tight font-cinzel-bold">
+              <h1 className="mt-4 text-4xl md:text-6xl lg:text-7xl text-[#FFFFFF] leading-tight font-oranienbaum">
                 {project.title}
               </h1>
             </motion.div>
@@ -178,7 +178,7 @@ export function ProjectDetailClient({ project, nextProject }: ProjectDetailClien
                 transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 className="mb-16 md:mb-24"
               >
-                <h2 className="text-3xl md:text-4xl text-[#FFFFFF] font-cinzel-bold mb-10">
+                <h2 className="text-3xl md:text-4xl text-[#FFFFFF] font-oranienbaum mb-10">
                   Галерея
                 </h2>
                 {project.images && project.images.length > 0 && (
@@ -256,7 +256,7 @@ export function ProjectDetailClient({ project, nextProject }: ProjectDetailClien
                       <div className="text-sm md:text-base text-[#FFFFFF]/40 uppercase tracking-wider mb-2 font-secondary">
                         Следующий проект
                       </div>
-                      <div className="text-2xl md:text-3xl font-cinzel-bold text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">
+                      <div className="text-2xl md:text-3xl font-oranienbaum text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">
                         {nextProject.title}
                       </div>
                     </div>

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useId } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
 interface HoverNoteProps {
@@ -19,7 +19,9 @@ export function HoverNote({ children, note, text, className = "" }: HoverNotePro
   const [isHovered, setIsHovered] = useState(false)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
+  const tooltipId = useId()
   const label = note ?? text ?? ""
+  const showTooltip = isHovered && Boolean(label)
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -45,11 +47,17 @@ export function HoverNote({ children, note, text, className = "" }: HoverNotePro
       className={`relative ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onFocus={() => setIsHovered(true)}
+      onBlur={() => setIsHovered(false)}
+      tabIndex={label ? 0 : undefined}
+      aria-describedby={showTooltip ? tooltipId : undefined}
     >
       {children}
       <AnimatePresence>
-        {isHovered && (
+        {showTooltip && (
           <motion.span
+            id={tooltipId}
+            role="tooltip"
             initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
             animate={{ opacity: 1, scale: 1, rotate: -3 }}
             exit={{ opacity: 0, scale: 0.8 }}

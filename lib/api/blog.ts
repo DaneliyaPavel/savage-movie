@@ -51,6 +51,10 @@ export async function getBlogPosts(published?: boolean): Promise<BlogPost[]> {
   return apiGet<BlogPost[]>(`/api/blog${query ? `?${query}` : ''}`)
 }
 
+export async function getBlogPost(id: string): Promise<BlogPost> {
+  return apiGet<BlogPost>(`/api/blog/${id}`)
+}
+
 export async function getBlogPostsServer(
   published?: boolean,
   cookies?: { get: (name: string) => { value: string } | undefined }

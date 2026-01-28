@@ -104,7 +104,7 @@ export function StrikethroughText({
       }
     })
     return () => cancelAnimationFrame(rafId)
-  }, [mainText])
+  }, [mainText, size])
 
   const path = createPath(pathWidth || 100)
 

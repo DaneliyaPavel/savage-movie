@@ -39,9 +39,9 @@ export default async function BlogPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {posts.map((post) => {
-              const publishedAt = post.published_at
-                ? new Date(post.published_at)
-                : new Date(post.created_at)
+              const dateStr = post.published_at || post.created_at
+              const publishedAt = dateStr ? new Date(dateStr) : null
+              const isValidDate = publishedAt && !isNaN(publishedAt.getTime())
               return (
                 <Link key={post.slug} href={`/blog/${post.slug}`}>
                   <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer">
@@ -52,7 +52,9 @@ export default async function BlogPage() {
                       <CardTitle className="line-clamp-2">{post.title}</CardTitle>
                       <CardDescription className="flex items-center gap-2 mt-2">
                         <Calendar className="w-4 h-4" />
-                        {format(publishedAt, 'd MMMM yyyy', { locale: ru })}
+                        {isValidDate
+                          ? format(publishedAt, 'd MMMM yyyy', { locale: ru })
+                          : 'Дата не указана'}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>

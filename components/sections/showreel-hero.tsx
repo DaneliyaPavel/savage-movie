@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { VideoPlayer } from "@/features/projects/components/mux-player"
 import { FilmstripCarousel } from "@/features/projects/components/filmstrip-carousel"
@@ -29,6 +29,7 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const { language, t } = useI18n()
+  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const currentPlaybackId = selectedProject?.playbackId || showreelPlaybackId
 
@@ -37,12 +38,23 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
     if (project.id === selectedProject?.id) return
 
     setIsTransitioning(true)
-    setTimeout(() => {
+    if (transitionTimerRef.current) {
+      clearTimeout(transitionTimerRef.current)
+    }
+    transitionTimerRef.current = setTimeout(() => {
       const fullProject = projects.find((p) => p.id === project.id) || null
       setSelectedProject(fullProject)
       setIsTransitioning(false)
     }, 400)
   }
+
+  useEffect(() => {
+    return () => {
+      if (transitionTimerRef.current) {
+        clearTimeout(transitionTimerRef.current)
+      }
+    }
+  }, [])
 
   const getTitle = (p: Project) => (language === "ru" ? p.titleRu : p.titleEn)
   const getDirector = (p: Project) => (language === "ru" ? p.directorRu : p.directorEn)
@@ -137,7 +149,7 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
         // Fallback если нет проектов
         process.env.NODE_ENV === "development" && (
           <div className="absolute bottom-0 left-0 right-0 z-30 p-8 text-center text-muted-foreground">
-            <p className="text-sm">⚠️ Нет featured проектов для отображения в carousel</p>
+            <p className="text-sm">⚠️ {t("home.noFeaturedProjects")}</p>
           </div>
         )
       )}

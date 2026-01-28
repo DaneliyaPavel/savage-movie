@@ -148,7 +148,7 @@ export function ContactForm({ className = '' }: ContactFormProps) {
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", delay: 0.2, stiffness: 200, damping: 15 }}
               >
-                <CheckCircle2 className="w-20 h-20 text-[#ff2936] mb-6" />
+                <CheckCircle2 className="w-20 h-20 text-green-500 mb-6" />
               </motion.div>
               <h3 className="text-3xl md:text-4xl font-heading font-bold mb-3 text-[#FFFFFF]">
                 Спасибо за заявку!

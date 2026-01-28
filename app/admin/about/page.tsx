@@ -53,6 +53,7 @@ function normalizeCrop(raw: unknown): PhotoCrop | null {
 }
 
 function toDisplayUrl(url: string) {
+  if (!url) return url
   return url.startsWith('http') ? url : url.startsWith('/') ? url : `/${url}`
 }
 
@@ -427,16 +428,18 @@ export default function AdminAboutTeamPage() {
                 <div className="pt-2 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Имя</label>
+                      <label htmlFor={`member-name-${member.id}`} className="text-sm font-medium">Имя</label>
                       <Input
+                        id={`member-name-${member.id}`}
                         value={member.name}
                         onChange={(e) => updateMember(member.id, { name: e.target.value })}
                         placeholder="Например: Павел Данелия"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Должность</label>
+                      <label htmlFor={`member-position-${member.id}`} className="text-sm font-medium">Должность</label>
                       <Input
+                        id={`member-position-${member.id}`}
                         value={member.position}
                         onChange={(e) => updateMember(member.id, { position: e.target.value })}
                         placeholder="Например: Режиссёр / Продюсер"
@@ -445,8 +448,9 @@ export default function AdminAboutTeamPage() {
                   </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Описание (опционально)</label>
+                <label htmlFor={`member-bio-${member.id}`} className="text-sm font-medium">Описание (опционально)</label>
                 <Textarea
+                  id={`member-bio-${member.id}`}
                   value={member.bio || ''}
                   onChange={(e) => updateMember(member.id, { bio: e.target.value })}
                   rows={3}
@@ -455,9 +459,10 @@ export default function AdminAboutTeamPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Фото</label>
+                <label htmlFor={`member-photo-${member.id}`} className="text-sm font-medium">Фото</label>
                 <FileUpload
                   type="image"
+                  inputId={`member-photo-${member.id}`}
                   existingFiles={member.photo_url ? [member.photo_url] : []}
                   onUpload={(url) =>
                     updateMember(member.id, {
@@ -488,4 +493,3 @@ export default function AdminAboutTeamPage() {
     </div>
   )
 }
-

@@ -314,8 +314,8 @@ function ProjectRow({
 
             {/* Client & Title - larger, positioned above video */}
             <div className="mb-3">
-              <h3 className="text-base md:text-lg font-cinzel-bold uppercase tracking-wide mb-1">{getClient()}</h3>
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-cinzel-bold uppercase tracking-tight leading-tight">
+              <h3 className="text-base md:text-lg font-oranienbaum uppercase tracking-wide mb-1">{getClient()}</h3>
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-oranienbaum uppercase tracking-tight leading-tight">
                 {getTitle()}
               </h2>
             </div>
@@ -392,7 +392,7 @@ export default function ProjectsPageClient({ initialProjects }: { initialProject
           >
             ({projects.length})
           </span>
-          <h1 className="text-base uppercase tracking-widest font-cinzel-bold">{t("projects.title")}</h1>
+          <h1 className="text-base uppercase tracking-widest font-oranienbaum">{t("projects.title")}</h1>
         </div>
       </header>
 
