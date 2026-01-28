@@ -32,13 +32,15 @@ cd savage-movie
 ./scripts/init-docker.sh
 
 # Или запустите вручную
-./docker-start.sh dev
+./docker-start.sh
 ```
+
+> Используется единый `docker-compose.yml`. Данные сохраняются в volume `postgres_data_dev` и папке `backend/uploads`.
 
 Подождите 30-60 секунд, пока все контейнеры запустятся. Проверьте статус:
 
 ```bash
-docker-compose -f docker-compose.dev.yml ps
+docker-compose -f docker-compose.yml ps
 ```
 
 Проект будет доступен:
@@ -121,7 +123,7 @@ curl -X POST http://localhost:8001/api/auth/register \
   }'
 
 # 2. Обновите роль на admin в БД
-docker exec -it savage_movie_db_dev psql -U postgres -d savage_movie -c \
+docker exec -it savage_movie_db psql -U postgres -d savage_movie -c \
   "UPDATE users SET role = 'admin' WHERE email = 'admin@example.com';"
 ```
 
@@ -140,7 +142,7 @@ docker exec -it savage_movie_db_dev psql -U postgres -d savage_movie -c \
 
 ```env
 # Python API
-NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_API_URL=http://localhost:8001
 
 # OAuth (для frontend redirects)
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id

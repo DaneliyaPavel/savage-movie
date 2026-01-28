@@ -328,9 +328,7 @@ savage-movie/
 │   ├── docker-init-db.sh        # Инициализация БД в Docker
 │   └── init-docker.sh           # Инициализация Docker
 │
-├── docker-compose.yml            # Docker Compose (базовый)
-├── docker-compose.dev.yml        # Docker Compose (разработка)
-├── docker-compose.prod.yml       # Docker Compose (продакшн)
+├── docker-compose.yml            # Docker Compose (единое окружение)
 │
 ├── Dockerfile.backend            # Dockerfile для backend
 ├── Dockerfile.frontend           # Dockerfile для frontend (prod)

@@ -3,7 +3,7 @@
 
 set -e
 
-COMPOSE_FILE="${1:-docker-compose.dev.yml}"
+COMPOSE_FILE="${1:-docker-compose.yml}"
 
 COMPOSE_CMD="docker-compose"
 if ! command -v docker-compose &> /dev/null; then

@@ -12,7 +12,7 @@ alembic -c backend/alembic.ini upgrade head
 
 В Docker (backend контейнер):
 ```bash
-docker exec savage_movie_backend_dev alembic -c /app/backend/alembic.ini upgrade head
+docker exec savage_movie_backend alembic -c /app/backend/alembic.ini upgrade head
 ```
 
 ## Для существующей БД (созданной SQL-скриптами)
@@ -36,16 +36,16 @@ alembic -c backend/alembic.ini stamp head
 
 1. Проверьте логи backend:
 ```bash
-docker logs savage_movie_backend_dev
+docker logs savage_movie_backend
 ```
 
 2. Проверьте логи frontend:
 ```bash
-docker logs savage_movie_frontend_dev
+docker logs savage_movie_frontend
 ```
 
 3. Проверьте таблицы:
 ```bash
-docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie -c "\d courses"
-docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie -c "\d projects"
+docker exec -i savage_movie_db psql -U postgres -d savage_movie -c "\d courses"
+docker exec -i savage_movie_db psql -U postgres -d savage_movie -c "\d projects"
 ```

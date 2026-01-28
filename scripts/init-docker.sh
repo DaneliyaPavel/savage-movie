@@ -32,7 +32,7 @@ if ! command -v docker-compose &> /dev/null; then
 fi
 
 echo "🐳 Запуск Docker контейнеров..."
-$COMPOSE_CMD -f docker-compose.dev.yml up -d db
+$COMPOSE_CMD -f docker-compose.yml up -d db
 
 echo "⏳ Ожидание готовности базы данных..."
 sleep 10
@@ -40,7 +40,7 @@ sleep 10
 echo "📦 Миграции применяются через Alembic при старте backend..."
 
 echo "🚀 Запуск всех сервисов..."
-$COMPOSE_CMD -f docker-compose.dev.yml up -d
+$COMPOSE_CMD -f docker-compose.yml up -d
 
 echo ""
 echo "✅ Проект запущен!"
@@ -52,8 +52,8 @@ echo "   - API Docs: http://localhost:8001/docs"
 echo "   - Admin Panel: http://localhost:3000/admin"
 echo ""
 echo "📝 Полезные команды:"
-echo "   - Просмотр логов: $COMPOSE_CMD -f docker-compose.dev.yml logs -f"
-echo "   - Остановка: $COMPOSE_CMD -f docker-compose.dev.yml down"
-echo "   - Перезапуск: $COMPOSE_CMD -f docker-compose.dev.yml restart"
-echo "   - Очистка: $COMPOSE_CMD -f docker-compose.dev.yml down -v"
+echo "   - Просмотр логов: $COMPOSE_CMD -f docker-compose.yml logs -f"
+echo "   - Остановка: $COMPOSE_CMD -f docker-compose.yml down"
+echo "   - Перезапуск: $COMPOSE_CMD -f docker-compose.yml restart"
+echo "   - Очистка: $COMPOSE_CMD -f docker-compose.yml down -v"
 echo ""

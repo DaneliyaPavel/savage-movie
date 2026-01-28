@@ -2,11 +2,11 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-COMPOSE_FILE="$ROOT_DIR/docker-compose.prod.yml"
+COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
 OUT_DIR=""
 
 usage() {
-  echo "Usage: $0 [--prod|--dev|--compose <file>] [--out <dir>]"
+  echo "Usage: $0 [--compose <file>] [--out <dir>]"
 }
 
 make_abs_path() {
@@ -20,12 +20,8 @@ make_abs_path() {
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --prod)
-      COMPOSE_FILE="$ROOT_DIR/docker-compose.prod.yml"
-      shift
-      ;;
-    --dev)
-      COMPOSE_FILE="$ROOT_DIR/docker-compose.dev.yml"
+    --prod|--dev)
+      COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
       shift
       ;;
     --compose)

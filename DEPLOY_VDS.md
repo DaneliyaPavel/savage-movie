@@ -5,13 +5,7 @@
 ## 1) Сделать бэкап на текущем сервере/машине
 
 ```bash
-./scripts/backup.sh --prod
-```
-
-Если данные сейчас в dev-контейнерах, используйте:
-
-```bash
-./scripts/backup.sh --dev
+./scripts/backup.sh
 ```
 
 Папка с бэкапом появится в `backups/` (пример: `backups/20260127_120000`).
@@ -27,46 +21,49 @@ cp .env.example .env
 ```
 
 Отредактируйте `.env`:
-- `APP_DOMAIN` и `LETSENCRYPT_EMAIL`
-- `NEXT_PUBLIC_API_URL` (только домен, без `/api`), `NEXT_PUBLIC_APP_URL` и `API_URL`
-- `CORS_ORIGINS` (должен совпадать с доменом)
+- `NEXT_PUBLIC_API_URL` (например `http://<IP>:8001`)
+- `NEXT_PUBLIC_APP_URL` (например `http://<IP>:3000`)
+- `API_URL` (оставить `http://backend:8000`)
+- `CORS_ORIGINS` (например `http://<IP>:3000`)
 - `DB_PASSWORD` (иначе Postgres не стартует)
 - ключи: Resend, YooKassa, Google/Yandex, Mux и т.д.
 
-Если SSL пока не нужен, можно задать `APP_DOMAIN` как IP VDS и просто запустить `./up`.
-
-## 3) Запуск продакшн-версии (без SSL)
+## 3) Запуск
 
 ```bash
 ./up
 ```
 
-Сервисы поднимутся в Docker. Данные живут в volumes `postgres_data_prod` и `backend_uploads`.
+Сервисы поднимутся в Docker. Данные живут в volume `postgres_data_dev` и в папке `backend/uploads`.
 
-## 4) SSL (Nginx + Let's Encrypt) — опционально, можно позже
-
-```bash
-./scripts/ssl-init.sh
-```
-
-Обновление сертификата:
+## 4) Восстановить данные (проекты/курсы и т.д.)
 
 ```bash
-./scripts/ssl-renew.sh
-```
-
-## 5) Восстановить данные (проекты/курсы и т.д.)
-
-```bash
-./scripts/restore.sh --prod backups/<ваш_бэкап>
+./scripts/restore.sh backups/<ваш_бэкап>
 ```
 
 ## Быстрая миграция в одну команду
 
 ```bash
-./scripts/migrate-to-vds.sh --host <ip_or_domain> --user <user> --path <remote_repo_path> --dev
+./scripts/migrate-to-vds.sh --host <ip_or_domain> --user <user> --path <remote_repo_path>
 ```
+
+## Авто‑деплой при merge в main
+
+1) На сервере один раз настройте `.env` и выполните:
+```bash
+cd /root/opt/savagemovie/savage-movie
+chmod +x up scripts/*.sh
+```
+
+2) В GitHub → Settings → Secrets and variables → Actions добавьте:
+- `VDS_HOST` (например `89.169.4.92`)
+- `VDS_USER` (например `root`)
+- `VDS_SSH_KEY` (private key)
+- `VDS_SSH_PORT` (необязательно, по умолчанию 22)
+- `VDS_PATH` (например `/root/opt/savagemovie/savage-movie`)
+
+После merge в `main` GitHub Action автоматически выполнит `scripts/deploy.sh`, обновит код и перезапустит контейнеры без кэша.
 
 ## Важно
 - Не используйте `docker compose down -v`, иначе удалятся данные.
-- База в prod доступна только с localhost (`127.0.0.1:${DB_PORT:-5433}`) — это безопаснее.
