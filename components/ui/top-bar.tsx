@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion"
 import Link from "next/link"
+import Image from "next/image"
 import { useMenu } from "./menu-context"
 import { usePathname } from "next/navigation"
 import { useI18n } from "@/lib/i18n-context"
@@ -11,7 +12,7 @@ export function TopBar() {
   const pathname = usePathname()
   const { t } = useI18n()
   const isHomePage = pathname === "/"
-  const logoText = isHomePage ? "SM" : "SAVAGE MOVIE"
+  const logoText = "SAVAGE MOVIE"
 
   return (
     <motion.header
@@ -22,15 +23,20 @@ export function TopBar() {
     >
       {/* Logo */}
       <Link href="/" className="group relative">
-        <span
-          className={
-            isHomePage
-              ? "text-2xl md:text-3xl font-brand tracking-tight text-white"
-              : "text-xl font-brand tracking-tight text-white"
-          }
-        >
-          {logoText}
-        </span>
+        {isHomePage ? (
+          <span className="inline-flex items-center">
+            <Image
+              src="/sm-logo.svg"
+              alt="Savage Movie"
+              width={96}
+              height={38}
+              className="h-6 md:h-7 w-auto opacity-90 invert"
+              priority
+            />
+          </span>
+        ) : (
+          <span className="text-xl font-brand tracking-tight text-white">{logoText}</span>
+        )}
         <motion.span
           className="absolute -bottom-1 left-0 h-px bg-white origin-left"
           initial={{ scaleX: 0 }}

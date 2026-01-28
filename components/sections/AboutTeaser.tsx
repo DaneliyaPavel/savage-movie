@@ -6,6 +6,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight } from 'lucide-react'
 import { SectionTitle } from '@/components/ui/section-title'
 import { EditorialCorrection } from '@/components/ui/editorial-correction'
@@ -81,7 +82,13 @@ export function AboutTeaser({ onBookClick }: AboutTeaserProps) {
           >
             {/* Placeholder для визуала */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-6xl font-heading font-bold text-[#FFFFFF]/10">SM</div>
+              <Image
+                src="/sm-logo.svg"
+                alt="Savage Movie"
+                width={220}
+                height={86}
+                className="w-28 md:w-36 h-auto opacity-10 invert"
+              />
             </div>
           </motion.div>
         </div>
