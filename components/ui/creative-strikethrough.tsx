@@ -130,10 +130,14 @@ export function CreativeStrikethrough({
       transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
       className={`inline-flex items-baseline gap-4 ${className}`}
     >
+      <span className="sr-only" aria-live="polite">
+        {correct}, не {wrong}
+      </span>
       {/* Неправильный текст с зеленым перечеркиванием */}
       <span
         ref={wrongRef}
         className={`${sizeClasses[size].wrong} font-heading font-bold text-[#FFFFFF]/40 relative inline-block`}
+        aria-hidden="true"
       >
         {wrong}
         {/* SVG перечеркивание зеленым цветом с анимацией */}
@@ -143,6 +147,7 @@ export function CreativeStrikethrough({
           height="12"
           viewBox={`0 0 ${pathWidth || 100} 12`}
           style={{ transform: 'translateY(-50%)' }}
+          aria-hidden="true"
         >
           {strokes.map((path, index) => (
             <motion.path
@@ -158,12 +163,6 @@ export function CreativeStrikethrough({
                 opacity: springPathLength,
               }}
               initial={{ pathLength: 0, opacity: 0 }}
-              animate={shouldAnimate ? { pathLength: 1, opacity: index === 0 ? 0.9 : 0.6 } : { pathLength: 0, opacity: 0 }}
-              transition={{ 
-                duration: 0.6, 
-                delay: delay + index * 0.1,
-                ease: [0.16, 1, 0.3, 1] 
-              }}
             />
           ))}
         </svg>
@@ -180,6 +179,7 @@ export function CreativeStrikethrough({
           fontWeight: 400,
           textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
         }}
+        aria-hidden="true"
       >
         {correct}
       </motion.span>

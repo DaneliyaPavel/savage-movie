@@ -27,6 +27,12 @@ export default function CoursesPage() {
   const [loading, setLoading] = useState(true)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [courseToDelete, setCourseToDelete] = useState<Course | null>(null)
+  const categoryLabels: Record<string, string> = {
+    ai: 'ИИ',
+    shooting: 'Съемка',
+    editing: 'Монтаж',
+    production: 'Продюсирование',
+  }
 
   useEffect(() => {
     loadCourses()
@@ -87,13 +93,7 @@ export default function CoursesPage() {
       key: 'category',
       label: 'Категория',
       render: (course: Course) => {
-        const categories: Record<string, string> = {
-          'ai': 'ИИ',
-          'shooting': 'Съемка',
-          'editing': 'Монтаж',
-          'production': 'Продюсирование',
-        }
-        return categories[course.category] || course.category
+        return categoryLabels[course.category] || course.category
       },
     },
     {
@@ -146,7 +146,7 @@ export default function CoursesPage() {
               <div>
                 <div className="font-medium">{course.title}</div>
                 <div className="text-sm text-muted-foreground">
-                  {course.category} • {course.price.toLocaleString('ru-RU')} ₽
+                  {categoryLabels[course.category] || course.category} • {course.price.toLocaleString('ru-RU')} ₽
                 </div>
               </div>
               <div className="flex gap-2">

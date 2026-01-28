@@ -24,13 +24,14 @@ export function EditorialCorrection({
   correct,
   className = "",
   size = "md",
+  inline = false,
   delay = 0,
 }: EditorialCorrectionProps) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
 
   return (
-    <span ref={ref} className={`relative inline-block ${className}`}>
+    <span ref={ref} className={`relative ${inline ? "inline-block" : "block"} ${className}`}>
       <span className="relative">
         <span className="text-muted-foreground/60">{wrong}</span>
         {isInView && (

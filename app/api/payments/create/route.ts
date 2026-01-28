@@ -29,7 +29,17 @@ export async function POST(request: NextRequest) {
     let user: User
     try {
       user = await apiGet<User>('/api/auth/me', request.cookies)
-    } catch {
+    } catch (authError) {
+      const message = authError instanceof Error ? authError.message : String(authError)
+      const isUnauthorized =
+        message.toLowerCase().includes('авторизац') || message.includes('401')
+      if (!isUnauthorized) {
+        logger.error('Ошибка проверки авторизации', authError, { route: '/api/payments/create' })
+        return NextResponse.json(
+          { error: 'Ошибка сервера' },
+          { status: 500 }
+        )
+      }
       return NextResponse.json(
         { error: 'Требуется авторизация' },
         { status: 401 }
@@ -43,7 +53,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const appUrl = publicEnv.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    let appUrl = publicEnv.NEXT_PUBLIC_APP_URL
+    if (!appUrl) {
+      if (process.env.NODE_ENV === 'production') {
+        logger.error('NEXT_PUBLIC_APP_URL is not configured', null, { route: '/api/payments/create' })
+        return NextResponse.json(
+          { error: 'Ошибка конфигурации сервера' },
+          { status: 500 }
+        )
+      }
+      appUrl = 'http://localhost:3000'
+    }
     const returnUrl = new URL('/payment/success', appUrl)
     returnUrl.searchParams.set('courseId', courseId)
     

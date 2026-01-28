@@ -50,7 +50,7 @@ export function TopBar() {
       <button
         onClick={toggle}
         className="group relative flex items-center gap-3 text-white"
-        aria-label={isOpen ? "Close menu" : "Open menu"}
+        aria-label={isOpen ? t("nav.closeMenu") : t("nav.openMenu")}
       >
         <span className="text-sm font-medium tracking-wide uppercase opacity-60 group-hover:opacity-100 transition-opacity">
           {t("nav.menu")}

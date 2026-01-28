@@ -53,7 +53,8 @@ export default function EditClientPage() {
     try {
       await updateClient(clientId, { ...values, logo_url: logoUrl || null })
       router.push('/admin/clients')
-    } catch {
+    } catch (error) {
+      console.error('Ошибка обновления клиента:', error)
       alert('Ошибка обновления клиента')
     } finally {
       setIsSubmitting(false)

@@ -3,7 +3,7 @@
  */
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useId } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Upload, X, Loader2 } from 'lucide-react'
@@ -16,6 +16,7 @@ interface FileUploadProps {
   accept?: string
   multiple?: boolean
   type?: 'image' | 'video' | 'images'
+  inputId?: string
   className?: string
   existingFiles?: string[]
   onRemove?: (url: string) => void
@@ -23,6 +24,10 @@ interface FileUploadProps {
 
 function ExistingFilePreviewImage({ src, alt }: { src: string; alt: string }) {
   const [hasError, setHasError] = useState(false)
+
+  useEffect(() => {
+    setHasError(false)
+  }, [src])
 
   return (
     <Image
@@ -42,30 +47,35 @@ export function FileUpload({
   accept,
   multiple = false,
   type = 'image',
+  inputId,
   className,
   existingFiles = [],
   onRemove,
 }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
+  const generatedInputId = useId()
 
   const handleFiles = useCallback(async (files: File[]) => {
     if (files.length === 0) return
-    const firstFile = files[0]
+    let effectiveFiles = files
+    if (type === 'images' && multiple && files.length > 5) {
+      alert('Можно загрузить до 5 изображений')
+      effectiveFiles = files.slice(0, 5)
+    }
+    const firstFile = effectiveFiles[0]
     if (!firstFile) return
     
     setIsUploading(true)
-    setUploadProgress(0)
 
     try {
-      if (type === 'images' && multiple && files.length > 1) {
+      if (type === 'images' && multiple && effectiveFiles.length > 1) {
         // Множественная загрузка изображений - все сразу пачкой
-        const response = await uploadImages(files)
+        const response = await uploadImages(effectiveFiles)
         if (onMultipleUpload && 'files' in response) {
           onMultipleUpload(response.files.map(f => f.url))
         }
-      } else if (type === 'images' && multiple && files.length === 1) {
+      } else if (type === 'images' && multiple && effectiveFiles.length === 1) {
         // Одно изображение при множественной загрузке
         const response = await uploadImage(firstFile)
         if (onMultipleUpload && 'url' in response) {
@@ -93,7 +103,6 @@ export function FileUpload({
       alert(error instanceof Error ? error.message : 'Ошибка загрузки файла')
     } finally {
       setIsUploading(false)
-      setUploadProgress(0)
     }
   }, [type, multiple, onUpload, onMultipleUpload])
 
@@ -144,6 +153,7 @@ export function FileUpload({
   const defaultAccept = type === 'video' 
     ? 'video/mp4,video/quicktime,video/x-msvideo'
     : 'image/jpeg,image/png,image/webp'
+  const resolvedInputId = inputId || generatedInputId
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -187,28 +197,18 @@ export function FileUpload({
         )}
       >
         <input
-          id="file-input"
+          id={resolvedInputId}
           type="file"
           accept={accept || defaultAccept}
           multiple={multiple && type === 'images'}
           onChange={handleFileInput}
           className="hidden"
         />
-        <label htmlFor="file-input" className="cursor-pointer">
+        <label htmlFor={resolvedInputId} className="cursor-pointer">
           {isUploading ? (
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
               <p className="text-sm text-muted-foreground">Загрузка на сервер...</p>
-              {uploadProgress > 0 && (
-                <div className="w-full max-w-xs">
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-primary transition-all duration-300"
-                      style={{ width: `${uploadProgress}%` }}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">
@@ -220,7 +220,7 @@ export function FileUpload({
               </p>
               <p className="text-xs text-muted-foreground/70">
                 {multiple && type === 'images' 
-                  ? 'Можно выбрать несколько файлов сразу (Ctrl/Cmd + клик) или перетащить папку'
+                  ? 'Можно выбрать несколько файлов сразу (Ctrl/Cmd + клик)'
                   : 'Файлы загружаются на сервер и сохраняются локально'}
               </p>
               <Button type="button" variant="outline" size="sm">

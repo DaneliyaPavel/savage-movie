@@ -43,7 +43,7 @@ export function ContactPageClient() {
             viewport={{ once: true }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
-            <HoverNote text="trusted by" position="top">
+            <HoverNote text="нам доверяют" position="top">
               <h2 className="font-heading font-bold text-3xl md:text-4xl mb-12 text-[#FFFFFF]">
                 Контактная информация
               </h2>

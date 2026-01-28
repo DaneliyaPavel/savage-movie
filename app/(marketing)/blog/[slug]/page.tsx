@@ -60,9 +60,11 @@ export default async function BlogPostPage({
               <span className="opacity-40">•</span>
               <span className="inline-flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                {format(new Date(post.published_at || post.created_at), "d MMMM yyyy", {
-                  locale: ru,
-                })}
+                {post.published_at || post.created_at
+                  ? format(new Date(post.published_at || post.created_at), "d MMMM yyyy", {
+                      locale: ru,
+                    })
+                  : "Дата не указана"}
               </span>
             </div>
           </header>

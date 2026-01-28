@@ -100,7 +100,7 @@ export function PremiumFullscreenPlayer({
                   video_title: title,
                 }}
                 autoPlay
-                muted={false}
+                muted
                 loop={false}
                 className="w-full h-full"
                 poster={poster}

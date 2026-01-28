@@ -16,10 +16,10 @@
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: #ff2936;
+  --accent: oklch(0.59 0.24 25);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -52,7 +52,7 @@
   --secondary-foreground: oklch(0.95 0 0);
   --muted: oklch(0.2 0 0);
   --muted-foreground: oklch(0.6 0 0);
-  --accent: #ff2936;
+  --accent: oklch(0.59 0.24 25);
   --accent-foreground: oklch(0.98 0 0);
   --destructive: oklch(0.396 0.141 25.723);
   --destructive-foreground: oklch(0.637 0.237 25.331);
@@ -93,7 +93,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --color-accent: #ff2936;
+  --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
@@ -160,7 +160,7 @@
 }
 .premium-slider::-webkit-slider-track {
   height: 2px;
-  background: oklch(0.25 0 0);
+  background: var(--border);
   border-radius: 1px;
 }
 .premium-slider::-webkit-slider-thumb {
@@ -168,10 +168,10 @@
   appearance: none;
   width: 20px;
   height: 20px;
-  background: oklch(0.98 0 0);
+  background: var(--foreground);
   border-radius: 50%;
   margin-top: -9px;
-  box-shadow: 0 0 20px oklch(0.98 0 0 / 0.3);
+  box-shadow: 0 0 20px oklch(from var(--foreground) l c h / 0.3);
 }
 
 /* Handwritten font face */
@@ -236,21 +236,6 @@
   font-display: swap;
 }
 
-@font-face {
-  font-family: "Roboto Thin";
-  src: url("/fonts/Roboto-Thin.ttf") format("truetype");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Roboto Thin";
-  src: url("/fonts/Roboto-Thin.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
 
 /* SVG stroke draw animation */
 @keyframes draw-stroke {
@@ -273,15 +258,11 @@
     text-wrap: balance;
   }
 
-  .font-cinzel {
+  .font-oranienbaum {
     font-family: "Oranienbaum", serif;
     font-weight: 400;
   }
 
-  .font-cinzel-bold {
-    font-family: "Oranienbaum", serif;
-    font-weight: 700;
-  }
 
   .font-secondary {
     font-family: var(--font-secondary), var(--font-sans);

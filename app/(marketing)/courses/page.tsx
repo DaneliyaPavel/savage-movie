@@ -34,33 +34,48 @@ export default function CoursesPage() {
   const [expandedCourse, setExpandedCourse] = useState<string | null>(null)
   const [courses, setCourses] = useState<MarketingCourse[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const coursesRef = useRef<MarketingCourse[]>([])
+  const lastRefetchRef = useRef(0)
   const { language, t } = useI18n()
 
   useEffect(() => {
-    async function loadCourses() {
-      setIsLoading(true)
+    async function loadCourses({ showLoading = true }: { showLoading?: boolean } = {}) {
+      if (showLoading) {
+        setIsLoading(true)
+      }
+      setError(null)
       try {
         const apiCourses = await getCourses()
         const transformed = apiCourses.map((c, index) => toMarketingCourse(c, index))
+        coursesRef.current = transformed
         setCourses(transformed)
       } catch (error) {
-        console.error("❌ Ошибка загрузки курсов:", error)
+        console.error("Failed to load courses:", error)
+        if (showLoading || coursesRef.current.length === 0) {
+          setError(t("courses.loadError"))
+        }
       } finally {
-        setIsLoading(false)
+        if (showLoading) {
+          setIsLoading(false)
+        }
       }
     }
     loadCourses()
     
     // Перезагружаем данные при возврате на страницу (например, после редактирования в админке)
     const handleFocus = () => {
-      loadCourses()
+      const now = Date.now()
+      if (now - lastRefetchRef.current < 5000) return
+      lastRefetchRef.current = now
+      loadCourses({ showLoading: false })
     }
     window.addEventListener('focus', handleFocus)
     
     return () => {
       window.removeEventListener('focus', handleFocus)
     }
-  }, [])
+  }, [t])
 
   const getTitle = (c: MarketingCourse) => (language === "ru" ? c.titleRu : c.titleEn)
   const getDescription = (c: MarketingCourse) => (language === "ru" ? c.descriptionRu : c.descriptionEn)
@@ -128,7 +143,11 @@ export default function CoursesPage() {
       <section className="px-6 md:px-10 lg:px-20 pb-20">
         {isLoading ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Загрузка курсов...</p>
+            <p className="text-muted-foreground">{t("courses.loading")}</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">{error}</p>
           </div>
         ) : (
           <div className="space-y-8">

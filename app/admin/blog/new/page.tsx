@@ -247,11 +247,9 @@ export default function NewBlogPostPage() {
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Создание...' : 'Создать'}
             </Button>
-            <Link href="/admin/blog">
-              <Button type="button" variant="outline">
-                Отмена
-              </Button>
-            </Link>
+            <Button type="button" variant="outline" asChild>
+              <Link href="/admin/blog">Отмена</Link>
+            </Button>
           </div>
         </form>
       </Form>

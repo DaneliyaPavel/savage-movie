@@ -55,8 +55,15 @@ function LoginForm() {
         }
       }
       
-      // Проверяем, есть ли redirect параметр
-      const redirectTo = searchParams.get('redirect') || '/admin'
+      // Проверяем, есть ли redirect параметр (только относительные пути)
+      const redirectParam = searchParams.get('redirect')
+      const redirectTo =
+        redirectParam &&
+        redirectParam.startsWith('/') &&
+        !redirectParam.startsWith('//') &&
+        !redirectParam.includes('\\')
+          ? redirectParam
+          : '/admin'
       
       // Используем window.location для полного перезапуска страницы
       window.location.href = redirectTo

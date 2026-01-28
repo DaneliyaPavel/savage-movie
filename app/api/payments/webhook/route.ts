@@ -12,15 +12,38 @@ export async function POST(request: NextRequest) {
 
     // Тонкий прокси на backend: вся бизнес-логика (проверка статуса, идемпотентность, enrollment, email)
     // находится в FastAPI.
-    const API_URL = serverEnv.API_URL || publicEnv.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+    let API_URL = serverEnv.API_URL || publicEnv.NEXT_PUBLIC_API_URL
+    if (!API_URL) {
+      if (process.env.NODE_ENV === 'production') {
+        logger.error('API_URL is not configured', null, { route: '/api/payments/webhook' })
+        return NextResponse.json(
+          { error: 'Ошибка конфигурации сервера' },
+          { status: 500 }
+        )
+      }
+      API_URL = 'http://localhost:8001'
+    }
 
-    const backendResponse = await fetch(`${API_URL}/api/payments/yookassa/webhook`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    })
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
+    const headers = new Headers({ 'Content-Type': 'application/json' })
+    const contentHmac = request.headers.get('content-hmac')
+    if (contentHmac) {
+      headers.set('Content-Hmac', contentHmac)
+    }
+
+    let backendResponse: Response
+    try {
+      backendResponse = await fetch(`${API_URL}/api/payments/yookassa/webhook`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timeoutId)
+    }
 
     const responseBody = await backendResponse
       .json()

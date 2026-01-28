@@ -51,7 +51,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <p className="text-muted-foreground mb-4">
             Произошла ошибка при загрузке компонента.
           </p>
-          {this.state.error && (
+          {this.state.error && process.env.NODE_ENV === 'development' && (
             <details className="mt-4 p-4 bg-muted rounded-lg max-w-2xl">
               <summary className="cursor-pointer font-medium mb-2">
                 Детали ошибки

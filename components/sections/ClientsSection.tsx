@@ -32,9 +32,9 @@ export function ClientsSection() {
         const statsYears = typeof settings.stats_years === 'number' ? settings.stats_years : null
 
         setStats({
-          projects: statsProjects ? `${statsProjects}+` : '100+',
-          clients: statsClients ? `${statsClients}+` : '50+',
-          years: statsYears ? `${statsYears}+` : '15+',
+          projects: statsProjects !== null ? `${statsProjects}+` : '100+',
+          clients: statsClients !== null ? `${statsClients}+` : '50+',
+          years: statsYears !== null ? `${statsYears}+` : '15+',
         })
       } catch (error) {
         console.error('Ошибка загрузки данных:', error)
