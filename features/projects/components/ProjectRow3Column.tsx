@@ -222,7 +222,7 @@ export function ProjectRow3Column({ project, index }: ProjectRow3ColumnProps) {
 
               {/* Описание */}
               {project.description && (
-                <p className="text-base md:text-lg text-[#FFFFFF]/70 font-light leading-relaxed mb-6">
+                <p className="text-lg md:text-xl text-[#FFFFFF]/70 font-light leading-relaxed mb-6">
                   {project.description}
                 </p>
               )}
