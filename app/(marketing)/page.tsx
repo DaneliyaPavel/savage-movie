@@ -6,6 +6,8 @@ import { ShowreelHero } from "@/components/sections/showreel-hero"
 import { getProjectsServer } from "@/features/projects/api"
 import { publicEnv } from "@/lib/env"
 
+export const dynamic = "force-dynamic"
+
 // Mux Playback ID для showreel - из env или fallback
 const SHOWREEL_PLAYBACK_ID =
   publicEnv.NEXT_PUBLIC_SHOWREEL_PLAYBACK_ID || "Qf6mbMSob4v5nv7c6Mbf7TAipjM01PfHe01bDaDC1otOM"
