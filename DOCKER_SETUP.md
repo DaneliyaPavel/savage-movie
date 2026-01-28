@@ -2,6 +2,8 @@
 
 Полная инструкция по развертыванию проекта через Docker.
 
+> Сейчас используется **одно окружение** и один `docker-compose.yml` (dev/prod не разделяются). Данные живут в `postgres_data_dev` и `backend/uploads`.
+
 ## Быстрый старт
 
 ### Вариант 1: Автоматическая инициализация
@@ -18,36 +20,26 @@
 Используйте `.env.example` как список необходимых переменных. Для Docker можно
 передать их через окружение или через ваш способ управления секретами.
 
-### 2. Запуск в режиме разработки
+### 2. Запуск проекта
 
 ```bash
 # Быстрый запуск (использует скрипт)
-./docker-start.sh dev
+./docker-start.sh
 
 # Или вручную
-docker-compose -f docker-compose.dev.yml up -d
+docker-compose -f docker-compose.yml up -d
 
 # Просмотр логов
-docker-compose -f docker-compose.dev.yml logs -f
+docker-compose -f docker-compose.yml logs -f
 
 # Остановить
-docker-compose -f docker-compose.dev.yml down
+docker-compose -f docker-compose.yml down
 ```
 
-### 3. Запуск в production режиме
+### 3. Пересборка образов (если нужно)
 
 ```bash
-# Быстрый запуск
-./docker-start.sh prod
-
-# Или вручную
-docker-compose -f docker-compose.prod.yml up -d --build
-
-# Просмотр логов
-docker-compose -f docker-compose.prod.yml logs -f
-
-# Остановить
-docker-compose -f docker-compose.prod.yml down
+docker-compose -f docker-compose.yml up -d --build
 ```
 
 ## Порты
@@ -75,7 +67,7 @@ psql -h localhost -p 5433 -U postgres -d savage_movie
 
 ### Изменение портов
 
-Если хотите использовать стандартные порты, измените в `docker-compose.dev.yml`:
+Если хотите использовать стандартные порты, измените в `docker-compose.yml`:
 
 ```yaml
 # Для PostgreSQL
@@ -97,16 +89,16 @@ ports:
 
 ```bash
 # Dev окружение
-docker exec savage_movie_backend_dev alembic -c /app/backend/alembic.ini upgrade head
+docker exec savage_movie_backend alembic -c /app/backend/alembic.ini upgrade head
 
 # Prod окружение
-docker exec savage_movie_backend_prod alembic -c /app/backend/alembic.ini upgrade head
+docker exec savage_movie_backend alembic -c /app/backend/alembic.ini upgrade head
 ```
 
 Если база уже создана старыми SQL-скриптами и соответствует текущей модели, пометьте её как актуальную:
 
 ```bash
-docker exec savage_movie_backend_dev alembic -c /app/backend/alembic.ini stamp head
+docker exec savage_movie_backend alembic -c /app/backend/alembic.ini stamp head
 ```
 
 ### Пересоздание БД с миграциями
@@ -115,10 +107,10 @@ docker exec savage_movie_backend_dev alembic -c /app/backend/alembic.ini stamp h
 
 ```bash
 # Остановить и удалить volumes (ОСТОРОЖНО: удалит все данные!)
-docker-compose -f docker-compose.dev.yml down -v
+docker-compose -f docker-compose.yml down -v
 
 # Запустить заново (миграции применятся через Alembic)
-docker-compose -f docker-compose.dev.yml up -d
+docker-compose -f docker-compose.yml up -d
 ```
 
 ## Доступ к сервисам
@@ -138,7 +130,7 @@ docker-compose -f docker-compose.dev.yml up -d
 1. **Остановите контейнеры**:
 
 ```bash
-docker-compose -f docker-compose.dev.yml down
+docker-compose -f docker-compose.yml down
 ```
 
 2. **Очистите кэш Next.js** (на хосте, если нужно):
@@ -150,60 +142,60 @@ rm -rf .next
 3. **Перезапустите контейнеры**:
 
 ```bash
-docker-compose -f docker-compose.dev.yml up --build -d
+docker-compose -f docker-compose.yml up --build -d
 ```
 
 Или с логами:
 
 ```bash
-docker-compose -f docker-compose.dev.yml up --build -d
-docker-compose -f docker-compose.dev.yml logs -f frontend
+docker-compose -f docker-compose.yml up --build -d
+docker-compose -f docker-compose.yml logs -f frontend
 ```
 
 ### Перезапуск отдельных сервисов
 
 ```bash
 # Перезапустить только frontend
-docker-compose -f docker-compose.dev.yml restart frontend
+docker-compose -f docker-compose.yml restart frontend
 
 # Перезапустить только backend
-docker-compose -f docker-compose.dev.yml restart backend
+docker-compose -f docker-compose.yml restart backend
 
 # Перезапустить все
-docker-compose -f docker-compose.dev.yml restart
+docker-compose -f docker-compose.yml restart
 ```
 
 ## Полезные команды
 
 ```bash
 # Пересобрать контейнеры
-docker-compose -f docker-compose.dev.yml up -d --build
+docker-compose -f docker-compose.yml up -d --build
 
 # Очистить все (включая volumes)
-docker-compose -f docker-compose.dev.yml down -v
+docker-compose -f docker-compose.yml down -v
 
 # Просмотр логов конкретного сервиса
-docker-compose -f docker-compose.dev.yml logs -f backend
-docker-compose -f docker-compose.dev.yml logs -f frontend
-docker-compose -f docker-compose.dev.yml logs -f db
+docker-compose -f docker-compose.yml logs -f backend
+docker-compose -f docker-compose.yml logs -f frontend
+docker-compose -f docker-compose.yml logs -f db
 
 # Выполнить команду в контейнере
-docker exec -it savage_movie_backend_dev bash
-docker exec -it savage_movie_frontend_dev sh
+docker exec -it savage_movie_backend bash
+docker exec -it savage_movie_frontend sh
 
 # Проверить статус
-docker-compose -f docker-compose.dev.yml ps
+docker-compose -f docker-compose.yml ps
 
 # Очистка и перезапуск
-docker-compose -f docker-compose.dev.yml down
-docker-compose -f docker-compose.dev.yml up -d --build
+docker-compose -f docker-compose.yml down
+docker-compose -f docker-compose.yml up -d --build
 ```
 
 ## Структура
 
 - `docker-compose.yml` - базовая конфигурация
-- `docker-compose.dev.yml` - для разработки (с hot reload)
-- `docker-compose.prod.yml` - для production
+- `docker-compose.yml` - для разработки (с hot reload)
+- `docker-compose.yml` - для production
 - `Dockerfile.backend` - образ для Python API
 - `Dockerfile.frontend` - образ для Next.js (production)
 - `Dockerfile.frontend.dev` - образ для Next.js (development)
@@ -220,13 +212,13 @@ docker-compose -f docker-compose.dev.yml up -d --build
 Убедитесь, что БД полностью запустилась:
 
 ```bash
-docker-compose -f docker-compose.dev.yml logs db
+docker-compose -f docker-compose.yml logs db
 ```
 
 Проверьте healthcheck:
 
 ```bash
-docker-compose -f docker-compose.dev.yml ps
+docker-compose -f docker-compose.yml ps
 ```
 
 ### Проблемы с загрузкой файлов
@@ -234,7 +226,7 @@ docker-compose -f docker-compose.dev.yml ps
 Проверьте права доступа к директории uploads:
 
 ```bash
-docker exec -it savage_movie_backend_dev chmod -R 755 /app/backend/uploads
+docker exec -it savage_movie_backend chmod -R 755 /app/backend/uploads
 ```
 
 ### Порт занят
@@ -256,28 +248,28 @@ sudo systemctl stop postgresql
 lsof -ti:8000 | xargs kill -9
 ```
 
-2. Или измените порты в `docker-compose.dev.yml`
+2. Или измените порты в `docker-compose.yml`
 
 ### Миграции не выполнились
 
 Выполните вручную:
 
 ```bash
-docker exec savage_movie_backend_dev alembic -c /app/backend/alembic.ini upgrade head
+docker exec savage_movie_backend alembic -c /app/backend/alembic.ini upgrade head
 ```
 
 ### Очистка и перезапуск
 
 ```bash
 # Остановить и удалить контейнеры
-docker-compose -f docker-compose.dev.yml down
+docker-compose -f docker-compose.yml down
 
 # Удалить volumes (ОСТОРОЖНО: удалит данные БД!)
-docker-compose -f docker-compose.dev.yml down -v
+docker-compose -f docker-compose.yml down -v
 
 # Пересобрать с нуля
-docker-compose -f docker-compose.dev.yml build --no-cache
-docker-compose -f docker-compose.dev.yml up -d
+docker-compose -f docker-compose.yml build --no-cache
+docker-compose -f docker-compose.yml up -d
 ```
 
 ### Быстрый перезапуск dev
@@ -309,12 +301,12 @@ npm run docker:dev
 Убедитесь, что БД полностью запустилась (healthcheck прошел):
 
 ```bash
-docker-compose -f docker-compose.dev.yml ps
+docker-compose -f docker-compose.yml ps
 ```
 
 Проверьте логи:
 
 ```bash
-docker-compose -f docker-compose.dev.yml logs backend
-docker-compose -f docker-compose.dev.yml logs db
+docker-compose -f docker-compose.yml logs backend
+docker-compose -f docker-compose.yml logs db
 ```

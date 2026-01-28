@@ -13,7 +13,8 @@ UPDATE_REPO=0
 UPDATE_BRANCH=""
 
 usage() {
-  echo "Usage: $0 --host <ip_or_domain> [--user <user>] [--path <remote_path>] [--backup <dir>] [--dev|--prod] [--no-build] [--no-restart] [--update] [--branch <name>]"
+  echo "Usage: $0 --host <ip_or_domain> [--user <user>] [--path <remote_path>] [--backup <dir>] [--no-build] [--no-restart] [--update] [--branch <name>]"
+  echo "Note: --dev/--prod оставлены для совместимости, сейчас используется одно окружение."
 }
 
 log_step() {

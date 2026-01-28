@@ -300,9 +300,7 @@ savage-movie/
 │   ├── app/
 │   └── lib/
 │
-├── docker-compose.yml                # Базовый
-├── docker-compose.dev.yml            # Dev
-├── docker-compose.prod.yml           # Prod
+├── docker-compose.yml                # Единое окружение
 │
 ├── Dockerfile.backend
 ├── Dockerfile.frontend
@@ -515,7 +513,7 @@ savage-movie/
 2. **Проверки**:
    - Frontend: `npm run lint`, `npm run type-check`, `npm run test`, `npm run build`
    - Backend: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
-   - Docker: `docker compose -f docker-compose.dev.yml up --build`
+   - Docker: `docker compose -f docker-compose.yml up --build`
 
 3. **Окончательное удаление**:
    - После подтверждения работоспособности удалить `/_trash`
@@ -537,7 +535,7 @@ savage-movie/
 #### Проверки
 - `npm run lint`, `npm run type-check`, `npm run test`, `npm run build`
 - Backend smoke: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
-- Docker: `docker compose -f docker-compose.dev.yml up --build`
+- Docker: `docker compose -f docker-compose.yml up --build`
 
 ---
 
@@ -579,7 +577,7 @@ savage-movie/
 1. ✅ **Frontend build проходит**: `npm run build` без ошибок
 2. ✅ **Backend стартует**: `uvicorn app.main:app` без ошибок
 3. ✅ **Миграции применимы**: `alembic upgrade head` без ошибок
-4. ✅ **Docker поднимается**: `docker compose -f docker-compose.dev.yml up --build` без ошибок
+4. ✅ **Docker поднимается**: `docker compose -f docker-compose.yml up --build` без ошибок
 5. ✅ **Нет сломанных импортов**: `npm run type-check`, `mypy backend/` без ошибок
 6. ✅ **README актуален**: Структура и команды соответствуют реальности
 7. ✅ **Нет дублей/мертвых модулей**: Все файлы используются или удалены

@@ -3,7 +3,7 @@
 
 set -e
 
-COMPOSE_FILE="docker-compose.dev.yml"
+COMPOSE_FILE="docker-compose.yml"
 
 if ! command -v docker &> /dev/null; then
     echo "Docker is not installed."
@@ -51,7 +51,7 @@ case "${1:-}" in
     rebuild) rebuild_containers ;;
     ""|menu) show_menu ;;
     *)
-        echo "Usage: $0 [restart|rebuild|menu]"
+    echo "Usage: $0 [restart|rebuild|menu]"
         exit 1
         ;;
 esac

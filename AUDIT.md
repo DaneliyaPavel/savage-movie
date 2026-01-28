@@ -29,8 +29,8 @@
 - `uvicorn app.main:app --reload --port 8000` — запуск dev сервера
 
 #### Docker
-- `docker compose -f docker-compose.dev.yml up --build` — dev окружение
-- `docker compose -f docker-compose.prod.yml up --build` — prod окружение
+- `docker compose -f docker-compose.yml up --build` — dev окружение
+- `docker compose -f docker-compose.yml up --build` — prod окружение
 - Healthchecks: только у БД, отсутствуют у backend/frontend
 
 ### Точки входа
@@ -314,8 +314,8 @@
 
 #### Файлы
 - `docker-compose.yml` — базовый (prod-like)
-- `docker-compose.dev.yml` — dev с hot reload
-- `docker-compose.prod.yml` — production
+- `docker-compose.yml` — dev с hot reload
+- `docker-compose.yml` — production
 
 #### Проблемы
 1. **Healthchecks**:
@@ -346,7 +346,7 @@
 #### Дублирование
 - `scripts/create-admin*.sh` — 3 варианта скрипта создания админа
 - `docker-start.sh` — дублирует функциональность `docker-compose`
-- `scripts/docker-dev.sh` — обертка над `docker-compose.dev.yml`
+- `scripts/docker-dev.sh` — обертка над `docker-compose.yml`
 - `START_SERVER.sh` — предполагает `backend/venv`, которого нет в репозитории
 
 #### Рекомендации

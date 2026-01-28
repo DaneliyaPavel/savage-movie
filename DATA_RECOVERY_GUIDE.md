@@ -16,23 +16,23 @@
 Выполните команду для проверки:
 
 ```bash
-docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie < backend/scripts/check_data.sql
+docker exec -i savage_movie_db psql -U postgres -d savage_movie < backend/scripts/check_data.sql
 ```
 
 Или вручную:
 
 ```bash
 # Проверка проектов
-docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie -c "SELECT COUNT(*) FROM projects;"
+docker exec -i savage_movie_db psql -U postgres -d savage_movie -c "SELECT COUNT(*) FROM projects;"
 
 # Проверка курсов
-docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie -c "SELECT COUNT(*) FROM courses;"
+docker exec -i savage_movie_db psql -U postgres -d savage_movie -c "SELECT COUNT(*) FROM courses;"
 
 # Список проектов
-docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie -c "SELECT id, title, slug, is_featured FROM projects ORDER BY created_at DESC LIMIT 10;"
+docker exec -i savage_movie_db psql -U postgres -d savage_movie -c "SELECT id, title, slug, is_featured FROM projects ORDER BY created_at DESC LIMIT 10;"
 
 # Список курсов
-docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie -c "SELECT id, title, slug FROM courses ORDER BY created_at DESC LIMIT 10;"
+docker exec -i savage_movie_db psql -U postgres -d savage_movie -c "SELECT id, title, slug FROM courses ORDER BY created_at DESC LIMIT 10;"
 ```
 
 ### 2. Если данные есть в базе, но не отображаются
@@ -54,7 +54,7 @@ UPDATE courses SET display_order = 0 WHERE display_order IS NULL;
 Проверьте логи backend:
 
 ```bash
-docker logs savage_movie_backend_dev --tail 50
+docker logs savage_movie_backend --tail 50
 ```
 
 Проверьте, что API доступен:
@@ -87,7 +87,7 @@ docker volume ls | grep savage
 
 ```bash
 # Восстановить из backup
-docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie < backup.sql
+docker exec -i savage_movie_db psql -U postgres -d savage_movie < backup.sql
 ```
 
 ### Если backup нет
@@ -96,16 +96,16 @@ docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie < backup.sql
 
 ## Предотвращение потери данных в будущем
 
-1. **Убедитесь, что volume настроен правильно** в `docker-compose.dev.yml`:
+1. **Убедитесь, что volume настроен правильно** в `docker-compose.yml`:
 ```yaml
 volumes:
-  db_data:
+  postgres_data_dev:
     driver: local
 ```
 
 2. **Регулярно делайте backup**:
 ```bash
-docker exec savage_movie_db_dev pg_dump -U postgres savage_movie > backup_$(date +%Y%m%d_%H%M%S).sql
+docker exec savage_movie_db pg_dump -U postgres savage_movie > backup_$(date +%Y%m%d_%H%M%S).sql
 ```
 
 3. **Не используйте `docker-compose down -v`** без необходимости (это удаляет volumes)
@@ -115,7 +115,7 @@ docker exec savage_movie_db_dev pg_dump -U postgres savage_movie > backup_$(date
 Если данные есть, но не отображаются из-за сортировки, выполните:
 
 ```bash
-docker exec -i savage_movie_db_dev psql -U postgres -d savage_movie << EOF
+docker exec -i savage_movie_db psql -U postgres -d savage_movie << EOF
 UPDATE projects SET display_order = 0 WHERE display_order IS NULL;
 UPDATE courses SET display_order = 0 WHERE display_order IS NULL;
 EOF
@@ -123,5 +123,5 @@ EOF
 
 Затем перезапустите backend:
 ```bash
-docker-compose -f docker-compose.dev.yml restart backend
+docker-compose -f docker-compose.yml restart backend
 ```

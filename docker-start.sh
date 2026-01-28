@@ -22,16 +22,9 @@ if ! command -v docker-compose &> /dev/null; then
     fi
 fi
 
-# Определяем режим (dev или prod)
-MODE=${1:-dev}
-
-if [ "$MODE" = "prod" ]; then
-    COMPOSE_FILE="docker-compose.prod.yml"
-    echo "📦 Production режим"
-else
-    COMPOSE_FILE="docker-compose.dev.yml"
-    echo "🔧 Development режим"
-fi
+# Единое окружение
+COMPOSE_FILE="docker-compose.yml"
+echo "📦 Единственное окружение (docker-compose.yml)"
 
 # Создание директорий для uploads
 mkdir -p backend/uploads/images backend/uploads/videos
