@@ -1,19 +1,6 @@
 import type { Metadata } from "next";
-import { Inter, Montserrat } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin", "cyrillic"],
-  display: "swap",
-});
-
-const montserrat = Montserrat({
-  variable: "--font-montserrat",
-  subsets: ["latin", "cyrillic"],
-  display: "swap",
-});
 
 // Handwritten font "Sa No Rules Regular" - fallback to system fonts if file not found
 const saNoRules = localFont({
@@ -44,6 +31,11 @@ export const metadata: Metadata = {
   title: "SAVAGE MOVIE | Видеопродакшн | ИИ-генерация | Обучение",
   description: "Полный цикл видеопродакшна от разработки креативной концепции до публикации. Реклама, клипы, имиджевые видео. Обучение ИИ-генерации, съемке и монтажу.",
   keywords: ["видеопродакшн", "ИИ-генерация", "обучение видео", "съемка", "монтаж", "продюсирование"],
+  icons: {
+    icon: "/sm-logo.svg",
+    shortcut: "/sm-logo.svg",
+    apple: "/sm-logo.svg",
+  },
 };
 
 export default function RootLayout({
@@ -54,7 +46,7 @@ export default function RootLayout({
   return (
     <html lang="ru" className="dark">
       <body
-        className={`${inter.variable} ${montserrat.variable} ${saNoRules.variable} font-sans antialiased`}
+        className={`${saNoRules.variable} font-sans antialiased`}
       >
         {children}
       </body>

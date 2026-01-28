@@ -141,7 +141,13 @@ export function VideoStage({ videoUrl, playbackId, poster, title }: VideoStagePr
         {/* Placeholder если нет видео и poster */}
         {!resolvedPlaybackId && !videoUrl && !poster && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-6xl font-heading font-bold text-[#FFFFFF]/10">SM</span>
+            <Image
+              src="/sm-logo.svg"
+              alt="Savage Movie"
+              width={220}
+              height={86}
+              className="w-28 md:w-36 h-auto opacity-10 invert"
+            />
           </div>
         )}
       </div>
