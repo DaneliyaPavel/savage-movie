@@ -72,6 +72,22 @@ if ! command -v docker-compose &> /dev/null; then
 fi
 
 $COMPOSE_CMD -f "$COMPOSE_FILE" pull
+
+BACKEND_IMAGE="${REGISTRY:-ghcr.io/daneliyapavel}/savage-movie-backend:${IMAGE_TAG:-latest}"
+FRONTEND_IMAGE="${REGISTRY:-ghcr.io/daneliyapavel}/savage-movie-frontend:${IMAGE_TAG:-latest}"
+
+if ! docker image inspect "$BACKEND_IMAGE" >/dev/null 2>&1; then
+  echo "Образ не найден: $BACKEND_IMAGE"
+  echo "Проверь доступ к registry (docker login / REGISTRY_USER/REGISTRY_TOKEN)."
+  exit 1
+fi
+
+if ! docker image inspect "$FRONTEND_IMAGE" >/dev/null 2>&1; then
+  echo "Образ не найден: $FRONTEND_IMAGE"
+  echo "Проверь доступ к registry (docker login / REGISTRY_USER/REGISTRY_TOKEN)."
+  exit 1
+fi
+
 $COMPOSE_CMD -f "$COMPOSE_FILE" up -d --remove-orphans --no-build
 
 if [ "$PRUNE" -eq 1 ]; then

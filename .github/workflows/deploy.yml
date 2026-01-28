@@ -66,6 +66,7 @@ jobs:
           key: ${{ secrets.VDS_SSH_KEY }}
           passphrase: ${{ secrets.VDS_SSH_PASSPHRASE }}
           port: ${{ secrets.VDS_SSH_PORT || '22' }}
+          command_timeout: 30m
           script: |
             cd ${{ secrets.VDS_PATH }}
             ./scripts/deploy.sh main
