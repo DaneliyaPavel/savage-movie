@@ -40,20 +40,20 @@ export function ProjectRow({ project, index }: ProjectRowProps) {
                 {project.title}
               </h3>
               {project.category && (
-                <span className="text-xs md:text-sm text-[#FFFFFF]/40 font-medium uppercase tracking-wider">
+                <span className="text-sm md:text-base text-[#FFFFFF]/40 font-medium uppercase tracking-wider">
                   {categoryLabels[project.category]}
                 </span>
               )}
             </div>
             {project.description && (
-              <p className="text-sm md:text-base text-[#FFFFFF]/60 max-w-2xl line-clamp-2">
+              <p className="text-base md:text-lg text-[#FFFFFF]/60 max-w-2xl line-clamp-2">
                 {project.description}
               </p>
             )}
           </div>
 
           {/* Правая часть - метаданные (как журнальный индекс) */}
-          <div className="hidden md:flex items-center gap-8 text-sm text-[#FFFFFF]/40">
+          <div className="hidden md:flex items-center gap-8 text-base text-[#FFFFFF]/40">
             {project.client && (
               <div className="text-right min-w-[120px]">
                 <div className="font-medium text-[#FFFFFF]/60">{project.client}</div>

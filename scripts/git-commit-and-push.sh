@@ -148,3 +148,47 @@ else
   print_err "Ошибка при пуше. Проверь remote и доступ."
   exit 1
 fi
+
+# ---- 8. PR в main (опционально) ----
+# Алгоритм:
+# 1) Проверяем, что текущая ветка НЕ main.
+# 2) Проверяем наличие GitHub CLI (gh) и авторизацию.
+# 3) Создаём PR в main с заголовком из коммита и телом из деталей.
+
+create_pr() {
+  local base="main"
+  local branch
+  branch="$(git branch --show-current)"
+  if [ -z "$branch" ]; then
+    print_err "Не удалось определить текущую ветку."
+    return 1
+  fi
+  if [ "$branch" = "$base" ]; then
+    print_warn "Вы на ветке main — PR не нужен."
+    return 0
+  fi
+  if ! command -v gh &> /dev/null; then
+    print_warn "GitHub CLI (gh) не установлен. Создай PR вручную."
+    return 1
+  fi
+  if ! gh auth status -h github.com >/dev/null 2>&1; then
+    print_warn "gh не авторизован. Выполни: gh auth login"
+    return 1
+  fi
+
+  local pr_title pr_body
+  pr_title="${TYPE}: ${SUBJECT}"
+  pr_body="${BODY:-Авто PR}"
+
+  gh pr create --base "$base" --head "$branch" --title "$pr_title" --body "$pr_body"
+  print_ok "PR создан в ветку ${base}."
+}
+
+print_step "Pull Request"
+if confirm "n" "Создать PR в main? (y/n)"; then
+  if ! create_pr; then
+    print_warn "PR не создан. Можно сделать вручную."
+  fi
+else
+  print_ok "PR пропущен."
+fi

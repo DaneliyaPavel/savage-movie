@@ -33,7 +33,7 @@ export function Footer() {
             <h3 className="font-brand text-2xl md:text-3xl mb-6 text-[#FFFFFF]">
               SAVAGE MOVIE
             </h3>
-            <p className="text-sm md:text-base text-[#FFFFFF]/60 font-light leading-relaxed max-w-xs">
+            <p className="text-base md:text-lg text-[#FFFFFF]/60 font-light leading-relaxed max-w-xs">
               Полный цикл видеопродакшна от разработки креативной концепции до публикации.
             </p>
           </motion.div>
@@ -44,7 +44,7 @@ export function Footer() {
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
             transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           >
-            <h4 className="font-heading font-semibold mb-6 text-xs md:text-sm uppercase tracking-wider text-[#FFFFFF]/40">
+            <h4 className="font-heading font-semibold mb-6 text-sm md:text-base uppercase tracking-wider text-[#FFFFFF]/40">
               Навигация
             </h4>
             <ul className="space-y-3 md:space-y-4">
@@ -83,10 +83,10 @@ export function Footer() {
             animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
             transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
-            <h4 className="font-heading font-semibold mb-6 text-xs md:text-sm uppercase tracking-wider text-[#FFFFFF]/40">
+            <h4 className="font-heading font-semibold mb-6 text-sm md:text-base uppercase tracking-wider text-[#FFFFFF]/40">
               Контакты
             </h4>
-            <ul className="space-y-4 md:space-y-5 text-sm md:text-base">
+            <ul className="space-y-4 md:space-y-5 text-base md:text-lg">
               <motion.li
                 initial={{ opacity: 0, y: 10 }}
                 animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
@@ -154,7 +154,7 @@ export function Footer() {
           transition={{ duration: 0.6, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="border-t border-[#1A1A1A] pt-8 text-center"
         >
-          <p className="text-sm text-[#FFFFFF]/40 font-light">
+          <p className="text-base text-[#FFFFFF]/40 font-light">
             &copy; {new Date().getFullYear()}{" "}
             <span className="font-brand">SAVAGE MOVIE</span>. Все права защищены.
           </p>

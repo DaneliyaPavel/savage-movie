@@ -44,7 +44,7 @@ export function ProjectsJalousieFooter() {
           </div>
 
           {/* Subtitle */}
-          <p className="text-background/80 text-sm md:text-base mb-8 tracking-wide font-secondary">
+          <p className="text-background/80 text-base md:text-lg mb-8 tracking-wide font-secondary">
             {language === 'ru' ? 'Креативная продакшн-студия' : 'Creative Production Company'}
           </p>
 
@@ -57,7 +57,7 @@ export function ProjectsJalousieFooter() {
           </div>
 
           {/* Newsletter text */}
-          <p className="text-background/80 text-center max-w-xl mb-6 text-sm md:text-base leading-relaxed font-secondary">
+          <p className="text-background/80 text-center max-w-xl mb-6 text-base md:text-lg leading-relaxed font-secondary">
             {language === 'ru'
               ? 'Будьте в курсе. Узнавайте первыми о наших новых работах, обновлениях и всём интересном, что происходит в Savage Movie. Подпишитесь на рассылку.'
               : "Keep in the loop. Be the first to know about our latest work, exciting updates, and everything else that's happening at Savage Movie. Subscribe to our newsletter."}
@@ -83,9 +83,9 @@ export function ProjectsJalousieFooter() {
           style={{ y: footerRowY, opacity: footerRowOpacity }}
           className="absolute inset-x-0 bottom-0 px-6 md:px-10 pb-6 pt-4 text-background"
         >
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 text-xs md:text-sm">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 text-sm md:text-base">
             <div className="flex flex-col gap-2 uppercase tracking-[0.25em]">
-              <span className="text-[0.7rem] md:text-xs text-background/70" style={{ fontFamily: 'var(--font-handwritten), cursive' }}>
+              <span className="text-xs md:text-sm text-background/70" style={{ fontFamily: 'var(--font-handwritten), cursive' }}>
                 (соцсети)
               </span>
               <div className="flex items-center gap-4">
@@ -107,7 +107,7 @@ export function ProjectsJalousieFooter() {
               </span>
             </div>
 
-            <div className="flex items-center gap-4 uppercase tracking-[0.25em] text-[0.7rem] md:text-xs font-secondary">
+            <div className="flex items-center gap-4 uppercase tracking-[0.25em] text-sm md:text-base font-secondary">
               <a href="/privacy" className="hover:text-background transition-colors">
                 {language === 'ru' ? 'Политика' : 'Privacy'}
               </a>
