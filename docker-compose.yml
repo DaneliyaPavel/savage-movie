@@ -48,6 +48,10 @@ services:
       YANDEX_CLIENT_SECRET: ${YANDEX_CLIENT_SECRET:-}
       YANDEX_REDIRECT_URI: ${YANDEX_REDIRECT_URI:-http://localhost:8001/api/auth/oauth/yandex/callback}
       UPLOAD_DIR: /app/backend/uploads
+      SEED_ADMIN: ${SEED_ADMIN:-false}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      SEED_ADMIN_FORCE_PASSWORD: ${SEED_ADMIN_FORCE_PASSWORD:-false}
     volumes:
       - ./backend/uploads:/app/backend/uploads
     ports:
