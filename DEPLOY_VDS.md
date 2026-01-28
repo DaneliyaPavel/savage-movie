@@ -62,8 +62,11 @@ chmod +x up scripts/*.sh
 - `VDS_SSH_KEY` (private key)
 - `VDS_SSH_PORT` (необязательно, по умолчанию 22)
 - `VDS_PATH` (например `/root/opt/savagemovie/savage-movie`)
+- `NEXT_PUBLIC_API_URL` (например `http://89.169.4.92:8001`)
+- `NEXT_PUBLIC_APP_URL` (например `http://89.169.4.92:3000`)
+- при необходимости остальные `NEXT_PUBLIC_*` переменные для сборки фронтенда
 
-После merge в `main` GitHub Action автоматически выполнит `scripts/deploy.sh`, обновит код и перезапустит контейнеры без кэша.
+После merge в `main` GitHub Action соберет и загрузит Docker‑образы в GHCR, а сервер только сделает `pull` и перезапуск (быстро и без сборки на сервере).
 
 ## Важно
 - Не используйте `docker compose down -v`, иначе удалятся данные.
