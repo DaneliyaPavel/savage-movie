@@ -2,10 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const maxAge = 7 * 24 * 60 * 60
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+const isHttps = appUrl.startsWith('https://')
+const cookieSecureEnv = process.env.COOKIE_SECURE
+const secureCookie =
+  cookieSecureEnv === 'true'
+    ? true
+    : cookieSecureEnv === 'false'
+      ? false
+      : process.env.NODE_ENV === 'production' && isHttps
+
 const cookieOptions = {
   httpOnly: true,
   sameSite: 'lax' as const,
-  secure: process.env.NODE_ENV === 'production',
+  secure: secureCookie,
   path: '/',
 }
 
