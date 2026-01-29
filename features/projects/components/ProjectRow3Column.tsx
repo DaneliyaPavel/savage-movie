@@ -38,7 +38,6 @@ export function ProjectRow3Column({ project, index }: ProjectRow3ColumnProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
-  const videoContainerRef = useRef<HTMLDivElement>(null)
 
   const playbackId = project.video_url ? getPlaybackId(project.video_url) : null
   const screenshots = project.images || []
@@ -50,6 +49,7 @@ export function ProjectRow3Column({ project, index }: ProjectRow3ColumnProps) {
   const mediaAspectClass = 'aspect-video'
   const mediaCardClassName = 'w-full border border-[#1A1A1A]'
   const mediaFitClassName = isVertical ? 'object-contain' : 'object-cover'
+  const shouldShowPoster = !isHovered || (!playbackId && !isVideoPlaying)
 
   // Обработка hover для видео
   const handleMouseEnter = () => {
@@ -58,17 +58,8 @@ export function ProjectRow3Column({ project, index }: ProjectRow3ColumnProps) {
       // Для обычного video элемента
       videoRef.current.play().then(
         () => setIsVideoPlaying(true),
-        () => {}
+        (err) => console.debug('Video play failed:', err)
       )
-    } else if (playbackId && videoContainerRef.current) {
-      // Для Mux Player ищем элемент video внутри контейнера
-      const muxVideo = videoContainerRef.current.querySelector('video')
-      if (muxVideo) {
-        muxVideo.play().then(
-          () => setIsVideoPlaying(true),
-          () => {}
-        )
-      }
     }
   }
 
@@ -76,11 +67,6 @@ export function ProjectRow3Column({ project, index }: ProjectRow3ColumnProps) {
     setIsHovered(false)
     if (videoRef.current && !playbackId) {
       videoRef.current.pause()
-    } else if (playbackId && videoContainerRef.current) {
-      const muxVideo = videoContainerRef.current.querySelector('video')
-      if (muxVideo) {
-        muxVideo.pause()
-      }
     }
     setIsVideoPlaying(false)
   }
@@ -130,17 +116,16 @@ export function ProjectRow3Column({ project, index }: ProjectRow3ColumnProps) {
 
           {/* Колонка 2: Видео с hover-автоплеем */}
           <div
-            ref={videoContainerRef}
             className="lg:col-span-6 relative group"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
             <MediaCard className={mediaCardClassName} aspectClassName={mediaAspectClass}>
               {/* Poster/Thumbnail - показываем когда не hover или видео не играет */}
-              {(!isHovered || !isVideoPlaying) && screenshots[0] && (
+              {shouldShowPoster && screenshots[0] && (
                 <motion.div
                   initial={{ opacity: 1 }}
-                  animate={{ opacity: isHovered && isVideoPlaying ? 0 : 1 }}
+                  animate={{ opacity: shouldShowPoster ? 1 : 0 }}
                   transition={{ duration: 0.3 }}
                   className="absolute inset-0 z-0"
                 >

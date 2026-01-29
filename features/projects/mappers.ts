@@ -50,8 +50,8 @@ export function toMarketingProject(project: ApiProject): MarketingProject {
           : ['/placeholder.svg']
 
   return {
-    id: String(project.id),
-    slug: project.slug || String(project.id),
+    id: project.id != null ? String(project.id) : '',
+    slug: project.slug || (project.id != null ? String(project.id) : ''),
     titleRu: title,
     titleEn: title,
     clientRu: client || 'Клиент',

@@ -68,7 +68,7 @@ export function ProjectMetaPanel({ project }: ProjectMetaPanelProps) {
                 Категория
               </div>
               <div className="text-base md:text-lg text-[#FFFFFF] font-medium">
-                {categoryLabels[project.category]}
+                {categoryLabels[project.category] ?? project.category}
               </div>
             </div>
           )}

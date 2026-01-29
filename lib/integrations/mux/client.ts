@@ -48,6 +48,10 @@ function getMuxClient(): Mux {
 export async function createDirectUpload(): Promise<MuxDirectUpload> {
   try {
     const client = getMuxClient()
+    const corsOrigin = publicEnv.NEXT_PUBLIC_APP_URL
+    if (!corsOrigin) {
+      throw new Error('NEXT_PUBLIC_APP_URL is required for Mux direct uploads')
+    }
     // Используем type assertion для обхода проблем типизации Mux SDK
     const upload = (await ((client.video as unknown as { directUploads: unknown }).directUploads as unknown as {
       create: (params: {
@@ -58,7 +62,7 @@ export async function createDirectUpload(): Promise<MuxDirectUpload> {
       new_asset_settings: {
         playback_policy: 'public',
       },
-      cors_origin: publicEnv.NEXT_PUBLIC_APP_URL || '*',
+      cors_origin: corsOrigin,
     })) as MuxDirectUpload
 
     return upload

@@ -17,6 +17,7 @@ interface VideoPlayerProps {
   controls?: boolean
   objectFit?: 'cover' | 'contain'
   className?: string
+  onCanPlay?: () => void
 }
 
 export function VideoPlayer({
@@ -28,7 +29,9 @@ export function VideoPlayer({
   controls = true,
   objectFit,
   className,
+  onCanPlay,
 }: VideoPlayerProps) {
+  const effectiveMuted = autoplay ? true : muted
   const playerStyle = {
     '--controls': controls ? 'flex' : 'none',
     ...(objectFit ? { '--media-object-fit': objectFit } : {}),
@@ -43,10 +46,11 @@ export function VideoPlayer({
           video_title: title || 'Video',
         }}
         autoPlay={autoplay}
-        muted={muted}
+        muted={effectiveMuted}
         loop={loop}
         style={playerStyle}
         className="w-full h-full"
+        onCanPlay={onCanPlay}
       />
     </div>
   )

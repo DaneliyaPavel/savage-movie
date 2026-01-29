@@ -41,7 +41,7 @@ export function ProjectRow({ project, index }: ProjectRowProps) {
               </h3>
               {project.category && (
                 <span className="text-sm md:text-base text-[#FFFFFF]/40 font-medium uppercase tracking-wider">
-                  {categoryLabels[project.category]}
+                  {categoryLabels[project.category] ?? project.category}
                 </span>
               )}
             </div>

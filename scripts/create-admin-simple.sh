@@ -16,21 +16,30 @@ echo "🔐 Создание администратора..."
 
 # Определяем имя контейнера БД
 DB_CONTAINER="savage_movie_db_dev"
-if ! docker ps | grep -q $DB_CONTAINER; then
+if ! docker ps --format '{{.Names}}' | grep -q "^${DB_CONTAINER}$"; then
     DB_CONTAINER="savage_movie_db"
+fi
+if ! docker ps --format '{{.Names}}' | grep -q "^${DB_CONTAINER}$"; then
+    echo "❌ Контейнер базы данных не найден"
+    exit 1
 fi
 
 # Определяем имя контейнера Backend
 BACKEND_CONTAINER="savage_movie_backend_dev"
-if ! docker ps | grep -q $BACKEND_CONTAINER; then
+if ! docker ps --format '{{.Names}}' | grep -q "^${BACKEND_CONTAINER}$"; then
     BACKEND_CONTAINER="savage_movie_backend"
+fi
+if ! docker ps --format '{{.Names}}' | grep -q "^${BACKEND_CONTAINER}$"; then
+    echo "❌ Контейнер backend не найден"
+    exit 1
 fi
 
 # Генерируем хеш пароля через bcrypt напрямую (самый надежный способ)
 echo "Генерация хеша пароля через bcrypt..."
-HASH=$(docker exec $BACKEND_CONTAINER python3 -c "
+HASH=$(printf '%s' "$PASSWORD" | docker exec -i "$BACKEND_CONTAINER" python3 -c "
+import sys
 import bcrypt
-password = '$PASSWORD'.encode('utf-8')
+password = sys.stdin.read().encode('utf-8')
 if len(password) > 72:
     password = password[:72]
 salt = bcrypt.gensalt()
@@ -46,9 +55,9 @@ echo "✅ Хеш пароля успешно сгенерирован"
 
 # Создаем/обновляем пользователя в БД
 echo "Создание пользователя в базе данных..."
-docker exec -i $DB_CONTAINER psql -U postgres -d savage_movie << EOF
+docker exec -i "$DB_CONTAINER" psql -U postgres -d savage_movie -v EMAIL="$EMAIL" -v HASH="$HASH" << 'EOF'
 INSERT INTO users (email, password_hash, full_name, role, provider)
-VALUES ('$EMAIL', '$HASH', 'Administrator', 'admin', 'email')
+VALUES (:'EMAIL', :'HASH', 'Administrator', 'admin', 'email')
 ON CONFLICT (email) DO UPDATE 
 SET password_hash = EXCLUDED.password_hash, role = 'admin';
 EOF
@@ -56,7 +65,7 @@ EOF
 echo ""
 echo "✅ Администратор создан!"
 echo "   Email: $EMAIL"
-echo "   Пароль: $PASSWORD"
+echo "   Пароль: (как указано при запуске)"
 echo ""
 echo "Теперь вы можете войти в админ-панель:"
 echo "   http://localhost:3000/login"

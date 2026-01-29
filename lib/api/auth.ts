@@ -38,7 +38,6 @@ function saveTokens(tokens: TokenResponse) {
   if (typeof window !== 'undefined') {
     // Сохраняем в localStorage для клиентской части
     localStorage.setItem('access_token', tokens.access_token)
-    localStorage.setItem('refresh_token', tokens.refresh_token)
   }
 }
 
@@ -49,7 +48,7 @@ export async function syncAuthCookies(tokens?: TokenResponse): Promise<void> {
   if (typeof window === 'undefined') return
 
   const accessToken = tokens?.access_token ?? localStorage.getItem('access_token')
-  const refreshToken = tokens?.refresh_token ?? localStorage.getItem('refresh_token')
+  const refreshToken = tokens?.refresh_token
 
   if (!accessToken || !refreshToken) return
 

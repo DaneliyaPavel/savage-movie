@@ -22,7 +22,7 @@ const categoryLabels: Record<string, string> = {
 
 export function ProjectThumbRail({ projects, selectedId, onSelect }: ProjectThumbRailProps) {
   return (
-        <div className="flex flex-col gap-2 md:gap-3 h-full overflow-y-auto pr-2 custom-scrollbar">
+    <div className="flex flex-col gap-2 md:gap-3 h-full overflow-y-auto pr-2 custom-scrollbar">
       {projects.map((project, index) => {
         const isSelected = project.id === selectedId
         const thumbnail = project.images?.[0]
@@ -78,7 +78,7 @@ export function ProjectThumbRail({ projects, selectedId, onSelect }: ProjectThum
                 <div className="flex items-center justify-between text-xs">
                   {project.category && (
                     <span className="text-[#FFFFFF]/60 uppercase tracking-wider">
-                      {categoryLabels[project.category]}
+                      {categoryLabels[project.category] ?? project.category}
                     </span>
                   )}
                   {project.duration && (
@@ -93,12 +93,7 @@ export function ProjectThumbRail({ projects, selectedId, onSelect }: ProjectThum
 
             {/* Подчеркивание при hover */}
             {!isSelected && (
-              <motion.div
-                className="absolute bottom-0 left-0 h-[1px] bg-[#FFFFFF]/30"
-                initial={{ width: 0 }}
-                whileHover={{ width: '100%' }}
-                transition={{ duration: 0.3 }}
-              />
+              <div className="absolute bottom-0 left-0 h-[1px] bg-[#FFFFFF]/30 w-0 transition-all duration-300 group-hover:w-full" />
             )}
           </motion.button>
         )

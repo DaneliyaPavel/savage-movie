@@ -4,7 +4,7 @@
  */
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { VideoPlayer } from './VideoPlayer'
@@ -59,44 +59,48 @@ export function WorkCard({ project }: WorkCardProps) {
           )}
 
           {/* Hover видео preview */}
-          {isHovered && playbackId && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="absolute inset-0"
-            >
-              <VideoPlayer
-                playbackId={playbackId}
-                autoplay
-                muted
-                loop
-                controls={false}
-                className="w-full h-full object-cover"
-              />
-            </motion.div>
-          )}
-
-          {isHovered && project.video_url && !playbackId && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="absolute inset-0"
-            >
-              <video
-                autoPlay
-                muted
-                loop
-                playsInline
-                className="w-full h-full object-cover"
+          <AnimatePresence>
+            {isHovered && playbackId && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="absolute inset-0"
               >
-                <source src={project.video_url} type="video/mp4" />
-              </video>
-            </motion.div>
-          )}
+                <VideoPlayer
+                  playbackId={playbackId}
+                  autoplay
+                  muted
+                  loop
+                  controls={false}
+                  className="w-full h-full object-cover"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {isHovered && project.video_url && !playbackId && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="absolute inset-0"
+              >
+                <video
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-full object-cover"
+                >
+                  <source src={project.video_url} type="video/mp4" />
+                </video>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Grain overlay */}
           <GrainOverlay />
@@ -115,7 +119,7 @@ export function WorkCard({ project }: WorkCardProps) {
               {/* Category */}
               {project.category && (
                 <div className="mb-2 text-xs md:text-sm text-[#FFFFFF]/60 font-medium uppercase tracking-wider">
-                  {categoryLabels[project.category]}
+                  {categoryLabels[project.category] ?? project.category}
                 </div>
               )}
               {/* Title - крупный */}

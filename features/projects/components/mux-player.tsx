@@ -26,6 +26,8 @@ export function VideoPlayer({
   loop = true,
   controls = false,
 }: VideoPlayerProps) {
+  const effectiveMuted = autoPlay ? true : muted
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -36,8 +38,8 @@ export function VideoPlayer({
       <MuxPlayer
         playbackId={playbackId}
         poster={poster}
-        autoPlay={autoPlay ? "muted" : false}
-        muted={muted}
+        autoPlay={autoPlay}
+        muted={effectiveMuted}
         loop={loop}
         playsInline
         streamType="on-demand"

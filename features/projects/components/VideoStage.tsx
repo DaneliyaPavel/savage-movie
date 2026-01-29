@@ -3,7 +3,7 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { VideoPlayer } from './VideoPlayer'
@@ -29,34 +29,31 @@ export function VideoStage({ videoUrl, playbackId, poster, title }: VideoStagePr
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isVideoLoaded, setIsVideoLoaded] = useState(false)
   const [showPoster, setShowPoster] = useState(true)
+  const hidePosterTimerRef = useRef<number | null>(null)
   
   const resolvedPlaybackId = playbackId || (videoUrl ? getPlaybackId(videoUrl) : null)
 
   // Сбрасываем состояние при смене видео
   useEffect(() => {
-    const resetTimer = window.setTimeout(() => {
-      setIsVideoLoaded(false)
-      setShowPoster(true)
-    }, 0)
-    
-    // После небольшой задержки показываем видео
-    let showVideoTimer: number | undefined
-    let hidePosterTimer: number | undefined
-
-    if (resolvedPlaybackId || videoUrl) {
-      showVideoTimer = window.setTimeout(() => {
-        setIsVideoLoaded(true)
-        // Плавное переключение с poster на video
-        hidePosterTimer = window.setTimeout(() => setShowPoster(false), 300)
-      }, 100)
-    }
+    setIsVideoLoaded(false)
+    setShowPoster(true)
 
     return () => {
-      window.clearTimeout(resetTimer)
-      if (showVideoTimer !== undefined) window.clearTimeout(showVideoTimer)
-      if (hidePosterTimer !== undefined) window.clearTimeout(hidePosterTimer)
+      if (hidePosterTimerRef.current !== null) {
+        window.clearTimeout(hidePosterTimerRef.current)
+        hidePosterTimerRef.current = null
+      }
     }
   }, [resolvedPlaybackId, videoUrl, poster])
+
+  const handleVideoLoaded = () => {
+    if (isVideoLoaded) return
+    setIsVideoLoaded(true)
+    if (hidePosterTimerRef.current !== null) {
+      window.clearTimeout(hidePosterTimerRef.current)
+    }
+    hidePosterTimerRef.current = window.setTimeout(() => setShowPoster(false), 300)
+  }
 
   const handleFullscreen = () => {
     setIsFullscreen(true)
@@ -107,6 +104,7 @@ export function VideoStage({ videoUrl, playbackId, poster, title }: VideoStagePr
                   loop
                   controls={false}
                   className="w-full h-full object-cover"
+                  onCanPlay={handleVideoLoaded}
                 />
               ) : videoUrl ? (
                 <video
@@ -115,6 +113,7 @@ export function VideoStage({ videoUrl, playbackId, poster, title }: VideoStagePr
                   loop
                   playsInline
                   className="w-full h-full object-cover"
+                  onCanPlay={handleVideoLoaded}
                 >
                   <source src={videoUrl} type="video/mp4" />
                 </video>

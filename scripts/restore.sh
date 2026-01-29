@@ -26,6 +26,11 @@ while [ $# -gt 0 ]; do
       shift
       ;;
     --compose)
+      if [ -z "${2:-}" ]; then
+        echo "Не указан файл для --compose"
+        usage
+        exit 1
+      fi
       COMPOSE_FILE="$(make_abs_path "${2:-}")"
       shift 2
       ;;
@@ -61,6 +66,11 @@ fi
 
 DB_USER="${DB_USER:-postgres}"
 DB_NAME="${DB_NAME:-savage_movie}"
+
+if [[ ! "$DB_NAME" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+  echo "Недопустимое имя базы данных: $DB_NAME"
+  exit 1
+fi
 
 if [ ! -d "$BACKUP_DIR" ]; then
   echo "Каталог бэкапа не найден: $BACKUP_DIR"

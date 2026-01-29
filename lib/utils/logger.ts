@@ -9,6 +9,17 @@ interface LogContext {
   [key: string]: unknown
 }
 
+function safeStringify(value: unknown): string {
+  const seen = new WeakSet<object>()
+  return JSON.stringify(value, (_key, val) => {
+    if (typeof val === 'object' && val !== null) {
+      if (seen.has(val)) return '[Circular]'
+      seen.add(val)
+    }
+    return val
+  })
+}
+
 class Logger {
   private isDevelopment: boolean
   private isProduction: boolean
@@ -20,7 +31,14 @@ class Logger {
 
   private formatMessage(level: LogLevel, message: string, context?: LogContext): string {
     const timestamp = new Date().toISOString()
-    const contextStr = context ? ` ${JSON.stringify(context)}` : ''
+    let contextStr = ''
+    if (context) {
+      try {
+        contextStr = ` ${safeStringify(context)}`
+      } catch {
+        contextStr = ' [context serialization failed]'
+      }
+    }
     return `[${timestamp}] [${level.toUpperCase()}] ${message}${contextStr}`
   }
 

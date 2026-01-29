@@ -1,7 +1,7 @@
 /**
  * Базовый клиент для работы с API (client-side)
  */
-import { baseApiRequest } from './base'
+import { baseApiRequest, type ApiRequestOptions } from './base'
 import { publicEnv } from '@/lib/env'
 
 const API_URL = publicEnv.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
@@ -13,7 +13,7 @@ export type { ApiError } from './base'
  */
 export async function apiRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: ApiRequestOptions = {}
 ): Promise<T> {
   const url = `${API_URL}${endpoint}`
   
@@ -43,6 +43,7 @@ export async function apiPost<T>(
 ): Promise<T> {
   return apiRequest<T>(endpoint, {
     method: 'POST',
+    headers: data ? { 'Content-Type': 'application/json' } : undefined,
     body: data ? JSON.stringify(data) : undefined,
   })
 }
@@ -56,6 +57,7 @@ export async function apiPut<T>(
 ): Promise<T> {
   return apiRequest<T>(endpoint, {
     method: 'PUT',
+    headers: data ? { 'Content-Type': 'application/json' } : undefined,
     body: data ? JSON.stringify(data) : undefined,
   })
 }
@@ -64,7 +66,7 @@ export async function apiPut<T>(
  * DELETE запрос
  */
 export async function apiDelete<T>(endpoint: string): Promise<T> {
-  return apiRequest<T>(endpoint, { method: 'DELETE' })
+  return apiRequest<T>(endpoint, { method: 'DELETE', allowNoContent: true })
 }
 
 /**
