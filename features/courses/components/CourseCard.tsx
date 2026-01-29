@@ -12,14 +12,12 @@ import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { HoverNote } from '@/components/ui/hover-note'
 
 interface CourseCardProps {
-  id: string
   title: string
   slug: string
   category: 'ai' | 'shooting' | 'editing' | 'production'
   coverImage?: string
   price: number
   duration?: number
-  rating?: number
 }
 
 const categoryLabels: Record<string, string> = {

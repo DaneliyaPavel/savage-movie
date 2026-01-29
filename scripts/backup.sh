@@ -6,7 +6,7 @@ COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
 OUT_DIR=""
 
 usage() {
-  echo "Usage: $0 [--compose <file>] [--out <dir>]"
+  echo "Использование: $0 [--compose <file>] [--out <dir>]"
 }
 
 make_abs_path() {
@@ -20,16 +20,39 @@ make_abs_path() {
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --prod|--dev)
-      COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
+    --prod)
+      if [ -f "$ROOT_DIR/docker-compose.prod.yml" ]; then
+        COMPOSE_FILE="$ROOT_DIR/docker-compose.prod.yml"
+      else
+        echo "⚠️  docker-compose.prod.yml не найден, используется docker-compose.yml"
+        COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
+      fi
+      shift
+      ;;
+    --dev)
+      if [ -f "$ROOT_DIR/docker-compose.dev.yml" ]; then
+        COMPOSE_FILE="$ROOT_DIR/docker-compose.dev.yml"
+      else
+        COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
+      fi
       shift
       ;;
     --compose)
-      COMPOSE_FILE="$(make_abs_path "${2:-}")"
+      if [ -z "${2:-}" ]; then
+        echo "Ошибка: --compose требует указать файл"
+        usage
+        exit 1
+      fi
+      COMPOSE_FILE="$(make_abs_path "$2")"
       shift 2
       ;;
     --out)
-      OUT_DIR="$(make_abs_path "${2:-}")"
+      if [ -z "${2:-}" ]; then
+        echo "Ошибка: --out требует указать директорию"
+        usage
+        exit 1
+      fi
+      OUT_DIR="$(make_abs_path "$2")"
       shift 2
       ;;
     -h|--help)
@@ -37,7 +60,7 @@ while [ $# -gt 0 ]; do
       exit 0
       ;;
     *)
-      echo "Unknown аргумент: $1"
+      echo "Неизвестный аргумент: $1"
       usage
       exit 1
       ;;
@@ -71,9 +94,15 @@ fi
 
 mkdir -p "$OUT_DIR"
 
+cleanup() {
+  echo "Останавливаю сервисы..."
+  $COMPOSE_CMD -f "$COMPOSE_FILE" stop db backend || true
+}
+trap cleanup EXIT
+
 $COMPOSE_CMD -f "$COMPOSE_FILE" up -d db backend
 
-echo "Wait for database..."
+echo "Ожидание готовности базы данных..."
 $COMPOSE_CMD -f "$COMPOSE_FILE" exec -T db sh -c '\
 i=0; \
 while [ $i -lt 30 ]; do \
@@ -83,10 +112,15 @@ while [ $i -lt 30 ]; do \
 done; \
 exit 1'
 
-echo "Dump database..."
-$COMPOSE_CMD -f "$COMPOSE_FILE" exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$OUT_DIR/db.sql"
+echo "Сохраняю дамп базы..."
+TMP_DB_SQL="$(mktemp "$OUT_DIR/db.sql.tmp.XXXXXX")"
+if ! $COMPOSE_CMD -f "$COMPOSE_FILE" exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$TMP_DB_SQL"; then
+  rm -f "$TMP_DB_SQL"
+  exit 1
+fi
+mv "$TMP_DB_SQL" "$OUT_DIR/db.sql"
 
-echo "Archive uploads..."
+echo "Архивирую uploads..."
 $COMPOSE_CMD -f "$COMPOSE_FILE" exec -T backend sh -c 'tar -C /app/backend/uploads -czf - .' > "$OUT_DIR/uploads.tar.gz"
 
 cat <<INFO > "$OUT_DIR/manifest.txt"
@@ -94,4 +128,4 @@ created_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 compose_file=$COMPOSE_FILE
 INFO
 
-echo "Backup completed: $OUT_DIR"
+echo "Бэкап завершен: $OUT_DIR"

@@ -24,6 +24,10 @@ log_step() {
 
 make_abs_path() {
   local path="$1"
+  if [[ -z "$path" ]]; then
+    echo ""
+    return 1
+  fi
   if [[ "$path" = /* ]]; then
     echo "$path"
   else
@@ -34,18 +38,34 @@ make_abs_path() {
 while [ $# -gt 0 ]; do
   case "$1" in
     --host)
+      if [ $# -lt 2 ]; then
+        echo "Error: --host requires an argument"
+        exit 1
+      fi
       REMOTE_HOST="${2:-}"
       shift 2
       ;;
     --user)
+      if [ $# -lt 2 ]; then
+        echo "Error: --user requires an argument"
+        exit 1
+      fi
       REMOTE_USER="${2:-}"
       shift 2
       ;;
     --path)
+      if [ $# -lt 2 ]; then
+        echo "Error: --path requires an argument"
+        exit 1
+      fi
       REMOTE_PATH="${2:-}"
       shift 2
       ;;
     --backup)
+      if [ $# -lt 2 ]; then
+        echo "Error: --backup requires an argument"
+        exit 1
+      fi
       BACKUP_DIR="$(make_abs_path "${2:-}")"
       shift 2
       ;;
@@ -70,6 +90,10 @@ while [ $# -gt 0 ]; do
       shift
       ;;
     --branch)
+      if [ $# -lt 2 ]; then
+        echo "Error: --branch requires an argument"
+        exit 1
+      fi
       UPDATE_BRANCH="${2:-}"
       shift 2
       ;;
@@ -99,6 +123,11 @@ if [ -z "$REMOTE_HOST" ]; then
   exit 1
 fi
 
+REMOTE_PATH_EXPANDED="$REMOTE_PATH"
+if [[ "$REMOTE_PATH" == "~"* ]]; then
+  REMOTE_PATH_EXPANDED="\$HOME${REMOTE_PATH:1}"
+fi
+
 if ! command -v ssh &> /dev/null || ! command -v scp &> /dev/null; then
   echo "Нужны ssh и scp."
   exit 1
@@ -122,26 +151,30 @@ fi
 BACKUP_NAME=$(basename "$BACKUP_DIR")
 
 log_step "Готовлю каталог на VDS..."
-ssh "$REMOTE_USER@$REMOTE_HOST" "mkdir -p $REMOTE_PATH/backups"
+ssh "$REMOTE_USER@$REMOTE_HOST" "mkdir -p \"$REMOTE_PATH_EXPANDED\"/backups"
 
 if [ "$UPDATE_REPO" -eq 1 ]; then
   log_step "Обновляю репозиторий на VDS..."
   if [ -n "$UPDATE_BRANCH" ]; then
-    ssh "$REMOTE_USER@$REMOTE_HOST" "cd $REMOTE_PATH && git fetch --all && git reset --hard origin/$UPDATE_BRANCH && chmod +x up scripts/*.sh"
+    if [[ ! "$UPDATE_BRANCH" =~ ^[a-zA-Z0-9._/-]+$ ]]; then
+      echo "Invalid branch name: $UPDATE_BRANCH"
+      exit 1
+    fi
+    ssh "$REMOTE_USER@$REMOTE_HOST" "cd \"$REMOTE_PATH_EXPANDED\" && git fetch --all && git reset --hard \"origin/$UPDATE_BRANCH\" && chmod +x up scripts/*.sh"
   else
-    ssh "$REMOTE_USER@$REMOTE_HOST" "cd $REMOTE_PATH && git fetch --all && if git show-ref --verify --quiet refs/remotes/origin/main; then git reset --hard origin/main; elif git show-ref --verify --quiet refs/remotes/origin/master; then git reset --hard origin/master; else git reset --hard HEAD; fi && chmod +x up scripts/*.sh"
+    ssh "$REMOTE_USER@$REMOTE_HOST" "cd \"$REMOTE_PATH_EXPANDED\" && git fetch --all && if git show-ref --verify --quiet refs/remotes/origin/main; then git reset --hard origin/main; elif git show-ref --verify --quiet refs/remotes/origin/master; then git reset --hard origin/master; else git reset --hard HEAD; fi && chmod +x up scripts/*.sh"
   fi
 fi
 
 log_step "Копирую бэкап на VDS..."
-scp -r "$BACKUP_DIR" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/backups/"
+scp -r "$BACKUP_DIR" "$REMOTE_USER@$REMOTE_HOST:\"$REMOTE_PATH_EXPANDED\"/backups/"
 
 log_step "Запускаю контейнеры и восстанавливаю данные на VDS..."
-REMOTE_CMD="cd $REMOTE_PATH && ./up"
+REMOTE_CMD="cd \"$REMOTE_PATH_EXPANDED\" && ./up"
 if [ "$NO_BUILD" -eq 1 ]; then
   REMOTE_CMD="$REMOTE_CMD --no-build"
 fi
-REMOTE_CMD="$REMOTE_CMD --restore backups/$BACKUP_NAME"
+REMOTE_CMD="$REMOTE_CMD --restore \"backups/$BACKUP_NAME\""
 if [ "$RESTART_AFTER_RESTORE" -eq 1 ]; then
   REMOTE_CMD="$REMOTE_CMD --restart-after-restore"
 fi
@@ -166,7 +199,7 @@ if command -v curl &> /dev/null; then
   OK=0
   for i in $(seq 1 30); do
     CODE=$(curl -o /dev/null -s -m 5 -w "%{http_code}" "$FINAL_URL" || true)
-    if [ "$CODE" -ge 200 ] && [ "$CODE" -lt 400 ]; then
+    if [[ "$CODE" =~ ^[0-9]+$ ]] && [ "$CODE" -ge 200 ] && [ "$CODE" -lt 400 ]; then
       OK=1
       break
     fi

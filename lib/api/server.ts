@@ -4,7 +4,7 @@
  * 
  * В Docker используем имя сервиса 'backend', на хосте - localhost
  */
-import { baseApiRequest } from './base'
+import { baseApiRequest, type ApiRequestOptions } from './base'
 import { publicEnv } from '@/lib/env'
 import { serverEnv } from '@/lib/env.server'
 
@@ -24,10 +24,12 @@ function getTokenFromCookies(cookies: { get: (name: string) => { value: string }
  */
 export async function apiRequest<T>(
   endpoint: string,
-  options: RequestInit = {},
+  options: ApiRequestOptions = {},
   cookies?: { get: (name: string) => { value: string } | undefined }
 ): Promise<T> {
-  const url = `${API_URL}${endpoint}`
+  const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  const url = `${baseUrl}${normalizedEndpoint}`
   
   const token = cookies ? getTokenFromCookies(cookies) : null
   const requestOptions: RequestInit = { ...options }
@@ -65,6 +67,7 @@ export async function apiPost<T>(
     endpoint,
     {
       method: 'POST',
+      headers: data ? { 'Content-Type': 'application/json' } : undefined,
       body: data ? JSON.stringify(data) : undefined,
     },
     cookies

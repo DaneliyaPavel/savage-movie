@@ -15,6 +15,19 @@ interface EmailOptions {
   from?: string
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
+function sanitizeSubject(value: string): string {
+  return value.replace(/[\r\n]/g, ' ').trim()
+}
+
 /**
  * Отправляет email через Resend
  */
@@ -43,7 +56,10 @@ export async function sendEmail(options: EmailOptions) {
 
     return data
   } catch (error) {
-    logger.error('Ошибка отправки email', error, { function: 'sendEmail', to: options.to })
+    logger.error('Ошибка отправки email', error, {
+      function: 'sendEmail',
+      recipientCount: Array.isArray(options.to) ? options.to.length : 1,
+    })
     throw error
   }
 }
@@ -64,16 +80,20 @@ export async function sendBookingConfirmation(
     training: 'Обучение',
   }
 
-  const serviceName = serviceNames[serviceType] || serviceType
+  const rawServiceName = serviceNames[serviceType] || serviceType
+  const safeServiceName = escapeHtml(rawServiceName)
+  const safeDate = escapeHtml(date)
+  const safeTime = escapeHtml(time)
+  const subjectServiceName = sanitizeSubject(rawServiceName)
 
   return sendEmail({
     to: email,
-    subject: `Подтверждение бронирования: ${serviceName}`,
+    subject: `Подтверждение бронирования: ${subjectServiceName}`,
     html: `
       <h1>Ваше бронирование подтверждено</h1>
-      <p>Услуга: ${serviceName}</p>
-      <p>Дата: ${date}</p>
-      <p>Время: ${time}</p>
+      <p>Услуга: ${safeServiceName}</p>
+      <p>Дата: ${safeDate}</p>
+      <p>Время: ${safeTime}</p>
       <p>Мы свяжемся с вами в ближайшее время.</p>
     `,
   })
@@ -86,14 +106,24 @@ export async function sendCourseEnrollmentConfirmation(
   email: string,
   courseTitle: string
 ) {
+  const safeCourseTitle = escapeHtml(courseTitle)
+  const subjectCourseTitle = sanitizeSubject(courseTitle)
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+  if (!appUrl) {
+    logger.warn('NEXT_PUBLIC_APP_URL not configured for email links', {
+      function: 'sendCourseEnrollmentConfirmation',
+    })
+  }
+  const baseUrl = (appUrl || 'http://localhost:3000').replace(/\/$/, '')
+
   return sendEmail({
     to: email,
-    subject: `Добро пожаловать на курс: ${courseTitle}`,
+    subject: `Добро пожаловать на курс: ${subjectCourseTitle}`,
     html: `
       <h1>Вы успешно записались на курс!</h1>
-      <p>Курс: ${courseTitle}</p>
+      <p>Курс: ${safeCourseTitle}</p>
       <p>Теперь вы можете получить доступ к материалам курса в личном кабинете.</p>
-      <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard">Перейти в личный кабинет</a></p>
+      <p><a href="${baseUrl}/dashboard">Перейти в личный кабинет</a></p>
     `,
   })
 }
@@ -111,17 +141,26 @@ export async function sendContactFormNotification(
     budget?: number
   }
 ) {
+  const safeName = escapeHtml(submission.name)
+  const safeEmail = escapeHtml(submission.email)
+  const safePhone = submission.phone ? escapeHtml(submission.phone) : ''
+  const safeMessage = escapeHtml(submission.message)
+  const safeBudget =
+    typeof submission.budget === 'number' && Number.isFinite(submission.budget)
+      ? submission.budget.toLocaleString('ru-RU')
+      : null
+
   return sendEmail({
     to: adminEmail,
     subject: 'Новая заявка с сайта',
     html: `
       <h2>Новая заявка с контактной формы</h2>
-      <p><strong>Имя:</strong> ${submission.name}</p>
-      <p><strong>Email:</strong> ${submission.email}</p>
-      ${submission.phone ? `<p><strong>Телефон:</strong> ${submission.phone}</p>` : ''}
-      ${submission.budget ? `<p><strong>Бюджет:</strong> ${submission.budget.toLocaleString('ru-RU')} ₽</p>` : ''}
+      <p><strong>Имя:</strong> ${safeName}</p>
+      <p><strong>Email:</strong> ${safeEmail}</p>
+      ${submission.phone ? `<p><strong>Телефон:</strong> ${safePhone}</p>` : ''}
+      ${safeBudget ? `<p><strong>Бюджет:</strong> ${safeBudget} ₽</p>` : ''}
       <p><strong>Сообщение:</strong></p>
-      <p>${submission.message}</p>
+      <p>${safeMessage}</p>
     `,
   })
 }

@@ -30,8 +30,9 @@ export async function getSettings(): Promise<Settings> {
  * Получить конкретную настройку по ключу
  */
 export async function getSetting(key: string): Promise<JsonValue | null> {
+  const encodedKey = encodeURIComponent(key)
   const response = await apiGet<{ key: string; value: JsonValue | null }>(
-    `/api/settings/${key}`
+    `/api/settings/${encodedKey}`
   )
   return response.value
 }

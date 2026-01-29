@@ -15,13 +15,25 @@ describe('createPaymentRequestSchema', () => {
   })
 
   it('rejects missing courseId', () => {
-    const parsed = createPaymentRequestSchema.safeParse({ amount: 100 })
+    const parsed = createPaymentRequestSchema.safeParse({
+      amount: 100,
+      courseTitle: 'Test',
+    })
     expect(parsed.success).toBe(false)
+    if (!parsed.success) {
+      expect(parsed.error.issues.some(issue => issue.path.includes('courseId'))).toBe(true)
+    }
   })
 
   it('rejects non-numeric amount', () => {
-    const parsed = createPaymentRequestSchema.safeParse({ courseId: 'abc', amount: 'nope' })
+    const parsed = createPaymentRequestSchema.safeParse({
+      courseId: 'abc',
+      amount: 'nope',
+      courseTitle: 'Test',
+    })
     expect(parsed.success).toBe(false)
+    if (!parsed.success) {
+      expect(parsed.error.issues.some(issue => issue.path.includes('amount'))).toBe(true)
+    }
   })
 })
-

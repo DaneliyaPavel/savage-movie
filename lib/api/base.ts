@@ -9,6 +9,7 @@ export interface ApiError {
 
 export interface ApiRequestOptions extends RequestInit {
   token?: string | null
+  allowNoContent?: boolean
 }
 
 /**
@@ -18,7 +19,7 @@ export async function baseApiRequest<T>(
   url: string,
   options: ApiRequestOptions = {}
 ): Promise<T> {
-  const { token, ...fetchOptions } = options
+  const { token, allowNoContent, ...fetchOptions } = options
 
   const headers = new Headers(fetchOptions.headers)
   const hasBody = fetchOptions.body !== undefined && fetchOptions.body !== null
@@ -54,17 +55,14 @@ export async function baseApiRequest<T>(
 
   if (!response.ok) {
     let errorMessage = `HTTP ${response.status}: ${response.statusText}`
-    
-    try {
-      const error: ApiError = await response.json()
-      errorMessage = error.detail || errorMessage
-    } catch {
-      // Если ответ не JSON, используем текст ответа
+
+    const errorText = await response.text()
+    if (errorText) {
       try {
-        const text = await response.text()
-        if (text) errorMessage = text
+        const error: ApiError = JSON.parse(errorText)
+        errorMessage = error.detail || errorMessage
       } catch {
-        // Оставляем дефолтное сообщение
+        errorMessage = errorText
       }
     }
     
@@ -83,5 +81,25 @@ export async function baseApiRequest<T>(
     throw new Error(errorMessage)
   }
 
-  return response.json()
+  if (response.status === 204) {
+    if (allowNoContent) {
+      return null as T
+    }
+    throw new Error(`Unexpected empty response (204) from ${url}`)
+  }
+
+  const text = await response.text()
+  if (!text) {
+    if (allowNoContent) {
+      return null as T
+    }
+    throw new Error(`Unexpected empty response from ${url}`)
+  }
+
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    const preview = text.length > 100 ? `${text.slice(0, 100)}...` : text
+    throw new Error(`Unexpected non-JSON response from ${url}: ${preview}`)
+  }
 }

@@ -88,7 +88,6 @@ export function CoursesPageClient({ courses, category: initialCategory }: Course
                 transition={{ duration: 0.6, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] }}
               >
                 <CourseCard
-                  id={course.id}
                   title={course.title}
                   slug={course.slug}
                   category={course.category}

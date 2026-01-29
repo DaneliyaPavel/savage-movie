@@ -56,7 +56,11 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
 fi
 
 print_step "Добавление изменений"
-git add -A
+git add -u
+if [ -n "$(git ls-files --others --exclude-standard)" ]; then
+  print_warn "Внимание: есть неотслеживаемые файлы, которые НЕ будут включены:"
+  git ls-files --others --exclude-standard
+fi
 
 if [ -z "$(git status --porcelain)" ]; then
   print_warn "Нет изменений для коммита. Рабочая директория чиста."

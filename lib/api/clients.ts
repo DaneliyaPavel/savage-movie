@@ -59,12 +59,7 @@ export interface ClientUpdate {
  * Получить режиссера по slug
  */
 export async function getClientBySlug(slug: string): Promise<Client | null> {
-  try {
-    return await apiGet<Client>(`/api/clients/by-slug/${slug}`)
-  } catch (error) {
-    console.error('Ошибка загрузки клиента по slug:', error)
-    return null
-  }
+  return apiGet<Client>(`/api/clients/by-slug/${slug}`)
 }
 
 /**

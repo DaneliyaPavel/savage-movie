@@ -162,7 +162,7 @@ function FilmstripItem({
           {content}
         </Link>
       ) : (
-        <button onClick={onSelect} className="w-full">
+        <button type="button" onClick={onSelect} className="w-full">
           {content}
         </button>
       )}

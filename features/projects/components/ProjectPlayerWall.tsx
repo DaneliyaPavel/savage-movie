@@ -7,6 +7,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { ProjectThumbRail } from './ProjectThumbRail'
 import { VideoStage } from './VideoStage'
 import { ProjectMetaPanel } from './ProjectMetaPanel'
@@ -27,6 +28,7 @@ const getPlaybackId = (url: string | null): string | null => {
 }
 
 export function ProjectPlayerWall({ projects, initialProjectId }: ProjectPlayerWallProps) {
+  const router = useRouter()
   const [selectedProject, setSelectedProject] = useState<Project | null>(
     projects.find(p => p.id === initialProjectId) ?? projects[0] ?? null
   )
@@ -67,13 +69,13 @@ export function ProjectPlayerWall({ projects, initialProjectId }: ProjectPlayerW
         const thumbElement = document.querySelector(`[data-project-id="${nextProject.id}"]`)
         thumbElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
       } else if (e.key === 'Enter' && selectedProject) {
-        window.location.href = `/projects/${selectedProject.slug}`
+        router.push(`/projects/${selectedProject.slug}`)
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedIndex, projects, selectedProject])
+  }, [selectedIndex, projects, selectedProject, router])
 
   const handleProjectSelect = (project: Project) => {
     const index = projects.findIndex(p => p.id === project.id)

@@ -35,7 +35,18 @@ echo "🐳 Запуск Docker контейнеров..."
 $COMPOSE_CMD -f docker-compose.yml up -d db
 
 echo "⏳ Ожидание готовности базы данных..."
-sleep 10
+MAX_RETRIES=30
+RETRY_COUNT=0
+until $COMPOSE_CMD -f docker-compose.yml exec -T db pg_isready -U postgres > /dev/null 2>&1; do
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+        echo "❌ База данных не готова после $MAX_RETRIES попыток"
+        exit 1
+    fi
+    echo "   Попытка $RETRY_COUNT/$MAX_RETRIES..."
+    sleep 1
+done
+echo "✅ База данных готова!"
 
 echo "📦 Миграции применяются через Alembic при старте backend..."
 

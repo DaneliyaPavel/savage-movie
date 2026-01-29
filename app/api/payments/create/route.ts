@@ -79,9 +79,22 @@ export async function POST(request: NextRequest) {
       }
     )
 
+    const paymentUrl = payment.confirmation?.confirmation_url
+    if (!paymentUrl) {
+      logger.error('Payment confirmation URL отсутствует', null, {
+        route: '/api/payments/create',
+        paymentId: payment.id,
+        status: payment.status,
+      })
+      return NextResponse.json(
+        { error: 'Не удалось получить ссылку на оплату' },
+        { status: 502 }
+      )
+    }
+
     return NextResponse.json({
       paymentId: payment.id,
-      paymentUrl: payment.confirmation.confirmation_url,
+      paymentUrl,
     })
   } catch (error) {
     logger.error('Ошибка создания платежа', error, { route: '/api/payments/create', courseId })

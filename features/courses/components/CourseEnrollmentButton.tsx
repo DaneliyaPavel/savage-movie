@@ -39,6 +39,7 @@ export function CourseEnrollmentButton({
       })
 
       if (response.status === 401) {
+        setIsLoading(false)
         router.push('/login')
         return
       }
@@ -48,9 +49,34 @@ export function CourseEnrollmentButton({
       }
 
       const { paymentUrl } = await response.json()
-      
+
+      if (!paymentUrl || typeof paymentUrl !== 'string') {
+        throw new Error('Invalid payment URL received')
+      }
+
+      let parsedUrl: URL
+      try {
+        parsedUrl = new URL(paymentUrl, window.location.origin)
+      } catch {
+        throw new Error('Invalid payment URL format')
+      }
+
+      const allowedHosts = ['yoomoney.ru', 'yookassa.ru']
+      const isSameOrigin = parsedUrl.origin === window.location.origin
+      const isAllowedHost = allowedHosts.some(
+        (host) => parsedUrl.hostname === host || parsedUrl.hostname.endsWith(`.${host}`)
+      )
+
+      if (!isSameOrigin && !isAllowedHost) {
+        throw new Error('Untrusted payment URL')
+      }
+
+      if (!isSameOrigin && parsedUrl.protocol !== 'https:') {
+        throw new Error('Payment URL must use HTTPS')
+      }
+
       // Перенаправляем на страницу оплаты
-      window.location.href = paymentUrl
+      window.location.href = parsedUrl.toString()
     } catch (error) {
       console.error('Ошибка записи на курс:', error)
       setIsLoading(false)
