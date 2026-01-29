@@ -69,4 +69,4 @@ jobs:
           command_timeout: 30m
           script: |
             cd ${{ secrets.VDS_PATH }}
-            ./scripts/deploy.sh main
+            ./scripts/deploy.sh main --force
