@@ -130,30 +130,30 @@
 
 /* Admin readability overrides */
 .admin-scope {
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 18px;
+  line-height: 1.7;
 }
 
 .admin-scope .text-xs {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-}
-
-.admin-scope .text-sm {
   font-size: 1rem;
   line-height: 1.5rem;
 }
 
+.admin-scope .text-sm {
+  font-size: 1.125rem;
+  line-height: 1.65rem;
+}
+
 .admin-scope .text-base {
-  font-size: 1.0625rem;
-  line-height: 1.6rem;
+  font-size: 1.1875rem;
+  line-height: 1.7rem;
 }
 
 .admin-scope input,
 .admin-scope textarea,
 .admin-scope select,
 .admin-scope button {
-  font-size: 1rem;
+  font-size: 1.125rem;
 }
 
 /* Grain overlay effect */
