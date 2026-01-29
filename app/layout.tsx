@@ -39,8 +39,8 @@ export const metadata: Metadata = {
     'продюсирование',
   ],
   icons: {
-    icon: '/sm-logo.svg',
-    shortcut: '/sm-logo.svg',
+    icon: '/sm_logo.svg',
+    shortcut: '/sm_logo.svg',
     apple: '/apple-touch-icon.png',
   },
 }
