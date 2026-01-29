@@ -10,8 +10,6 @@
 <a href="https://github.com/DaneliyaPavel/savage-movie/actions/workflows/deploy.yml">
   <img src="https://img.shields.io/github/actions/workflow/status/DaneliyaPavel/savage-movie/deploy.yml?label=Docker%20build&branch=main" alt="Docker build status" />
 </a>
-<img src="https://img.shields.io/badge/ghcr.io-savage--movie--backend-latest-2ea44f" alt="GHCR backend" />
-<img src="https://img.shields.io/badge/ghcr.io-savage--movie--frontend-latest-2ea44f" alt="GHCR frontend" />
 
 # SAVAGE MOVIE
 ### Премиальный сайт‑портфолио видеографа и продюсера
