@@ -3,6 +3,15 @@
 <div align="center">
 
 ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/DaneliyaPavel/savage-movie?utm_source=oss&utm_medium=github&utm_campaign=DaneliyaPavel%2Fsavage-movie&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+<br/>
+<a href="https://github.com/DaneliyaPavel/savage-movie/actions/workflows/deploy.yml">
+  <img src="https://img.shields.io/github/actions/workflow/status/DaneliyaPavel/savage-movie/deploy.yml?label=CI&branch=main" alt="CI status" />
+</a>
+<a href="https://github.com/DaneliyaPavel/savage-movie/actions/workflows/deploy.yml">
+  <img src="https://img.shields.io/github/actions/workflow/status/DaneliyaPavel/savage-movie/deploy.yml?label=Docker%20build&branch=main" alt="Docker build status" />
+</a>
+<img src="https://img.shields.io/badge/ghcr.io-savage--movie--backend-latest-2ea44f" alt="GHCR backend" />
+<img src="https://img.shields.io/badge/ghcr.io-savage--movie--frontend-latest-2ea44f" alt="GHCR frontend" />
 
 # SAVAGE MOVIE
 ### Премиальный сайт‑портфолио видеографа и продюсера
@@ -18,19 +27,6 @@
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat&logo=docker&logoColor=white" alt="Docker" />
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/License-Private-555555?style=flat" alt="License: Private" />
-</p>
-
-<p align="center">
-  <a href="https://github.com/DaneliyaPavel/savage-movie/actions/workflows/deploy.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/DaneliyaPavel/savage-movie/deploy.yml?label=CI&branch=main" alt="CI status" />
-  </a>
-  <img src="https://img.shields.io/badge/tests-not_configured-lightgrey" alt="Tests status" />
-  <img src="https://img.shields.io/badge/vercel-not_configured-black" alt="Vercel status" />
-  <a href="https://github.com/DaneliyaPavel/savage-movie/actions/workflows/deploy.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/DaneliyaPavel/savage-movie/deploy.yml?label=Docker%20build&branch=main" alt="Docker build status" />
-  </a>
-  <img src="https://img.shields.io/badge/ghcr.io-savage--movie--backend-latest-2ea44f" alt="GHCR backend" />
-  <img src="https://img.shields.io/badge/ghcr.io-savage--movie--frontend-latest-2ea44f" alt="GHCR frontend" />
 </p>
 
 </div>
