@@ -30,11 +30,11 @@ export default async function AdminLayout({
   }
 
   return (
-    <>
+    <div className="admin-scope">
       <AdminHeader />
       <main className="py-6 md:py-8">
         {children}
       </main>
-    </>
+    </div>
   )
 }
