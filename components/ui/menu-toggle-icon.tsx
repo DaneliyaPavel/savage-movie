@@ -27,11 +27,7 @@ export function MenuToggleIcon({
       viewBox="0 0 32 32"
       strokeLinecap={strokeLinecap}
       strokeLinejoin={strokeLinejoin}
-      className={cn(
-        'transition-transform ease-in-out',
-        open && '-rotate-45',
-        className
-      )}
+      className={cn('transition-transform ease-in-out', open && '-rotate-45', className)}
       style={{ transitionDuration: `${duration}ms` }}
       {...props}
     >

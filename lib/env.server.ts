@@ -3,10 +3,7 @@ import { z } from 'zod'
 const emptyToUndefined = (value: unknown) =>
   typeof value === 'string' && value.trim() === '' ? undefined : value
 
-const optionalNonEmptyString = z.preprocess(
-  emptyToUndefined,
-  z.string().min(1).optional(),
-)
+const optionalNonEmptyString = z.preprocess(emptyToUndefined, z.string().min(1).optional())
 
 const ServerEnvSchema = z
   .object({

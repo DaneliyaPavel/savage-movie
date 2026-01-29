@@ -61,12 +61,11 @@ export function ProjectRow({ project, index }: ProjectRowProps) {
             )}
             {project.duration && (
               <div className="text-right min-w-[60px]">
-                {Math.floor(project.duration / 60)}:{(project.duration % 60).toString().padStart(2, '0')}
+                {Math.floor(project.duration / 60)}:
+                {(project.duration % 60).toString().padStart(2, '0')}
               </div>
             )}
-            <div className="text-right min-w-[60px]">
-              {currentYear}
-            </div>
+            <div className="text-right min-w-[60px]">{currentYear}</div>
             {/* Стрелка */}
             <motion.div
               className="text-[#FFFFFF]/40 group-hover:text-[#ff2936] transition-colors"

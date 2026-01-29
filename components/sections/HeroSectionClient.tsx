@@ -14,7 +14,7 @@ export function HeroSectionClient() {
     // Можно использовать window.dispatchEvent для связи с layout
     const event = new CustomEvent('openBooking')
     window.dispatchEvent(event)
-    
+
     // Fallback: если событие не обработано, переходим на страницу контактов
     setTimeout(() => {
       router.push('/contact')

@@ -19,4 +19,3 @@ describe('Mux client lazy init', () => {
     if (prevTokenSecret !== undefined) process.env.MUX_TOKEN_SECRET = prevTokenSecret
   })
 })
-

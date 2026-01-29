@@ -52,7 +52,9 @@ export async function createPayment(
   const discriminator = metadata?.orderId || metadata?.nonce || metadata?.requestId
 
   if (!idempotencyKey && !discriminator) {
-    throw new Error('idempotencyKey или стабильный идентификатор в metadata (orderId/nonce/requestId) обязателен')
+    throw new Error(
+      'idempotencyKey или стабильный идентификатор в metadata (orderId/nonce/requestId) обязателен'
+    )
   }
 
   const idempotencyKeyValue =
@@ -79,7 +81,7 @@ export async function createPayment(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Basic ${Buffer.from(`${shopId}:${secretKey}`).toString('base64')}`,
+      Authorization: `Basic ${Buffer.from(`${shopId}:${secretKey}`).toString('base64')}`,
       'Idempotence-Key': idempotencyKeyValue,
     },
     body: JSON.stringify(paymentData),
@@ -108,11 +110,14 @@ export async function checkPaymentStatus(paymentId: string): Promise<PaymentResp
     throw new Error('ЮKassa credentials не настроены')
   }
 
-  const response = await fetch(`https://api.yookassa.ru/v3/payments/${encodeURIComponent(paymentId)}`, {
-    headers: {
-      'Authorization': `Basic ${Buffer.from(`${shopId}:${secretKey}`).toString('base64')}`,
-    },
-  })
+  const response = await fetch(
+    `https://api.yookassa.ru/v3/payments/${encodeURIComponent(paymentId)}`,
+    {
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${shopId}:${secretKey}`).toString('base64')}`,
+      },
+    }
+  )
 
   if (!response.ok) {
     const error = await response.text()

@@ -53,12 +53,14 @@ export async function createDirectUpload(): Promise<MuxDirectUpload> {
       throw new Error('NEXT_PUBLIC_APP_URL is required for Mux direct uploads')
     }
     // Используем type assertion для обхода проблем типизации Mux SDK
-    const upload = (await ((client.video as unknown as { directUploads: unknown }).directUploads as unknown as {
-      create: (params: {
-        new_asset_settings?: { playback_policy?: string }
-        cors_origin?: string
-      }) => Promise<MuxDirectUpload>
-    }).create({
+    const upload = (await (
+      (client.video as unknown as { directUploads: unknown }).directUploads as unknown as {
+        create: (params: {
+          new_asset_settings?: { playback_policy?: string }
+          cors_origin?: string
+        }) => Promise<MuxDirectUpload>
+      }
+    ).create({
       new_asset_settings: {
         playback_policy: 'public',
       },
@@ -78,9 +80,11 @@ export async function createDirectUpload(): Promise<MuxDirectUpload> {
 export async function getAsset(assetId: string): Promise<MuxAsset> {
   try {
     const client = getMuxClient()
-    const asset = (await (client.video.assets as unknown as {
-      retrieve: (assetId: string) => Promise<MuxAsset>
-    }).retrieve(assetId)) as MuxAsset
+    const asset = (await (
+      client.video.assets as unknown as {
+        retrieve: (assetId: string) => Promise<MuxAsset>
+      }
+    ).retrieve(assetId)) as MuxAsset
 
     return asset
   } catch (error) {
@@ -95,9 +99,11 @@ export async function getAsset(assetId: string): Promise<MuxAsset> {
 export async function deleteAsset(assetId: string): Promise<void> {
   try {
     const client = getMuxClient()
-    await (client.video.assets as unknown as {
-      delete: (assetId: string) => Promise<void>
-    }).delete(assetId)
+    await (
+      client.video.assets as unknown as {
+        delete: (assetId: string) => Promise<void>
+      }
+    ).delete(assetId)
   } catch (error) {
     logger.error('Ошибка удаления ассета из Mux', error, { function: 'deleteAsset', assetId })
     throw error

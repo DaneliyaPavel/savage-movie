@@ -1,12 +1,12 @@
-"use client"
+'use client'
 
-import { useState, useEffect, useRef } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { VideoPlayer } from "@/features/projects/components/mux-player"
-import { FilmstripCarousel } from "@/features/projects/components/filmstrip-carousel"
-import { TopBar } from "@/components/ui/top-bar"
-import { JalousieMenu } from "@/components/ui/jalousie-menu"
-import { useI18n } from "@/lib/i18n-context"
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { VideoPlayer } from '@/features/projects/components/mux-player'
+import { FilmstripCarousel } from '@/features/projects/components/filmstrip-carousel'
+import { TopBar } from '@/components/ui/top-bar'
+import { JalousieMenu } from '@/components/ui/jalousie-menu'
+import { useI18n } from '@/lib/i18n-context'
 
 interface Project {
   id: string
@@ -42,7 +42,7 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
       clearTimeout(transitionTimerRef.current)
     }
     transitionTimerRef.current = setTimeout(() => {
-      const fullProject = projects.find((p) => p.id === project.id) || null
+      const fullProject = projects.find(p => p.id === project.id) || null
       setSelectedProject(fullProject)
       setIsTransitioning(false)
     }, 400)
@@ -56,11 +56,11 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
     }
   }, [])
 
-  const getTitle = (p: Project) => (language === "ru" ? p.titleRu : p.titleEn)
-  const getDirector = (p: Project) => (language === "ru" ? p.directorRu : p.directorEn)
+  const getTitle = (p: Project) => (language === 'ru' ? p.titleRu : p.titleEn)
+  const getDirector = (p: Project) => (language === 'ru' ? p.directorRu : p.directorEn)
 
   // Transform projects for carousel
-  const carouselProjects = projects.map((p) => ({
+  const carouselProjects = projects.map(p => ({
     ...p,
     title: getTitle(p),
     director: getDirector(p),
@@ -74,10 +74,10 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPlaybackId}
-            initial={{ opacity: 0, filter: "blur(10px)" }}
-            animate={{ opacity: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, filter: "blur(10px)" }}
-            transition={{ duration: 0.6, ease: "easeInOut" }}
+            initial={{ opacity: 0, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, filter: 'blur(10px)' }}
+            transition={{ duration: 0.6, ease: 'easeInOut' }}
             className="absolute inset-0"
           >
             <VideoPlayer
@@ -114,7 +114,7 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
             <span className="block -mt-[0.12em]">MOVIE</span>
           </h1>
           <p className="mt-4 text-sm md:text-base text-white/70 max-w-xl mx-auto font-light leading-relaxed">
-            {t("home.heroSubtitle")}
+            {t('home.heroSubtitle')}
           </p>
         </div>
       </motion.div>
@@ -129,10 +129,14 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
             transition={{ duration: 0.4 }}
             className="absolute bottom-32 left-6 md:left-10 z-20"
           >
-            <p className="text-xs uppercase tracking-widest text-foreground/60 mb-1">{t("home.nowPlaying")}</p>
-            <h2 className="text-2xl md:text-3xl font-light text-foreground">{getTitle(selectedProject)}</h2>
+            <p className="text-xs uppercase tracking-widest text-foreground/60 mb-1">
+              {t('home.nowPlaying')}
+            </p>
+            <h2 className="text-2xl md:text-3xl font-light text-foreground">
+              {getTitle(selectedProject)}
+            </h2>
             <p className="text-sm text-foreground/70 mt-1">
-              {t("home.directedBy")} {getDirector(selectedProject)}
+              {t('home.directedBy')} {getDirector(selectedProject)}
             </p>
           </motion.div>
         )}
@@ -147,9 +151,9 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
         />
       ) : (
         // Fallback если нет проектов
-        process.env.NODE_ENV === "development" && (
+        process.env.NODE_ENV === 'development' && (
           <div className="absolute bottom-0 left-0 right-0 z-30 p-8 text-center text-muted-foreground">
-            <p className="text-sm">⚠️ {t("home.noFeaturedProjects")}</p>
+            <p className="text-sm">⚠️ {t('home.noFeaturedProjects')}</p>
           </div>
         )
       )}

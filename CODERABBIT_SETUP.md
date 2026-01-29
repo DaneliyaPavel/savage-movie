@@ -31,7 +31,7 @@ coderabbit auth status
 
 - **Тип ревью**: по умолчанию проверяются незакоммиченные изменения (`uncommitted`)
 - **Базовая ветка**: `main`
-- **Включенные пути**: 
+- **Включенные пути**:
   - Frontend: `app/`, `components/`, `lib/` (TypeScript/JavaScript)
   - Backend: `backend/app/` (Python)
 - **Исключенные пути**: `node_modules/`, `.next/`, `venv/`, тесты, миграции

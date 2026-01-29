@@ -14,7 +14,7 @@ export function BookingModal() {
     const handleOpenBooking = () => {
       setIsBookingOpen(true)
     }
-    
+
     window.addEventListener('openBooking', handleOpenBooking)
     return () => window.removeEventListener('openBooking', handleOpenBooking)
   }, [])

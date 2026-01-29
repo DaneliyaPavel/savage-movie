@@ -22,10 +22,10 @@ export function NewsletterSection() {
       // Здесь можно добавить интеграцию с API для подписки
       // Пока просто симулируем успешную отправку
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       setIsSuccess(true)
       setEmail('')
-      
+
       setTimeout(() => {
         setIsSuccess(false)
       }, 5000)
@@ -50,8 +50,8 @@ export function NewsletterSection() {
             Оставайтесь на связи
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground font-light mb-12 max-w-2xl mx-auto">
-            Подпишитесь на нашу рассылку и будьте в курсе новых проектов, 
-            кейсов и полезных материалов
+            Подпишитесь на нашу рассылку и будьте в курсе новых проектов, кейсов и полезных
+            материалов
           </p>
 
           {isSuccess ? (
@@ -61,17 +61,18 @@ export function NewsletterSection() {
               className="flex flex-col items-center justify-center py-8"
             >
               <CheckCircle2 className="w-12 h-12 text-primary mb-4" />
-              <p className="text-lg text-foreground">
-                Спасибо за подписку!
-              </p>
+              <p className="text-lg text-foreground">Спасибо за подписку!</p>
             </motion.div>
           ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto"
+            >
               <Input
                 type="email"
                 placeholder="Ваш email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 required
                 className="flex-1 h-14 text-base border-border/50 bg-background rounded-none focus:border-foreground focus:ring-0"
               />

@@ -11,7 +11,10 @@ import { FilterChips } from '@/components/ui/filter-chips'
 import { useRouter } from 'next/navigation'
 import { CreativeStrikethrough } from '@/components/ui/creative-strikethrough'
 import type { Project } from '@/features/projects/api'
-import { filterProjectsByOrientation, type ProjectOrientationFilter } from '@/features/projects/utils'
+import {
+  filterProjectsByOrientation,
+  type ProjectOrientationFilter,
+} from '@/features/projects/utils'
 
 interface ProjectsPageClientProps {
   projects: Project[]
@@ -26,7 +29,10 @@ const categoryFilters = [
   { value: 'other', label: 'Другое' },
 ]
 
-export function ProjectsPageClient({ projects, category: initialCategory }: ProjectsPageClientProps) {
+export function ProjectsPageClient({
+  projects,
+  category: initialCategory,
+}: ProjectsPageClientProps) {
   const [category, setCategory] = useState(initialCategory)
   const [orientationFilter, setOrientationFilter] = useState<ProjectOrientationFilter>('all')
   const router = useRouter()
@@ -40,11 +46,10 @@ export function ProjectsPageClient({ projects, category: initialCategory }: Proj
     router.push(`/projects${params.toString() ? `?${params.toString()}` : ''}`)
   }
 
-  const categoryFilteredProjects = useMemo(() => (
-    category === 'all'
-      ? projects
-      : projects.filter(p => p.category === category)
-  ), [category, projects])
+  const categoryFilteredProjects = useMemo(
+    () => (category === 'all' ? projects : projects.filter(p => p.category === category)),
+    [category, projects]
+  )
   const filteredProjects = useMemo(
     () => filterProjectsByOrientation(categoryFilteredProjects, orientationFilter),
     [categoryFilteredProjects, orientationFilter]
@@ -90,7 +95,7 @@ export function ProjectsPageClient({ projects, category: initialCategory }: Proj
               Ориентация
             </div>
             <div className="flex flex-wrap gap-3">
-              {orientationFilters.map((filter) => {
+              {orientationFilters.map(filter => {
                 const isActive = orientationFilter === filter.value
                 const shapeBase = 'rounded-[2px] border border-current/40 bg-current/10'
                 const horizontalShape = `${shapeBase} h-3 md:h-3.5 aspect-[16/9]`

@@ -28,6 +28,7 @@ cp .env.example .env
 ```
 
 Ключевые параметры:
+
 - `DB_*` — подключение к базе
 - `JWT_SECRET` — секрет для токенов
 - `CORS_ORIGINS`, `APP_URL`
@@ -64,6 +65,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ## Эндпоинты (основные)
 
 ### Аутентификация
+
 - `POST /api/auth/register`
 - `POST /api/auth/login`
 - `POST /api/auth/refresh`
@@ -75,6 +77,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - `GET /api/auth/oauth/yandex/callback`
 
 ### Проекты
+
 - `GET /api/projects`
 - `GET /api/projects/{slug}`
 - `POST /api/projects` (admin)
@@ -82,18 +85,21 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - `DELETE /api/projects/{id}` (admin)
 
 ### Курсы
+
 - `GET /api/courses`
 - `GET /api/courses/{slug}`
 - `POST /api/courses` (admin)
 - `PUT /api/courses/{id}` (admin)
 
 ### Записи на курсы
+
 - `GET /api/enrollments`
 - `GET /api/enrollments/{course_id}`
 - `POST /api/enrollments`
 - `PUT /api/enrollments/{id}/progress`
 
 ### Блог
+
 - `GET /api/blog`
 - `GET /api/blog/{slug}`
 - `POST /api/blog` (admin)
@@ -101,22 +107,27 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - `DELETE /api/blog/{id}` (admin)
 
 ### Клиенты / отзывы / настройки
+
 - `GET /api/clients`, `POST /api/clients` (admin)
 - `GET /api/testimonials`, `POST /api/testimonials` (admin)
 - `GET /api/settings`, `PUT /api/settings` (admin)
 
 ### Контакты
+
 - `POST /api/contact`
 
 ### Uploads
+
 - `POST /api/upload/image`
 - `POST /api/upload/images`
 - `POST /api/upload/video`
 
 ### Payments (YooKassa)
+
 - `POST /api/payments/yookassa/webhook`
 
 ### Sitemap
+
 - `GET /api/sitemap/projects`
 - `GET /api/sitemap/courses`
 
@@ -136,6 +147,7 @@ SEED_ADMIN_FORCE_PASSWORD=false
 Полный сценарий: `DEPLOY_VDS.md`.
 
 Коротко:
+
 1. Установить PostgreSQL и Python
 2. Настроить env переменные
 3. Применить миграции

@@ -184,7 +184,9 @@ export default function NewBlogPostPage() {
                   <FormControl>
                     <Input {...field} placeholder="Например: 5 мин" />
                   </FormControl>
-                  <FormDescription>Если оставить пустым, будет рассчитано автоматически.</FormDescription>
+                  <FormDescription>
+                    Если оставить пустым, будет рассчитано автоматически.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

@@ -42,9 +42,7 @@ export function ProjectThumbRail({ projects, selectedId, onSelect }: ProjectThum
           >
             <div
               className={`relative aspect-video overflow-hidden bg-[#050505] border transition-all ${
-                isSelected
-                  ? 'border-[#ff2936]'
-                  : 'border-[#1A1A1A] hover:border-[#FFFFFF]/30'
+                isSelected ? 'border-[#ff2936]' : 'border-[#1A1A1A] hover:border-[#FFFFFF]/30'
               }`}
             >
               {thumbnail ? (

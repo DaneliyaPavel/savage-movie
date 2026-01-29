@@ -1,13 +1,13 @@
-"use client"
+'use client'
 
-import { useCallback, useState } from "react"
-import type { WheelEvent } from "react"
-import useEmblaCarousel from "embla-carousel-react"
-import AutoScroll from "embla-carousel-auto-scroll"
-import { motion, AnimatePresence } from "framer-motion"
-import Image from "next/image"
-import Link from "next/link"
-import { HoverNote } from "@/components/ui/hover-note"
+import { useCallback, useState } from 'react'
+import type { WheelEvent } from 'react'
+import useEmblaCarousel from 'embla-carousel-react'
+import AutoScroll from 'embla-carousel-auto-scroll'
+import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
+import Link from 'next/link'
+import { HoverNote } from '@/components/ui/hover-note'
 
 interface FilmstripProject {
   id: string
@@ -25,16 +25,20 @@ interface FilmstripCarouselProps {
   selectedId: string | null
 }
 
-const HOVER_NOTES = ["play", "watch", "view", "director's cut", "explore"]
+const HOVER_NOTES = ['play', 'watch', 'view', "director's cut", 'explore']
 
-export function FilmstripCarousel({ projects, onProjectSelect, selectedId }: FilmstripCarouselProps) {
+export function FilmstripCarousel({
+  projects,
+  onProjectSelect,
+  selectedId,
+}: FilmstripCarouselProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
       loop: true,
       dragFree: true,
       containScroll: false,
     },
-    [AutoScroll({ speed: 0.5, stopOnInteraction: false, stopOnMouseEnter: true })],
+    [AutoScroll({ speed: 0.5, stopOnInteraction: false, stopOnMouseEnter: true })]
   )
 
   const handleWheel = useCallback(
@@ -47,7 +51,7 @@ export function FilmstripCarousel({ projects, onProjectSelect, selectedId }: Fil
       engine.scrollBody.useBaseFriction().useBaseDuration()
       engine.scrollTo.distance(engine.axis.direction(delta * 0.7), false)
     },
-    [emblaApi],
+    [emblaApi]
   )
 
   return (
@@ -67,15 +71,17 @@ export function FilmstripCarousel({ projects, onProjectSelect, selectedId }: Fil
             <div className="overflow-hidden" ref={emblaRef} onWheel={handleWheel}>
               <div className="flex gap-0">
                 {/* Для бесконечной прокрутки дублируем только если проектов меньше 6 */}
-                {(projects.length < 6 ? [...projects, ...projects] : projects).map((project, index) => (
-                  <FilmstripItem
-                    key={`${project.id}-${index}`}
-                    project={project}
-                    isSelected={selectedId === project.id}
-                    onSelect={() => onProjectSelect(project)}
-                    noteText={HOVER_NOTES[index % HOVER_NOTES.length] ?? HOVER_NOTES[0] ?? ''}
-                  />
-                ))}
+                {(projects.length < 6 ? [...projects, ...projects] : projects).map(
+                  (project, index) => (
+                    <FilmstripItem
+                      key={`${project.id}-${index}`}
+                      project={project}
+                      isSelected={selectedId === project.id}
+                      onSelect={() => onProjectSelect(project)}
+                      noteText={HOVER_NOTES[index % HOVER_NOTES.length] ?? HOVER_NOTES[0] ?? ''}
+                    />
+                  )
+                )}
               </div>
             </div>
           </div>
@@ -110,7 +116,7 @@ function FilmstripItem({
       <div className="relative w-[120px] md:w-[160px] aspect-video overflow-hidden rounded-sm">
         {/* Thumbnail */}
         <Image
-          src={project.thumbnail || "/placeholder.svg"}
+          src={project.thumbnail || '/placeholder.svg'}
           alt={project.title}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"

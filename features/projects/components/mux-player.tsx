@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
 
-import MuxPlayer from "@mux/mux-player-react"
-import { motion } from "framer-motion"
+import MuxPlayer from '@mux/mux-player-react'
+import { motion } from 'framer-motion'
 
 type MuxStyle = React.CSSProperties & Record<`--${string}`, string>
 
@@ -20,7 +20,7 @@ interface VideoPlayerProps {
 export function VideoPlayer({
   playbackId,
   poster,
-  className = "",
+  className = '',
   autoPlay = true,
   muted = true,
   loop = true,
@@ -46,13 +46,13 @@ export function VideoPlayer({
         className="absolute inset-0 w-full h-full"
         style={
           {
-            width: "100%",
-            height: "100%",
+            width: '100%',
+            height: '100%',
             // Mux Player uses CSS custom properties for the internal media element.
             // Setting these avoids letterboxing/pillarboxing and makes the video truly fullscreen.
-            "--media-object-fit": "cover",
-            "--media-object-position": "center",
-            "--controls": controls ? "flex" : "none",
+            '--media-object-fit': 'cover',
+            '--media-object-position': 'center',
+            '--controls': controls ? 'flex' : 'none',
           } as MuxStyle
         }
       />

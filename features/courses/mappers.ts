@@ -36,7 +36,8 @@ const COURSE_COLORS = [
 ] as const
 
 function coerceCourseLevel(value: string | null | undefined): MarketingCourseLevel {
-  if (value === 'beginner' || value === 'intermediate' || value === 'advanced' || value === 'all') return value
+  if (value === 'beginner' || value === 'intermediate' || value === 'advanced' || value === 'all')
+    return value
   return 'all'
 }
 

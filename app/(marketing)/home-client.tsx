@@ -31,10 +31,11 @@ export function HomePageClient({ showreelPlaybackId, projects }: HomePageClientP
   const handleThumbnailClick = useCallback((project: Project) => {
     if (project.video_url) {
       // Extract Mux playback ID from URL
-      const muxMatch = project.video_url.match(/mux\.com\/([^/?]+)/) || 
-                      project.video_url.match(/playbackId=([^&]+)/)
+      const muxMatch =
+        project.video_url.match(/mux\.com\/([^/?]+)/) ||
+        project.video_url.match(/playbackId=([^&]+)/)
       const playbackId = muxMatch ? muxMatch[1] : null
-      
+
       if (playbackId) {
         setSelectedProject(project)
         setIsPlayerOpen(true)
@@ -45,21 +46,19 @@ export function HomePageClient({ showreelPlaybackId, projects }: HomePageClientP
   // Extract playback ID for fullscreen player
   const getFullscreenPlaybackId = () => {
     if (!selectedProject?.video_url) return null
-    const muxMatch = selectedProject.video_url.match(/mux\.com\/([^/?]+)/) || 
-                    selectedProject.video_url.match(/playbackId=([^&]+)/)
+    const muxMatch =
+      selectedProject.video_url.match(/mux\.com\/([^/?]+)/) ||
+      selectedProject.video_url.match(/playbackId=([^&]+)/)
     return muxMatch?.[1] ?? null
   }
 
-  const poster = selectedProject?.images && selectedProject.images[0] 
-    ? selectedProject.images[0] 
-    : undefined
+  const poster =
+    selectedProject?.images && selectedProject.images[0] ? selectedProject.images[0] : undefined
 
   return (
     <div className="min-h-screen bg-[#000000]">
       {/* Fullscreen Showreel Hero */}
-      <ShowreelHero 
-        playbackId={currentPlaybackId}
-      />
+      <ShowreelHero playbackId={currentPlaybackId} />
 
       {/* Gallery Carousel внизу */}
       <HomeGalleryCarousel

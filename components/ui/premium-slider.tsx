@@ -30,12 +30,7 @@ function PremiumSlider({
   ...props
 }: PremiumSliderProps) {
   const _values = React.useMemo(
-    () =>
-      Array.isArray(value)
-        ? value
-        : Array.isArray(defaultValue)
-          ? defaultValue
-          : [min, max],
+    () => (Array.isArray(value) ? value : Array.isArray(defaultValue) ? defaultValue : [min, max]),
     [value, defaultValue, min, max]
   )
 
@@ -52,7 +47,7 @@ function PremiumSlider({
       max={max}
       step={step}
       className={cn(
-        "relative flex w-full touch-none items-center select-none data-[disabled]:opacity-50",
+        'relative flex w-full touch-none items-center select-none data-[disabled]:opacity-50',
         className
       )}
       {...props}

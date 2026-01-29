@@ -1,13 +1,13 @@
-"use client"
+'use client'
 
-import { motion, AnimatePresence } from "framer-motion"
-import Link from "next/link"
-import { useMenu } from "./menu-context"
-import { useEffect, useMemo, useState } from "react"
-import { useI18n } from "@/lib/i18n-context"
-import { getProjects } from "@/features/projects/api"
-import { getCourses } from "@/features/courses/api"
-import { getBlogPosts } from "@/lib/api/blog"
+import { motion, AnimatePresence } from 'framer-motion'
+import Link from 'next/link'
+import { useMenu } from './menu-context'
+import { useEffect, useMemo, useState } from 'react'
+import { useI18n } from '@/lib/i18n-context'
+import { getProjects } from '@/features/projects/api'
+import { getCourses } from '@/features/courses/api'
+import { getBlogPosts } from '@/lib/api/blog'
 
 export function JalousieMenu() {
   const { isOpen, setIsOpen } = useMenu()
@@ -30,9 +30,9 @@ export function JalousieMenu() {
           getBlogPosts(true),
         ])
         if (cancelled) return
-        setProjectsCount(projects.status === "fulfilled" ? projects.value.length : null)
-        setCoursesCount(courses.status === "fulfilled" ? courses.value.length : null)
-        setBlogCount(blogPosts.status === "fulfilled" ? blogPosts.value.length : null)
+        setProjectsCount(projects.status === 'fulfilled' ? projects.value.length : null)
+        setCoursesCount(courses.status === 'fulfilled' ? courses.value.length : null)
+        setBlogCount(blogPosts.status === 'fulfilled' ? blogPosts.value.length : null)
       } catch {
         if (cancelled) return
         // keep nulls; counts are optional UI sugar
@@ -48,43 +48,63 @@ export function JalousieMenu() {
     }
   }, [isOpen])
 
-  type CountKey = "projects" | "courses" | "blog" | null
+  type CountKey = 'projects' | 'courses' | 'blog' | null
 
   const NAV_ITEMS = useMemo(
     () =>
       [
         // Order requested: Home, Projects, Courses, About, Blog, Contact
         // "Staircase" positioning (Freshman-like) via CSS grid columns
-        { labelKey: "nav.home", href: "/", positionClass: "col-span-12 md:col-start-1 md:col-span-4", countKey: null as CountKey },
         {
-          labelKey: "nav.projects",
-          href: "/projects",
-          positionClass: "col-span-12 md:col-start-3 md:col-span-6",
-          countKey: "projects" as CountKey,
+          labelKey: 'nav.home',
+          href: '/',
+          positionClass: 'col-span-12 md:col-start-1 md:col-span-4',
+          countKey: null as CountKey,
         },
         {
-          labelKey: "nav.courses",
-          href: "/courses",
-          positionClass: "col-span-12 md:col-start-5 md:col-span-6",
-          countKey: "courses" as CountKey,
+          labelKey: 'nav.projects',
+          href: '/projects',
+          positionClass: 'col-span-12 md:col-start-3 md:col-span-6',
+          countKey: 'projects' as CountKey,
         },
-        { labelKey: "nav.studio", href: "/about", positionClass: "col-span-12 md:col-start-8 md:col-span-4", countKey: null as CountKey },
-        { labelKey: "nav.blog", href: "/blog", positionClass: "col-span-12 md:col-start-2 md:col-span-5", countKey: "blog" as CountKey },
-        { labelKey: "nav.contact", href: "/contact", positionClass: "col-span-12 md:col-start-6 md:col-span-6", countKey: null as CountKey },
+        {
+          labelKey: 'nav.courses',
+          href: '/courses',
+          positionClass: 'col-span-12 md:col-start-5 md:col-span-6',
+          countKey: 'courses' as CountKey,
+        },
+        {
+          labelKey: 'nav.studio',
+          href: '/about',
+          positionClass: 'col-span-12 md:col-start-8 md:col-span-4',
+          countKey: null as CountKey,
+        },
+        {
+          labelKey: 'nav.blog',
+          href: '/blog',
+          positionClass: 'col-span-12 md:col-start-2 md:col-span-5',
+          countKey: 'blog' as CountKey,
+        },
+        {
+          labelKey: 'nav.contact',
+          href: '/contact',
+          positionClass: 'col-span-12 md:col-start-6 md:col-span-6',
+          countKey: null as CountKey,
+        },
       ] as const,
-    [],
+    []
   )
 
   const getCountForKey = (key: CountKey): number | null => {
     if (!key) return null
-    if (key === "blog") return blogCount
-    if (key === "projects") return projectsCount
-    if (key === "courses") return coursesCount
+    if (key === 'blog') return blogCount
+    if (key === 'projects') return projectsCount
+    if (key === 'courses') return coursesCount
     return null
   }
 
   const formatCount = (count: number | null) => {
-    if (count === null) return "(…)"
+    if (count === null) return '(…)'
     return `(${count})`
   }
 
@@ -104,7 +124,7 @@ export function JalousieMenu() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ delay: 0.3 }}
-            onClick={() => setLanguage(language === "ru" ? "en" : "ru")}
+            onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')}
             className="absolute top-6 left-6 md:left-10 w-12 h-12 rounded-full border border-border flex items-center justify-center text-sm font-medium hover:bg-secondary transition-colors uppercase"
           >
             {language}
@@ -121,14 +141,21 @@ export function JalousieMenu() {
             aria-label="Close menu"
           >
             <span className="text-sm font-medium tracking-wide uppercase opacity-60 group-hover:opacity-100 transition-opacity">
-              {t("nav.close")}
+              {t('nav.close')}
             </span>
             <motion.div
               className="w-8 h-8 flex items-center justify-center"
               whileHover={{ rotate: 90 }}
               transition={{ duration: 0.3 }}
             >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <line x1="4" y1="4" x2="16" y2="16" />
                 <line x1="16" y1="4" x2="4" y2="16" />
               </svg>
@@ -192,7 +219,7 @@ export function JalousieMenu() {
                           <span
                             className="ml-2 sm:ml-3 relative -top-1 sm:-top-2 md:-top-3 whitespace-nowrap text-lg sm:text-xl md:text-2xl text-muted-foreground leading-none
                             [@media(max-height:820px)]:text-base [@media(max-height:820px)]:sm:text-lg [@media(max-height:820px)]:md:text-xl"
-                            style={{ fontFamily: "var(--font-handwritten), cursive" }}
+                            style={{ fontFamily: 'var(--font-handwritten), cursive' }}
                           >
                             {formatCount(getCountForKey(item.countKey))}
                           </span>
@@ -211,7 +238,14 @@ export function JalousieMenu() {
                     }}
                     transition={{ duration: 0.3 }}
                   >
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <svg
+                      width="32"
+                      height="32"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    >
                       <path d="M5 12h14M12 5l7 7-7 7" />
                     </svg>
                   </motion.span>
@@ -228,7 +262,7 @@ export function JalousieMenu() {
             transition={{ delay: 0.5 }}
             className="absolute bottom-6 left-6 md:left-10 right-6 md:right-10 flex justify-between items-end text-sm text-muted-foreground"
           >
-            <span>{t("footer.location")}</span>
+            <span>{t('footer.location')}</span>
             <span className="font-mono">© 2026</span>
           </motion.div>
         </motion.div>

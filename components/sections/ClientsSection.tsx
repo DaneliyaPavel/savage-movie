@@ -23,12 +23,14 @@ export function ClientsSection() {
       try {
         const [clientsData, settings] = await Promise.all([
           getClients().catch(() => []),
-          getSettings().catch(() => ({} as Settings)),
+          getSettings().catch(() => ({}) as Settings),
         ])
         setClients(clientsData)
 
-        const statsProjects = typeof settings.stats_projects === 'number' ? settings.stats_projects : null
-        const statsClients = typeof settings.stats_clients === 'number' ? settings.stats_clients : null
+        const statsProjects =
+          typeof settings.stats_projects === 'number' ? settings.stats_projects : null
+        const statsClients =
+          typeof settings.stats_clients === 'number' ? settings.stats_clients : null
         const statsYears = typeof settings.stats_years === 'number' ? settings.stats_years : null
 
         setStats({
@@ -57,8 +59,19 @@ export function ClientsSection() {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="mb-16 md:mb-24 editorial-spacing"
         >
-          <SectionTitle mark="cross" markPosition="top-left" size="xl" className="text-[#FFFFFF] mb-8">
-            <EditorialCorrection wrong="Наши клиенты" correct="Доверяют нам" size="lg" inline delay={0.2} />
+          <SectionTitle
+            mark="cross"
+            markPosition="top-left"
+            size="xl"
+            className="text-[#FFFFFF] mb-8"
+          >
+            <EditorialCorrection
+              wrong="Наши клиенты"
+              correct="Доверяют нам"
+              size="lg"
+              inline
+              delay={0.2}
+            />
           </SectionTitle>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -88,19 +101,21 @@ export function ClientsSection() {
                   whileHover={{ scale: 1.05 }}
                   className="aspect-video bg-[#050505] border border-[#1A1A1A] hover:border-[#FFFFFF]/30 transition-colors flex items-center justify-center p-4"
                 >
-                {client.logo_url ? (
-                  <div className="relative w-full h-full">
-                    <Image
-                      src={client.logo_url}
-                      alt={client.name}
-                      fill
-                      sizes="(min-width: 768px) 25vw, 50vw"
-                      className="object-contain opacity-60 hover:opacity-100 transition-opacity"
-                    />
-                  </div>
-                ) : (
-                  <span className="text-sm text-[#FFFFFF]/40 font-medium text-center">{client.name}</span>
-                )}
+                  {client.logo_url ? (
+                    <div className="relative w-full h-full">
+                      <Image
+                        src={client.logo_url}
+                        alt={client.name}
+                        fill
+                        sizes="(min-width: 768px) 25vw, 50vw"
+                        className="object-contain opacity-60 hover:opacity-100 transition-opacity"
+                      />
+                    </div>
+                  ) : (
+                    <span className="text-sm text-[#FFFFFF]/40 font-medium text-center">
+                      {client.name}
+                    </span>
+                  )}
                 </motion.div>
               </HoverNote>
             ))}

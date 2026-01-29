@@ -29,16 +29,14 @@ export default async function BlogPage() {
       <section className="pt-32 pb-16 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
-            <h1 className="font-heading font-bold text-5xl md:text-6xl mb-4">
-              Блог
-            </h1>
+            <h1 className="font-heading font-bold text-5xl md:text-6xl mb-4">Блог</h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               Полезные статьи о видеопродакшне, ИИ-генерации и обучении
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {posts.map((post) => {
+            {posts.map(post => {
               const dateStr = post.published_at || post.created_at
               const publishedAt = dateStr ? new Date(dateStr) : null
               const isValidDate = publishedAt && !isNaN(publishedAt.getTime())

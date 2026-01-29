@@ -8,7 +8,12 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/admin/DataTable'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
-import { getProjects, deleteProject, updateProjectsOrder, type Project } from '@/features/projects/api'
+import {
+  getProjects,
+  deleteProject,
+  updateProjectsOrder,
+  type Project,
+} from '@/features/projects/api'
 import { SortableList } from '@/components/admin/SortableList'
 import { Plus, Trash2, Pencil } from 'lucide-react'
 import {
@@ -53,7 +58,7 @@ export default function ProjectsPage() {
   const handleReorder = async (reorderedProjects: Project[]) => {
     // Обновляем локальное состояние
     setProjects(reorderedProjects)
-    
+
     // Обновляем порядок на сервере
     try {
       const updates = reorderedProjects.map((project, index) => ({
@@ -92,10 +97,10 @@ export default function ProjectsPage() {
       label: 'Категория',
       render: (project: Project) => {
         const categories: Record<string, string> = {
-          'commercial': 'Коммерция',
+          commercial: 'Коммерция',
           'ai-content': 'ИИ-контент',
           'music-video': 'Клипы',
-          'other': 'Другое',
+          other: 'Другое',
         }
         return categories[project.category] || project.category
       },
@@ -119,12 +124,7 @@ export default function ProjectsPage() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <Breadcrumbs 
-          items={[
-            { label: 'Админ-панель', href: '/admin' },
-            { label: 'Проекты' }
-          ]} 
-        />
+        <Breadcrumbs items={[{ label: 'Админ-панель', href: '/admin' }, { label: 'Проекты' }]} />
       </div>
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -147,10 +147,10 @@ export default function ProjectsPage() {
         <SortableList
           items={projects}
           onReorder={handleReorder}
-          getItemId={(project) => project.id}
+          getItemId={project => project.id}
           className="max-w-2xl"
         >
-          {(project) => (
+          {project => (
             <div className="flex items-center justify-between w-full">
               <div>
                 <div className="font-medium">{project.title}</div>
@@ -187,12 +187,12 @@ export default function ProjectsPage() {
         <DataTable
           data={projects}
           columns={columns}
-          onEdit={(project) => router.push(`/admin/projects/${project.id}/edit`)}
-          onDelete={(project) => {
+          onEdit={project => router.push(`/admin/projects/${project.id}/edit`)}
+          onDelete={project => {
             setProjectToDelete(project)
             setDeleteDialogOpen(true)
           }}
-          getRowId={(project) => project.id}
+          getRowId={project => project.id}
         />
       </div>
 
@@ -201,7 +201,8 @@ export default function ProjectsPage() {
           <DialogHeader>
             <DialogTitle>Удалить проект?</DialogTitle>
             <DialogDescription>
-              Вы уверены, что хотите удалить проект &quot;{projectToDelete?.title}&quot;? Это действие нельзя отменить.
+              Вы уверены, что хотите удалить проект &quot;{projectToDelete?.title}&quot;? Это
+              действие нельзя отменить.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

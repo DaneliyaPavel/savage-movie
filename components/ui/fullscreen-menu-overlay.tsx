@@ -25,11 +25,11 @@ interface FullscreenMenuOverlayProps {
   onCTAClick?: () => void
 }
 
-export function FullscreenMenuOverlay({ 
-  isOpen, 
-  onClose, 
+export function FullscreenMenuOverlay({
+  isOpen,
+  onClose,
   items,
-  onCTAClick 
+  onCTAClick,
 }: FullscreenMenuOverlayProps) {
   const [focusedIndex, setFocusedIndex] = useState(0)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -68,10 +68,10 @@ export function FullscreenMenuOverlay({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
-        setFocusedIndex((prev) => (prev < items.length - 1 ? prev + 1 : 0))
+        setFocusedIndex(prev => (prev < items.length - 1 ? prev + 1 : 0))
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
-        setFocusedIndex((prev) => (prev > 0 ? prev - 1 : items.length - 1))
+        setFocusedIndex(prev => (prev > 0 ? prev - 1 : items.length - 1))
       } else if (e.key === 'Enter' && items[focusedIndex]) {
         e.preventDefault()
         const item = items[focusedIndex]
@@ -144,31 +144,32 @@ export function FullscreenMenuOverlay({
             <div className="flex-1 flex flex-col justify-center overflow-hidden">
               <div className="space-y-0">
                 {items.map((item, index) => (
-                    <div
-                      key={`${item.href}-${index}`}
-                      style={{ 
-                        height: rowHeight, 
-                        minHeight: '100px',
-                        maxHeight: '200px',
-                      }}
-                      className="relative"
-                    >
-                      <MenuRow
-                        {...item}
-                        index={index}
-                        onClose={onClose}
-                        onCTAClick={item.isCTA && onCTAClick ? handleCTAClick : undefined}
+                  <div
+                    key={`${item.href}-${index}`}
+                    style={{
+                      height: rowHeight,
+                      minHeight: '100px',
+                      maxHeight: '200px',
+                    }}
+                    className="relative"
+                  >
+                    <MenuRow
+                      {...item}
+                      index={index}
+                      onClose={onClose}
+                      onCTAClick={item.isCTA && onCTAClick ? handleCTAClick : undefined}
+                    />
+                    {/* Dotted separator снизу (белый на черном фоне) */}
+                    {index < items.length - 1 && (
+                      <div
+                        className="absolute bottom-0 left-0 right-0 h-px opacity-20"
+                        style={{
+                          backgroundImage:
+                            'repeating-linear-gradient(to right, #FFFFFF 0px, #FFFFFF 4px, transparent 4px, transparent 8px)',
+                        }}
                       />
-                      {/* Dotted separator снизу (белый на черном фоне) */}
-                      {index < items.length - 1 && (
-                        <div 
-                          className="absolute bottom-0 left-0 right-0 h-px opacity-20"
-                          style={{
-                            backgroundImage: 'repeating-linear-gradient(to right, #FFFFFF 0px, #FFFFFF 4px, transparent 4px, transparent 8px)',
-                          }}
-                        />
-                      )}
-                    </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>

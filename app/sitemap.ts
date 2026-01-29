@@ -11,14 +11,14 @@ interface SitemapItem {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://savagemovie.ru'
-  
+
   // Загружаем проекты и курсы для sitemap из API
   let projects: SitemapItem[] = []
   let courses: SitemapItem[] = []
   let blogPosts: SitemapItem[] = []
-  
+
   try {
-    [projects, courses, blogPosts] = await Promise.all([
+    ;[projects, courses, blogPosts] = await Promise.all([
       apiGet<SitemapItem[]>('/api/sitemap/projects'),
       apiGet<SitemapItem[]>('/api/sitemap/courses'),
       apiGet<SitemapItem[]>('/api/sitemap/blog'),
@@ -72,21 +72,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ]
 
-  const projectPages: MetadataRoute.Sitemap = projects.map((project) => ({
+  const projectPages: MetadataRoute.Sitemap = projects.map(project => ({
     url: `${baseUrl}/projects/${project.slug}`,
     lastModified: new Date(project.updated_at),
     changeFrequency: 'monthly' as const,
     priority: 0.8,
   }))
 
-  const coursePages: MetadataRoute.Sitemap = courses.map((course) => ({
+  const coursePages: MetadataRoute.Sitemap = courses.map(course => ({
     url: `${baseUrl}/courses/${course.slug}`,
     lastModified: new Date(course.updated_at),
     changeFrequency: 'monthly' as const,
     priority: 0.8,
   }))
 
-  const blogPages: MetadataRoute.Sitemap = blogPosts.map((post) => ({
+  const blogPages: MetadataRoute.Sitemap = blogPosts.map(post => ({
     url: `${baseUrl}/blog/${post.slug}`,
     lastModified: new Date(post.updated_at),
     changeFrequency: 'monthly' as const,

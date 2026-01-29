@@ -19,10 +19,10 @@ interface HomeGalleryCarouselProps {
   onThumbnailChange?: (playbackId: string | null) => void
 }
 
-export function HomeGalleryCarousel({ 
-  projects, 
+export function HomeGalleryCarousel({
+  projects,
   onThumbnailClick,
-  onThumbnailChange 
+  onThumbnailChange,
 }: HomeGalleryCarouselProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: 'start',
@@ -32,23 +32,21 @@ export function HomeGalleryCarousel({
   })
   const [selectedIndex, setSelectedIndex] = useState(0)
 
-  const scrollTo = useCallback(
-    (index: number) => emblaApi?.scrollTo(index),
-    [emblaApi]
-  )
+  const scrollTo = useCallback((index: number) => emblaApi?.scrollTo(index), [emblaApi])
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return
     const index = emblaApi.selectedScrollSnap()
     setSelectedIndex(index)
-    
+
     // Callback для изменения главного плеера
     if (onThumbnailChange && projects[index]) {
       const project = projects[index]
       if (project.video_url) {
         // Extract Mux playback ID from URL
-        const muxMatch = project.video_url.match(/mux\.com\/([^/?]+)/) || 
-                        project.video_url.match(/playbackId=([^&]+)/)
+        const muxMatch =
+          project.video_url.match(/mux\.com\/([^/?]+)/) ||
+          project.video_url.match(/playbackId=([^&]+)/)
         const playbackId = muxMatch?.[1] ?? null
         onThumbnailChange(playbackId)
       } else {
@@ -86,7 +84,7 @@ export function HomeGalleryCarousel({
   return (
     <div className="relative w-full bg-[#000000] border-t border-[#1A1A1A] overflow-hidden">
       <GrainOverlay />
-      
+
       <div className="relative z-10 px-4 md:px-8 lg:px-12 py-8 md:py-12">
         {/* Carousel Container */}
         <div className="overflow-hidden" ref={emblaRef}>
@@ -94,10 +92,8 @@ export function HomeGalleryCarousel({
             {projects.map((project, index) => {
               const isSelected = index === selectedIndex
               // Get thumbnail URL - use first image or create placeholder
-              const thumbnailUrl = project.images && project.images[0] 
-                ? project.images[0] 
-                : null
-              
+              const thumbnailUrl = project.images && project.images[0] ? project.images[0] : null
+
               return (
                 <motion.div
                   key={project.id}
@@ -115,7 +111,11 @@ export function HomeGalleryCarousel({
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <HoverNote text={isSelected ? "playing" : "watch"} position="top" className="w-full">
+                  <HoverNote
+                    text={isSelected ? 'playing' : 'watch'}
+                    position="top"
+                    className="w-full"
+                  >
                     <div className="relative aspect-video bg-[#1A1A1A] overflow-hidden rounded-sm group">
                       {/* Grain overlay on hover */}
                       <motion.div
@@ -125,9 +125,9 @@ export function HomeGalleryCarousel({
                       >
                         <GrainOverlay />
                       </motion.div>
-                      
+
                       {/* Thumbnail Image */}
-                      <motion.div 
+                      <motion.div
                         className="absolute inset-0"
                         whileHover={{ scale: 1.02 }}
                         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
@@ -156,10 +156,10 @@ export function HomeGalleryCarousel({
                           </div>
                         )}
                       </motion.div>
-                      
+
                       {/* Overlay gradient */}
                       <div className="absolute inset-0 bg-gradient-to-t from-[#000000]/80 via-transparent to-transparent z-[1]" />
-                      
+
                       {/* Subtle overlay on hover */}
                       <motion.div
                         initial={{ opacity: 0 }}
@@ -167,7 +167,7 @@ export function HomeGalleryCarousel({
                         className="absolute inset-0 bg-[#ff2936]/5 z-[2]"
                         transition={{ duration: 0.3 }}
                       />
-                      
+
                       {/* Selected indicator */}
                       {isSelected && (
                         <motion.div
@@ -176,7 +176,7 @@ export function HomeGalleryCarousel({
                           className="absolute inset-0 border-2 border-[#ff2936] z-[3]"
                         />
                       )}
-                      
+
                       {/* Play icon on hover */}
                       <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
@@ -186,7 +186,7 @@ export function HomeGalleryCarousel({
                       >
                         <Play className="w-12 h-12 text-[#FFFFFF] fill-[#FFFFFF]" />
                       </motion.div>
-                      
+
                       {/* Project title at bottom */}
                       <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4 z-[5]">
                         <h3 className="text-sm md:text-base font-heading font-bold text-[#FFFFFF] truncate">
@@ -198,7 +198,7 @@ export function HomeGalleryCarousel({
                           </p>
                         )}
                       </div>
-                      
+
                       {/* Underline draw on hover - editorial style */}
                       <motion.div
                         className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#ff2936] z-[6]"

@@ -9,12 +9,14 @@
 ## Этап 0: Discovery — Карта проекта
 
 ### Package Manager
+
 - **Frontend**: `npm` (есть `package-lock.json`)
 - **Backend**: `pip` (есть `requirements.txt`, нет `pyproject.toml`, нет `poetry.lock`)
 
 ### Команды проверки (обнаружено)
 
 #### Frontend
+
 - `npm install` — установка зависимостей
 - `npm run lint` — ESLint проверка
 - `npm run type-check` — TypeScript проверка (`tsc --noEmit`)
@@ -22,6 +24,7 @@
 - `npm run build` — Next.js production build
 
 #### Backend
+
 - `pip install -r backend/requirements.txt` — установка зависимостей
 - **Lint**: отсутствует (нет ruff/flake8 в requirements.txt)
 - **Typecheck**: отсутствует (нет mypy/pyright)
@@ -29,6 +32,7 @@
 - `uvicorn app.main:app --reload --port 8000` — запуск dev сервера
 
 #### Docker
+
 - `docker compose -f docker-compose.yml up --build` — dev окружение
 - `docker compose -f docker-compose.yml up --build` — prod окружение
 - Healthchecks: только у БД, отсутствуют у backend/frontend
@@ -36,6 +40,7 @@
 ### Точки входа
 
 #### Frontend (Next.js 16 App Router)
+
 - **Entry**: `app/layout.tsx` (корневой layout)
 - **Route Groups**:
   - `(auth)` — `/login`, `/register`, `/callback`
@@ -45,6 +50,7 @@
 - **API Routes**: `app/api/*` (contact, payments, uploads, auth/session)
 
 #### Backend (FastAPI)
+
 - **Entry**: `backend/app/main.py`
 - **Routers**: `backend/app/delivery/api/*` (auth, projects, courses, enrollments, contact, sitemap, upload, clients, testimonials, settings, payments, blog)
 
@@ -72,11 +78,13 @@
 ### Слои и структура
 
 #### Routes (`app/`)
+
 - ✅ Четкая структура route groups: `(auth)`, `(marketing)`, `admin`, `dashboard`
 - ⚠️ Смешение server/client компонентов: некоторые страницы полностью client-only, хотя могут быть server-first
 - ⚠️ Route-specific компоненты разбросаны: часть в `app/*/client.tsx`, часть в `components/sections`
 
 #### Components (`components/`)
+
 - ✅ `components/ui/` — shadcn/ui примитивы (хорошо изолированы)
 - ⚠️ `components/features/` — доменные компоненты (VideoPlayer, ProjectCard, CourseCard)
 - ⚠️ `components/sections/` — секции страниц (HeroSection, Footer, Navigation)
@@ -85,6 +93,7 @@
 - **Проблема**: Нет четкого разделения feature vs shared vs layout
 
 #### Lib (`lib/`)
+
 - ✅ `lib/api/` — API клиенты (client/server/base)
 - ✅ `lib/env.ts` + `lib/env.server.ts` — валидация env
 - ✅ `lib/integrations/` — Mux, Resend, YooKassa
@@ -95,6 +104,7 @@
 ### Дубли/мертвые компоненты/лишние файлы
 
 #### Дубли компонентов
+
 1. **ShowreelHero**:
    - `components/sections/ShowreelHero.tsx` — НЕ используется
    - `components/sections/showreel-hero.tsx` — ✅ используется в `app/(marketing)/page.tsx`
@@ -112,6 +122,7 @@
    - **Решение**: Удалить оба
 
 #### Мертвые компоненты (нет импортов)
+
 - `components/sections/ContactForm.tsx` — используется только в неиспользуемом `app/(marketing)/contact/client.tsx`
 - `components/sections/ServicesSection.tsx`
 - `components/sections/AboutTeaser.tsx`
@@ -130,6 +141,7 @@
 - `components/features/ProjectRow.tsx` — ⚠️ есть также `ProjectRow3Column.tsx`, проверить использование
 
 #### Неиспользуемые page-specific клиенты
+
 - `app/(marketing)/home-client.tsx` — не импортируется
 - `app/(marketing)/projects/client.tsx` — не импортируется (используется `projects-client.tsx`)
 - `app/(marketing)/courses/client.tsx` — не импортируется
@@ -139,6 +151,7 @@
 ### Server/Client логика
 
 #### Проблемы
+
 1. **Двойная загрузка данных**:
    - `app/(marketing)/projects/page.tsx` (server) + `app/(marketing)/projects/projects-client.tsx` (client)
    - Данные загружаются на сервере, затем повторно на клиенте
@@ -152,6 +165,7 @@
    - Некоторые server components используют client-only API
 
 #### Next API Routes vs FastAPI
+
 - `/api/contact` — валидация + прокси на FastAPI (дублирование валидации)
 - `/api/payments/create` — собственная логика (YooKassa), не использует FastAPI
 - `/api/payments/webhook` — тонкий прокси на FastAPI
@@ -161,6 +175,7 @@
 ### Env и секреты
 
 #### Проблемы
+
 1. **Неполная валидация**:
    - `NEXT_PUBLIC_SHOWREEL_PLAYBACK_ID` используется в `app/(marketing)/page.tsx`, но отсутствует в `lib/env.ts`
    - Прямые обращения к `process.env` в некоторых компонентах
@@ -194,16 +209,19 @@
 ### Слои (Clean Architecture)
 
 #### Delivery (`backend/app/delivery/api/`)
+
 - ✅ Роутеры изолированы
 - ⚠️ **Проблема**: Роутеры напрямую используют репозитории и ORM, минуя application слой
 - ⚠️ Бизнес-логика в роутерах (например, `payments.py` содержит логику обработки webhook)
 
 #### Application (`backend/app/application/`)
+
 - ✅ Есть `services/auth_service.py` (JWT, токены)
 - ⚠️ **Проблема**: Остальная бизнес-логика в роутерах, нет use cases
 - ⚠️ Нет единого слоя транзакций/юнитов работы
 
 #### Infrastructure (`backend/app/infrastructure/`)
+
 - ✅ `db/models/` — SQLAlchemy модели
 - ✅ `db/repositories/` — репозитории
 - ✅ `db/session.py` — сессия БД
@@ -211,23 +229,27 @@
 - ⚠️ **Проблема**: Репозитории коммитят внутри методов (нет единого UoW)
 
 #### Interfaces (`backend/app/interfaces/schemas/`)
+
 - ✅ Pydantic схемы для запросов/ответов
 - ⚠️ **Проблема**: Нет мапперов между схемами и моделями (прямое использование dict)
 
 ### ORM/миграции/схемы
 
 #### Миграции
+
 - ✅ Alembic используется (`backend/alembic/versions/`)
 - ⚠️ **Проблема**: Параллельно есть SQL-скрипты в `backend/scripts/*.sql` без привязки к Alembic
 - ⚠️ Риск дрейфа: "второй источник истины" для схемы БД
 
 #### Репозитории
+
 - ✅ Есть репозитории для всех сущностей
 - ⚠️ **Проблема**: Репозитории коммитят внутри методов (`await self._session.commit()`)
 - ⚠️ Нет единого уровня транзакций (UoW pattern)
 - ⚠️ Нет обработки транзакций на уровне application
 
 #### Схемы Pydantic
+
 - ✅ Схемы для всех сущностей
 - ⚠️ **Проблема**: Нет мапперов между схемами и моделями
 - ⚠️ Прямое использование `dict` для создания/обновления
@@ -235,6 +257,7 @@
 ### Нейминг и согласованность
 
 #### Несогласованности
+
 1. **blog vs blog_post**:
    - Модель: `backend/app/infrastructure/db/models/blog_post.py` (BlogPost)
    - Репозиторий: `backend/app/infrastructure/db/repositories/blog.py` (SqlAlchemyBlogRepository)
@@ -286,22 +309,26 @@
 ### Синхронизация DTO/схем
 
 #### Проблема
+
 - **Backend**: Pydantic схемы в `backend/app/interfaces/schemas/*`
 - **Frontend**: TypeScript интерфейсы в `lib/api/*.ts` (ручные)
 - **Нет генерации типов** из OpenAPI
 - **Высокий риск рассинхронизации**
 
 #### Примеры рассинхронизации
+
 1. **Auth refresh**: Frontend отправляет JSON body, backend может ожидать query
 2. **Типы проектов**: Frontend использует свои интерфейсы, backend — Pydantic схемы
 3. **Ошибки**: Frontend ожидает `{ detail: string }`, но не всегда согласовано
 
 ### Решение
+
 - Генерировать TypeScript типы из OpenAPI (FastAPI автоматически генерирует OpenAPI spec)
 - Использовать `openapi-typescript` или аналоги
 - Разместить сгенерированные типы в `contracts/` или `lib/api/generated/`
 
 ### Платежи
+
 - **Next API route** (`/api/payments/create`) — создание платежа (собственная логика)
 - **FastAPI** (`/api/payments/yookassa/webhook`) — обработка webhook
 - **Проблема**: Контракт и ответственность разнесены между двумя сервисами
@@ -313,11 +340,13 @@
 ### Docker Compose
 
 #### Файлы
+
 - `docker-compose.yml` — базовый (prod-like)
 - `docker-compose.yml` — dev с hot reload
 - `docker-compose.yml` — production
 
 #### Проблемы
+
 1. **Healthchecks**:
    - ✅ Есть у БД
    - ❌ Отсутствуют у backend/frontend
@@ -334,22 +363,26 @@
 ### Переменные окружения
 
 #### Frontend (`.env.example`)
+
 - ✅ Покрывает основные переменные
 - ⚠️ Отсутствует `NEXT_PUBLIC_SHOWREEL_PLAYBACK_ID` (используется в коде)
 
 #### Backend (`backend/.env.example`)
+
 - ✅ Существует
 - ✅ Покрывает основные переменные
 
 ### Скрипты
 
 #### Дублирование
+
 - `scripts/create-admin*.sh` — 3 варианта скрипта создания админа
 - `docker-start.sh` — дублирует функциональность `docker-compose`
 - `scripts/docker-dev.sh` — обертка над `docker-compose.yml`
 - `START_SERVER.sh` — предполагает `backend/venv`, которого нет в репозитории
 
 #### Рекомендации
+
 - Унифицировать скрипты создания админа
 - Удалить дублирующие скрипты
 - Обновить `START_SERVER.sh` или удалить
@@ -359,6 +392,7 @@
 ## E) "Удаляемое" (кандидаты с доказательствами)
 
 ### Критерии
+
 - Нет импортов/использования в коде
 - Нет упоминаний в конфигах/скриптах
 - Не является entry point
@@ -422,12 +456,14 @@
 ## Итоговые метрики
 
 ### Frontend
+
 - **Компоненты**: ~35 файлов в `components/`
 - **Мертвые компоненты**: ~20 кандидатов
 - **Дубли**: 2-3 пары компонентов
 - **API клиенты**: 10 файлов в `lib/api/`
 
 ### Backend
+
 - **Роутеры**: 12 файлов
 - **Модели**: 9 файлов (включая booking)
 - **Репозитории**: 9 файлов
@@ -435,6 +471,7 @@
 - **Тесты**: 0
 
 ### Инфраструктура
+
 - **Docker compose**: 3 файла
 - **Скрипты**: 10+ файлов (есть дубли)
 - **Env примеры**: 2 файла

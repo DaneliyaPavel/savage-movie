@@ -15,16 +15,12 @@ export interface ApiRequestOptions extends RequestInit {
 /**
  * Базовая функция для выполнения HTTP запросов
  */
-export async function baseApiRequest<T>(
-  url: string,
-  options: ApiRequestOptions = {}
-): Promise<T> {
+export async function baseApiRequest<T>(url: string, options: ApiRequestOptions = {}): Promise<T> {
   const { token, allowNoContent, ...fetchOptions } = options
 
   const headers = new Headers(fetchOptions.headers)
   const hasBody = fetchOptions.body !== undefined && fetchOptions.body !== null
-  const isFormData =
-    typeof FormData !== 'undefined' && fetchOptions.body instanceof FormData
+  const isFormData = typeof FormData !== 'undefined' && fetchOptions.body instanceof FormData
 
   // Content-Type для JSON выставляем только если это не FormData и его ещё не задали явно.
   if (hasBody && !isFormData && !headers.has('Content-Type')) {
@@ -47,7 +43,9 @@ export async function baseApiRequest<T>(
     console.error('URL:', url)
     if (error instanceof TypeError) {
       if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
-        throw new Error(`Не удалось подключиться к серверу (${url}). Проверьте, что backend запущен и доступен.`)
+        throw new Error(
+          `Не удалось подключиться к серверу (${url}). Проверьте, что backend запущен и доступен.`
+        )
       }
     }
     throw error
@@ -65,7 +63,7 @@ export async function baseApiRequest<T>(
         errorMessage = errorText
       }
     }
-    
+
     // Специальная обработка для ошибок авторизации
     if (response.status === 401) {
       // Очищаем токены если они недействительны
@@ -77,7 +75,7 @@ export async function baseApiRequest<T>(
       // Поэтому сохраняем сообщение от API (если оно есть), чтобы UX был корректным.
       throw new Error(errorMessage || 'Требуется авторизация. Пожалуйста, войдите снова.')
     }
-    
+
     throw new Error(errorMessage)
   }
 

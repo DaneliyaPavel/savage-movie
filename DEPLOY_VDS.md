@@ -21,6 +21,7 @@ cp .env.example .env
 ```
 
 Отредактируйте `.env`:
+
 - `NEXT_PUBLIC_API_URL` (например `http://<IP>:8001`)
 - `NEXT_PUBLIC_APP_URL` (например `http://<IP>:3000`)
 - `API_URL` (оставить `http://backend:8000`)
@@ -50,13 +51,15 @@ cp .env.example .env
 
 ## Авто‑деплой при merge в main
 
-1) На сервере один раз настройте `.env` и выполните:
+1. На сервере один раз настройте `.env` и выполните:
+
 ```bash
 cd /root/opt/savagemovie/savage-movie
 chmod +x up scripts/*.sh
 ```
 
-2) В GitHub → Settings → Secrets and variables → Actions добавьте:
+2. В GitHub → Settings → Secrets and variables → Actions добавьте:
+
 - `VDS_HOST` (например `89.169.4.92`)
 - `VDS_USER` (например `root`)
 - `VDS_SSH_KEY` (private key)
@@ -69,4 +72,5 @@ chmod +x up scripts/*.sh
 После merge в `main` GitHub Action соберет и загрузит Docker‑образы в GHCR, а сервер только сделает `pull` и перезапуск (быстро и без сборки на сервере).
 
 ## Важно
+
 - Не используйте `docker compose down -v`, иначе удалятся данные.

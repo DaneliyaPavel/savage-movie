@@ -3,10 +3,7 @@ import { z } from 'zod'
 const emptyToUndefined = (value: unknown) =>
   typeof value === 'string' && value.trim() === '' ? undefined : value
 
-const optionalNonEmptyString = z.preprocess(
-  emptyToUndefined,
-  z.string().min(1).optional(),
-)
+const optionalNonEmptyString = z.preprocess(emptyToUndefined, z.string().min(1).optional())
 
 const PublicEnvSchema = z.object({
   NEXT_PUBLIC_API_URL: optionalNonEmptyString,
@@ -29,4 +26,3 @@ export const publicEnv = PublicEnvSchema.parse({
   NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
   NEXT_PUBLIC_SHOWREEL_PLAYBACK_ID: process.env.NEXT_PUBLIC_SHOWREEL_PLAYBACK_ID,
 })
-

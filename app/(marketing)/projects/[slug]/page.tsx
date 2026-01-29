@@ -5,14 +5,10 @@ import { notFound } from 'next/navigation'
 import { getProjectBySlugServer, getProjectsServer } from '@/features/projects/api'
 import { ProjectDetailClient } from './client'
 
-export default async function ProjectDetailPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>
-}) {
+export default async function ProjectDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   let project = null
-  
+
   try {
     project = await getProjectBySlugServer(slug)
   } catch (error) {
@@ -32,9 +28,10 @@ export default async function ProjectDetailPage({
   }
 
   const currentIndex = allProjects.findIndex(p => p.id === project.id)
-  const nextProject = currentIndex >= 0 && currentIndex < allProjects.length - 1
-    ? (allProjects[currentIndex + 1] ?? null)
-    : (allProjects[0] ?? null)
+  const nextProject =
+    currentIndex >= 0 && currentIndex < allProjects.length - 1
+      ? (allProjects[currentIndex + 1] ?? null)
+      : (allProjects[0] ?? null)
 
   return <ProjectDetailClient project={project} nextProject={nextProject} />
 }

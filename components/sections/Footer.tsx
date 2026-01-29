@@ -30,9 +30,7 @@ export function Footer() {
             animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
             transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           >
-            <h3 className="font-brand text-2xl md:text-3xl mb-6 text-[#FFFFFF]">
-              SAVAGE MOVIE
-            </h3>
+            <h3 className="font-brand text-2xl md:text-3xl mb-6 text-[#FFFFFF]">SAVAGE MOVIE</h3>
             <p className="text-base md:text-lg text-[#FFFFFF]/60 font-light leading-relaxed max-w-xs">
               Полный цикл видеопродакшна от разработки креативной концепции до публикации.
             </p>
@@ -121,7 +119,11 @@ export function Footer() {
               >
                 {[
                   { href: 'https://t.me/mariseven', icon: MessageCircle, label: 'Telegram' },
-                  { href: 'https://www.instagram.com/mari.seven/', icon: Instagram, label: 'Instagram' },
+                  {
+                    href: 'https://www.instagram.com/mari.seven/',
+                    icon: Instagram,
+                    label: 'Instagram',
+                  },
                   { href: 'https://youtube.com/@savagemovie', icon: Youtube, label: 'YouTube' },
                 ].map((social, index) => {
                   const Icon = social.icon
@@ -135,7 +137,11 @@ export function Footer() {
                       aria-label={social.label}
                       initial={{ opacity: 0, scale: 0 }}
                       animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
-                      transition={{ duration: 0.3, delay: 0.7 + index * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                      transition={{
+                        duration: 0.3,
+                        delay: 0.7 + index * 0.1,
+                        ease: [0.16, 1, 0.3, 1],
+                      }}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
                     >
@@ -155,8 +161,8 @@ export function Footer() {
           className="border-t border-[#1A1A1A] pt-8 text-center"
         >
           <p className="text-base text-[#FFFFFF]/40 font-light">
-            &copy; {new Date().getFullYear()}{" "}
-            <span className="font-brand">SAVAGE MOVIE</span>. Все права защищены.
+            &copy; {new Date().getFullYear()} <span className="font-brand">SAVAGE MOVIE</span>. Все
+            права защищены.
           </p>
         </motion.div>
       </motion.div>

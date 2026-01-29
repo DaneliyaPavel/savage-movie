@@ -62,7 +62,9 @@ export function ContactPageClient() {
                   <Mail className="w-5 h-5 text-[#FFFFFF]/60 group-hover:text-[#ff2936] transition-colors" />
                 </div>
                 <div>
-                  <p className="text-xs md:text-sm text-[#FFFFFF]/40 mb-1 uppercase tracking-wider">Email</p>
+                  <p className="text-xs md:text-sm text-[#FFFFFF]/40 mb-1 uppercase tracking-wider">
+                    Email
+                  </p>
                   <p className="text-base md:text-lg font-medium text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">
                     savage.movie@yandex.ru
                   </p>
@@ -81,7 +83,9 @@ export function ContactPageClient() {
                   <Phone className="w-5 h-5 text-[#FFFFFF]/60 group-hover:text-[#ff2936] transition-colors" />
                 </div>
                 <div>
-                  <p className="text-xs md:text-sm text-[#FFFFFF]/40 mb-1 uppercase tracking-wider">Телефон</p>
+                  <p className="text-xs md:text-sm text-[#FFFFFF]/40 mb-1 uppercase tracking-wider">
+                    Телефон
+                  </p>
                   <p className="text-base md:text-lg font-medium text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">
                     +7 921 402-18-39
                   </p>
@@ -103,7 +107,11 @@ export function ContactPageClient() {
             <div className="space-y-4">
               {[
                 { href: 'https://t.me/mariseven', icon: MessageCircle, label: 'Telegram' },
-                { href: 'https://www.instagram.com/mari.seven/', icon: Instagram, label: 'Instagram' },
+                {
+                  href: 'https://www.instagram.com/mari.seven/',
+                  icon: Instagram,
+                  label: 'Instagram',
+                },
                 { href: 'https://youtube.com/@savagemovie', icon: Youtube, label: 'YouTube' },
               ].map((social, index) => {
                 const Icon = social.icon
@@ -113,7 +121,11 @@ export function ContactPageClient() {
                     initial={{ opacity: 0, x: -20 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: 0.3 + index * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{
+                      duration: 0.6,
+                      delay: 0.3 + index * 0.1,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
                   >
                     <Link
                       href={social.href}

@@ -38,13 +38,13 @@ export default function BookingPage() {
           <CardContent>
             <Tabs defaultValue="consultation" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
-                {serviceTypes.map((service) => (
+                {serviceTypes.map(service => (
                   <TabsTrigger key={service.value} value={service.value}>
                     {service.label}
                   </TabsTrigger>
                 ))}
               </TabsList>
-              {serviceTypes.map((service) => (
+              {serviceTypes.map(service => (
                 <TabsContent key={service.value} value={service.value} className="mt-6">
                   <div className="aspect-[16/9] w-full">
                     <iframe

@@ -10,9 +10,18 @@ import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { EditorialCorrection } from '@/components/ui/editorial-correction'
 
 const services = [
-  { title: 'Коммерческий видеопродакшн', description: 'Рекламные ролики, брендовые фильмы, корпоративные видео' },
-  { title: 'ИИ-генерация контента', description: 'Инновационные решения с использованием искусственного интеллекта' },
-  { title: 'Музыкальные клипы', description: 'Креативные видео для артистов и музыкальных проектов' },
+  {
+    title: 'Коммерческий видеопродакшн',
+    description: 'Рекламные ролики, брендовые фильмы, корпоративные видео',
+  },
+  {
+    title: 'ИИ-генерация контента',
+    description: 'Инновационные решения с использованием искусственного интеллекта',
+  },
+  {
+    title: 'Музыкальные клипы',
+    description: 'Креативные видео для артистов и музыкальных проектов',
+  },
   { title: 'Полный цикл продакшна', description: 'От концепции до постпродакшна и публикации' },
 ]
 
@@ -29,8 +38,19 @@ export function ServicesSection() {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="mb-16 md:mb-24 editorial-spacing"
         >
-          <SectionTitle mark="arrow" markPosition="top-left" size="xl" className="text-[#FFFFFF] mb-8">
-            <EditorialCorrection wrong="Услуги" correct="Возможности" size="lg" inline delay={0.3} />
+          <SectionTitle
+            mark="arrow"
+            markPosition="top-left"
+            size="xl"
+            className="text-[#FFFFFF] mb-8"
+          >
+            <EditorialCorrection
+              wrong="Услуги"
+              correct="Возможности"
+              size="lg"
+              inline
+              delay={0.3}
+            />
           </SectionTitle>
           <motion.p
             initial={{ opacity: 0, y: 20 }}

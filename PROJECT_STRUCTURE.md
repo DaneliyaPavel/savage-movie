@@ -137,6 +137,7 @@ savage-movie/
 ## Переменные окружения (кратко)
 
 ### Frontend (public)
+
 - `NEXT_PUBLIC_API_URL`
 - `NEXT_PUBLIC_APP_URL`
 - `NEXT_PUBLIC_CALENDLY_URL`
@@ -147,6 +148,7 @@ savage-movie/
 - `NEXT_PUBLIC_SHOWREEL_PLAYBACK_ID`
 
 ### Frontend (server‑only)
+
 - `API_URL`
 - `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY`
 - `MUX_TOKEN_ID`, `MUX_TOKEN_SECRET`
@@ -154,6 +156,7 @@ savage-movie/
 - `UPLOAD_DIR`
 
 ### Backend
+
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
 - `JWT_SECRET`, `JWT_ALGORITHM`
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`

@@ -7,7 +7,12 @@ import { getCourseBySlugServer } from '@/features/courses/api'
 import { getEnrollmentByCourseServer } from '@/lib/api/enrollments'
 import { VideoPlayer } from '@/features/projects/components/VideoPlayer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
@@ -15,11 +20,7 @@ import { CheckCircle2, Play } from 'lucide-react'
 import type { Course } from '@/features/courses/api'
 import { cookies } from 'next/headers'
 
-export default async function DashboardCoursePage({
-  params,
-}: {
-  params: { slug: string }
-}) {
+export default async function DashboardCoursePage({ params }: { params: { slug: string } }) {
   // Проверяем аутентификацию
   const cookieStore = await cookies()
   const user = await getCurrentUserServer(cookieStore)
@@ -63,20 +64,13 @@ export default async function DashboardCoursePage({
     <div className="min-h-screen py-12 px-4">
       <div className="container mx-auto max-w-6xl">
         <div className="mb-8">
-          <Breadcrumbs 
-            items={[
-              { label: 'Личный кабинет', href: '/dashboard' },
-              { label: course.title }
-            ]} 
+          <Breadcrumbs
+            items={[{ label: 'Личный кабинет', href: '/dashboard' }, { label: course.title }]}
             className="mb-4"
           />
           <BackButton href="/dashboard" className="mb-4" />
-          <h1 className="font-heading font-bold text-4xl md:text-5xl mb-2">
-            {course.title}
-          </h1>
-          <p className="text-muted-foreground">
-            Прогресс: {enrollment.progress}%
-          </p>
+          <h1 className="font-heading font-bold text-4xl md:text-5xl mb-2">{course.title}</h1>
+          <p className="text-muted-foreground">Прогресс: {enrollment.progress}%</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -105,11 +99,7 @@ export default async function DashboardCoursePage({
                           className="w-full h-full"
                         />
                       ) : (
-                        <video
-                          src={videoUrl}
-                          controls
-                          className="w-full h-full object-cover"
-                        />
+                        <video src={videoUrl} controls className="w-full h-full object-cover" />
                       )
                     })()
                   ) : (
@@ -130,7 +120,7 @@ export default async function DashboardCoursePage({
               </CardHeader>
               <CardContent>
                 <Accordion type="single" collapsible className="w-full">
-                  {modulesWithLessons?.map((module) => (
+                  {modulesWithLessons?.map(module => (
                     <AccordionItem key={module.id} value={module.id}>
                       <AccordionTrigger>
                         <div className="flex items-center gap-2">
@@ -142,7 +132,7 @@ export default async function DashboardCoursePage({
                       </AccordionTrigger>
                       <AccordionContent>
                         <ul className="space-y-2 mt-2">
-                          {module.lessons?.map((lesson) => {
+                          {module.lessons?.map(lesson => {
                             return (
                               <li key={lesson.id}>
                                 <button className="w-full text-left flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors">
@@ -150,7 +140,8 @@ export default async function DashboardCoursePage({
                                   <span className="text-sm flex-1">{lesson.title}</span>
                                   {lesson.duration && (
                                     <span className="text-xs text-muted-foreground">
-                                      {Math.floor(lesson.duration / 60)}:{(lesson.duration % 60).toString().padStart(2, '0')}
+                                      {Math.floor(lesson.duration / 60)}:
+                                      {(lesson.duration % 60).toString().padStart(2, '0')}
                                     </span>
                                   )}
                                   <CheckCircle2 className="w-4 h-4 text-primary" />

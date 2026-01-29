@@ -92,7 +92,7 @@ export function ProjectDetailClient({ project, nextProject }: ProjectDetailClien
             <button
               type="button"
               onClick={() => setIsVideoOpen(true)}
-              onMouseEnter={(event) => {
+              onMouseEnter={event => {
                 setIsCursorVisible(true)
                 handleHeroMouseMove(event)
               }}
@@ -219,7 +219,11 @@ export function ProjectDetailClient({ project, nextProject }: ProjectDetailClien
                           initial={{ opacity: 0, y: 30 }}
                           whileInView={{ opacity: 1, y: 0 }}
                           viewport={{ once: true }}
-                          transition={{ duration: 0.6, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                          transition={{
+                            duration: 0.6,
+                            delay: index * 0.1,
+                            ease: [0.16, 1, 0.3, 1],
+                          }}
                           className="relative aspect-video overflow-hidden bg-[#050505] border border-[#1A1A1A] cursor-pointer group"
                           onClick={() => setSelectedImage(image)}
                         >
@@ -281,14 +285,21 @@ export function ProjectDetailClient({ project, nextProject }: ProjectDetailClien
           onClick={() => setSelectedImage(null)}
         >
           <motion.button
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation()
               setSelectedImage(null)
             }}
             className="absolute top-6 right-6 text-[#FFFFFF] hover:text-[#ff2936] transition-colors z-10"
             aria-label="Закрыть"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M6 6L18 18M18 6L6 18" />
             </svg>
           </motion.button>
@@ -297,7 +308,7 @@ export function ProjectDetailClient({ project, nextProject }: ProjectDetailClien
             animate={{ scale: 1 }}
             exit={{ scale: 0.9 }}
             className="max-w-7xl max-h-full"
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           >
             <Image
               src={selectedImage}

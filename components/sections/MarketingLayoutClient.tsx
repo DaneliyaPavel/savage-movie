@@ -28,7 +28,13 @@ export function MarketingLayoutClient({ children, navigation }: MarketingLayoutC
           {navigation}
           <PageTransitions>
             {/* Home page - fullscreen, no padding. Other pages - standard layout */}
-            <main className={isHomePage ? "bg-[#000000] min-h-screen" : "pt-16 md:pt-20 bg-[#000000] min-h-screen"}>
+            <main
+              className={
+                isHomePage
+                  ? 'bg-[#000000] min-h-screen'
+                  : 'pt-16 md:pt-20 bg-[#000000] min-h-screen'
+              }
+            >
               {children}
             </main>
           </PageTransitions>

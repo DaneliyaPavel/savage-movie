@@ -1,7 +1,7 @@
 /**
  * Server-side API клиент для Next.js
  * Используется в Server Components и API routes
- * 
+ *
  * В Docker используем имя сервиса 'backend', на хосте - localhost
  */
 import { baseApiRequest, type ApiRequestOptions } from './base'
@@ -15,7 +15,9 @@ export type { ApiError } from './base'
 /**
  * Получает токен из cookies (для server-side)
  */
-function getTokenFromCookies(cookies: { get: (name: string) => { value: string } | undefined }): string | null {
+function getTokenFromCookies(cookies: {
+  get: (name: string) => { value: string } | undefined
+}): string | null {
   return cookies.get('access_token')?.value || null
 }
 
@@ -30,7 +32,7 @@ export async function apiRequest<T>(
   const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
   const url = `${baseUrl}${normalizedEndpoint}`
-  
+
   const token = cookies ? getTokenFromCookies(cookies) : null
   const requestOptions: RequestInit = { ...options }
 

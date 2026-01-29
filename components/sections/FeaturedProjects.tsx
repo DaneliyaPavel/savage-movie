@@ -21,7 +21,10 @@ export function FeaturedProjects({ projects }: FeaturedProjectsProps) {
   }
 
   return (
-    <section id="projects" className="relative py-24 md:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden border-t border-[#1A1A1A] bg-[#000000]">
+    <section
+      id="projects"
+      className="relative py-24 md:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden border-t border-[#1A1A1A] bg-[#000000]"
+    >
       <div className="container mx-auto max-w-7xl">
         {/* Section Header */}
         <motion.div
@@ -32,7 +35,12 @@ export function FeaturedProjects({ projects }: FeaturedProjectsProps) {
           className="mb-16 md:mb-24 editorial-spacing"
         >
           <div className="mb-8">
-            <EditorialCorrection wrong="Избранные проекты" correct="Лучшие работы" size="xl" delay={0.2} />
+            <EditorialCorrection
+              wrong="Избранные проекты"
+              correct="Лучшие работы"
+              size="xl"
+              delay={0.2}
+            />
           </div>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -47,7 +55,7 @@ export function FeaturedProjects({ projects }: FeaturedProjectsProps) {
 
         {/* Projects Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-12 md:mb-16">
-          {projects.map((project) => (
+          {projects.map(project => (
             <WorkCard key={project.id} project={project} />
           ))}
         </div>

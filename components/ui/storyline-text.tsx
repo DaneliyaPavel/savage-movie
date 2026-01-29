@@ -45,8 +45,8 @@ export function StorylineText({
     if (!containerRef.current) return
 
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
+      entries => {
+        entries.forEach(entry => {
           if (entry.isIntersecting) {
             setShouldAnimate(true)
           }
@@ -86,13 +86,14 @@ export function StorylineText({
 
     for (let i = 0; i <= steps; i++) {
       const x = (width / steps) * i
-      const y = waveAmplitude * Math.sin((i / steps) * Math.PI * 2.5) + (width * 0.003) + offset
+      const y = waveAmplitude * Math.sin((i / steps) * Math.PI * 2.5) + width * 0.003 + offset
       points.push(x, y)
     }
 
-    return `M ${points[0]},${points[1]} ${points.slice(2).map((p, i) => 
-      i % 2 === 0 ? `L ${p}` : `,${p}`
-    ).join(' ')}`
+    return `M ${points[0]},${points[1]} ${points
+      .slice(2)
+      .map((p, i) => (i % 2 === 0 ? `L ${p}` : `,${p}`))
+      .join(' ')}`
   }
 
   // Множественные перечеркивания
@@ -114,7 +115,7 @@ export function StorylineText({
     >
       {parts.map((part, index) => {
         const isCrossedWord = part.toLowerCase() === crossedWord.toLowerCase()
-        
+
         if (isCrossedWord) {
           return (
             <span key={index} className="relative inline-block mx-1 align-baseline">
@@ -136,29 +137,33 @@ export function StorylineText({
                       key={strokeIndex}
                       d={path}
                       stroke="#FFFFFF"
-                      strokeWidth={strokeIndex === 0 ? "2.5" : "2"}
+                      strokeWidth={strokeIndex === 0 ? '2.5' : '2'}
                       fill="none"
                       strokeLinecap="round"
                       initial={{ pathLength: 0, opacity: 0 }}
-                      animate={shouldAnimate ? { pathLength: 1, opacity: strokeIndex === 0 ? 0.9 : 0.5 } : { pathLength: 0, opacity: 0 }}
-                      transition={{ 
-                        duration: 0.4, 
+                      animate={
+                        shouldAnimate
+                          ? { pathLength: 1, opacity: strokeIndex === 0 ? 0.9 : 0.5 }
+                          : { pathLength: 0, opacity: 0 }
+                      }
+                      transition={{
+                        duration: 0.4,
                         delay: delay + strokeIndex * 0.12,
-                        ease: [0.16, 1, 0.3, 1] 
+                        ease: [0.16, 1, 0.3, 1],
                       }}
                     />
                   ))}
                 </svg>
               </span>
-              
+
               {/* Замена рукописным текстом ниже - меньшего размера */}
               <motion.span
                 initial={{ opacity: 0, y: -5, x: -5 }}
                 animate={shouldAnimate ? { opacity: 1, y: 12, x: 4 } : { opacity: 0, y: -5, x: -5 }}
-                transition={{ 
-                  duration: 0.5, 
-                  delay: delay + 0.6, 
-                  ease: [0.16, 1, 0.3, 1] 
+                transition={{
+                  duration: 0.5,
+                  delay: delay + 0.6,
+                  ease: [0.16, 1, 0.3, 1],
                 }}
                 className="absolute top-full left-0 text-sm md:text-base lg:text-lg italic text-[#ff2936] whitespace-nowrap transform rotate-[-1deg] mt-1"
                 style={{
@@ -172,7 +177,7 @@ export function StorylineText({
             </span>
           )
         }
-        
+
         return <span key={index}>{part}</span>
       })}
     </motion.div>

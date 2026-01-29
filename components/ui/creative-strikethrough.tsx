@@ -56,8 +56,8 @@ export function CreativeStrikethrough({
     if (!wrongRef.current) return
 
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
+      entries => {
+        entries.forEach(entry => {
           if (entry.isIntersecting) {
             setShouldAnimate(true)
           }
@@ -109,9 +109,10 @@ export function CreativeStrikethrough({
       points.push(x, y)
     }
 
-    return `M ${points[0]},${points[1]} ${points.slice(2).map((p, i) => 
-      i % 2 === 0 ? `L ${p}` : `,${p}`
-    ).join(' ')}`
+    return `M ${points[0]},${points[1]} ${points
+      .slice(2)
+      .map((p, i) => (i % 2 === 0 ? `L ${p}` : `,${p}`))
+      .join(' ')}`
   }
 
   // Несколько перечеркиваний для эффекта "как ручкой" - зеленым цветом
@@ -154,7 +155,7 @@ export function CreativeStrikethrough({
               key={index}
               d={path}
               stroke="#00FF00" // Зеленый цвет для перечеркивания
-              strokeWidth={index === 0 ? "3" : "2"}
+              strokeWidth={index === 0 ? '3' : '2'}
               fill="none"
               strokeLinecap="round"
               strokeDasharray="1 0"

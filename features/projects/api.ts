@@ -58,7 +58,7 @@ export async function getProjectById(id: string): Promise<Project> {
  * Получить список проектов (server-side)
  */
 export async function getProjectsServer(
-  category?: string, 
+  category?: string,
   featured?: boolean,
   cookies?: { get: (name: string) => { value: string } | undefined }
 ): Promise<Project[]> {
@@ -144,7 +144,9 @@ export interface ProjectUpdate {
 /**
  * Обновить порядок проектов
  */
-export async function updateProjectsOrder(updates: Array<{ id: string; display_order: number }>): Promise<void> {
+export async function updateProjectsOrder(
+  updates: Array<{ id: string; display_order: number }>
+): Promise<void> {
   return apiPost<void>('/api/projects/reorder', { updates })
 }
 

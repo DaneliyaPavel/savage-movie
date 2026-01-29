@@ -18,7 +18,7 @@ export async function GET(
   try {
     const { path: pathArray } = await params
     const filePath = resolveSafeChildPath(UPLOAD_DIR_RESOLVED, pathArray)
-    
+
     // Защита от path traversal
     if (!filePath) {
       return new NextResponse('Forbidden', { status: 403 })
@@ -28,14 +28,14 @@ export async function GET(
     if (!existsSync(filePath)) {
       return new NextResponse('File not found', { status: 404 })
     }
-    
+
     // Читаем файл
     const fileBuffer = await readFile(filePath)
-    
+
     // Определяем content-type по расширению
     const ext = filePath.split('.').pop()?.toLowerCase()
     const contentType = getContentType(ext || '')
-    
+
     // Возвращаем файл с правильными заголовками
     return new NextResponse(fileBuffer, {
       headers: {

@@ -44,7 +44,7 @@ export function ProjectCard({
   videoPlaybackId: propsVideoPlaybackId,
 }: ProjectCardProps) {
   const [isHovered, setIsHovered] = useState(false)
-  
+
   // Определяем playback ID
   const playbackId = propsVideoPlaybackId || (videoUrl ? getPlaybackId(videoUrl) : null)
   const hasVideo = !!playbackId || !!videoUrl
@@ -91,13 +91,7 @@ export function ProjectCard({
                     className="w-full h-full object-cover"
                   />
                 ) : videoUrl ? (
-                  <video
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    className="w-full h-full object-cover"
-                  >
+                  <video autoPlay muted loop playsInline className="w-full h-full object-cover">
                     <source src={videoUrl} type="video/mp4" />
                   </video>
                 ) : null}
@@ -115,7 +109,7 @@ export function ProjectCard({
             )}
 
             <GrainOverlay />
-            
+
             {/* Overlay с градиентом */}
             <div className="absolute inset-0 bg-gradient-to-t from-[#000000]/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
@@ -134,7 +128,7 @@ export function ProjectCard({
             <h3 className="text-xl md:text-2xl lg:text-3xl font-heading font-bold text-[#FFFFFF] mb-2 group-hover:text-[#ff2936] transition-colors leading-tight">
               {title}
             </h3>
-            
+
             {/* Подчеркивание при hover */}
             <motion.div
               className="mt-4 h-[1px] bg-[#FFFFFF]"

@@ -137,9 +137,9 @@ export async function getCurrentUser(): Promise<User | null> {
 /**
  * Получение информации о текущем пользователе (server-side)
  */
-export async function getCurrentUserServer(
-  cookies?: { get: (name: string) => { value: string } | undefined }
-): Promise<User | null> {
+export async function getCurrentUserServer(cookies?: {
+  get: (name: string) => { value: string } | undefined
+}): Promise<User | null> {
   try {
     const { apiGet: apiGetServer } = await import('./server')
     return await apiGetServer<User>('/api/auth/me', cookies)
@@ -152,9 +152,7 @@ export async function getCurrentUserServer(
  * Обновление токена
  */
 export async function refreshToken(): Promise<TokenResponse> {
-  const refreshToken = typeof window !== 'undefined'
-    ? localStorage.getItem('refresh_token')
-    : null
+  const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null
 
   if (!refreshToken) {
     throw new Error('Refresh token не найден')

@@ -16,10 +16,7 @@ export async function POST(request: NextRequest) {
     if (!API_URL) {
       if (process.env.NODE_ENV === 'production') {
         logger.error('API_URL is not configured', null, { route: '/api/payments/webhook' })
-        return NextResponse.json(
-          { error: 'Ошибка конфигурации сервера' },
-          { status: 500 }
-        )
+        return NextResponse.json({ error: 'Ошибка конфигурации сервера' }, { status: 500 })
       }
       API_URL = 'http://localhost:8001'
     }
@@ -52,9 +49,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(responseBody, { status: backendResponse.status })
   } catch (error) {
     logger.error('Ошибка обработки webhook', error, { route: '/api/payments/webhook' })
-    return NextResponse.json(
-      { error: 'Ошибка обработки webhook' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Ошибка обработки webhook' }, { status: 500 })
   }
 }

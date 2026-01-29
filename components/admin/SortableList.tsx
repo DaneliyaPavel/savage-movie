@@ -30,14 +30,9 @@ interface SortableItemProps<T> {
 }
 
 function SortableItem<T>({ id, item, children }: SortableItemProps<T>) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -91,8 +86,8 @@ export function SortableList<T>({
     const { active, over } = event
 
     if (over && active.id !== over.id) {
-      const oldIndex = items.findIndex((item) => getItemId(item) === active.id)
-      const newIndex = items.findIndex((item) => getItemId(item) === over.id)
+      const oldIndex = items.findIndex(item => getItemId(item) === active.id)
+      const newIndex = items.findIndex(item => getItemId(item) === over.id)
 
       const newItems = arrayMove(items, oldIndex, newIndex)
       onReorder(newItems)
@@ -100,22 +95,11 @@ export function SortableList<T>({
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={handleDragEnd}
-    >
-      <SortableContext
-        items={items.map(getItemId)}
-        strategy={verticalListSortingStrategy}
-      >
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={items.map(getItemId)} strategy={verticalListSortingStrategy}>
         <div className={`space-y-2 ${className}`}>
-          {items.map((item) => (
-            <SortableItem
-              key={getItemId(item)}
-              id={getItemId(item)}
-              item={item}
-            >
+          {items.map(item => (
+            <SortableItem key={getItemId(item)} id={getItemId(item)} item={item}>
               {children}
             </SortableItem>
           ))}

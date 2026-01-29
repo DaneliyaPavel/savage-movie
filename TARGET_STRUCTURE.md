@@ -329,6 +329,7 @@ savage-movie/
 **Цель**: Единые env- и lint-конвенции, минимальные проверки, базовые инструменты.
 
 #### Задачи
+
 1. **Env валидация**:
    - Добавить `NEXT_PUBLIC_SHOWREEL_PLAYBACK_ID` в `lib/env.ts`
    - Проверить все прямые обращения к `process.env` и заменить на `lib/env.ts`
@@ -345,6 +346,7 @@ savage-movie/
    - Проверить другие артефакты
 
 #### Файлы/папки
+
 - `.env.example` (дополнить `NEXT_PUBLIC_SHOWREEL_PLAYBACK_ID`)
 - `backend/requirements-dev.txt`
 - `backend/.ruff.toml` (опционально)
@@ -353,9 +355,11 @@ savage-movie/
 - `.editorconfig` (опционально)
 
 #### Импорты
+
 - Не затрагиваем
 
 #### Проверки
+
 - Frontend: `npm run lint`, `npm run type-check`, `npm run test`, `npm run build`
 - Backend: `pip install -r backend/requirements-dev.txt`, `ruff check backend/`, `mypy backend/`
 
@@ -366,6 +370,7 @@ savage-movie/
 **Цель**: Разграничить route-specific и shared/feature код, убрать дубли, создать feature-модули.
 
 #### Задачи
+
 1. **Создать структуру `features/`**:
    - `features/projects/` — компоненты, API, типы, утилиты
    - `features/courses/` — компоненты, API, типы
@@ -400,6 +405,7 @@ savage-movie/
    - Переместить `Navigation.tsx`, `NavigationWrapper.tsx`, `Footer.tsx`, `UserMenu.tsx`
 
 #### Файлы/папки
+
 - Создать `features/*/`
 - Переместить компоненты из `components/features/` и `components/sections/`
 - Создать `app/*/_components/` для route-specific компонентов
@@ -407,10 +413,12 @@ savage-movie/
 - Переместить integrations
 
 #### Импорты
+
 - Обновить на `@/features/*` или `@/components/*`
 - Убедиться, что `tsconfig.json` paths покрывают новые пути
 
 #### Проверки
+
 - `npm run lint`, `npm run type-check`, `npm run test`, `npm run build`
 
 ---
@@ -420,6 +428,7 @@ savage-movie/
 **Цель**: Усилить Clean Architecture без breaking changes API, унифицировать нейминг.
 
 #### Задачи
+
 1. **Создать use cases**:
    - `application/use_cases/projects/` — create, update, delete
    - `application/use_cases/courses/` — create, update
@@ -449,6 +458,7 @@ savage-movie/
    - Переместить в `_trash` для проверки
 
 #### Файлы/папки
+
 - Создать `application/use_cases/`
 - Создать `application/services/unit_of_work.py`
 - Создать `interfaces/mappers/`
@@ -458,10 +468,12 @@ savage-movie/
 - Создать `delivery/api/dependencies.py`
 
 #### Импорты
+
 - Обновить ссылки на репозитории/схемы после переименований
 - Обновить роутеры для использования use cases и UoW
 
 #### Проверки
+
 - `alembic -c backend/alembic.ini upgrade head`
 - `uvicorn app.main:app --host 0.0.0.0 --port 8000`
 - `ruff check backend/`
@@ -474,6 +486,7 @@ savage-movie/
 **Цель**: Исключить дрейф типов через генерацию TypeScript типов из OpenAPI.
 
 #### Задачи
+
 1. **Настроить генерацию типов**:
    - Добавить `openapi-typescript` в `package.json`
    - Создать скрипт генерации: `npm run generate:types`
@@ -487,14 +500,17 @@ savage-movie/
    - Добавить проверку синхронизации типов в CI (опционально)
 
 #### Файлы/папки
+
 - Создать `contracts/generated/`
 - Добавить скрипт в `package.json`
 - Обновить `lib/api/*.ts`
 
 #### Импорты
+
 - Перевести `lib/api/*.ts` на типы из `contracts/generated/api.ts`
 
 #### Проверки
+
 - `npm run generate:types`
 - `npm run type-check`
 - `npm run test`
@@ -506,6 +522,7 @@ savage-movie/
 **Цель**: Удалить только подтвержденные кандидаты через soft delete.
 
 #### Задачи
+
 1. **Soft delete**:
    - Переместить кандидатов в `/_trash`
    - Структура `_trash/` повторяет исходную структуру
@@ -519,6 +536,7 @@ savage-movie/
    - После подтверждения работоспособности удалить `/_trash`
 
 #### Кандидаты (из AUDIT.md)
+
 - Компоненты: `ShowreelHero.tsx`, `HeroSection.tsx`, `HeroSectionClient.tsx`, и др.
 - Page клиенты: `home-client.tsx`, `projects/client.tsx`, и др.
 - Lib: `lib/email/resend.ts`
@@ -526,13 +544,16 @@ savage-movie/
 - Пустые директории: `types/`
 
 #### Файлы/папки
+
 - Создать `/_trash/`
 - Переместить кандидатов
 
 #### Импорты
+
 - Удалить/обновить устаревшие импорты
 
 #### Проверки
+
 - `npm run lint`, `npm run type-check`, `npm run test`, `npm run build`
 - Backend smoke: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
 - Docker: `docker compose -f docker-compose.yml up --build`
@@ -544,6 +565,7 @@ savage-movie/
 **Цель**: Убрать дублирование скриптов, обновить документацию.
 
 #### Задачи
+
 1. **Унифицировать скрипты**:
    - Объединить `scripts/create-admin*.sh` → `scripts/create-admin.sh`
    - Удалить `docker-start.sh` (дублирует docker-compose)
@@ -558,13 +580,16 @@ savage-movie/
    - Добавить healthchecks для backend/frontend (опционально)
 
 #### Файлы/папки
+
 - Удалить дублирующие скрипты
 - Обновить `README.md`, `PROJECT_STRUCTURE.md`
 
 #### Импорты
+
 - Не затрагиваем
 
 #### Проверки
+
 - Проверить работу скриптов
 - Проверить актуальность документации
 
@@ -588,6 +613,7 @@ savage-movie/
 ## Вопросы перед Этапом 3 (максимум 3)
 
 ### Вопрос 1: Источник истины для API
+
 **Что является источником истины для API: FastAPI или Next API routes?**
 
 - **Текущее состояние**: Next API routes частично дублируют логику (contact валидация, payments create)
@@ -601,6 +627,7 @@ savage-movie/
 ---
 
 ### Вопрос 2: Booking модель
+
 **Нужно ли сохранять `backend/app/infrastructure/db/models/booking.py`?**
 
 - **Текущее состояние**: Модель существует, но нет репозитория/роутера/схемы. Используется только Calendly iframe
@@ -614,6 +641,7 @@ savage-movie/
 ---
 
 ### Вопрос 3: Генерация типов из OpenAPI
+
 **Принимаем ли генерацию типов из OpenAPI как обязательный шаг?**
 
 - **Текущее состояние**: Ручные TypeScript интерфейсы в `lib/api/*.ts`

@@ -30,9 +30,12 @@ export function HeroSection({
       const loadSettings = async () => {
         try {
           const settings = await getSettings()
-          const heroVideoUrl = typeof settings.hero_video_url === 'string' ? settings.hero_video_url : null
+          const heroVideoUrl =
+            typeof settings.hero_video_url === 'string' ? settings.hero_video_url : null
           const heroPlaybackId =
-            typeof settings.hero_video_playback_id === 'string' ? settings.hero_video_playback_id : null
+            typeof settings.hero_video_playback_id === 'string'
+              ? settings.hero_video_playback_id
+              : null
 
           if (heroVideoUrl) setVideoUrl(heroVideoUrl)
           if (heroPlaybackId) setVideoPlaybackId(heroPlaybackId)
@@ -74,13 +77,7 @@ export function HeroSection({
           </div>
         ) : videoUrl ? (
           <div className="absolute inset-0 w-full h-full">
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="w-full h-full object-cover"
-            >
+            <video autoPlay muted loop playsInline className="w-full h-full object-cover">
               <source src={videoUrl} type="video/mp4" />
             </video>
           </div>
@@ -146,7 +143,7 @@ export function HeroSection({
             className="mb-20 md:mb-24 max-w-3xl"
           >
             <p className="text-editorial text-[#FFFFFF]/80 font-light leading-relaxed">
-              С 2010 года мы используем креативность для продвижения самых амбициозных брендов, 
+              С 2010 года мы используем креативность для продвижения самых амбициозных брендов,
               организаций и проектов в России и за её пределами.
             </p>
           </motion.div>

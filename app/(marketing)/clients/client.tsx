@@ -31,8 +31,8 @@ export function ClientsPageClient({ clients }: ClientsPageClientProps) {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-xl md:text-2xl text-muted-foreground font-light max-w-3xl"
           >
-            Мы работаем с амбициозными брендами, организациями и проектами, 
-            помогая им достигать своих целей через креативный видеоконтент.
+            Мы работаем с амбициозными брендами, организациями и проектами, помогая им достигать
+            своих целей через креативный видеоконтент.
           </motion.p>
         </motion.div>
 

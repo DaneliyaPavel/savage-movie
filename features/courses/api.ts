@@ -151,6 +151,8 @@ export async function deleteCourse(id: string): Promise<void> {
 /**
  * Обновить порядок курсов
  */
-export async function updateCoursesOrder(updates: Array<{ id: string; display_order: number }>): Promise<void> {
+export async function updateCoursesOrder(
+  updates: Array<{ id: string; display_order: number }>
+): Promise<void> {
   return apiPost<void>('/api/courses/reorder', { updates })
 }

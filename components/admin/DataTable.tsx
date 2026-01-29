@@ -59,7 +59,7 @@ export function DataTable<T extends object>({
           <Input
             placeholder={searchPlaceholder}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
             className="pl-10"
           />
         </div>
@@ -69,7 +69,7 @@ export function DataTable<T extends object>({
         <Table>
           <TableHeader>
             <TableRow>
-              {columns.map((column) => (
+              {columns.map(column => (
                 <TableHead key={String(column.key)}>{column.label}</TableHead>
               ))}
               {(onEdit || onDelete) && <TableHead className="w-[100px]">Действия</TableHead>}
@@ -78,14 +78,17 @@ export function DataTable<T extends object>({
           <TableBody>
             {filteredData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length + (onEdit || onDelete ? 1 : 0)} className="text-center text-muted-foreground">
+                <TableCell
+                  colSpan={columns.length + (onEdit || onDelete ? 1 : 0)}
+                  className="text-center text-muted-foreground"
+                >
                   Нет данных
                 </TableCell>
               </TableRow>
             ) : (
-              filteredData.map((item) => (
+              filteredData.map(item => (
                 <TableRow key={getRowId(item)}>
-                  {columns.map((column) => (
+                  {columns.map(column => (
                     <TableCell key={String(column.key)}>
                       {column.render
                         ? column.render(item)
@@ -96,20 +99,12 @@ export function DataTable<T extends object>({
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {onEdit && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onEdit(item)}
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => onEdit(item)}>
                             <Pencil className="w-4 h-4" />
                           </Button>
                         )}
                         {onDelete && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onDelete(item)}
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => onDelete(item)}>
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
                         )}

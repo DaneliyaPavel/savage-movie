@@ -59,7 +59,7 @@ export default function CoursesPage() {
   const handleReorder = async (reorderedCourses: Course[]) => {
     // Обновляем локальное состояние
     setCourses(reorderedCourses)
-    
+
     // Обновляем порядок на сервере
     try {
       const updates = reorderedCourses.map((course, index) => ({
@@ -113,12 +113,7 @@ export default function CoursesPage() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <Breadcrumbs 
-          items={[
-            { label: 'Админ-панель', href: '/admin' },
-            { label: 'Курсы' }
-          ]} 
-        />
+        <Breadcrumbs items={[{ label: 'Админ-панель', href: '/admin' }, { label: 'Курсы' }]} />
       </div>
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -126,7 +121,10 @@ export default function CoursesPage() {
           <p className="text-muted-foreground">Управление курсами</p>
         </div>
         <Link href="/admin/courses/new">
-          <Button><Plus className="w-4 h-4 mr-2" />Добавить курс</Button>
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            Добавить курс
+          </Button>
         </Link>
       </div>
 
@@ -138,15 +136,16 @@ export default function CoursesPage() {
         <SortableList
           items={courses}
           onReorder={handleReorder}
-          getItemId={(course) => course.id}
+          getItemId={course => course.id}
           className="max-w-2xl"
         >
-          {(course) => (
+          {course => (
             <div className="flex items-center justify-between w-full">
               <div>
                 <div className="font-medium">{course.title}</div>
                 <div className="text-sm text-muted-foreground">
-                  {categoryLabels[course.category] || course.category} • {course.price.toLocaleString('ru-RU')} ₽
+                  {categoryLabels[course.category] || course.category} •{' '}
+                  {course.price.toLocaleString('ru-RU')} ₽
                 </div>
               </div>
               <div className="flex gap-2">
@@ -178,12 +177,12 @@ export default function CoursesPage() {
         <DataTable
           data={courses}
           columns={columns}
-          onEdit={(course) => router.push(`/admin/courses/${course.id}/edit`)}
-          onDelete={(course) => {
+          onEdit={course => router.push(`/admin/courses/${course.id}/edit`)}
+          onDelete={course => {
             setCourseToDelete(course)
             setDeleteDialogOpen(true)
           }}
-          getRowId={(course) => course.id}
+          getRowId={course => course.id}
         />
       </div>
 
@@ -192,12 +191,17 @@ export default function CoursesPage() {
           <DialogHeader>
             <DialogTitle>Удалить курс?</DialogTitle>
             <DialogDescription>
-              Вы уверены, что хотите удалить курс &quot;{courseToDelete?.title}&quot;? Это действие нельзя отменить.
+              Вы уверены, что хотите удалить курс &quot;{courseToDelete?.title}&quot;? Это действие
+              нельзя отменить.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Отмена</Button>
-            <Button variant="destructive" onClick={handleDelete}>Удалить</Button>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Отмена
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Удалить
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

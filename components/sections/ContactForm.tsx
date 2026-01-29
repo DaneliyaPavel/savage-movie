@@ -55,7 +55,7 @@ export function ContactForm({ className = '' }: ContactFormProps) {
   })
 
   const budgetValue = form.watch('budget')?.[0] || 50000
-  
+
   // Motion value и spring для плавной анимации numeric readout
   const budgetMotionValue = useMotionValue(budgetValue)
   const budgetSpring = useSpring(budgetMotionValue, {
@@ -63,7 +63,7 @@ export function ContactForm({ className = '' }: ContactFormProps) {
     stiffness: 300,
     mass: 0.5,
   })
-  
+
   // Обновляем motion value при изменении budget
   React.useEffect(() => {
     budgetMotionValue.set(budgetValue)
@@ -73,7 +73,7 @@ export function ContactForm({ className = '' }: ContactFormProps) {
   const [displayBudget, setDisplayBudget] = React.useState(budgetValue)
 
   React.useEffect(() => {
-    const unsubscribe = budgetSpring.on('change', (latest) => {
+    const unsubscribe = budgetSpring.on('change', latest => {
       setDisplayBudget(Math.round(latest))
     })
     return () => unsubscribe()
@@ -99,7 +99,7 @@ export function ContactForm({ className = '' }: ContactFormProps) {
 
       setIsSuccess(true)
       form.reset()
-      
+
       setTimeout(() => {
         setIsSuccess(false)
       }, 5000)
@@ -112,7 +112,9 @@ export function ContactForm({ className = '' }: ContactFormProps) {
   }
 
   return (
-    <section className={`relative py-24 md:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden border-t border-[#1A1A1A] bg-[#000000] ${className}`}>
+    <section
+      className={`relative py-24 md:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden border-t border-[#1A1A1A] bg-[#000000] ${className}`}
+    >
       <div className="container mx-auto max-w-4xl relative z-10">
         {/* Заголовок */}
         <motion.div
@@ -146,16 +148,14 @@ export function ContactForm({ className = '' }: ContactFormProps) {
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ type: "spring", delay: 0.2, stiffness: 200, damping: 15 }}
+                transition={{ type: 'spring', delay: 0.2, stiffness: 200, damping: 15 }}
               >
                 <CheckCircle2 className="w-20 h-20 text-green-500 mb-6" />
               </motion.div>
               <h3 className="text-3xl md:text-4xl font-heading font-bold mb-3 text-[#FFFFFF]">
                 Спасибо за заявку!
               </h3>
-              <p className="text-lg text-[#FFFFFF]/60">
-                Мы свяжемся с вами в ближайшее время
-              </p>
+              <p className="text-lg text-[#FFFFFF]/60">Мы свяжемся с вами в ближайшее время</p>
             </motion.div>
           ) : (
             <Form {...form}>
@@ -229,7 +229,8 @@ export function ContactForm({ className = '' }: ContactFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-base font-medium mb-3 text-[#FFFFFF]/80">
-                          Телефон <span className="text-[#FFFFFF]/40 font-normal">(необязательно)</span>
+                          Телефон{' '}
+                          <span className="text-[#FFFFFF]/40 font-normal">(необязательно)</span>
                         </FormLabel>
                         <FormControl>
                           <Input

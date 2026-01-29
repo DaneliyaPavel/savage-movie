@@ -71,7 +71,7 @@ export function CourseCard({
                   </motion.span>
                 </div>
               )}
-              
+
               {/* Category Badge */}
               <div className="absolute top-4 left-4">
                 <div className="px-3 py-1 bg-[#000000]/80 backdrop-blur-sm border border-[#1A1A1A]">
@@ -88,7 +88,7 @@ export function CourseCard({
               <h3 className="text-xl md:text-2xl lg:text-3xl font-heading font-bold text-[#FFFFFF] mb-4 group-hover:text-[#ff2936] transition-colors leading-tight">
                 {title}
               </h3>
-              
+
               {/* Meta */}
               <div className="flex items-center gap-4 text-sm text-[#FFFFFF]/40 mb-6">
                 {duration && (

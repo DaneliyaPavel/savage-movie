@@ -29,7 +29,7 @@ export function ShowreelHero({ playbackId }: ShowreelHeroProps) {
     <div className="relative w-full h-screen h-[100svh] bg-[#000000] overflow-hidden">
       {/* Grain Overlay */}
       <GrainOverlay />
-      
+
       {/* Video Player - Fullscreen */}
       <motion.div
         initial={{ opacity: 0 }}

@@ -111,9 +111,10 @@ export default function NewProjectPage() {
         orientation: values.orientation || 'horizontal',
         images: images.length > 0 ? images : null,
         tools: tools.length > 0 ? tools : null,
-        behind_scenes: [...behindScenes, ...behindScenesFiles].length > 0 
-          ? [...behindScenes, ...behindScenesFiles] 
-          : null,
+        behind_scenes:
+          [...behindScenes, ...behindScenesFiles].length > 0
+            ? [...behindScenes, ...behindScenesFiles]
+            : null,
         is_featured: values.is_featured || false,
         mux_playback_id: values.mux_playback_id || null,
         title_ru: values.title_ru || null,
@@ -138,12 +139,12 @@ export default function NewProjectPage() {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
-        <Breadcrumbs 
+        <Breadcrumbs
           items={[
             { label: 'Админ-панель', href: '/admin' },
             { label: 'Проекты', href: '/admin/projects' },
-            { label: 'Создать проект' }
-          ]} 
+            { label: 'Создать проект' },
+          ]}
           className="mb-4"
         />
         <BackButton href="/admin/projects" className="mb-4" />
@@ -152,7 +153,9 @@ export default function NewProjectPage() {
         <div className="bg-muted/50 p-4 rounded-lg text-sm">
           <p className="font-medium mb-2">💡 Подсказка:</p>
           <p className="text-muted-foreground">
-            Для отображения проекта на главной странице обязательно заполните: <strong>Mux Playback ID</strong>, <strong>URL миниатюры</strong> и отметьте <strong>&quot;Показать на главной странице&quot;</strong>.
+            Для отображения проекта на главной странице обязательно заполните:{' '}
+            <strong>Mux Playback ID</strong>, <strong>URL миниатюры</strong> и отметьте{' '}
+            <strong>&quot;Показать на главной странице&quot;</strong>.
           </p>
         </div>
       </div>
@@ -168,7 +171,7 @@ export default function NewProjectPage() {
                 <FormControl>
                   <Input
                     {...field}
-                    onChange={(e) => {
+                    onChange={e => {
                       handleTitleChange(e.target.value)
                     }}
                   />
@@ -271,7 +274,9 @@ export default function NewProjectPage() {
                     <Input {...field} placeholder="Qf6mbMSob4v5nv7c6Mbf7TAipjM01PfHe01bDaDC1otOM" />
                   </FormControl>
                   <FormMessage />
-                  <p className="text-xs text-muted-foreground">Обязательно для отображения на главной странице</p>
+                  <p className="text-xs text-muted-foreground">
+                    Обязательно для отображения на главной странице
+                  </p>
                 </FormItem>
               )}
             />
@@ -295,7 +300,9 @@ export default function NewProjectPage() {
                   </SelectContent>
                 </Select>
                 <FormMessage />
-                <p className="text-xs text-muted-foreground">Используется для корректного отображения в списке проектов</p>
+                <p className="text-xs text-muted-foreground">
+                  Используется для корректного отображения в списке проектов
+                </p>
               </FormItem>
             )}
           />
@@ -311,7 +318,9 @@ export default function NewProjectPage() {
                     <Input {...field} placeholder="https://example.com/thumbnail.jpg" />
                   </FormControl>
                   <FormMessage />
-                  <p className="text-xs text-muted-foreground">Обязательно для отображения на главной странице</p>
+                  <p className="text-xs text-muted-foreground">
+                    Обязательно для отображения на главной странице
+                  </p>
                 </FormItem>
               )}
             />
@@ -334,31 +343,34 @@ export default function NewProjectPage() {
           {/* Раздел: Изображения */}
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold mb-4">Изображения проекта</h3>
-            
+
             {/* Thumbnail Strip - для левого столбца на /projects */}
             <div className="mb-6 p-4 bg-muted/30 rounded-lg border border-border">
               <label className="text-sm font-medium mb-2 block">
                 📸 Изображения для левого столбца (Thumbnail Strip) ⭐
               </label>
               <p className="text-xs text-muted-foreground mb-3">
-                <strong>Где отображается:</strong> Левый столбец на странице <code className="text-xs bg-background px-1 py-0.5 rounded">/projects</code> (до 5 изображений)
+                <strong>Где отображается:</strong> Левый столбец на странице{' '}
+                <code className="text-xs bg-background px-1 py-0.5 rounded">/projects</code> (до 5
+                изображений)
               </p>
               <p className="text-xs text-muted-foreground mb-3">
-                <strong>Что загружать:</strong> Скриншоты/кадры из видео проекта. Первые 5 изображений будут использоваться для thumbnail strip.
+                <strong>Что загружать:</strong> Скриншоты/кадры из видео проекта. Первые 5
+                изображений будут использоваться для thumbnail strip.
               </p>
               <div className="mb-2">
                 <FileUpload
                   type="images"
                   multiple
                   existingFiles={images.slice(0, 5)}
-                  onMultipleUpload={(urls) => {
+                  onMultipleUpload={urls => {
                     // Дополняем существующие изображения новыми (первые 5 для thumbnail strip)
                     const currentThumbnails = images.slice(0, 5)
                     const newThumbnails = [...currentThumbnails, ...urls].slice(0, 5) // Берем только первые 5
                     const galleryImages = images.slice(5)
                     setImages([...newThumbnails, ...galleryImages])
                   }}
-                  onRemove={(url) => {
+                  onRemove={url => {
                     const index = images.indexOf(url)
                     if (index !== -1) {
                       setImages(images.filter((_, i) => i !== index))
@@ -377,23 +389,26 @@ export default function NewProjectPage() {
                 🖼️ Галерея проекта (для детальной страницы)
               </label>
               <p className="text-xs text-muted-foreground mb-3">
-                <strong>Где отображается:</strong> Секция &quot;Галерея&quot; на странице конкретного проекта <code className="text-xs bg-background px-1 py-0.5 rounded">/projects/[slug]</code>
+                <strong>Где отображается:</strong> Секция &quot;Галерея&quot; на странице
+                конкретного проекта{' '}
+                <code className="text-xs bg-background px-1 py-0.5 rounded">/projects/[slug]</code>
               </p>
               <p className="text-xs text-muted-foreground mb-3">
-                <strong>Что загружать:</strong> Основные изображения проекта, финальные кадры, постеры. Все изображения, начиная с 6-го, будут показаны в галерее.
+                <strong>Что загружать:</strong> Основные изображения проекта, финальные кадры,
+                постеры. Все изображения, начиная с 6-го, будут показаны в галерее.
               </p>
               <div className="mb-2">
                 <FileUpload
                   type="images"
                   multiple
                   existingFiles={images.slice(5)}
-                  onMultipleUpload={(urls) => {
+                  onMultipleUpload={urls => {
                     // Дополняем галерею новыми изображениями (первые 5 остаются для thumbnail strip)
                     const thumbnails = images.slice(0, 5)
                     const gallery = images.slice(5)
                     setImages([...thumbnails, ...gallery, ...urls])
                   }}
-                  onRemove={(url) => {
+                  onRemove={url => {
                     const index = images.indexOf(url)
                     if (index !== -1 && index >= 5) {
                       setImages(images.filter((_, i) => i !== index))
@@ -412,29 +427,34 @@ export default function NewProjectPage() {
                 🎬 За кадром (Behind the Scenes)
               </label>
               <p className="text-xs text-muted-foreground mb-3">
-                <strong>Где отображается:</strong> Секция &quot;За кадром&quot; на странице конкретного проекта <code className="text-xs bg-background px-1 py-0.5 rounded">/projects/[slug]</code>
+                <strong>Где отображается:</strong> Секция &quot;За кадром&quot; на странице
+                конкретного проекта{' '}
+                <code className="text-xs bg-background px-1 py-0.5 rounded">/projects/[slug]</code>
               </p>
               <p className="text-xs text-muted-foreground mb-3">
-                <strong>Что загружать:</strong> Фото со съемочной площадки, процесс работы, бекстейдж, рабочие моменты.
+                <strong>Что загружать:</strong> Фото со съемочной площадки, процесс работы,
+                бекстейдж, рабочие моменты.
               </p>
-              
+
               {/* Загрузка файлов для behind the scenes */}
               <div className="mb-4">
                 <FileUpload
                   type="images"
                   multiple
                   existingFiles={behindScenesFiles}
-                  onMultipleUpload={(urls) => {
+                  onMultipleUpload={urls => {
                     // Дополняем существующие файлы новыми
                     setBehindScenesFiles([...behindScenesFiles, ...urls])
                   }}
-                  onRemove={(url) => setBehindScenesFiles(behindScenesFiles.filter(i => i !== url))}
+                  onRemove={url => setBehindScenesFiles(behindScenesFiles.filter(i => i !== url))}
                 />
               </div>
-              
+
               {/* Или введите URL вручную */}
               <div className="mt-4">
-                <p className="text-xs text-muted-foreground mb-2">Или введите URL изображений вручную:</p>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Или введите URL изображений вручную:
+                </p>
                 <ArrayInput
                   label=""
                   value={behindScenes}
@@ -442,7 +462,7 @@ export default function NewProjectPage() {
                   placeholder="URL изображения за кадром"
                 />
               </div>
-              
+
               <p className="text-xs text-muted-foreground mt-2">
                 Всего загружено: {behindScenes.length + behindScenesFiles.length} изображений
               </p>
@@ -460,7 +480,9 @@ export default function NewProjectPage() {
                     <Input
                       type="number"
                       {...field}
-                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                      onChange={e =>
+                        field.onChange(e.target.value ? parseInt(e.target.value) : undefined)
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -485,7 +507,10 @@ export default function NewProjectPage() {
 
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold mb-2">Мультиязычность</h3>
-            <p className="text-sm text-muted-foreground mb-4">Опционально. Если не заполнено, будет использоваться основное поле &quot;Название&quot; и &quot;Описание&quot;</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Опционально. Если не заполнено, будет использоваться основное поле
+              &quot;Название&quot; и &quot;Описание&quot;
+            </p>
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -549,7 +574,9 @@ export default function NewProjectPage() {
 
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold mb-2">Дополнительно</h3>
-            <p className="text-sm text-muted-foreground mb-4">Дополнительная информация о проекте</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Дополнительная информация о проекте
+            </p>
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -561,7 +588,9 @@ export default function NewProjectPage() {
                       <Input
                         type="number"
                         {...field}
-                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                        onChange={e =>
+                          field.onChange(e.target.value ? parseInt(e.target.value) : undefined)
+                        }
                         placeholder="2025"
                       />
                     </FormControl>
@@ -586,7 +615,8 @@ export default function NewProjectPage() {
                     <div className="space-y-1 leading-none">
                       <FormLabel>Показать на главной странице ⭐</FormLabel>
                       <p className="text-xs text-muted-foreground">
-                        Отображается в carousel на главной странице. Рекомендуется отмечать только лучшие проекты (до 6 штук)
+                        Отображается в carousel на главной странице. Рекомендуется отмечать только
+                        лучшие проекты (до 6 штук)
                       </p>
                     </div>
                   </FormItem>

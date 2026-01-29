@@ -64,7 +64,7 @@ export function CourseEnrollmentButton({
       const allowedHosts = ['yoomoney.ru', 'yookassa.ru']
       const isSameOrigin = parsedUrl.origin === window.location.origin
       const isAllowedHost = allowedHosts.some(
-        (host) => parsedUrl.hostname === host || parsedUrl.hostname.endsWith(`.${host}`)
+        host => parsedUrl.hostname === host || parsedUrl.hostname.endsWith(`.${host}`)
       )
 
       if (!isSameOrigin && !isAllowedHost) {

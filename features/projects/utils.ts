@@ -1,12 +1,12 @@
 /**
  * Утилиты для проектов
  */
-export type ProjectOrientation = "horizontal" | "vertical"
+export type ProjectOrientation = 'horizontal' | 'vertical'
 
-export type ProjectOrientationFilter = "all" | ProjectOrientation
+export type ProjectOrientationFilter = 'all' | ProjectOrientation
 
 export function normalizeProjectOrientation(value?: string | null): ProjectOrientation {
-  return value === "vertical" ? "vertical" : "horizontal"
+  return value === 'vertical' ? 'vertical' : 'horizontal'
 }
 
 export function getProjectOrientation(project: {
@@ -15,10 +15,9 @@ export function getProjectOrientation(project: {
   return normalizeProjectOrientation(project.orientation)
 }
 
-export function filterProjectsByOrientation<T extends { orientation?: ProjectOrientation | string | null }>(
-  projects: T[],
-  filter: ProjectOrientationFilter,
-): T[] {
-  if (filter === "all") return projects
-  return projects.filter((project) => normalizeProjectOrientation(project.orientation) === filter)
+export function filterProjectsByOrientation<
+  T extends { orientation?: ProjectOrientation | string | null },
+>(projects: T[], filter: ProjectOrientationFilter): T[] {
+  if (filter === 'all') return projects
+  return projects.filter(project => normalizeProjectOrientation(project.orientation) === filter)
 }

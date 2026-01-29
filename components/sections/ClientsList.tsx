@@ -78,13 +78,7 @@ export function ClientsList({ clients }: ClientsListProps) {
                         className="w-full h-full object-cover"
                       />
                     ) : client.video_url ? (
-                      <video
-                        autoPlay
-                        muted
-                        loop
-                        playsInline
-                        className="w-full h-full object-cover"
-                      >
+                      <video autoPlay muted loop playsInline className="w-full h-full object-cover">
                         <source src={client.video_url} type="video/mp4" />
                       </video>
                     ) : client.logo_url ? (
@@ -105,9 +99,7 @@ export function ClientsList({ clients }: ClientsListProps) {
 
                 {/* Индикатор "смотреть" */}
                 <div className="relative z-10 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-primary font-medium text-sm md:text-base">
-                    Смотреть →
-                  </span>
+                  <span className="text-primary font-medium text-sm md:text-base">Смотреть →</span>
                 </div>
               </div>
             </div>

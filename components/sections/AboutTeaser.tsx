@@ -35,12 +35,24 @@ export function AboutTeaser({ onBookClick }: AboutTeaserProps) {
             viewport={{ once: true }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
-            <SectionTitle mark="circle" markPosition="top-left" size="lg" className="text-[#FFFFFF] mb-8">
+            <SectionTitle
+              mark="circle"
+              markPosition="top-left"
+              size="lg"
+              className="text-[#FFFFFF] mb-8"
+            >
               О нас
             </SectionTitle>
             <p className="text-editorial text-[#FFFFFF]/80 font-light leading-relaxed mb-8">
-              Мы работаем так, чтобы люди <EditorialCorrection wrong="смотрели" correct="зависали" size="sm" inline delay={0.5} />, а вам всегда хотелось сказать: 
-              &quot;Это именно то, что нужно!&quot;
+              Мы работаем так, чтобы люди{' '}
+              <EditorialCorrection
+                wrong="смотрели"
+                correct="зависали"
+                size="sm"
+                inline
+                delay={0.5}
+              />
+              , а вам всегда хотелось сказать: &quot;Это именно то, что нужно!&quot;
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link href="/about">

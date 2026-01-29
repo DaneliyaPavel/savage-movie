@@ -52,17 +52,18 @@ export function StrikethroughText({
     const waveAmplitude = width * 0.01 // 1% от ширины
     const points: number[] = []
     const steps = 20
-    
+
     for (let i = 0; i <= steps; i++) {
       const x = (width / steps) * i
       // Легкая синусоида для волны
       const y = waveAmplitude * Math.sin((i / steps) * Math.PI * 2)
-      points.push(x, y + (width * 0.001)) // Небольшой сдвиг для реалистичности
+      points.push(x, y + width * 0.001) // Небольшой сдвиг для реалистичности
     }
-    
-    return `M ${points[0]},${points[1]} ${points.slice(2).map((p, i) => 
-      i % 2 === 0 ? `L ${p}` : `,${p}`
-    ).join(' ')}`
+
+    return `M ${points[0]},${points[1]} ${points
+      .slice(2)
+      .map((p, i) => (i % 2 === 0 ? `L ${p}` : `,${p}`))
+      .join(' ')}`
   }
 
   useEffect(() => {
@@ -70,8 +71,8 @@ export function StrikethroughText({
 
     // Intersection Observer для триггера при скролле
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
+      entries => {
+        entries.forEach(entry => {
           if (entry.isIntersecting) {
             setScrollTriggered(true)
           }
@@ -109,7 +110,7 @@ export function StrikethroughText({
   const path = createPath(pathWidth || 100)
 
   const content = (
-    <div 
+    <div
       className={`inline-flex flex-col ${className}`}
       onMouseEnter={() => onHover && setIsHovered(true)}
       onMouseLeave={() => onHover && setIsHovered(false)}

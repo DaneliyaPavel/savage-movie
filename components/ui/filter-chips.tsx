@@ -54,7 +54,7 @@ interface FilterChipsProps {
 export function FilterChips({ filters, activeFilter, onFilterChange }: FilterChipsProps) {
   return (
     <div className="flex flex-wrap gap-2 md:gap-4 items-center">
-      {filters.map((filter) => (
+      {filters.map(filter => (
         <FilterChip
           key={filter.value}
           label={filter.label}

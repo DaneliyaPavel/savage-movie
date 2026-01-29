@@ -72,16 +72,23 @@ export function SectionTitle({
       {mark && markPosition === 'before' && Mark && (
         <Mark size={24} className="text-muted-foreground shrink-0" animate={animate} />
       )}
-      {mark && ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(markPosition) && Mark && (
-        <div className={`absolute ${
-          markPosition === 'top-left' ? 'top-0 left-0 -translate-x-full -translate-y-full' :
-          markPosition === 'top-right' ? 'top-0 right-0 translate-x-full -translate-y-full' :
-          markPosition === 'bottom-left' ? 'bottom-0 left-0 -translate-x-full translate-y-full' :
-          'bottom-0 right-0 translate-x-full translate-y-full'
-        } text-muted-foreground`}>
-          <Mark size={20} animate={animate} />
-        </div>
-      )}
+      {mark &&
+        ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(markPosition) &&
+        Mark && (
+          <div
+            className={`absolute ${
+              markPosition === 'top-left'
+                ? 'top-0 left-0 -translate-x-full -translate-y-full'
+                : markPosition === 'top-right'
+                  ? 'top-0 right-0 translate-x-full -translate-y-full'
+                  : markPosition === 'bottom-left'
+                    ? 'bottom-0 left-0 -translate-x-full translate-y-full'
+                    : 'bottom-0 right-0 translate-x-full translate-y-full'
+            } text-muted-foreground`}
+          >
+            <Mark size={20} animate={animate} />
+          </div>
+        )}
       <h2 className={`font-heading font-bold ${sizeClasses[size]} text-foreground ${className}`}>
         {children}
       </h2>

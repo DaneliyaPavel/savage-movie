@@ -39,7 +39,7 @@ export function slugify(value: string): string {
     .trim()
     .toLowerCase()
     .split('')
-    .map((char) => translitMap[char] ?? char)
+    .map(char => translitMap[char] ?? char)
     .join('')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')

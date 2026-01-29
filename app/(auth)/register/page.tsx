@@ -44,9 +44,7 @@ export default function RegisterPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl font-heading">Регистрация</CardTitle>
-          <CardDescription>
-            Создайте аккаунт для доступа к курсам
-          </CardDescription>
+          <CardDescription>Создайте аккаунт для доступа к курсам</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -63,7 +61,7 @@ export default function RegisterPage() {
                 type="text"
                 placeholder="Ваше имя"
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                onChange={e => setFullName(e.target.value)}
                 disabled={isLoading}
               />
             </div>
@@ -75,7 +73,7 @@ export default function RegisterPage() {
                 type="email"
                 placeholder="your@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
               />
@@ -88,7 +86,7 @@ export default function RegisterPage() {
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 required
                 minLength={6}
                 disabled={isLoading}

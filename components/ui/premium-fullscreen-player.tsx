@@ -78,7 +78,7 @@ export function PremiumFullscreenPlayer({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="fixed inset-4 md:inset-8 lg:inset-12 z-[201] flex items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           >
             {/* Close Button */}
             <motion.button

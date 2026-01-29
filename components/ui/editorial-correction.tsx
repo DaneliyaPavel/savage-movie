@@ -1,37 +1,37 @@
-"use client"
+'use client'
 
-import { motion, useInView } from "framer-motion"
-import { useRef } from "react"
+import { motion, useInView } from 'framer-motion'
+import { useRef } from 'react'
 
 interface EditorialCorrectionProps {
   wrong: string
   correct: string
   className?: string
-  size?: "sm" | "md" | "lg" | "xl"
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   inline?: boolean
   delay?: number
 }
 
-const sizeClasses: Record<NonNullable<EditorialCorrectionProps["size"]>, string> = {
-  sm: "text-xs",
-  md: "text-sm",
-  lg: "text-base",
-  xl: "text-lg",
+const sizeClasses: Record<NonNullable<EditorialCorrectionProps['size']>, string> = {
+  sm: 'text-xs',
+  md: 'text-sm',
+  lg: 'text-base',
+  xl: 'text-lg',
 }
 
 export function EditorialCorrection({
   wrong,
   correct,
-  className = "",
-  size = "md",
+  className = '',
+  size = 'md',
   inline = false,
   delay = 0,
 }: EditorialCorrectionProps) {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: "-100px" })
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
-    <span ref={ref} className={`relative ${inline ? "inline-block" : "block"} ${className}`}>
+    <span ref={ref} className={`relative ${inline ? 'inline-block' : 'block'} ${className}`}>
       <span className="relative">
         <span className="text-muted-foreground/60">{wrong}</span>
         {isInView && (
@@ -50,7 +50,7 @@ export function EditorialCorrection({
               className="text-accent"
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 1 }}
-              transition={{ duration: 0.5, delay, ease: "easeInOut" }}
+              transition={{ duration: 0.5, delay, ease: 'easeInOut' }}
             />
           </motion.svg>
         )}
@@ -60,7 +60,7 @@ export function EditorialCorrection({
         animate={isInView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.4, delay: delay + 0.3 }}
         className={`absolute -bottom-6 left-0 text-foreground ${sizeClasses[size]}`}
-        style={{ fontFamily: "var(--font-handwritten), cursive" }}
+        style={{ fontFamily: 'var(--font-handwritten), cursive' }}
       >
         {correct}
       </motion.span>

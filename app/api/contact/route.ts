@@ -36,10 +36,7 @@ export async function POST(request: NextRequest) {
 
     // Валидация обязательных полей
     if (!name || !email || !message) {
-      return NextResponse.json(
-        { error: 'Заполните все обязательные поля' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Заполните все обязательные поля' }, { status: 400 })
     }
 
     // Валидация и санитизация данных
@@ -49,17 +46,11 @@ export async function POST(request: NextRequest) {
     const sanitizedPhone = phone ? sanitizeString(phone, 20) : null
 
     if (!sanitizedName || sanitizedName.length < 2) {
-      return NextResponse.json(
-        { error: 'Имя должно содержать минимум 2 символа' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Имя должно содержать минимум 2 символа' }, { status: 400 })
     }
 
     if (!isValidEmail(sanitizedEmail)) {
-      return NextResponse.json(
-        { error: 'Некорректный email адрес' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Некорректный email адрес' }, { status: 400 })
     }
 
     if (!sanitizedMessage || sanitizedMessage.length < 10) {
@@ -95,16 +86,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true })
     } catch (apiError: unknown) {
       logger.error('Ошибка отправки на API', apiError, { route: '/api/contact', method: 'POST' })
-      return NextResponse.json(
-        { error: 'Ошибка обработки заявки' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Ошибка обработки заявки' }, { status: 500 })
     }
   } catch (error: unknown) {
     logger.error('Ошибка обработки заявки', error, { route: '/api/contact', method: 'POST' })
-    return NextResponse.json(
-      { error: 'Внутренняя ошибка сервера' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Внутренняя ошибка сервера' }, { status: 500 })
   }
 }

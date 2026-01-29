@@ -1,11 +1,11 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
 
-import { motion, useInView } from "framer-motion"
-import { useRef } from "react"
+import { motion, useInView } from 'framer-motion'
+import { useRef } from 'react'
 
-type MarkType = "cross" | "plus" | "circle" | "arrow" | "scribble"
+type MarkType = 'cross' | 'plus' | 'circle' | 'arrow' | 'scribble'
 
 interface SvgMarkProps {
   type: MarkType
@@ -14,7 +14,7 @@ interface SvgMarkProps {
   delay?: number
 }
 
-export function SvgMark({ type, className = "", size = 24, delay = 0 }: SvgMarkProps) {
+export function SvgMark({ type, className = '', size = 24, delay = 0 }: SvgMarkProps) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true })
 

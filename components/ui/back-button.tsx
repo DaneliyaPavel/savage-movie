@@ -29,11 +29,7 @@ export function BackButton({ href, className, label = 'Назад' }: BackButton
   if (href) {
     return (
       <Link href={href}>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn('gap-2', className)}
-        >
+        <Button variant="ghost" size="sm" className={cn('gap-2', className)}>
           <ArrowLeft className="h-4 w-4" />
           {label}
         </Button>
@@ -42,12 +38,7 @@ export function BackButton({ href, className, label = 'Назад' }: BackButton
   }
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={handleClick}
-      className={cn('gap-2', className)}
-    >
+    <Button variant="ghost" size="sm" onClick={handleClick} className={cn('gap-2', className)}>
       <ArrowLeft className="h-4 w-4" />
       {label}
     </Button>

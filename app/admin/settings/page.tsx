@@ -6,7 +6,14 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
 import { getSettings, updateSettings } from '@/lib/api/settings'
@@ -39,13 +46,15 @@ export default function SettingsPage() {
       try {
         const settings = await getSettings()
         form.reset({
-          hero_video_url: typeof settings.hero_video_url === 'string' ? settings.hero_video_url : '',
+          hero_video_url:
+            typeof settings.hero_video_url === 'string' ? settings.hero_video_url : '',
           hero_video_playback_id:
             typeof settings.hero_video_playback_id === 'string'
               ? settings.hero_video_playback_id
               : '',
           stats_projects: String(
-            typeof settings.stats_projects === 'number' || typeof settings.stats_projects === 'string'
+            typeof settings.stats_projects === 'number' ||
+              typeof settings.stats_projects === 'string'
               ? settings.stats_projects
               : '100'
           ),
@@ -67,7 +76,7 @@ export default function SettingsPage() {
       }
     }
     load()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -93,11 +102,8 @@ export default function SettingsPage() {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
-        <Breadcrumbs 
-          items={[
-            { label: 'Админ-панель', href: '/admin' },
-            { label: 'Настройки' }
-          ]} 
+        <Breadcrumbs
+          items={[{ label: 'Админ-панель', href: '/admin' }, { label: 'Настройки' }]}
           className="mb-4"
         />
         <BackButton href="/admin" className="mb-4" />
@@ -109,31 +115,88 @@ export default function SettingsPage() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Hero секция</h2>
-            <FormField control={form.control} name="hero_video_url" render={({ field }) => (
-              <FormItem><FormLabel>URL видео для Hero</FormLabel><FormControl><Input {...field} placeholder="https://example.com/video.mp4" /></FormControl><FormMessage /></FormItem>
-            )} />
-            <FormField control={form.control} name="hero_video_playback_id" render={({ field }) => (
-              <FormItem><FormLabel>Mux Playback ID для Hero</FormLabel><FormControl><Input {...field} placeholder="Или используйте Mux ID" /></FormControl><FormMessage /></FormItem>
-            )} />
+            <FormField
+              control={form.control}
+              name="hero_video_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL видео для Hero</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="https://example.com/video.mp4" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="hero_video_playback_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Mux Playback ID для Hero</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Или используйте Mux ID" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
 
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Статистика</h2>
             <div className="grid grid-cols-3 gap-4">
-              <FormField control={form.control} name="stats_projects" render={({ field }) => (
-                <FormItem><FormLabel>Проектов</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="stats_clients" render={({ field }) => (
-                <FormItem><FormLabel>Клиентов</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="stats_years" render={({ field }) => (
-                <FormItem><FormLabel>Лет опыта</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
+              <FormField
+                control={form.control}
+                name="stats_projects"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Проектов</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="stats_clients"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Клиентов</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="stats_years"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Лет опыта</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
           </div>
 
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Сохранение...</> : 'Сохранить настройки'}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Сохранение...
+              </>
+            ) : (
+              'Сохранить настройки'
+            )}
           </Button>
         </form>
       </Form>

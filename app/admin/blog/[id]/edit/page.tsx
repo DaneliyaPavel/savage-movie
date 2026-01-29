@@ -145,9 +145,7 @@ export default function EditBlogPostPage() {
         />
         <BackButton href="/admin/blog" className="mb-4" />
         <h1 className="text-3xl font-bold mb-2">Редактировать статью</h1>
-        <p className="text-muted-foreground">
-          Обновите текст, slug или статус публикации.
-        </p>
+        <p className="text-muted-foreground">Обновите текст, slug или статус публикации.</p>
       </div>
 
       <Form {...form}>
@@ -278,7 +276,9 @@ export default function EditBlogPostPage() {
                 <FormControl>
                   <Textarea {...field} rows={12} />
                 </FormControl>
-                <FormDescription>Поддерживаются заголовки, списки и выделение текста.</FormDescription>
+                <FormDescription>
+                  Поддерживаются заголовки, списки и выделение текста.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

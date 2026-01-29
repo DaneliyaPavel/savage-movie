@@ -149,7 +149,7 @@ export function AboutPageClient() {
 
   useEffect(() => {
     getSettings()
-      .then((settings) => setTeam(normalizeTeam(settings.about_team)))
+      .then(settings => setTeam(normalizeTeam(settings.about_team)))
       .catch(() => setTeam([]))
   }, [])
 
@@ -176,8 +176,8 @@ export function AboutPageClient() {
             transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
             className="text-editorial text-[#FFFFFF]/60 font-light leading-relaxed max-w-4xl"
           >
-            Смотрим на мир через объектив кинокамеры. Работаем с лучшими исполнителями, 
-            чтобы рассказать о вас миру с помощью современных технологий и креатива.
+            Смотрим на мир через объектив кинокамеры. Работаем с лучшими исполнителями, чтобы
+            рассказать о вас миру с помощью современных технологий и креатива.
           </motion.p>
         </motion.div>
 
@@ -200,7 +200,12 @@ export function AboutPageClient() {
         <section className="mb-20 md:mb-32 editorial-spacing">
           <HoverNote note="story">
             <div className="mb-12 relative">
-              <SectionTitle mark="arrow" markPosition="top-left" size="lg" className="text-[#FFFFFF]">
+              <SectionTitle
+                mark="arrow"
+                markPosition="top-left"
+                size="lg"
+                className="text-[#FFFFFF]"
+              >
                 Наша история
               </SectionTitle>
               {/* SVG scribble mark */}
@@ -223,24 +228,29 @@ export function AboutPageClient() {
             className="space-y-8 text-editorial text-[#FFFFFF]/80 font-light leading-relaxed max-w-4xl"
           >
             <p>
-              Мы работаем так, чтобы люди смотрели, а вам всегда хотелось сказать: 
-              «Это именно то, что нужно!»
+              Мы работаем так, чтобы люди смотрели, а вам всегда хотелось сказать: «Это именно то,
+              что нужно!»
             </p>
             <p>
-              SAVAGE MOVIE — это команда профессионалов, которые создают видеоконтент 
-              высочайшего качества. От коммерческих роликов до музыкальных клипов, 
-              от ИИ-генерации до полного цикла продакшна.
+              SAVAGE MOVIE — это команда профессионалов, которые создают видеоконтент высочайшего
+              качества. От коммерческих роликов до музыкальных клипов, от ИИ-генерации до полного
+              цикла продакшна.
             </p>
             <p>
-              Мы не просто снимаем видео — мы создаем истории, которые вдохновляют, 
-              продают и запоминаются.
+              Мы не просто снимаем видео — мы создаем истории, которые вдохновляют, продают и
+              запоминаются.
             </p>
           </motion.div>
         </section>
 
         {/* Достижения */}
         <section className="mb-20 md:mb-32 border-t border-[#1A1A1A] pt-16 editorial-spacing">
-          <SectionTitle mark="plus" markPosition="top-left" size="lg" className="text-[#FFFFFF] mb-16">
+          <SectionTitle
+            mark="plus"
+            markPosition="top-left"
+            size="lg"
+            className="text-[#FFFFFF] mb-16"
+          >
             Достижения
           </SectionTitle>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
@@ -273,7 +283,12 @@ export function AboutPageClient() {
 
         {/* Миссия */}
         <section className="mb-20 md:mb-32 border-t border-[#1A1A1A] pt-16 editorial-spacing">
-          <SectionTitle mark="circle" markPosition="top-left" size="lg" className="text-[#FFFFFF] mb-12">
+          <SectionTitle
+            mark="circle"
+            markPosition="top-left"
+            size="lg"
+            className="text-[#FFFFFF] mb-12"
+          >
             Наша миссия
           </SectionTitle>
           <motion.p
@@ -283,17 +298,22 @@ export function AboutPageClient() {
             transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
             className="text-editorial text-[#FFFFFF]/80 font-light leading-relaxed max-w-4xl"
           >
-            Использовать креативность для продвижения самых амбициозных брендов, 
-            организаций и проектов в России и за её пределами. Создавать видеоконтент, 
-            который не просто демонстрирует продукт или услугу, но и вдохновляет, 
-            мотивирует и оставляет незабываемое впечатление.
+            Использовать креативность для продвижения самых амбициозных брендов, организаций и
+            проектов в России и за её пределами. Создавать видеоконтент, который не просто
+            демонстрирует продукт или услугу, но и вдохновляет, мотивирует и оставляет незабываемое
+            впечатление.
           </motion.p>
         </section>
 
         {/* Наша команда */}
         {team.length > 0 && (
           <section className="mb-20 md:mb-32 border-t border-[#1A1A1A] pt-16 editorial-spacing">
-            <SectionTitle mark="cross" markPosition="top-left" size="lg" className="text-[#FFFFFF] mb-12">
+            <SectionTitle
+              mark="cross"
+              markPosition="top-left"
+              size="lg"
+              className="text-[#FFFFFF] mb-12"
+            >
               Наша команда
             </SectionTitle>
 
@@ -320,12 +340,12 @@ export function AboutPageClient() {
 
                   <div className="p-5">
                     <div className="space-y-2">
-                      <div className="font-heading font-bold text-xl text-[#FFFFFF]">{m.name || '—'}</div>
+                      <div className="font-heading font-bold text-xl text-[#FFFFFF]">
+                        {m.name || '—'}
+                      </div>
                       <div className="text-sm text-[#FFFFFF]/60">{m.position || ''}</div>
                       {m.bio && (
-                        <p className="text-sm text-[#FFFFFF]/70 leading-relaxed">
-                          {m.bio}
-                        </p>
+                        <p className="text-sm text-[#FFFFFF]/70 leading-relaxed">{m.bio}</p>
                       )}
                     </div>
                   </div>
@@ -338,7 +358,12 @@ export function AboutPageClient() {
         {/* Клиенты */}
         {clients.length > 0 && (
           <section className="border-t border-[#1A1A1A] pt-16 editorial-spacing">
-            <SectionTitle mark="cross" markPosition="top-left" size="lg" className="text-[#FFFFFF] mb-12">
+            <SectionTitle
+              mark="cross"
+              markPosition="top-left"
+              size="lg"
+              className="text-[#FFFFFF] mb-12"
+            >
               Наши клиенты
             </SectionTitle>
             <motion.div

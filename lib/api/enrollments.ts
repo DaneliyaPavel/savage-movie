@@ -27,9 +27,9 @@ export async function getEnrollments(): Promise<Enrollment[]> {
 /**
  * Получить список записей пользователя (server-side)
  */
-export async function getEnrollmentsServer(
-  cookies?: { get: (name: string) => { value: string } | undefined }
-): Promise<Enrollment[]> {
+export async function getEnrollmentsServer(cookies?: {
+  get: (name: string) => { value: string } | undefined
+}): Promise<Enrollment[]> {
   const { apiGet: apiGetServer } = await import('./server')
   return apiGetServer<Enrollment[]>('/api/enrollments', cookies)
 }

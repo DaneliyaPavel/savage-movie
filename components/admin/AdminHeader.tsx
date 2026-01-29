@@ -137,12 +137,10 @@ export function AdminHeader() {
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent">
-                  Контент
-                </NavigationMenuTrigger>
+                <NavigationMenuTrigger className="bg-transparent">Контент</NavigationMenuTrigger>
                 <NavigationMenuContent className="bg-background p-1">
                   <ul className="grid w-[560px] grid-cols-2 gap-2 rounded-md border bg-popover p-2 shadow">
-                    {contentLinks.map((item) => (
+                    {contentLinks.map(item => (
                       <li key={item.title}>
                         <ListItem {...item} />
                       </li>
@@ -156,7 +154,7 @@ export function AdminHeader() {
                 </NavigationMenuTrigger>
                 <NavigationMenuContent className="bg-background p-1">
                   <ul className="grid w-[520px] grid-cols-2 gap-2 rounded-md border bg-popover p-2 shadow">
-                    {blocksLinks.map((item) => (
+                    {blocksLinks.map(item => (
                       <li key={item.title}>
                         <ListItem {...item} />
                       </li>
@@ -165,12 +163,10 @@ export function AdminHeader() {
                 </NavigationMenuContent>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent">
-                  Настройки
-                </NavigationMenuTrigger>
+                <NavigationMenuTrigger className="bg-transparent">Настройки</NavigationMenuTrigger>
                 <NavigationMenuContent className="bg-background p-1">
                   <ul className="grid w-[420px] grid-cols-2 gap-2 rounded-md border bg-popover p-2 shadow">
-                    {settingsLinks.map((item) => (
+                    {settingsLinks.map(item => (
                       <li key={item.title}>
                         <ListItem {...item} />
                       </li>
@@ -183,7 +179,10 @@ export function AdminHeader() {
         </div>
 
         <div className="hidden items-center gap-2 md:flex">
-          <Link href="/" className="text-xs font-medium text-muted-foreground hover:text-foreground">
+          <Link
+            href="/"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground"
+          >
             На сайт
           </Link>
           <Button variant="outline" size="sm" onClick={handleLogout} disabled={isLoggingOut}>
@@ -206,17 +205,17 @@ export function AdminHeader() {
       <MobileMenu open={open} onClose={() => setOpen(false)}>
         <div className="flex w-full flex-col gap-y-3">
           <MenuSection title="Контент">
-            {contentLinks.map((link) => (
+            {contentLinks.map(link => (
               <MobileLink key={link.title} link={link} onNavigate={() => setOpen(false)} />
             ))}
           </MenuSection>
           <MenuSection title="Блоки сайта">
-            {blocksLinks.map((link) => (
+            {blocksLinks.map(link => (
               <MobileLink key={link.title} link={link} onNavigate={() => setOpen(false)} />
             ))}
           </MenuSection>
           <MenuSection title="Настройки">
-            {settingsLinks.map((link) => (
+            {settingsLinks.map(link => (
               <MobileLink key={link.title} link={link} onNavigate={() => setOpen(false)} />
             ))}
           </MenuSection>
@@ -260,7 +259,7 @@ function MobileMenu({ open, onClose, children }: MobileMenuProps) {
       aria-modal="true"
     >
       <div className="flex size-full flex-col overflow-y-auto p-4" onClick={onClose}>
-        <div className="flex size-full flex-col gap-4" onClick={(event) => event.stopPropagation()}>
+        <div className="flex size-full flex-col gap-4" onClick={event => event.stopPropagation()}>
           {children}
         </div>
       </div>
@@ -280,13 +279,7 @@ function MenuSection({ title, children }: { title: string; children: React.React
   )
 }
 
-function MobileLink({
-  link,
-  onNavigate,
-}: {
-  link: LinkItem
-  onNavigate: () => void
-}) {
+function MobileLink({ link, onNavigate }: { link: LinkItem; onNavigate: () => void }) {
   const Icon = link.icon
   return (
     <Link
@@ -330,9 +323,7 @@ function ListItem({
         </div>
         <div className="flex flex-col items-start justify-center">
           <span className="font-medium">{title}</span>
-          {description && (
-            <span className="text-xs text-muted-foreground">{description}</span>
-          )}
+          {description && <span className="text-xs text-muted-foreground">{description}</span>}
         </div>
       </Link>
     </NavigationMenuLink>

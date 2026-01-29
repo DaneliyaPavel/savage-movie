@@ -19,18 +19,20 @@ const defaultColor = 'currentColor'
 /**
  * Крестик (x)
  */
-export function CrossMark({ 
-  className = '', 
-  size = defaultSize, 
+export function CrossMark({
+  className = '',
+  size = defaultSize,
   color = defaultColor,
-  animate = true 
+  animate = true,
 }: GraphicMarkProps) {
-  const pathProps: SVGMotionProps<SVGPathElement> = animate ? {
-    initial: { pathLength: 0, opacity: 0 },
-    whileInView: { pathLength: 1, opacity: 1 },
-    viewport: { once: true },
-    transition: { duration: 0.6, ease: 'easeOut' }
-  } : {}
+  const pathProps: SVGMotionProps<SVGPathElement> = animate
+    ? {
+        initial: { pathLength: 0, opacity: 0 },
+        whileInView: { pathLength: 1, opacity: 1 },
+        viewport: { once: true },
+        transition: { duration: 0.6, ease: 'easeOut' },
+      }
+    : {}
 
   return (
     <motion.svg
@@ -58,18 +60,20 @@ export function CrossMark({
 /**
  * Плюс (+)
  */
-export function PlusMark({ 
-  className = '', 
-  size = defaultSize, 
+export function PlusMark({
+  className = '',
+  size = defaultSize,
   color = defaultColor,
-  animate = true 
+  animate = true,
 }: GraphicMarkProps) {
-  const pathProps: SVGMotionProps<SVGPathElement> = animate ? {
-    initial: { pathLength: 0, opacity: 0 },
-    whileInView: { pathLength: 1, opacity: 1 },
-    viewport: { once: true },
-    transition: { duration: 0.6, ease: 'easeOut' }
-  } : {}
+  const pathProps: SVGMotionProps<SVGPathElement> = animate
+    ? {
+        initial: { pathLength: 0, opacity: 0 },
+        whileInView: { pathLength: 1, opacity: 1 },
+        viewport: { once: true },
+        transition: { duration: 0.6, ease: 'easeOut' },
+      }
+    : {}
 
   return (
     <motion.svg
@@ -97,18 +101,20 @@ export function PlusMark({
 /**
  * Стрелка вправо (→)
  */
-export function ArrowMark({ 
-  className = '', 
-  size = defaultSize, 
+export function ArrowMark({
+  className = '',
+  size = defaultSize,
   color = defaultColor,
-  animate = true 
+  animate = true,
 }: GraphicMarkProps) {
-  const pathProps: SVGMotionProps<SVGPathElement> = animate ? {
-    initial: { pathLength: 0, opacity: 0 },
-    whileInView: { pathLength: 1, opacity: 1 },
-    viewport: { once: true },
-    transition: { duration: 0.6, ease: 'easeOut' }
-  } : {}
+  const pathProps: SVGMotionProps<SVGPathElement> = animate
+    ? {
+        initial: { pathLength: 0, opacity: 0 },
+        whileInView: { pathLength: 1, opacity: 1 },
+        viewport: { once: true },
+        transition: { duration: 0.6, ease: 'easeOut' },
+      }
+    : {}
 
   return (
     <motion.svg
@@ -137,18 +143,20 @@ export function ArrowMark({
 /**
  * Круг (○)
  */
-export function CircleMark({ 
-  className = '', 
-  size = defaultSize, 
+export function CircleMark({
+  className = '',
+  size = defaultSize,
   color = defaultColor,
-  animate = true 
+  animate = true,
 }: GraphicMarkProps) {
-  const pathProps: SVGMotionProps<SVGCircleElement> = animate ? {
-    initial: { pathLength: 0, opacity: 0 },
-    whileInView: { pathLength: 1, opacity: 1 },
-    viewport: { once: true },
-    transition: { duration: 0.8, ease: 'easeOut' }
-  } : {}
+  const pathProps: SVGMotionProps<SVGCircleElement> = animate
+    ? {
+        initial: { pathLength: 0, opacity: 0 },
+        whileInView: { pathLength: 1, opacity: 1 },
+        viewport: { once: true },
+        transition: { duration: 0.8, ease: 'easeOut' },
+      }
+    : {}
 
   return (
     <motion.svg
@@ -178,18 +186,25 @@ export function CircleMark({
 /**
  * Подчеркивание (underline)
  */
-export function UnderlineMark({ 
-  className = '', 
-  width = 100, 
+export function UnderlineMark({
+  className = '',
+  width = 100,
   color = defaultColor,
-  animate = true 
-}: { className?: string; width?: number; color?: string; animate?: boolean }) {
-  const pathProps: SVGMotionProps<SVGLineElement> = animate ? {
-    initial: { pathLength: 0, opacity: 0 },
-    whileInView: { pathLength: 1, opacity: 1 },
-    viewport: { once: true },
-    transition: { duration: 0.6, ease: 'easeOut' }
-  } : {}
+  animate = true,
+}: {
+  className?: string
+  width?: number
+  color?: string
+  animate?: boolean
+}) {
+  const pathProps: SVGMotionProps<SVGLineElement> = animate
+    ? {
+        initial: { pathLength: 0, opacity: 0 },
+        whileInView: { pathLength: 1, opacity: 1 },
+        viewport: { once: true },
+        transition: { duration: 0.6, ease: 'easeOut' },
+      }
+    : {}
 
   return (
     <motion.svg
@@ -216,21 +231,28 @@ export function UnderlineMark({
 /**
  * Случайная линия/зачеркивание (scribble)
  */
-export function ScribbleMark({ 
-  className = '', 
-  width = 100, 
+export function ScribbleMark({
+  className = '',
+  width = 100,
   color = defaultColor,
-  animate = true 
-}: { className?: string; width?: number; color?: string; animate?: boolean }) {
+  animate = true,
+}: {
+  className?: string
+  width?: number
+  color?: string
+  animate?: boolean
+}) {
   // Легкая случайность в пути для более естественного вида
   const path = `M 0,10 Q ${width * 0.3},8 ${width * 0.5},10 T ${width},10`
-  
-  const pathProps: SVGMotionProps<SVGPathElement> = animate ? {
-    initial: { pathLength: 0, opacity: 0 },
-    whileInView: { pathLength: 1, opacity: 1 },
-    viewport: { once: true },
-    transition: { duration: 0.8, ease: 'easeOut' }
-  } : {}
+
+  const pathProps: SVGMotionProps<SVGPathElement> = animate
+    ? {
+        initial: { pathLength: 0, opacity: 0 },
+        whileInView: { pathLength: 1, opacity: 1 },
+        viewport: { once: true },
+        transition: { duration: 0.8, ease: 'easeOut' },
+      }
+    : {}
 
   return (
     <motion.svg

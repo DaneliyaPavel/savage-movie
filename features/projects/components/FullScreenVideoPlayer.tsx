@@ -60,14 +60,14 @@ export function FullScreenVideoPlayer({
           onClick={onClose}
         >
           <GrainOverlay />
-          
+
           {/* Красивая кнопка закрытия - top-right corner */}
           <motion.button
             initial={{ opacity: 0, scale: 0.8, x: 20, y: -20 }}
             animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, x: 20, y: -20 }}
             transition={{ duration: 0.3, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation()
               onClose()
             }}
@@ -98,7 +98,7 @@ export function FullScreenVideoPlayer({
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="relative w-full h-full flex items-center justify-center p-4 md:p-8 lg:p-16"
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           >
             <div className="w-full max-w-7xl aspect-video relative">
               {playbackId ? (
@@ -110,12 +110,7 @@ export function FullScreenVideoPlayer({
                   className="w-full h-full"
                 />
               ) : videoUrl ? (
-                <video
-                  src={videoUrl}
-                  controls
-                  autoPlay
-                  className="w-full h-full"
-                />
+                <video src={videoUrl} controls autoPlay className="w-full h-full" />
               ) : null}
             </div>
           </motion.div>

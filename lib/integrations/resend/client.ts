@@ -4,9 +4,7 @@
 import { Resend } from 'resend'
 import { logger } from '@/lib/utils/logger'
 
-const resend = process.env.RESEND_API_KEY 
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 interface EmailOptions {
   to: string | string[]
@@ -102,10 +100,7 @@ export async function sendBookingConfirmation(
 /**
  * Отправляет подтверждение записи на курс
  */
-export async function sendCourseEnrollmentConfirmation(
-  email: string,
-  courseTitle: string
-) {
+export async function sendCourseEnrollmentConfirmation(email: string, courseTitle: string) {
   const safeCourseTitle = escapeHtml(courseTitle)
   const subjectCourseTitle = sanitizeSubject(courseTitle)
   const appUrl = process.env.NEXT_PUBLIC_APP_URL

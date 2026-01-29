@@ -72,7 +72,9 @@ export function ProjectsJalousieFooter() {
             <h2 className="text-[15vw] md:text-[12vw] font-brand text-background leading-none tracking-tight">
               savage movie
             </h2>
-            <span className="absolute -top-2 -right-4 md:-right-8 text-background text-xl md:text-2xl">®</span>
+            <span className="absolute -top-2 -right-4 md:-right-8 text-background text-xl md:text-2xl">
+              ®
+            </span>
           </div>
 
           {/* Newsletter text */}
@@ -90,7 +92,7 @@ export function ProjectsJalousieFooter() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               placeholder={language === 'ru' ? 'ваш email' : 'your email'}
               className="bg-transparent text-background placeholder:text-background/50 outline-none flex-1 text-base"
               style={{ fontFamily: 'var(--font-handwritten), cursive' }}
@@ -103,11 +105,7 @@ export function ProjectsJalousieFooter() {
               <ArrowRight className="w-5 h-5" />
             </button>
           </form>
-          {error && (
-            <p className="mt-3 text-sm text-background/80 font-secondary">
-              {error}
-            </p>
-          )}
+          {error && <p className="mt-3 text-sm text-background/80 font-secondary">{error}</p>}
         </motion.div>
 
         <motion.div
@@ -116,7 +114,10 @@ export function ProjectsJalousieFooter() {
         >
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 text-sm md:text-base">
             <div className="flex flex-col gap-2 uppercase tracking-[0.25em]">
-              <span className="text-xs md:text-sm text-background/70" style={{ fontFamily: 'var(--font-handwritten), cursive' }}>
+              <span
+                className="text-xs md:text-sm text-background/70"
+                style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+              >
                 {language === 'ru' ? '(соцсети)' : '(socials)'}
               </span>
               <div className="flex items-center gap-4">

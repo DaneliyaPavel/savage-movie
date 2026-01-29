@@ -43,8 +43,9 @@ export function ProjectPlayerWall({ projects, initialProjectId }: ProjectPlayerW
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Проверяем, что фокус в пределах секции или документ в фокусе
-      const isFocused = document.activeElement?.tagName === 'BODY' || 
-                        containerRef.current?.contains(document.activeElement)
+      const isFocused =
+        document.activeElement?.tagName === 'BODY' ||
+        containerRef.current?.contains(document.activeElement)
 
       if (!isFocused) return
 
@@ -109,7 +110,13 @@ export function ProjectPlayerWall({ projects, initialProjectId }: ProjectPlayerW
         >
           <HoverNote text="featured" position="top">
             <div className="mb-12">
-              <EditorialCorrection wrong="Наши работы" correct="Избранное" size="lg" inline delay={0.2} />
+              <EditorialCorrection
+                wrong="Наши работы"
+                correct="Избранное"
+                size="lg"
+                inline
+                delay={0.2}
+              />
             </div>
           </HoverNote>
         </motion.div>
@@ -124,7 +131,7 @@ export function ProjectPlayerWall({ projects, initialProjectId }: ProjectPlayerW
               {/* Mobile: горизонтальный скролл */}
               <div className="lg:hidden overflow-x-auto pb-4 -mx-4 px-4">
                 <div className="flex gap-3 w-max">
-                  {projects.map((project) => {
+                  {projects.map(project => {
                     const isSelected = project.id === selectedProject?.id
                     const thumbnail = project.images?.[0]
                     return (
@@ -155,9 +162,7 @@ export function ProjectPlayerWall({ projects, initialProjectId }: ProjectPlayerW
                             </span>
                           </div>
                         )}
-                        {isSelected && (
-                          <div className="absolute inset-0 bg-[#ff2936]/10" />
-                        )}
+                        {isSelected && <div className="absolute inset-0 bg-[#ff2936]/10" />}
                       </motion.button>
                     )
                   })}

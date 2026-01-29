@@ -7,7 +7,14 @@ import { DataTable } from '@/components/admin/DataTable'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { getTestimonials, deleteTestimonial, type Testimonial } from '@/lib/api/testimonials'
 import { Plus } from 'lucide-react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import Link from 'next/link'
 
 export default function TestimonialsPage() {
@@ -18,7 +25,9 @@ export default function TestimonialsPage() {
   const [testimonialToDelete, setTestimonialToDelete] = useState<Testimonial | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => { loadTestimonials() }, [])
+  useEffect(() => {
+    loadTestimonials()
+  }, [])
 
   const loadTestimonials = async () => {
     try {
@@ -60,16 +69,19 @@ export default function TestimonialsPage() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <Breadcrumbs 
-          items={[
-            { label: 'Админ-панель', href: '/admin' },
-            { label: 'Отзывы' }
-          ]} 
-        />
+        <Breadcrumbs items={[{ label: 'Админ-панель', href: '/admin' }, { label: 'Отзывы' }]} />
       </div>
       <div className="flex items-center justify-between mb-8">
-        <div><h1 className="text-3xl font-bold mb-2">Отзывы</h1><p className="text-muted-foreground">Управление отзывами</p></div>
-        <Link href="/admin/testimonials/new"><Button><Plus className="w-4 h-4 mr-2" />Добавить</Button></Link>
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Отзывы</h1>
+          <p className="text-muted-foreground">Управление отзывами</p>
+        </div>
+        <Link href="/admin/testimonials/new">
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            Добавить
+          </Button>
+        </Link>
       </div>
       {error && (
         <div className="mb-4 p-4 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-md">
@@ -84,11 +96,30 @@ export default function TestimonialsPage() {
           </Button>
         </div>
       )}
-      <DataTable data={testimonials} columns={columns} onEdit={(t) => router.push(`/admin/testimonials/${t.id}/edit`)} onDelete={(t) => { setTestimonialToDelete(t); setDeleteDialogOpen(true) }} getRowId={(t) => t.id} />
+      <DataTable
+        data={testimonials}
+        columns={columns}
+        onEdit={t => router.push(`/admin/testimonials/${t.id}/edit`)}
+        onDelete={t => {
+          setTestimonialToDelete(t)
+          setDeleteDialogOpen(true)
+        }}
+        getRowId={t => t.id}
+      />
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Удалить отзыв?</DialogTitle><DialogDescription>Вы уверены? Это действие нельзя отменить.</DialogDescription></DialogHeader>
-          <DialogFooter><Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Отмена</Button><Button variant="destructive" onClick={handleDelete}>Удалить</Button></DialogFooter>
+          <DialogHeader>
+            <DialogTitle>Удалить отзыв?</DialogTitle>
+            <DialogDescription>Вы уверены? Это действие нельзя отменить.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Отмена
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Удалить
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

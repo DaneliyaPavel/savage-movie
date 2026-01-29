@@ -26,12 +26,14 @@ const categoryFilters = [
 export function ProjectsGrid({ projects }: ProjectsGridProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
 
-  const filteredProjects = selectedCategory === 'all'
-    ? projects
-    : projects.filter(p => p.category === selectedCategory)
+  const filteredProjects =
+    selectedCategory === 'all' ? projects : projects.filter(p => p.category === selectedCategory)
 
   return (
-    <section id="projects" className="relative py-24 md:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden border-t border-[#1A1A1A] bg-[#000000]">
+    <section
+      id="projects"
+      className="relative py-24 md:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden border-t border-[#1A1A1A] bg-[#000000]"
+    >
       <div className="container mx-auto max-w-7xl">
         {/* Section Header */}
         <motion.div
@@ -41,7 +43,12 @@ export function ProjectsGrid({ projects }: ProjectsGridProps) {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="mb-16 md:mb-24 editorial-spacing"
         >
-          <SectionTitle mark="plus" markPosition="top-left" size="xl" className="text-[#FFFFFF] mb-8">
+          <SectionTitle
+            mark="plus"
+            markPosition="top-left"
+            size="xl"
+            className="text-[#FFFFFF] mb-8"
+          >
             Избранные проекты
           </SectionTitle>
           <motion.p
@@ -72,7 +79,7 @@ export function ProjectsGrid({ projects }: ProjectsGridProps) {
 
         {/* Projects Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-12 md:mb-16">
-          {filteredProjects.map((project) => (
+          {filteredProjects.map(project => (
             <ProjectCard
               key={project.id}
               id={project.id}

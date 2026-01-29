@@ -1,18 +1,18 @@
-"use client"
+'use client'
 
-import { motion } from "framer-motion"
-import Link from "next/link"
-import Image from "next/image"
-import { useMenu } from "./menu-context"
-import { usePathname } from "next/navigation"
-import { useI18n } from "@/lib/i18n-context"
+import { motion } from 'framer-motion'
+import Link from 'next/link'
+import Image from 'next/image'
+import { useMenu } from './menu-context'
+import { usePathname } from 'next/navigation'
+import { useI18n } from '@/lib/i18n-context'
 
 export function TopBar() {
   const { toggle, isOpen } = useMenu()
   const pathname = usePathname()
   const { t } = useI18n()
-  const isHomePage = pathname === "/"
-  const logoText = "SAVAGE MOVIE"
+  const isHomePage = pathname === '/'
+  const logoText = 'SAVAGE MOVIE'
 
   return (
     <motion.header
@@ -42,7 +42,7 @@ export function TopBar() {
           initial={{ scaleX: 0 }}
           whileHover={{ scaleX: 1 }}
           transition={{ duration: 0.3 }}
-          style={{ width: "100%" }}
+          style={{ width: '100%' }}
         />
       </Link>
 
@@ -50,10 +50,10 @@ export function TopBar() {
       <button
         onClick={toggle}
         className="group relative flex items-center gap-3 text-white"
-        aria-label={isOpen ? t("nav.closeMenu") : t("nav.openMenu")}
+        aria-label={isOpen ? t('nav.closeMenu') : t('nav.openMenu')}
       >
         <span className="text-sm font-medium tracking-wide uppercase opacity-60 group-hover:opacity-100 transition-opacity">
-          {t("nav.menu")}
+          {t('nav.menu')}
         </span>
         <div className="relative w-8 h-8 flex items-center justify-center">
           <motion.span

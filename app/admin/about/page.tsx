@@ -80,12 +80,13 @@ function normalizeTeam(raw: JsonValue | undefined): TeamMember[] {
 function generateId(): string {
   // crypto.randomUUID может отсутствовать / быть недоступен (http, старые браузеры)
   if (typeof crypto !== 'undefined') {
-    if ('randomUUID' in crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+    if ('randomUUID' in crypto && typeof crypto.randomUUID === 'function')
+      return crypto.randomUUID()
     if ('getRandomValues' in crypto && typeof crypto.getRandomValues === 'function') {
       const bytes = new Uint8Array(16)
       crypto.getRandomValues(bytes)
       return Array.from(bytes)
-        .map((b) => b.toString(16).padStart(2, '0'))
+        .map(b => b.toString(16).padStart(2, '0'))
         .join('')
     }
   }
@@ -216,7 +217,7 @@ function PhotoCropper({
             max={100}
             step={1}
             value={crop.x}
-            onChange={(e) => onChange({ ...crop, x: Number(e.target.value) })}
+            onChange={e => onChange({ ...crop, x: Number(e.target.value) })}
             className="w-full"
           />
         </div>
@@ -228,7 +229,7 @@ function PhotoCropper({
             max={100}
             step={1}
             value={crop.y}
-            onChange={(e) => onChange({ ...crop, y: Number(e.target.value) })}
+            onChange={e => onChange({ ...crop, y: Number(e.target.value) })}
             className="w-full"
           />
         </div>
@@ -240,7 +241,7 @@ function PhotoCropper({
             max={2}
             step={0.01}
             value={crop.zoom}
-            onChange={(e) => onChange({ ...crop, zoom: Number(e.target.value) })}
+            onChange={e => onChange({ ...crop, zoom: Number(e.target.value) })}
             className="w-full"
           />
         </div>
@@ -285,18 +286,18 @@ export default function AdminAboutTeamPage() {
   }, [])
 
   const updateMember = (id: string, patch: Partial<TeamMember>) => {
-    setTeam((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)))
+    setTeam(prev => prev.map(m => (m.id === id ? { ...m, ...patch } : m)))
   }
 
   const removeMember = (id: string) => {
-    setTeam((prev) => prev.filter((m) => m.id !== id))
+    setTeam(prev => prev.filter(m => m.id !== id))
   }
 
   const save = async () => {
     setSaving(true)
     try {
       // Нормализуем пустые строки → null (для JSON-аккуратности)
-      const payload = team.map((m) => ({
+      const payload = team.map(m => ({
         id: m.id,
         name: m.name.trim(),
         position: m.position.trim(),
@@ -335,8 +336,8 @@ export default function AdminAboutTeamPage() {
         <BackButton href="/admin" className="mb-4" />
         <h1 className="text-3xl font-bold mb-2">О нас — Наша команда</h1>
         <p className="text-muted-foreground">
-          Добавляйте/удаляйте участников, меняйте фото, должность и описание. Отображается в блоке «Наша команда» на
-          странице «О нас / Студия».
+          Добавляйте/удаляйте участников, меняйте фото, должность и описание. Отображается в блоке
+          «Наша команда» на странице «О нас / Студия».
         </p>
       </div>
 
@@ -346,69 +347,75 @@ export default function AdminAboutTeamPage() {
             Участников: <span className="text-foreground font-medium">{team.length}</span>
           </div>
           <div className="flex items-center gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            const m = newMember()
-            setTeam((prev) => [...prev, m])
-            setExpandedId(m.id)
-          }}
-          disabled={saving}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Добавить участника
-        </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                const m = newMember()
+                setTeam(prev => [...prev, m])
+                setExpandedId(m.id)
+              }}
+              disabled={saving}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Добавить участника
+            </Button>
 
-        <Button type="button" onClick={save} disabled={!canSave}>
-          {saving ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Сохранение...
-            </>
-          ) : (
-            'Сохранить'
-          )}
-        </Button>
+            <Button type="button" onClick={save} disabled={!canSave}>
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Сохранение...
+                </>
+              ) : (
+                'Сохранить'
+              )}
+            </Button>
           </div>
         </div>
       </div>
 
       {team.length === 0 ? (
-        <div className="p-6 border rounded-lg text-muted-foreground">Список пуст. Добавьте первого участника.</div>
+        <div className="p-6 border rounded-lg text-muted-foreground">
+          Список пуст. Добавьте первого участника.
+        </div>
       ) : (
         <SortableList
           items={team}
-          getItemId={(m) => m.id}
-          onReorder={(items) => setTeam(items)}
+          getItemId={m => m.id}
+          onReorder={items => setTeam(items)}
           className="space-y-3"
         >
-          {(member) => (
+          {member => (
             <div className="space-y-4">
               <div
                 role="button"
                 tabIndex={0}
                 className="w-full flex items-center justify-between gap-4 text-left cursor-pointer"
-                onClick={() => setExpandedId((prev) => (prev === member.id ? null : member.id))}
-                onKeyDown={(e) => {
+                onClick={() => setExpandedId(prev => (prev === member.id ? null : member.id))}
+                onKeyDown={e => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault()
-                    setExpandedId((prev) => (prev === member.id ? null : member.id))
+                    setExpandedId(prev => (prev === member.id ? null : member.id))
                   }
                 }}
               >
                 <div className="min-w-0">
-                  <div className="font-medium truncate">{member.name?.trim() || 'Новый участник'}</div>
-                  <div className="text-sm text-muted-foreground truncate">{member.position?.trim() || 'Без должности'}</div>
+                  <div className="font-medium truncate">
+                    {member.name?.trim() || 'Новый участник'}
+                  </div>
+                  <div className="text-sm text-muted-foreground truncate">
+                    {member.position?.trim() || 'Без должности'}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
                     variant="ghost"
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation()
                       removeMember(member.id)
-                      setExpandedId((prev) => (prev === member.id ? null : prev))
+                      setExpandedId(prev => (prev === member.id ? null : prev))
                     }}
                     disabled={saving}
                     className="text-destructive hover:text-destructive"
@@ -428,62 +435,73 @@ export default function AdminAboutTeamPage() {
                 <div className="pt-2 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label htmlFor={`member-name-${member.id}`} className="text-sm font-medium">Имя</label>
+                      <label htmlFor={`member-name-${member.id}`} className="text-sm font-medium">
+                        Имя
+                      </label>
                       <Input
                         id={`member-name-${member.id}`}
                         value={member.name}
-                        onChange={(e) => updateMember(member.id, { name: e.target.value })}
+                        onChange={e => updateMember(member.id, { name: e.target.value })}
                         placeholder="Например: Павел Данелия"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor={`member-position-${member.id}`} className="text-sm font-medium">Должность</label>
+                      <label
+                        htmlFor={`member-position-${member.id}`}
+                        className="text-sm font-medium"
+                      >
+                        Должность
+                      </label>
                       <Input
                         id={`member-position-${member.id}`}
                         value={member.position}
-                        onChange={(e) => updateMember(member.id, { position: e.target.value })}
+                        onChange={e => updateMember(member.id, { position: e.target.value })}
                         placeholder="Например: Режиссёр / Продюсер"
                       />
                     </div>
                   </div>
 
-              <div className="space-y-2">
-                <label htmlFor={`member-bio-${member.id}`} className="text-sm font-medium">Описание (опционально)</label>
-                <Textarea
-                  id={`member-bio-${member.id}`}
-                  value={member.bio || ''}
-                  onChange={(e) => updateMember(member.id, { bio: e.target.value })}
-                  rows={3}
-                  placeholder="Коротко о человеке / специализация"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <label htmlFor={`member-bio-${member.id}`} className="text-sm font-medium">
+                      Описание (опционально)
+                    </label>
+                    <Textarea
+                      id={`member-bio-${member.id}`}
+                      value={member.bio || ''}
+                      onChange={e => updateMember(member.id, { bio: e.target.value })}
+                      rows={3}
+                      placeholder="Коротко о человеке / специализация"
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <label htmlFor={`member-photo-${member.id}`} className="text-sm font-medium">Фото</label>
-                <FileUpload
-                  type="image"
-                  inputId={`member-photo-${member.id}`}
-                  existingFiles={member.photo_url ? [member.photo_url] : []}
-                  onUpload={(url) =>
-                    updateMember(member.id, {
-                      photo_url: url,
-                      photo_crop: member.photo_crop || DEFAULT_CROP,
-                    })
-                  }
-                  onRemove={() => updateMember(member.id, { photo_url: null })}
-                />
-              </div>
+                  <div className="space-y-2">
+                    <label htmlFor={`member-photo-${member.id}`} className="text-sm font-medium">
+                      Фото
+                    </label>
+                    <FileUpload
+                      type="image"
+                      inputId={`member-photo-${member.id}`}
+                      existingFiles={member.photo_url ? [member.photo_url] : []}
+                      onUpload={url =>
+                        updateMember(member.id, {
+                          photo_url: url,
+                          photo_crop: member.photo_crop || DEFAULT_CROP,
+                        })
+                      }
+                      onRemove={() => updateMember(member.id, { photo_url: null })}
+                    />
+                  </div>
 
-              {member.photo_url ? (
-                <div className="pt-2">
-                  <label className="text-sm font-medium block mb-2">Кадрирование фото</label>
-                  <PhotoCropper
-                    url={member.photo_url}
-                    crop={member.photo_crop || DEFAULT_CROP}
-                    onChange={(photo_crop) => updateMember(member.id, { photo_crop })}
-                  />
-                </div>
-              ) : null}
+                  {member.photo_url ? (
+                    <div className="pt-2">
+                      <label className="text-sm font-medium block mb-2">Кадрирование фото</label>
+                      <PhotoCropper
+                        url={member.photo_url}
+                        crop={member.photo_crop || DEFAULT_CROP}
+                        onChange={photo_crop => updateMember(member.id, { photo_crop })}
+                      />
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>

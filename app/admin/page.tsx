@@ -56,7 +56,9 @@ export default function AdminPage() {
   }, [])
 
   if (loading) {
-    return <div className="min-h-screen py-12 px-4 flex items-center justify-center">Загрузка...</div>
+    return (
+      <div className="min-h-screen py-12 px-4 flex items-center justify-center">Загрузка...</div>
+    )
   }
 
   const sectionGroups: Array<{
@@ -129,39 +131,29 @@ export default function AdminPage() {
       <div className="container mx-auto max-w-6xl">
         <div className="mb-8">
           <Breadcrumbs items={[{ label: 'Админ-панель' }]} className="mb-4" />
-          <h1 className="font-heading font-bold text-4xl md:text-5xl mb-2">
-            Админ-панель
-          </h1>
-          <p className="text-muted-foreground">
-            Управление контентом и заявками
-          </p>
+          <h1 className="font-heading font-bold text-4xl md:text-5xl mb-2">Админ-панель</h1>
+          <p className="text-muted-foreground">Управление контентом и заявками</p>
         </div>
 
-        {sectionGroups.map((group) => (
+        {sectionGroups.map(group => (
           <div key={group.title} className="mb-10">
             <div className="mb-4">
               <h2 className="text-lg font-semibold">{group.title}</h2>
               <p className="text-sm text-muted-foreground">{group.description}</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {group.items.map((item) => {
+              {group.items.map(item => {
                 const Icon = item.icon
                 return (
                   <Link key={item.title} href={item.href}>
                     <Card className="hover:border-primary/50 transition-colors cursor-pointer">
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          {item.title}
-                        </CardTitle>
+                        <CardTitle className="text-sm font-medium">{item.title}</CardTitle>
                         <Icon className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold">
-                          {item.value ?? '—'}
-                        </div>
-                        <p className="mt-2 text-xs text-muted-foreground">
-                          {item.description}
-                        </p>
+                        <div className="text-2xl font-bold">{item.value ?? '—'}</div>
+                        <p className="mt-2 text-xs text-muted-foreground">{item.description}</p>
                       </CardContent>
                     </Card>
                   </Link>
@@ -175,9 +167,7 @@ export default function AdminPage() {
         <Card>
           <CardHeader>
             <CardTitle>Быстрые действия</CardTitle>
-            <CardDescription>
-              Управление контентом сайта
-            </CardDescription>
+            <CardDescription>Управление контентом сайта</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -200,10 +190,14 @@ export default function AdminPage() {
                 </Button>
               </Link>
               <Link href="/admin/settings">
-                <Button className="w-full" variant="outline">Настройки сайта</Button>
+                <Button className="w-full" variant="outline">
+                  Настройки сайта
+                </Button>
               </Link>
               <Link href="/admin/about">
-                <Button className="w-full" variant="outline">О нас: команда</Button>
+                <Button className="w-full" variant="outline">
+                  О нас: команда
+                </Button>
               </Link>
             </div>
           </CardContent>

@@ -48,15 +48,10 @@ export function ArrayInput({
           <div key={index} className="flex items-center gap-2">
             <Input
               value={item}
-              onChange={(e) => updateItem(index, e.target.value)}
+              onChange={e => updateItem(index, e.target.value)}
               placeholder={placeholder}
             />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => removeItem(index)}
-            >
+            <Button type="button" variant="ghost" size="icon" onClick={() => removeItem(index)}>
               <X className="w-4 h-4" />
             </Button>
           </div>
@@ -64,8 +59,8 @@ export function ArrayInput({
         <div className="flex items-center gap-2">
           <Input
             value={newItem}
-            onChange={(e) => setNewItem(e.target.value)}
-            onKeyPress={(e) => {
+            onChange={e => setNewItem(e.target.value)}
+            onKeyPress={e => {
               if (e.key === 'Enter') {
                 e.preventDefault()
                 addItem()

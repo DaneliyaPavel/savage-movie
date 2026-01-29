@@ -45,7 +45,12 @@ export function CoursesPageClient({ courses, category: initialCategory }: Course
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="mb-16 md:mb-24 editorial-spacing"
         >
-          <SectionTitle mark="arrow" markPosition="top-left" size="xl" className="text-[#FFFFFF] mb-8">
+          <SectionTitle
+            mark="arrow"
+            markPosition="top-left"
+            size="xl"
+            className="text-[#FFFFFF] mb-8"
+          >
             Курсы
           </SectionTitle>
           <motion.p

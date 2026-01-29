@@ -10,12 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DataTable } from '@/components/admin/DataTable'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
-import {
-  getBlogPosts,
-  deleteBlogPost,
-  updateBlogPost,
-  type BlogPost,
-} from '@/lib/api/blog'
+import { getBlogPosts, deleteBlogPost, updateBlogPost, type BlogPost } from '@/lib/api/blog'
 import {
   Dialog,
   DialogContent,
@@ -57,7 +52,7 @@ export default function BlogAdminPage() {
     setIsDeleting(true)
     try {
       await deleteBlogPost(postToDelete.id)
-      setPosts((prev) => prev.filter((post) => post.id !== postToDelete.id))
+      setPosts(prev => prev.filter(post => post.id !== postToDelete.id))
       setPostToDelete(null)
       setDeleteDialogOpen(false)
     } catch {
@@ -74,7 +69,7 @@ export default function BlogAdminPage() {
       const updated = await updateBlogPost(post.id, {
         is_published: !post.is_published,
       })
-      setPosts((prev) => prev.map((item) => (item.id === updated.id ? updated : item)))
+      setPosts(prev => prev.map(item => (item.id === updated.id ? updated : item)))
     } catch {
       setError('Не удалось изменить статус публикации.')
     } finally {
@@ -138,12 +133,7 @@ export default function BlogAdminPage() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <Breadcrumbs
-          items={[
-            { label: 'Админ-панель', href: '/admin' },
-            { label: 'Блог' },
-          ]}
-        />
+        <Breadcrumbs items={[{ label: 'Админ-панель', href: '/admin' }, { label: 'Блог' }]} />
       </div>
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -175,12 +165,12 @@ export default function BlogAdminPage() {
       <DataTable
         data={posts}
         columns={columns}
-        onEdit={(post) => router.push(`/admin/blog/${post.id}/edit`)}
-        onDelete={(post) => {
+        onEdit={post => router.push(`/admin/blog/${post.id}/edit`)}
+        onDelete={post => {
           setPostToDelete(post)
           setDeleteDialogOpen(true)
         }}
-        getRowId={(post) => post.id}
+        getRowId={post => post.id}
         searchPlaceholder="Поиск по статьям..."
       />
 

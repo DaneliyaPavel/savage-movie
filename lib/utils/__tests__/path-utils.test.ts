@@ -15,4 +15,3 @@ describe('resolveSafeChildPath', () => {
     expect(resolveSafeChildPath(base, ['images', '..', '..', 'secret.txt'])).toBeNull()
   })
 })
-

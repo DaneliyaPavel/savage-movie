@@ -6,11 +6,7 @@ import { getCurrentUserServer } from '@/lib/api/auth'
 import { AdminHeader } from '@/components/admin/AdminHeader'
 import { cookies } from 'next/headers'
 
-export default async function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // Проверяем аутентификацию и права администратора
   const cookieStore = await cookies()
 
@@ -32,9 +28,7 @@ export default async function AdminLayout({
   return (
     <div className="admin-scope">
       <AdminHeader />
-      <main className="py-6 md:py-8">
-        {children}
-      </main>
+      <main className="py-6 md:py-8">{children}</main>
     </div>
   )
 }

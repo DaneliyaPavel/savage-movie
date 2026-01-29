@@ -1,22 +1,18 @@
-import { notFound } from "next/navigation"
-import Link from "next/link"
-import { Calendar, ArrowLeft } from "lucide-react"
-import { format } from "date-fns"
-import { ru } from "date-fns/locale/ru"
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { Calendar, ArrowLeft } from 'lucide-react'
+import { format } from 'date-fns'
+import { ru } from 'date-fns/locale/ru'
 
-import { Badge } from "@/components/ui/badge"
-import { getBlogPostBySlugServer } from "@/lib/api/blog"
-import ReactMarkdown from "react-markdown"
-import { TopBar } from "@/components/ui/top-bar"
-import { JalousieMenu } from "@/components/ui/jalousie-menu"
+import { Badge } from '@/components/ui/badge'
+import { getBlogPostBySlugServer } from '@/lib/api/blog'
+import ReactMarkdown from 'react-markdown'
+import { TopBar } from '@/components/ui/top-bar'
+import { JalousieMenu } from '@/components/ui/jalousie-menu'
 
-export const dynamic = "force-dynamic"
+export const dynamic = 'force-dynamic'
 
-export default async function BlogPostPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>
-}) {
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   let post
   try {
@@ -45,7 +41,7 @@ export default async function BlogPostPage({
 
           <header className="mb-10">
             <div className="flex flex-wrap items-center gap-3 mb-4">
-              <Badge variant="secondary">{post.category || "Блог"}</Badge>
+              <Badge variant="secondary">{post.category || 'Блог'}</Badge>
               {post.reading_time && (
                 <span className="text-sm text-muted-foreground">{post.reading_time}</span>
               )}
@@ -56,15 +52,15 @@ export default async function BlogPostPage({
             </h1>
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-              <span>{post.author || "Savage Movie"}</span>
+              <span>{post.author || 'Savage Movie'}</span>
               <span className="opacity-40">•</span>
               <span className="inline-flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 {post.published_at || post.created_at
-                  ? format(new Date(post.published_at || post.created_at), "d MMMM yyyy", {
+                  ? format(new Date(post.published_at || post.created_at), 'd MMMM yyyy', {
                       locale: ru,
                     })
-                  : "Дата не указана"}
+                  : 'Дата не указана'}
               </span>
             </div>
           </header>
@@ -87,14 +83,10 @@ export default async function BlogPostPage({
                     <p className="text-lg leading-relaxed text-foreground/90">{children}</p>
                   ),
                   ul: ({ children }) => (
-                    <ul className="list-disc pl-6 space-y-2 text-foreground/90">
-                      {children}
-                    </ul>
+                    <ul className="list-disc pl-6 space-y-2 text-foreground/90">{children}</ul>
                   ),
                   ol: ({ children }) => (
-                    <ol className="list-decimal pl-6 space-y-2 text-foreground/90">
-                      {children}
-                    </ol>
+                    <ol className="list-decimal pl-6 space-y-2 text-foreground/90">{children}</ol>
                   ),
                   li: ({ children }) => <li>{children}</li>,
                 }}

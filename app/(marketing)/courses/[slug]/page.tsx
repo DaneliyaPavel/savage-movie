@@ -7,7 +7,12 @@ import { getCourseBySlug } from '@/features/courses/api'
 import { VideoPlayer } from '@/features/projects/components/VideoPlayer'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
 import { CheckCircle2, Clock, User } from 'lucide-react'
@@ -15,13 +20,9 @@ import ReactMarkdown from 'react-markdown'
 import { CourseEnrollmentButton } from '@/features/courses/components/CourseEnrollmentButton'
 import type { Course } from '@/features/courses/api'
 
-export default async function CourseDetailPage({
-  params,
-}: {
-  params: { slug: string }
-}) {
+export default async function CourseDetailPage({ params }: { params: { slug: string } }) {
   let course: Course | null = null
-  
+
   try {
     course = await getCourseBySlug(params.slug)
   } catch (error) {
@@ -64,11 +65,7 @@ export default async function CourseDetailPage({
             className="w-full h-full"
           />
         ) : course.video_promo_url ? (
-          <video
-            src={course.video_promo_url}
-            controls
-            className="w-full h-full object-cover"
-          />
+          <video src={course.video_promo_url} controls className="w-full h-full object-cover" />
         ) : course.cover_image ? (
           <Image
             src={course.cover_image}
@@ -84,22 +81,15 @@ export default async function CourseDetailPage({
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <Breadcrumbs 
-              items={[
-                { label: 'Курсы', href: '/courses' },
-                { label: course.title }
-              ]} 
+            <Breadcrumbs
+              items={[{ label: 'Курсы', href: '/courses' }, { label: course.title }]}
               className="mb-4"
             />
             <BackButton href="/courses" className="mb-4" />
             <div className="flex items-center gap-4 mb-4">
-              <Badge variant="secondary">
-                {categoryLabels[course.category]}
-              </Badge>
+              <Badge variant="secondary">{categoryLabels[course.category]}</Badge>
             </div>
-            <h1 className="font-heading font-bold text-4xl md:text-5xl mb-4">
-              {course.title}
-            </h1>
+            <h1 className="font-heading font-bold text-4xl md:text-5xl mb-4">{course.title}</h1>
             {course.description && (
               <div className="prose prose-invert max-w-none">
                 <ReactMarkdown>{course.description}</ReactMarkdown>
@@ -145,7 +135,11 @@ export default async function CourseDetailPage({
 
           {/* CTA Button */}
           <div className="mb-12">
-            <CourseEnrollmentButton courseId={course.id} courseTitle={course.title} price={Number(course.price)} />
+            <CourseEnrollmentButton
+              courseId={course.id}
+              courseTitle={course.title}
+              price={Number(course.price)}
+            />
           </div>
 
           {/* What You'll Learn */}
@@ -192,12 +186,13 @@ export default async function CourseDetailPage({
               <CardHeader>
                 <CardTitle>Программа курса</CardTitle>
                 <CardDescription>
-                  {modulesWithLessons.length} модулей, {modulesWithLessons.reduce((acc, m) => acc + (m.lessons?.length || 0), 0)} уроков
+                  {modulesWithLessons.length} модулей,{' '}
+                  {modulesWithLessons.reduce((acc, m) => acc + (m.lessons?.length || 0), 0)} уроков
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Accordion type="single" collapsible className="w-full">
-                  {modulesWithLessons.map((module) => (
+                  {modulesWithLessons.map(module => (
                     <AccordionItem key={module.id} value={module.id}>
                       <AccordionTrigger>
                         <div className="flex items-center gap-3">
@@ -209,13 +204,14 @@ export default async function CourseDetailPage({
                       </AccordionTrigger>
                       <AccordionContent>
                         <ul className="space-y-2 mt-2">
-                          {module.lessons?.map((lesson) => (
+                          {module.lessons?.map(lesson => (
                             <li key={lesson.id} className="flex items-center gap-3 text-sm">
                               <Clock className="w-4 h-4 text-muted-foreground" />
                               <span>{lesson.title}</span>
                               {lesson.duration && (
                                 <span className="text-muted-foreground ml-auto">
-                                  {Math.floor(lesson.duration / 60)}:{(lesson.duration % 60).toString().padStart(2, '0')}
+                                  {Math.floor(lesson.duration / 60)}:
+                                  {(lesson.duration % 60).toString().padStart(2, '0')}
                                 </span>
                               )}
                             </li>

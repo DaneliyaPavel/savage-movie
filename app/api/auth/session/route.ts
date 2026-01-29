@@ -22,15 +22,8 @@ const cookieOptions = {
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null)
 
-  if (
-    !body ||
-    typeof body.access_token !== 'string' ||
-    typeof body.refresh_token !== 'string'
-  ) {
-    return NextResponse.json(
-      { error: 'Invalid token payload' },
-      { status: 400 }
-    )
+  if (!body || typeof body.access_token !== 'string' || typeof body.refresh_token !== 'string') {
+    return NextResponse.json({ error: 'Invalid token payload' }, { status: 400 })
   }
 
   const response = NextResponse.json({ ok: true })

@@ -68,7 +68,7 @@ export function CTASection() {
 
       setIsSuccess(true)
       form.reset()
-      
+
       // Сброс успешного сообщения через 5 секунд
       setTimeout(() => {
         setIsSuccess(false)
@@ -119,86 +119,114 @@ export function CTASection() {
         >
           <div className="border border-border/30 bg-background">
             <div className="p-8 md:p-12">
-            {isSuccess ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="flex flex-col items-center justify-center py-16 text-center"
-              >
+              {isSuccess ? (
                 <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", delay: 0.2 }}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                  className="flex flex-col items-center justify-center py-16 text-center"
                 >
-                  <CheckCircle2 className="w-20 h-20 text-primary mb-6" />
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', delay: 0.2 }}
+                  >
+                    <CheckCircle2 className="w-20 h-20 text-primary mb-6" />
+                  </motion.div>
+                  <motion.h3
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-3xl font-heading font-bold mb-3"
+                  >
+                    Спасибо за заявку!
+                  </motion.h3>
+                  <motion.p
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="text-muted-foreground text-lg"
+                  >
+                    Мы свяжемся с вами в ближайшее время
+                  </motion.p>
                 </motion.div>
-                <motion.h3
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="text-3xl font-heading font-bold mb-3"
-                >
-                  Спасибо за заявку!
-                </motion.h3>
-                <motion.p
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-muted-foreground text-lg"
-                >
-                  Мы свяжемся с вами в ближайшее время
-                </motion.p>
-              </motion.div>
-            ) : (
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.5 }}
-                    >
-                      <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-base font-medium mb-2">
-                              Ваше имя
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Иван Иванов"
-                                className="h-14 text-base border-border/50 bg-background/50 backdrop-blur-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </motion.div>
+              ) : (
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5 }}
+                      >
+                        <FormField
+                          control={form.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-base font-medium mb-2">Ваше имя</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Иван Иванов"
+                                  className="h-14 text-base border-border/50 bg-background/50 backdrop-blur-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5 }}
+                      >
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-base font-medium mb-2">Email</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="email"
+                                  placeholder="ivan@example.com"
+                                  className="h-14 text-base border-border/50 bg-background focus:border-foreground focus:ring-0 rounded-none transition-all"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </motion.div>
+                    </div>
 
                     <motion.div
-                      initial={{ opacity: 0, x: 20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
-                      transition={{ duration: 0.5 }}
+                      transition={{ duration: 0.5, delay: 0.1 }}
                     >
                       <FormField
                         control={form.control}
-                        name="email"
+                        name="phone"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-base font-medium mb-2">
-                              Email
+                              Телефон{' '}
+                              <span className="text-muted-foreground font-normal">
+                                (необязательно)
+                              </span>
                             </FormLabel>
                             <FormControl>
                               <Input
-                                type="email"
-                                placeholder="ivan@example.com"
+                                type="tel"
+                                placeholder="+7 (999) 999-99-99"
                                 className="h-14 text-base border-border/50 bg-background focus:border-foreground focus:ring-0 rounded-none transition-all"
                                 {...field}
                               />
@@ -208,134 +236,103 @@ export function CTASection() {
                         )}
                       />
                     </motion.div>
-                  </div>
 
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: 0.1 }}
-                  >
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base font-medium mb-2">
-                            Телефон <span className="text-muted-foreground font-normal">(необязательно)</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              type="tel"
-                              placeholder="+7 (999) 999-99-99"
-                              className="h-14 text-base border-border/50 bg-background focus:border-foreground focus:ring-0 rounded-none transition-all"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                  >
-                    <FormField
-                      control={form.control}
-                      name="message"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base font-medium mb-2">
-                            Сообщение
-                          </FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Расскажите о вашем проекте..."
-                              className="min-h-[160px] text-base border-border/50 bg-background focus:border-foreground focus:ring-0 rounded-none transition-all resize-none"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: 0.3 }}
-                  >
-                    <FormField
-                      control={form.control}
-                      name="budget"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base font-medium mb-4 flex items-center justify-between">
-                            <span>Бюджет проекта</span>
-                            <span className="text-2xl font-heading font-bold text-primary">
-                              {(field.value?.[0] ?? 0).toLocaleString('ru-RU')} ₽
-                            </span>
-                          </FormLabel>
-                          <FormControl>
-                            <Slider
-                              min={10000}
-                              max={1000000}
-                              step={10000}
-                              value={field.value}
-                              onValueChange={field.onChange}
-                              className="w-full"
-                            />
-                          </FormControl>
-                          <div className="flex justify-between text-sm text-muted-foreground mt-2">
-                            <span>10 000 ₽</span>
-                            <span>1 000 000 ₽</span>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: 0.4 }}
-                  >
-                    <Button
-                      type="submit"
-                      size="lg"
-                      className="w-full h-14 text-lg font-medium bg-foreground hover:bg-foreground/90 text-background rounded-none transition-all"
-                      disabled={isSubmitting}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, delay: 0.2 }}
                     >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                          Отправка...
-                        </>
-                      ) : (
-                        <>
-                          Отправить заявку
-                          <motion.span
-                            animate={{ x: [0, 5, 0] }}
-                            transition={{ duration: 1.5, repeat: Infinity }}
-                            className="ml-2"
-                          >
-                            →
-                          </motion.span>
-                        </>
-                      )}
-                    </Button>
-                  </motion.div>
-                </form>
-              </Form>
-            )}
+                      <FormField
+                        control={form.control}
+                        name="message"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-base font-medium mb-2">Сообщение</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Расскажите о вашем проекте..."
+                                className="min-h-[160px] text-base border-border/50 bg-background focus:border-foreground focus:ring-0 rounded-none transition-all resize-none"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, delay: 0.3 }}
+                    >
+                      <FormField
+                        control={form.control}
+                        name="budget"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-base font-medium mb-4 flex items-center justify-between">
+                              <span>Бюджет проекта</span>
+                              <span className="text-2xl font-heading font-bold text-primary">
+                                {(field.value?.[0] ?? 0).toLocaleString('ru-RU')} ₽
+                              </span>
+                            </FormLabel>
+                            <FormControl>
+                              <Slider
+                                min={10000}
+                                max={1000000}
+                                step={10000}
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                className="w-full"
+                              />
+                            </FormControl>
+                            <div className="flex justify-between text-sm text-muted-foreground mt-2">
+                              <span>10 000 ₽</span>
+                              <span>1 000 000 ₽</span>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, delay: 0.4 }}
+                    >
+                      <Button
+                        type="submit"
+                        size="lg"
+                        className="w-full h-14 text-lg font-medium bg-foreground hover:bg-foreground/90 text-background rounded-none transition-all"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            Отправка...
+                          </>
+                        ) : (
+                          <>
+                            Отправить заявку
+                            <motion.span
+                              animate={{ x: [0, 5, 0] }}
+                              transition={{ duration: 1.5, repeat: Infinity }}
+                              className="ml-2"
+                            >
+                              →
+                            </motion.span>
+                          </>
+                        )}
+                      </Button>
+                    </motion.div>
+                  </form>
+                </Form>
+              )}
             </div>
           </div>
         </motion.div>

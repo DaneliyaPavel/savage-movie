@@ -55,9 +55,7 @@ export function ProjectMetaPanel({ project }: ProjectMetaPanelProps) {
             <div className="text-xs md:text-sm text-[#FFFFFF]/40 font-medium uppercase tracking-wider mb-1">
               Клиент
             </div>
-            <div className="text-base md:text-lg text-[#FFFFFF] font-medium">
-              {project.client}
-            </div>
+            <div className="text-base md:text-lg text-[#FFFFFF] font-medium">{project.client}</div>
           </div>
         )}
 
@@ -90,9 +88,7 @@ export function ProjectMetaPanel({ project }: ProjectMetaPanelProps) {
               <div className="text-xs md:text-sm text-[#FFFFFF]/40 font-medium uppercase tracking-wider mb-1">
                 Роль
               </div>
-              <div className="text-base md:text-lg text-[#FFFFFF] font-medium">
-                {project.role}
-              </div>
+              <div className="text-base md:text-lg text-[#FFFFFF] font-medium">{project.role}</div>
             </div>
           )}
         </div>

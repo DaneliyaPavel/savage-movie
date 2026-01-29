@@ -52,7 +52,7 @@ export function UserMenu({ user }: UserMenuProps) {
   const userInitials = user.full_name
     ? user.full_name
         .split(' ')
-        .map((n) => n[0])
+        .map(n => n[0])
         .join('')
         .toUpperCase()
         .slice(0, 2)
@@ -68,9 +68,7 @@ export function UserMenu({ user }: UserMenuProps) {
       >
         <Avatar className="h-7 w-7">
           <AvatarImage src={user.avatar_url || undefined} alt={user.full_name || user.email} />
-          <AvatarFallback className="text-xs">
-            {userInitials}
-          </AvatarFallback>
+          <AvatarFallback className="text-xs">{userInitials}</AvatarFallback>
         </Avatar>
         <span className="hidden md:inline text-sm font-medium">
           {user.full_name || user.email.split('@')[0]}

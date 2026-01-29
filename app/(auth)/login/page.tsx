@@ -46,7 +46,7 @@ function LoginForm() {
 
     try {
       await login({ email, password })
-      
+
       // Проверяем, что токены сохранены
       if (typeof window !== 'undefined') {
         const savedToken = localStorage.getItem('access_token')
@@ -54,7 +54,7 @@ function LoginForm() {
           throw new Error('Токен не был сохранен. Попробуйте снова.')
         }
       }
-      
+
       // Проверяем, есть ли redirect параметр (только относительные пути)
       const redirectParam = searchParams.get('redirect')
       const redirectTo =
@@ -64,7 +64,7 @@ function LoginForm() {
         !redirectParam.includes('\\')
           ? redirectParam
           : '/admin'
-      
+
       // Используем window.location для полного перезапуска страницы
       window.location.href = redirectTo
     } catch (err: unknown) {
@@ -75,7 +75,11 @@ function LoginForm() {
       } else if (typeof err === 'string') {
         errorMessage = err
       } else if (typeof err === 'object' && err) {
-        const anyErr = err as { response?: { data?: { detail?: string } }; data?: { detail?: string }; message?: string }
+        const anyErr = err as {
+          response?: { data?: { detail?: string } }
+          data?: { detail?: string }
+          message?: string
+        }
         if (anyErr.response?.data?.detail) {
           errorMessage = anyErr.response.data.detail
         } else if (anyErr.data?.detail) {
@@ -95,9 +99,7 @@ function LoginForm() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl font-heading">Вход</CardTitle>
-          <CardDescription>
-            Войдите в свой аккаунт для доступа к курсам
-          </CardDescription>
+          <CardDescription>Войдите в свой аккаунт для доступа к курсам</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -114,7 +116,7 @@ function LoginForm() {
                 type="email"
                 placeholder="your@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
               />
@@ -127,7 +129,7 @@ function LoginForm() {
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
               />
@@ -151,9 +153,7 @@ function LoginForm() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Или войдите через
-                </span>
+                <span className="bg-background px-2 text-muted-foreground">Или войдите через</span>
               </div>
             </div>
             <div className="mt-4">

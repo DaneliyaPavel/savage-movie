@@ -48,12 +48,7 @@ export function LanguageToggle() {
         aria-label="Переключить язык"
       >
         {/* Circle outline - animated draw */}
-        <motion.svg
-          width="56"
-          height="56"
-          viewBox="0 0 56 56"
-          className="absolute inset-0"
-        >
+        <motion.svg width="56" height="56" viewBox="0 0 56 56" className="absolute inset-0">
           <motion.circle
             cx="28"
             cy="28"
@@ -80,7 +75,7 @@ export function LanguageToggle() {
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           />
         </motion.svg>
-        
+
         {/* Text */}
         <AnimatePresence mode="wait" initial={false}>
           <motion.span

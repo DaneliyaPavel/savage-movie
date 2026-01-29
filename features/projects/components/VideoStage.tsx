@@ -30,7 +30,7 @@ export function VideoStage({ videoUrl, playbackId, poster, title }: VideoStagePr
   const [isVideoLoaded, setIsVideoLoaded] = useState(false)
   const [showPoster, setShowPoster] = useState(true)
   const hidePosterTimerRef = useRef<number | null>(null)
-  
+
   const resolvedPlaybackId = playbackId || (videoUrl ? getPlaybackId(videoUrl) : null)
 
   // Сбрасываем состояние при смене видео

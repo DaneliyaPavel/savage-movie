@@ -58,7 +58,7 @@ export function ProjectRow3Column({ project, index }: ProjectRow3ColumnProps) {
       // Для обычного video элемента
       videoRef.current.play().then(
         () => setIsVideoPlaying(true),
-        (err) => console.debug('Video play failed:', err)
+        err => console.debug('Video play failed:', err)
       )
     }
   }

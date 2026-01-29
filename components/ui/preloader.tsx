@@ -18,7 +18,7 @@ export function Preloader({ onComplete }: PreloaderProps) {
   useEffect(() => {
     // Симуляция прогресса с плавным увеличением
     const interval = setInterval(() => {
-      setProgress((prev) => {
+      setProgress(prev => {
         if (prev >= 100) {
           clearInterval(interval)
           return 100
@@ -81,7 +81,7 @@ export function Preloader({ onComplete }: PreloaderProps) {
             >
               SAVAGE MOVIE
             </motion.h1>
-            
+
             {/* Минималистичный прогресс бар */}
             <motion.div
               initial={{ width: 0, opacity: 0 }}

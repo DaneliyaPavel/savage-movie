@@ -48,14 +48,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return (
         <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
           <h2 className="text-2xl font-bold mb-4 text-red-500">Что-то пошло не так</h2>
-          <p className="text-muted-foreground mb-4">
-            Произошла ошибка при загрузке компонента.
-          </p>
+          <p className="text-muted-foreground mb-4">Произошла ошибка при загрузке компонента.</p>
           {this.state.error && process.env.NODE_ENV === 'development' && (
             <details className="mt-4 p-4 bg-muted rounded-lg max-w-2xl">
-              <summary className="cursor-pointer font-medium mb-2">
-                Детали ошибки
-              </summary>
+              <summary className="cursor-pointer font-medium mb-2">Детали ошибки</summary>
               <pre className="text-sm overflow-auto">
                 {this.state.error.message}
                 {this.state.error.stack && (

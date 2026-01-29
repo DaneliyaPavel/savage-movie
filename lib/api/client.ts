@@ -11,15 +11,10 @@ export type { ApiError } from './base'
 /**
  * Базовая функция для запросов к API (client-side)
  */
-export async function apiRequest<T>(
-  endpoint: string,
-  options: ApiRequestOptions = {}
-): Promise<T> {
+export async function apiRequest<T>(endpoint: string, options: ApiRequestOptions = {}): Promise<T> {
   const url = `${API_URL}${endpoint}`
-  
-  const token = typeof window !== 'undefined' 
-    ? localStorage.getItem('access_token') 
-    : null
+
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
 
   return baseApiRequest<T>(url, {
     ...options,
@@ -37,10 +32,7 @@ export async function apiGet<T>(endpoint: string): Promise<T> {
 /**
  * POST запрос
  */
-export async function apiPost<T>(
-  endpoint: string,
-  data?: unknown
-): Promise<T> {
+export async function apiPost<T>(endpoint: string, data?: unknown): Promise<T> {
   return apiRequest<T>(endpoint, {
     method: 'POST',
     headers: data ? { 'Content-Type': 'application/json' } : undefined,
@@ -51,10 +43,7 @@ export async function apiPost<T>(
 /**
  * PUT запрос
  */
-export async function apiPut<T>(
-  endpoint: string,
-  data?: unknown
-): Promise<T> {
+export async function apiPut<T>(endpoint: string, data?: unknown): Promise<T> {
   return apiRequest<T>(endpoint, {
     method: 'PUT',
     headers: data ? { 'Content-Type': 'application/json' } : undefined,
