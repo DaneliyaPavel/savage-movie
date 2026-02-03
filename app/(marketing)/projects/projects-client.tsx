@@ -27,12 +27,115 @@ import { logger } from '@/lib/utils/logger'
 
 const THUMBNAIL_SIZES = '(min-width: 1024px) 10vw, (min-width: 768px) 12vw, 20vw'
 const MAIN_IMAGE_SIZES = '(min-width: 1024px) 40vw, (min-width: 768px) 35vw, 60vw'
+const SCRIBBLE_VARIANTS = 14
 
 const getPlaybackId = (url?: string | null): string | null => {
   if (!url) return null
   const muxMatch = url.match(/mux\.com\/([^/?]+)/) || url.match(/playbackId=([^&]+)/)
   const rawId = muxMatch?.[1] ?? null
   return rawId ? rawId.replace(/\.m3u8$/, '') : null
+}
+
+const createScribblePath = (seed: number) => {
+  const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+  const rand = (step: number) => {
+    const raw = Math.sin(seed * 91.345 + step * 37.421) * 10000
+    return raw - Math.floor(raw)
+  }
+
+  const points: Array<[number, number]> = []
+  let x = 8 + rand(1) * 16
+  let y = 50 + (rand(2) - 0.5) * 20
+  points.push([x, y])
+
+  const steps = 14
+  for (let i = 1; i <= steps; i++) {
+    const dx = (rand(i * 2) - 0.5) * 48
+    const dy = (rand(i * 2 + 1) - 0.5) * 46
+    x = clamp(x + dx, 4, 96)
+    y = clamp(y + dy, 8, 92)
+    points.push([x, y])
+  }
+
+  if (points.length === 0) {
+    return 'M 10 50'
+  }
+  if (points.length < 2) {
+    const first = points[0]
+    if (!first) return 'M 10 50'
+    const [px, py] = first
+    return `M ${px.toFixed(2)} ${py.toFixed(2)}`
+  }
+
+  const [startX, startY] = points[0] ?? [10, 50]
+  let path = `M ${startX.toFixed(2)} ${startY.toFixed(2)}`
+  for (let i = 1; i < points.length; i++) {
+    const currentPoint = points[i]
+    const previousPoint = points[i - 1]
+    if (!currentPoint || !previousPoint) continue
+    const [cx, cy] = currentPoint
+    const [px, py] = previousPoint
+    const mx = ((px + cx) / 2).toFixed(2)
+    const my = ((py + cy) / 2).toFixed(2)
+    path += ` Q ${px.toFixed(2)} ${py.toFixed(2)} ${mx} ${my}`
+  }
+  return path
+}
+
+function ScribbleStrike({
+  active,
+  seed,
+  trigger,
+  delay = 0,
+  className = '',
+}: {
+  active: boolean
+  seed: number
+  trigger: number
+  delay?: number
+  className?: string
+}) {
+  const path = useMemo(() => createScribblePath(seed), [seed])
+  const rotate = (seed % 9) * 2.2 - 8
+  const scaleX = 1 + (seed % 3) * 0.04
+  const scaleY = 1 + (seed % 4) * 0.05
+  if (!active) return null
+
+  return (
+    <span
+      className={`pointer-events-none absolute inset-0 ${className}`}
+      style={{
+        transform: `rotate(${rotate}deg) scale(${scaleX}, ${scaleY})`,
+        transformOrigin: '50% 50%',
+      }}
+      aria-hidden="true"
+    >
+      <svg
+        key={trigger}
+        width="100%"
+        height="100%"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+      >
+        <motion.path
+          d={path}
+          stroke="#ff2936"
+          strokeWidth={1.8}
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: [0, 1, 1, 1], opacity: [0, 0.95, 0.9, 0] }}
+          transition={{
+            duration: 1.2,
+            delay,
+            times: [0, 0.4, 0.6, 1],
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        />
+      </svg>
+    </span>
+  )
 }
 
 // Project Row Component - Freshman.tv style
@@ -50,11 +153,14 @@ function ProjectRow({
   const [activeThumbIndex, setActiveThumbIndex] = useState(0)
   const [videoSrc, setVideoSrc] = useState<string | null>(null)
   const [mediaHeight, setMediaHeight] = useState<number | null>(null)
+  const [scribbleSeed, setScribbleSeed] = useState(0)
+  const [scribbleTrigger, setScribbleTrigger] = useState(0)
   const videoRef = useRef<HTMLVideoElement>(null)
   const muxRef = useRef<MuxPlayerRefAttributes | null>(null)
   const videoContainerRef = useRef<HTMLDivElement>(null)
   const videoAspectRef = useRef<HTMLDivElement>(null)
   const thumbnailsContainerRef = useRef<HTMLDivElement>(null)
+  const lastScribbleRef = useRef<number | null>(null)
 
   const visibleThumbs = useMemo(() => project.thumbnails.slice(0, 5), [project.thumbnails])
   const cycleLength = Math.max(visibleThumbs.length, 1)
@@ -81,6 +187,14 @@ function ProjectRow({
   const handleMouseEnter = () => {
     setIsHovered(true)
     setActiveThumbIndex(0)
+    const previous = lastScribbleRef.current
+    let next = Math.floor(Math.random() * SCRIBBLE_VARIANTS)
+    if (previous !== null && next === previous) {
+      next = (next + 1) % SCRIBBLE_VARIANTS
+    }
+    lastScribbleRef.current = next
+    setScribbleSeed(next)
+    setScribbleTrigger(value => value + 1)
     if (project.videoUrl && !videoSrc && !playbackId) {
       setVideoSrc(project.videoUrl)
     }
@@ -107,7 +221,7 @@ function ProjectRow({
       if (isHovered) {
         const playPromise = player.play?.()
         if (playPromise?.catch) {
-          playPromise.catch(() => {})
+          playPromise.catch(() => { })
         }
       } else {
         player.pause?.()
@@ -119,7 +233,7 @@ function ProjectRow({
     if (isHovered) {
       const playPromise = videoRef.current.play()
       if (playPromise) {
-        playPromise.catch(() => {})
+        playPromise.catch(() => { })
       }
     } else {
       videoRef.current.pause()
@@ -160,8 +274,8 @@ function ProjectRow({
     const resizeObserver =
       typeof ResizeObserver !== 'undefined'
         ? new ResizeObserver(() => {
-            schedule()
-          })
+          schedule()
+        })
         : null
 
     if (resizeObserver && videoContainerRef.current) {
@@ -273,9 +387,8 @@ function ProjectRow({
 
             {(playbackId || project.videoUrl) && (
               <span
-                className={`absolute inset-0 flex items-center justify-center transition-opacity ${
-                  isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                }`}
+                className={`absolute inset-0 flex items-center justify-center transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                  }`}
               >
                 <span
                   className="text-white text-lg md:text-xl"
@@ -323,17 +436,36 @@ function ProjectRow({
 
             {/* Client & Title - larger, positioned above video */}
             <div className="mb-3">
-              <h3 className="text-base md:text-lg font-oranienbaum uppercase tracking-wide mb-1">
-                {getClient()}
-              </h3>
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-oranienbaum uppercase tracking-tight leading-tight">
-                {getTitle()}
-              </h2>
+              <div className="relative inline-block">
+                <ScribbleStrike
+                  active={isHovered}
+                  seed={scribbleSeed}
+                  trigger={scribbleTrigger}
+                />
+                <h3 className="text-base md:text-lg font-oranienbaum uppercase tracking-wide mb-0.5 relative z-[1]">
+                  {getClient()}
+                </h3>
+                <h2 className="text-2xl md:text-3xl lg:text-4xl font-oranienbaum uppercase tracking-tight leading-tight relative z-[1]">
+                  {getTitle()}
+                </h2>
+              </div>
+              <motion.span
+                initial={false}
+                animate={isHovered ? { opacity: 1, y: 0 } : { opacity: 0, y: -6 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                className="mt-2 block text-white text-xl md:text-2xl"
+                style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+              >
+                {language === 'ru' ? 'изучить' : 'explore'}
+              </motion.span>
             </div>
 
             {/* Description - at the bottom, larger and readable */}
             <div className="mt-auto">
-              <p className="text-[24px] text-foreground leading-relaxed line-clamp-5 font-secondary">
+              <p
+                className="text-[14px] md:text-[15px] lg:text-[16px] xl:text-[18px] 2xl:text-[20px] text-foreground leading-[1.6] line-clamp-4"
+                style={{ fontFamily: 'var(--font-secondary), var(--font-sans)', fontWeight: 400 }}
+              >
                 {getDescription()}
               </p>
             </div>
@@ -434,11 +566,10 @@ export default function ProjectsPageClient({
                   type="button"
                   onClick={() => setOrientationFilter(filter.value)}
                   aria-pressed={isActive}
-                  className={`group inline-flex items-center gap-3 rounded-md border px-4 py-3 text-[10px] md:text-xs uppercase tracking-[0.25em] transition ${
-                    isActive
-                      ? 'border-accent/70 bg-accent/10 text-white shadow-[0_10px_30px_rgba(255,41,54,0.18)]'
-                      : 'border-white/10 bg-white/5 text-white/60 hover:border-white/30 hover:text-white'
-                  }`}
+                  className={`group inline-flex items-center gap-3 rounded-md border px-4 py-3 text-[10px] md:text-xs uppercase tracking-[0.25em] transition ${isActive
+                    ? 'border-accent/70 bg-accent/10 text-white shadow-[0_10px_30px_rgba(255,41,54,0.18)]'
+                    : 'border-white/10 bg-white/5 text-white/60 hover:border-white/30 hover:text-white'
+                    }`}
                 >
                   {filter.value === 'all' ? (
                     <span className="flex items-end gap-1">
