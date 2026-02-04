@@ -23,6 +23,7 @@ export default async function HomePage() {
     client: string | null
     thumbnail: string
     playbackId: string
+    carousel_gif_url?: string | null
     slug?: string
   }> = []
 
@@ -50,6 +51,7 @@ export default async function HomePage() {
         client: p.client || null,
         thumbnail: thumbnail,
         playbackId: p.mux_playback_id || SHOWREEL_PLAYBACK_ID,
+        carousel_gif_url: p.carousel_gif_url || null,
         slug: p.slug,
       }
     })

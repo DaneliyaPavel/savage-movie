@@ -25,6 +25,7 @@ class Project(Base):
     behind_scenes = Column(ARRAY(Text), nullable=True)
     is_featured = Column(Boolean, nullable=False, default=False)  # Для отображения на главной странице
     mux_playback_id = Column(Text, nullable=True)  # Mux playback ID для видео
+    carousel_gif_url = Column(Text, nullable=True)  # MUX URL для GIF в карусели на главной
     title_ru = Column(Text, nullable=True)  # Русское название
     title_en = Column(Text, nullable=True)  # Английское название
     description_ru = Column(Text, nullable=True)  # Русское описание

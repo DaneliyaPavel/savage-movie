@@ -51,6 +51,7 @@ const formSchema = z.object({
   description_en: z.string().optional(),
   thumbnail_url: z.string().url('Некорректный URL').optional().or(z.literal('')),
   cover_image_url: z.string().url('Некорректный URL').optional().or(z.literal('')),
+  carousel_gif_url: z.string().optional().or(z.literal('')),
   year: z.number().optional(),
 })
 
@@ -82,6 +83,7 @@ export default function NewProjectPage() {
       description_en: '',
       thumbnail_url: '',
       cover_image_url: '',
+      carousel_gif_url: '',
       year: undefined,
     },
   })
@@ -123,6 +125,7 @@ export default function NewProjectPage() {
         description_en: values.description_en || null,
         thumbnail_url: values.thumbnail_url || null,
         cover_image_url: values.cover_image_url || null,
+        carousel_gif_url: values.carousel_gif_url || null,
         year: values.year || null,
       }
       await createProject(projectData)
@@ -276,6 +279,23 @@ export default function NewProjectPage() {
                   <FormMessage />
                   <p className="text-xs text-muted-foreground">
                     Обязательно для отображения на главной странице
+                  </p>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="carousel_gif_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Carousel GIF (Mux ID или URL)</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Mux Playback ID или прямая ссылка" />
+                  </FormControl>
+                  <FormMessage />
+                  <p className="text-xs text-muted-foreground">
+                    Приоритетное видео для карусели на главной. Если указан Mux ID, будет использоваться плеер Mux.
                   </p>
                 </FormItem>
               )}

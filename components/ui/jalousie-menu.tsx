@@ -8,6 +8,26 @@ import { useI18n } from '@/lib/i18n-context'
 import { getProjects } from '@/features/projects/api'
 import { getCourses } from '@/features/courses/api'
 import { getBlogPosts } from '@/lib/api/blog'
+import { cn } from '@/lib/utils'
+
+// Scribble SVG Component - defined outside to maintain stable identity for AnimatePresence
+const ScribbleStrike = () => (
+  <svg viewBox="0 0 200 20" className="w-full h-full absolute top-1/2 left-0 -translate-y-1/2 pointer-events-none overflow-visible">
+    {/* Messy strike-through */}
+    <motion.path
+      d="M5,15 Q50,5 90,12 T180,5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="6"
+      strokeLinecap="round"
+      className="text-[#FF322E]"
+      initial={{ pathLength: 0, opacity: 0 }}
+      animate={{ pathLength: 1, opacity: 1 }}
+      exit={{ pathLength: 0, opacity: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+    />
+  </svg>
+)
 
 export function JalousieMenu() {
   const { isOpen, setIsOpen } = useMenu()
@@ -50,45 +70,44 @@ export function JalousieMenu() {
 
   type CountKey = 'projects' | 'courses' | 'blog' | null
 
+  /* Creative Asymmetry Grid - "Staircase" feel */
   const NAV_ITEMS = useMemo(
     () =>
       [
-        // Order requested: Home, Projects, Courses, About, Blog, Contact
-        // "Staircase" positioning (Freshman-like) via CSS grid columns
         {
           labelKey: 'nav.home',
           href: '/',
-          positionClass: 'col-span-12 md:col-start-1 md:col-span-4',
+          positionClass: 'col-span-12 md:col-start-1 md:col-span-5', // Left
           countKey: null as CountKey,
         },
         {
           labelKey: 'nav.projects',
           href: '/projects',
-          positionClass: 'col-span-12 md:col-start-3 md:col-span-6',
+          positionClass: 'col-span-12 md:col-start-4 md:col-span-6', // Indented
           countKey: 'projects' as CountKey,
         },
         {
           labelKey: 'nav.courses',
           href: '/courses',
-          positionClass: 'col-span-12 md:col-start-5 md:col-span-6',
+          positionClass: 'col-span-12 md:col-start-2 md:col-span-6', // Back left a bit
           countKey: 'courses' as CountKey,
         },
         {
           labelKey: 'nav.studio',
           href: '/about',
-          positionClass: 'col-span-12 md:col-start-8 md:col-span-4',
+          positionClass: 'col-span-12 md:col-start-6 md:col-span-5', // Far right
           countKey: null as CountKey,
         },
         {
           labelKey: 'nav.blog',
           href: '/blog',
-          positionClass: 'col-span-12 md:col-start-2 md:col-span-5',
+          positionClass: 'col-span-12 md:col-start-3 md:col-span-5', // Middle
           countKey: 'blog' as CountKey,
         },
         {
           labelKey: 'nav.contact',
           href: '/contact',
-          positionClass: 'col-span-12 md:col-start-6 md:col-span-6',
+          positionClass: 'col-span-12 md:col-start-5 md:col-span-6', // Middle-Right
           countKey: null as CountKey,
         },
       ] as const,
@@ -114,7 +133,7 @@ export function JalousieMenu() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          exit={{ opacity: 0, transition: { delay: 0.2 } }}
           transition={{ duration: 0.4 }}
           className="fixed inset-0 z-50 bg-background"
         >
@@ -126,6 +145,7 @@ export function JalousieMenu() {
             transition={{ delay: 0.3 }}
             onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')}
             className="absolute top-6 left-6 md:left-10 w-12 h-12 rounded-full border border-border flex items-center justify-center text-sm font-medium hover:bg-secondary transition-colors uppercase"
+            aria-label={language === 'ru' ? 'Switch to English' : 'Переключить на русский'}
           >
             {language}
           </motion.button>
@@ -162,7 +182,7 @@ export function JalousieMenu() {
             </motion.div>
           </motion.button>
 
-          {/* Menu Items - Jalousie/Blinds Style */}
+          {/* Menu Items - Creative Layout */}
           <nav
             className="h-full flex flex-col justify-center px-6 md:px-10 lg:px-14 xl:px-20 pt-24 pb-20
             [@media(max-height:820px)]:justify-start [@media(max-height:820px)]:pt-20 [@media(max-height:820px)]:pb-16"
@@ -170,11 +190,11 @@ export function JalousieMenu() {
             {NAV_ITEMS.map((item, index) => (
               <motion.div
                 key={item.href}
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 50, skewY: 2 }}
+                animate={{ opacity: 1, y: 0, skewY: 0 }}
                 exit={{ opacity: 0, y: 20 }}
                 transition={{
-                  delay: 0.1 + index * 0.08,
+                  delay: 0.1 + index * 0.06,
                   duration: 0.5,
                   ease: [0.25, 0.1, 0.25, 1],
                 }}
@@ -185,70 +205,52 @@ export function JalousieMenu() {
                 <Link
                   href={item.href}
                   onClick={() => setIsOpen(false)}
-                  className="relative block py-4 sm:py-5 md:py-6 lg:py-7 xl:py-10 group
-                  [@media(max-height:820px)]:py-3 [@media(max-height:820px)]:sm:py-4 [@media(max-height:820px)]:md:py-4 [@media(max-height:820px)]:lg:py-5"
+                  className="relative block py-4 sm:py-5 md:py-6 lg:py-8 xl:py-10 group overflow-hidden"
                 >
-                  {/* Hover Background */}
+                  {/* Hover Black Bar Background */}
                   <motion.div
-                    className="absolute inset-0 bg-accent/10"
-                    initial={{ scaleY: 0 }}
-                    animate={{ scaleY: hoveredIndex === index ? 1 : 0 }}
-                    transition={{ duration: 0.3 }}
-                    style={{ originY: 0 }}
+                    className="absolute inset-0 bg-black z-0"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: hoveredIndex === index ? 1 : 0 }}
+                    transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
+                    style={{ originX: 0 }}
                   />
 
-                  {/* Accent Line */}
-                  <motion.div
-                    className="absolute left-0 top-0 bottom-0 w-1 bg-accent"
-                    initial={{ scaleY: 0 }}
-                    animate={{ scaleY: hoveredIndex === index ? 1 : 0 }}
-                    transition={{ duration: 0.3 }}
-                    style={{ originY: 0 }}
-                  />
+                  {/* Content Container */}
+                  <div className="relative z-10 grid grid-cols-12 pointer-events-none">
+                    <div className={`relative ${item.positionClass} flex items-center`}>
 
-                  <div className="relative grid grid-cols-12">
-                    <div className={`relative ${item.positionClass}`}>
-                      <div className="inline-flex items-start">
+                      {/* Text with Scribble Overlay */}
+                      <div className="relative inline-block">
                         <span
-                          className="relative text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-light tracking-tight uppercase leading-[0.95]
-                          [@media(max-height:820px)]:text-3xl [@media(max-height:820px)]:sm:text-4xl [@media(max-height:820px)]:md:text-5xl [@media(max-height:820px)]:lg:text-6xl"
+                          className={cn(
+                            "relative text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight uppercase leading-[0.95] transition-colors duration-300 font-brand",
+                            hoveredIndex === index ? "text-white italic" : "text-foreground"
+                          )}
                         >
                           {t(item.labelKey)}
                         </span>
-                        {item.countKey ? (
-                          <span
-                            className="ml-2 sm:ml-3 relative -top-1 sm:-top-2 md:-top-3 whitespace-nowrap text-lg sm:text-xl md:text-2xl text-muted-foreground leading-none
-                            [@media(max-height:820px)]:text-base [@media(max-height:820px)]:sm:text-lg [@media(max-height:820px)]:md:text-xl"
-                            style={{ fontFamily: 'var(--font-handwritten), cursive' }}
-                          >
-                            {formatCount(getCountForKey(item.countKey))}
-                          </span>
-                        ) : null}
+
+                        {/* Scribble on Hover */}
+                        <AnimatePresence>
+                          {hoveredIndex === index && <ScribbleStrike />}
+                        </AnimatePresence>
                       </div>
+
+                      {/* Count */}
+                      {item.countKey ? (
+                        <span
+                          className={cn(
+                            "ml-3 relative -top-4 text-xs sm:text-sm md:text-base transition-colors duration-300",
+                            hoveredIndex === index ? "text-white/60" : "text-muted-foreground"
+                          )}
+                          style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+                        >
+                          {formatCount(getCountForKey(item.countKey))}
+                        </span>
+                      ) : null}
                     </div>
                   </div>
-
-                  {/* Arrow on hover */}
-                  <motion.span
-                    className="absolute right-0 top-1/2 -translate-y-1/2 text-accent"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{
-                      opacity: hoveredIndex === index ? 1 : 0,
-                      x: hoveredIndex === index ? 0 : -20,
-                    }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <svg
-                      width="32"
-                      height="32"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                    >
-                      <path d="M5 12h14M12 5l7 7-7 7" />
-                    </svg>
-                  </motion.span>
                 </Link>
               </motion.div>
             ))}

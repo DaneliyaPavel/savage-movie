@@ -20,6 +20,7 @@ export interface Project {
   behind_scenes: string[] | null
   is_featured: boolean
   mux_playback_id: string | null
+  carousel_gif_url: string | null
   title_ru: string | null
   title_en: string | null
   description_ru: string | null
@@ -107,6 +108,7 @@ export interface ProjectCreate {
   behind_scenes?: string[] | null
   is_featured?: boolean
   mux_playback_id?: string | null
+  carousel_gif_url?: string | null
   title_ru?: string | null
   title_en?: string | null
   description_ru?: string | null
@@ -131,6 +133,7 @@ export interface ProjectUpdate {
   behind_scenes?: string[] | null
   is_featured?: boolean
   mux_playback_id?: string | null
+  carousel_gif_url?: string | null
   title_ru?: string | null
   title_en?: string | null
   description_ru?: string | null

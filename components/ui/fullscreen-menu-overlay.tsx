@@ -110,25 +110,34 @@ export function FullscreenMenuOverlay({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Overlay background - черный фон */}
+          {/* Overlay background - теплый светло-серый фон как на Freshman.tv */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-[100] bg-[#000000]"
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-0 z-[100] menu-bg-warm"
             onClick={onClose}
           >
             <GrainOverlay />
           </motion.div>
 
-          {/* Menu container - slide in сверху, slide out вверх */}
+          {/* Menu container - dramatic slide in with blur для премиум ощущения */}
           <motion.div
             ref={menuRef}
-            initial={{ y: '-100%', opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '-100%', opacity: 0 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ y: '-100%', opacity: 0, scale: 0.96, rotate: -0.5 }}
+            animate={{ y: 0, opacity: 1, scale: 1, rotate: 0 }}
+            exit={{
+              y: '-100%',
+              opacity: 0,
+              scale: 0.96,
+              rotate: -0.5,
+            }}
+            transition={{
+              duration: 0.8,
+              ease: [0.16, 1, 0.3, 1],
+              opacity: { duration: 0.5 },
+            }}
             className="fixed inset-0 z-[101] flex flex-col"
           >
             {/* Top bar: Language toggle (кнопка закрыть теперь в Navigation) */}
@@ -159,13 +168,13 @@ export function FullscreenMenuOverlay({
                       onClose={onClose}
                       onCTAClick={item.isCTA && onCTAClick ? handleCTAClick : undefined}
                     />
-                    {/* Dotted separator снизу (белый на черном фоне) */}
+                    {/* Dotted separator снизу (темный на светлом теплом фоне) */}
                     {index < items.length - 1 && (
                       <div
-                        className="absolute bottom-0 left-0 right-0 h-px opacity-20"
+                        className="absolute bottom-0 left-0 right-0 h-px opacity-30"
                         style={{
                           backgroundImage:
-                            'repeating-linear-gradient(to right, #FFFFFF 0px, #FFFFFF 4px, transparent 4px, transparent 8px)',
+                            'repeating-linear-gradient(to right, #2a2a2a 0px, #2a2a2a 3px, transparent 3px, transparent 7px)',
                         }}
                       />
                     )}

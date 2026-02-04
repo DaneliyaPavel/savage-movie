@@ -1,114 +1,125 @@
 /**
- * Премиум Preloader в стиле Freshman.tv
- * Брендированная анимация 1-1.5 сек, минималистичный дизайн
+ * Creative Preloader - Red Background + Technical Scribbles
+ * Matches the chaotic/creative vibe of Freshman.tv
  */
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 
 interface PreloaderProps {
   onComplete?: () => void
 }
 
+const TECHNICAL_SPECS = [
+  '23.976 FPS',
+  'SHUTTER: 180°',
+  'ISO 800',
+  'WB 5600K',
+  'ANAMORPHIC',
+  '4:3',
+  'PRORES 4444',
+  'RAW',
+  'REC,709',
+  'LUT: SAVAGE_V2',
+  'LENS: 35MM',
+  'T2.0',
+]
+
+const SCRIBBLES = [
+  // Box
+  <svg key="box" viewBox="0 0 100 100" className="w-full h-full stroke-white stroke-2 fill-none">
+    <path d="M10,10 L90,10 L90,90 L10,90 Z" strokeDasharray="1000" strokeDashoffset="0" />
+  </svg>,
+  // Circle-ish
+  <svg key="circle" viewBox="0 0 100 100" className="w-full h-full stroke-white stroke-2 fill-none">
+    <path d="M50,10 C80,10 90,40 90,50 C90,80 60,90 50,90 C20,90 10,60 10,50 C10,20 40,10 50,10" />
+  </svg>,
+  // Arrow
+  <svg key="arrow" viewBox="0 0 100 100" className="w-full h-full stroke-white stroke-2 fill-none">
+    <path d="M10,50 L90,50 M60,20 L90,50 L60,80" />
+  </svg>,
+  // Cross
+  <svg key="cross" viewBox="0 0 100 100" className="w-full h-full stroke-white stroke-2 fill-none">
+    <path d="M20,20 L80,80 M80,20 L20,80" />
+  </svg>,
+  // Zigzag
+  <svg key="zigzag" viewBox="0 0 100 100" className="w-full h-full stroke-white stroke-2 fill-none">
+    <path d="M10,50 L30,20 L50,80 L70,20 L90,50" />
+  </svg>,
+]
+
 export function Preloader({ onComplete }: PreloaderProps) {
-  const [isLoading, setIsLoading] = useState(true)
-  const [progress, setProgress] = useState(0)
+  const [currentSpec, setCurrentSpec] = useState(0)
+  const [currentScribble, setCurrentScribble] = useState(0)
+  const [isFinishing, setIsFinishing] = useState(false)
+  const [hidden, setHidden] = useState(false)
 
   useEffect(() => {
-    // Симуляция прогресса с плавным увеличением
+    // Rapidly change specs and scribbles
     const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          return 100
-        }
-        // Плавное увеличение с замедлением в конце
-        const increment = prev < 70 ? 8 : prev < 90 ? 3 : 1
-        return Math.min(prev + increment, 100)
-      })
-    }, 50)
+      setCurrentSpec(prev => (prev + 1) % TECHNICAL_SPECS.length)
+      setCurrentScribble(prev => (prev + 1) % SCRIBBLES.length)
+    }, 120) // Fast 120ms tick
 
-    // Минимальное время показа (1-1.5 сек)
-    const minDisplayTime = setTimeout(() => {
-      if (progress >= 100) {
-        setIsLoading(false)
-        setTimeout(() => {
-          onComplete?.()
-        }, 500) // Задержка для плавного исчезновения
-      }
-    }, 1200)
+    const timer = setTimeout(() => {
+      setIsFinishing(true)
+    }, 2000) // Run for 2 seconds
 
     return () => {
       clearInterval(interval)
-      clearTimeout(minDisplayTime)
+      clearTimeout(timer)
     }
-  }, [progress, onComplete])
+  }, [])
 
-  useEffect(() => {
-    if (progress >= 100 && isLoading) {
-      const timer = setTimeout(() => {
-        setIsLoading(false)
-        setTimeout(() => {
-          onComplete?.()
-        }, 500)
-      }, 300)
-      return () => clearTimeout(timer)
-    }
-  }, [progress, isLoading, onComplete])
+  if (hidden) return null
 
   return (
-    <AnimatePresence>
-      {isLoading && (
-        <motion.div
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.5, ease: 'easeInOut' }}
-          className="fixed inset-0 z-[9999] bg-[#000000] flex items-center justify-center"
-        >
-          {/* Логотип/Текст с анимацией */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="text-center"
+    <motion.div
+      initial={{ opacity: 1 }}
+      animate={{ opacity: isFinishing ? 0 : 1 }}
+      transition={{ duration: 0.5, ease: 'easeInOut' }}
+      onAnimationComplete={() => {
+        if (isFinishing) {
+          setHidden(true)
+          onComplete?.()
+        }
+      }}
+      className="fixed inset-0 z-[9999] bg-[#FF322E] flex items-center justify-center overflow-hidden"
+    >
+      {/* Central Chaos Container */}
+      <div className="relative w-64 h-64 md:w-96 md:h-96 flex items-center justify-center">
+
+        {/* Flashing Scribbles */}
+        <div className="absolute inset-0 opacity-80 mix-blend-screen">
+          {SCRIBBLES[currentScribble]}
+        </div>
+
+        {/* Flashing Technical Text - Random positions ideally, but centered is cleaner for now */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <motion.p
+            key={currentSpec}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1.1 }}
+            transition={{ duration: 0.1 }}
+            className="text-4xl md:text-6xl font-mono text-white font-bold tracking-tighter mix-blend-overlay whitespace-nowrap"
           >
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.1 }}
-              className="font-heading font-bold text-5xl md:text-6xl lg:text-7xl mb-12 text-[#FFFFFF] tracking-tight"
-            >
-              SAVAGE MOVIE
-            </motion.h1>
+            {TECHNICAL_SPECS[currentSpec]}
+          </motion.p>
+        </div>
 
-            {/* Минималистичный прогресс бар */}
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: '200px', opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="h-[1px] bg-[#404040] mx-auto mb-4 overflow-hidden relative"
-            >
-              <motion.div
-                initial={{ width: '0%' }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-                className="h-full bg-[#FFFFFF]"
-              />
-            </motion.div>
+        {/* Static Grid lines */}
+        <div className="absolute inset-0 border border-white/20" />
+        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/20" />
+        <div className="absolute top-1/2 left-0 right-0 h-px bg-white/20" />
 
-            {/* Процент загрузки - минималистично */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="text-xs text-[#404040] font-mono tracking-wider"
-            >
-              {Math.round(progress)}
-            </motion.p>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+      </div>
+
+      {/* Footer Branding */}
+      <div className="absolute bottom-10 left-0 right-0 text-center">
+        <p className="text-xs font-mono text-white/50 tracking-[0.5em] uppercase">INITIATING SEQUENCE</p>
+      </div>
+
+    </motion.div>
   )
 }

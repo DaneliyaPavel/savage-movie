@@ -82,6 +82,8 @@
   --font-mono:
     ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
   --font-handwritten: 'Sa No Rules Regular', 'Comic Sans MS', cursive;
+  --font-serif-subtitle: 'Cormorant Garamond', 'Oranienbaum', serif;
+  --font-serif-menu: 'Playfair Display', 'Oranienbaum', serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -124,6 +126,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -171,9 +174,11 @@
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: oklch(0.3 0 0);
   border-radius: 3px;
@@ -187,11 +192,13 @@
   cursor: pointer;
   width: 100%;
 }
+
 .premium-slider::-webkit-slider-track {
   height: 2px;
   background: var(--border);
   border-radius: 1px;
 }
+
 .premium-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -265,11 +272,38 @@
   font-display: swap;
 }
 
+/* Cormorant Garamond Italic - для subtitle */
+@font-face {
+  font-family: 'Cormorant Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/cormorantgaramond/v16/co3WmX5slCNuHLi8bLeY9MK7whWMhyjQAllvuQWJ5heb_w.woff2') format('woff2');
+}
+
+/* Playfair Display - для menu */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/playfairdisplay/v36/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvUDQZNLo_U2r.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/playfairdisplay/v36/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvXDTZNLo_U2r.woff2') format('woff2');
+}
+
 /* SVG stroke draw animation */
 @keyframes draw-stroke {
   from {
     stroke-dashoffset: 100;
   }
+
   to {
     stroke-dashoffset: 0;
   }
@@ -317,10 +351,12 @@
   }
 
   @keyframes gradient-shift {
+
     0%,
     100% {
       background-position: 0% center;
     }
+
     50% {
       background-position: 100% center;
     }
@@ -483,5 +519,80 @@
     --ease-in-out-cubic: cubic-bezier(0.4, 0, 0.2, 1);
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-in-out-back: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  /* Freshman.tv style typography utilities */
+  .font-cormorant {
+    font-family: var(--font-serif-subtitle);
+  }
+
+  .font-playfair {
+    font-family: var(--font-serif-menu);
+  }
+
+  .menu-text-dark {
+    color: #1a1a1a;
+  }
+
+  .menu-bg-light {
+    background-color: #D9D9D9;
+  }
+
+  /* Premium menu backgrounds - Freshman.tv inspired */
+  .menu-bg-warm {
+    background-color: #B8B1A8;
+  }
+
+  .menu-text-elegant {
+    color: #1a1a1a;
+    letter-spacing: -0.02em;
+  }
+
+  /* Menu hover animations */
+  @keyframes menu-item-enter {
+    from {
+      opacity: 0;
+      transform: translateX(-30px) translateY(10px) rotate(-1deg);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0) translateY(0) rotate(0deg);
+    }
+  }
+
+  @keyframes menu-item-hover-scale {
+    0% {
+      transform: scale(1);
+    }
+
+    50% {
+      transform: scale(1.02);
+    }
+
+    100% {
+      transform: scale(1.01);
+    }
+  }
+
+  /* Character reveal animation for menu */
+  @keyframes char-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .menu-item-hover-subtle {
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .menu-item-hover-subtle:hover {
+    transform: scale(1.01);
   }
 }

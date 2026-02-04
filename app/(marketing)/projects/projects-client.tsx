@@ -120,16 +120,16 @@ function ScribbleStrike({
         <motion.path
           d={path}
           stroke="#ff2936"
-          strokeWidth={1.8}
+          strokeWidth={1.4}
           fill="none"
           strokeLinecap="round"
           strokeLinejoin="round"
           initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: [0, 1, 1, 1], opacity: [0, 0.95, 0.9, 0] }}
+          animate={{ pathLength: [0, 1, 1, 1], opacity: [0, 1, 0.85, 0] }}
           transition={{
-            duration: 1.2,
+            duration: 1.4,
             delay,
-            times: [0, 0.4, 0.6, 1],
+            times: [0, 0.35, 0.55, 1],
             ease: [0.22, 1, 0.36, 1],
           }}
         />
@@ -169,8 +169,8 @@ function ProjectRow({
   const isVertical = orientation === 'vertical'
   const MediaCard = isVertical ? VerticalProjectMediaCard : HorizontalProjectMediaCard
   const thumbAspectClass = isVertical ? 'aspect-[9/16]' : 'aspect-video'
-  const mediaColumnClassName = 'col-span-12 md:col-span-5'
-  const infoColumnClassName = 'col-span-12 md:col-span-4'
+  const mediaColumnClassName = 'col-span-12 md:col-span-6'
+  const infoColumnClassName = 'col-span-12 md:col-span-3'
   const mediaCardClassName = 'w-full'
   const mediaAspectClassName = isVertical ? 'aspect-[16/9.2]' : undefined
   const mediaFitClassName = isVertical ? 'object-contain' : 'object-cover'
@@ -296,7 +296,7 @@ function ProjectRow({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-100px' }}
       transition={{ duration: 0.6, delay: index * 0.1 }}
-      className="border-t-2 border-dashed border-muted-foreground/80 py-8 md:py-12"
+      className="border-t-2 border-dashed border-muted-foreground/20 py-8 md:py-12"
       data-orientation={orientation}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -386,17 +386,19 @@ function ProjectRow({
             )}
 
             {(playbackId || project.videoUrl) && (
-              <span
-                className={`absolute inset-0 flex items-center justify-center transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                  }`}
+              <motion.span
+                initial={false}
+                animate={isHovered ? { opacity: 1 } : { opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
               >
                 <span
-                  className="text-white text-lg md:text-xl"
+                  className="text-white text-2xl md:text-3xl tracking-wider"
                   style={{ fontFamily: 'var(--font-handwritten), cursive' }}
                 >
-                  [смотреть]
+                  {language === 'ru' ? '[СМОТРеТЬ]' : '[VIEW]'}
                 </span>
-              </span>
+              </motion.span>
             )}
 
             <Link
@@ -424,7 +426,7 @@ function ProjectRow({
             className="flex flex-col justify-between h-full overflow-hidden transition-opacity hover:opacity-90"
             style={{ maxHeight: mediaHeight ? `${mediaHeight}px` : undefined }}
           >
-            {/* Category - at the top right, larger like project numbers */}
+            {/* Category - at the top right, larger like project numbers, mixed case */}
             <div className="flex justify-end mb-2">
               <span
                 className="text-lg md:text-xl lg:text-2xl text-muted-foreground italic transform -rotate-3"
@@ -442,10 +444,10 @@ function ProjectRow({
                   seed={scribbleSeed}
                   trigger={scribbleTrigger}
                 />
-                <h3 className="text-base md:text-lg font-oranienbaum uppercase tracking-wide mb-0.5 relative z-[1]">
+                <h3 className="text-sm md:text-base font-light font-serif uppercase tracking-[0.3em] mb-1 relative z-[1] opacity-80">
                   {getClient()}
                 </h3>
-                <h2 className="text-2xl md:text-3xl lg:text-4xl font-oranienbaum uppercase tracking-tight leading-tight relative z-[1]">
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-tighter leading-[0.95] relative z-[1]" style={{ fontFamily: 'var(--font-sans)' }}>
                   {getTitle()}
                 </h2>
               </div>
@@ -453,18 +455,18 @@ function ProjectRow({
                 initial={false}
                 animate={isHovered ? { opacity: 1, y: 0 } : { opacity: 0, y: -6 }}
                 transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                className="mt-2 block text-white text-xl md:text-2xl"
+                className="mt-3 block text-white text-lg md:text-xl"
                 style={{ fontFamily: 'var(--font-handwritten), cursive' }}
               >
-                {language === 'ru' ? 'изучить' : 'explore'}
+                {language === 'ru' ? 'иЗУЧиТь' : 'eXPLoRe'}
               </motion.span>
             </div>
 
             {/* Description - at the bottom, larger and readable */}
             <div className="mt-auto">
               <p
-                className="text-[14px] md:text-[15px] lg:text-[16px] xl:text-[18px] 2xl:text-[20px] text-foreground leading-[1.6] line-clamp-4"
-                style={{ fontFamily: 'var(--font-secondary), var(--font-sans)', fontWeight: 400 }}
+                className="text-[15px] md:text-[16px] lg:text-[17px] xl:text-[19px] 2xl:text-[21px] text-foreground/90 leading-[1.65] line-clamp-4"
+                style={{ fontFamily: 'var(--font-sans)', fontWeight: 300 }}
               >
                 {getDescription()}
               </p>
@@ -608,7 +610,7 @@ export default function ProjectsPageClient({
         )}
 
         {/* Bottom border */}
-        <div className="border-t border-dashed border-muted-foreground/30" />
+        <div className="border-t border-dashed border-muted-foreground/20" />
 
         {!showAll && filteredProjects.length > 4 && (
           <motion.div

@@ -32,13 +32,13 @@ export function Navigation({ onBookClick, user }: NavigationProps) {
     ...navItems,
     ...(onBookClick
       ? [
-          {
-            href: '#',
-            label: 'Обсудить проект',
-            offsetX: '75%',
-            isCTA: true as const,
-          },
-        ]
+        {
+          href: '#',
+          label: 'Обсудить проект',
+          offsetX: '75%',
+          isCTA: true as const,
+        },
+      ]
       : []),
   ]
 
@@ -69,20 +69,41 @@ export function Navigation({ onBookClick, user }: NavigationProps) {
           {/* Кнопка меню в стиле "+ МЕНЮ" / "X ЗАКРЫТЬ" в правом верхнем углу */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="flex items-center gap-2 px-4 md:px-6 py-3 md:py-4 text-[#FFFFFF] hover:text-[#ff2936] transition-colors group"
+            className="flex items-center gap-3 px-4 md:px-6 py-3 md:py-4 text-[#FFFFFF] hover:text-[#ff2936] transition-colors group"
             aria-label={isMenuOpen ? 'Закрыть меню' : 'Меню'}
             aria-expanded={isMenuOpen}
           >
-            {/* Plus/Cross icon с плавным вращением - всегда показываем плюс, вращаем на 45° */}
-            <motion.span
-              animate={{ rotate: isMenuOpen ? 45 : 0 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="text-xl md:text-2xl font-light leading-none relative w-6 h-6 flex items-center justify-center"
-              style={{ transformOrigin: 'center' }}
-            >
-              <span>+</span>
-            </motion.span>
-            {/* МЕНЮ / ЗАКРЫТЬ text - одинаковый размер */}
+            {/* Hamburger/X icon - три линии трансформируются в X */}
+            <div className="relative w-5 h-4 md:w-6 md:h-5 flex flex-col justify-center items-center">
+              {/* Верхняя линия */}
+              <motion.span
+                className="absolute h-[2px] w-full bg-current origin-center"
+                animate={{
+                  rotate: isMenuOpen ? 45 : 0,
+                  y: isMenuOpen ? 0 : -6,
+                }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              />
+              {/* Средняя линия */}
+              <motion.span
+                className="absolute h-[2px] w-full bg-current"
+                animate={{
+                  opacity: isMenuOpen ? 0 : 1,
+                  scale: isMenuOpen ? 0.8 : 1,
+                }}
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              />
+              {/* Нижняя линия */}
+              <motion.span
+                className="absolute h-[2px] w-full bg-current origin-center"
+                animate={{
+                  rotate: isMenuOpen ? -45 : 0,
+                  y: isMenuOpen ? 0 : 6,
+                }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              />
+            </div>
+            {/* МЕНЮ / ЗАКРЫТЬ text */}
             <span className="text-sm md:text-base font-medium uppercase tracking-wider">
               {isMenuOpen ? 'ЗАКРЫТЬ' : 'МЕНЮ'}
             </span>

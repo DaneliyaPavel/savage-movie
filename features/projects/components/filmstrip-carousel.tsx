@@ -1,13 +1,13 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useEffect, memo } from 'react'
 import type { WheelEvent } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import AutoScroll from 'embla-carousel-auto-scroll'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
-import { HoverNote } from '@/components/ui/hover-note'
+import MuxPlayer, { type MuxPlayerRefAttributes } from '@mux/mux-player-react'
 
 interface FilmstripProject {
   id: string
@@ -15,7 +15,8 @@ interface FilmstripProject {
   director: string
   client?: string | null
   thumbnail: string
-  playbackId: string
+  playbackId?: string | null
+  carousel_gif_url?: string | null
   slug?: string
 }
 
@@ -25,7 +26,7 @@ interface FilmstripCarouselProps {
   selectedId: string | null
 }
 
-const HOVER_NOTES = ['play', 'watch', 'view', "director's cut", 'explore']
+const HOVER_NOTES = ['смотреть', 'включить', 'взглянуть', 'версия режиссера', 'узнать больше']
 
 export function FilmstripCarousel({
   projects,
@@ -38,7 +39,7 @@ export function FilmstripCarousel({
       dragFree: true,
       containScroll: false,
     },
-    [AutoScroll({ speed: 0.5, stopOnInteraction: false, stopOnMouseEnter: true })]
+    [AutoScroll({ speed: 0.5, stopOnInteraction: false, stopOnMouseEnter: false })]
   )
 
   const handleWheel = useCallback(
@@ -49,39 +50,42 @@ export function FilmstripCarousel({
       event.preventDefault()
       const engine = emblaApi.internalEngine()
       engine.scrollBody.useBaseFriction().useBaseDuration()
-      engine.scrollTo.distance(engine.axis.direction(delta * 0.7), false)
+      // Increased sensitivity for better feel
+      engine.scrollTo.distance(engine.axis.direction(delta * 2.5), false)
     },
     [emblaApi]
   )
 
+  const displayProjects = projects.length < 6 ? [...projects, ...projects, ...projects] : projects
+
   return (
     <motion.div
-      initial={{ y: 100, opacity: 0 }}
+      initial={{ y: 50, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.8, delay: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-      className="absolute bottom-0 left-0 right-0 z-30 pb-8"
+      transition={{ duration: 1.0, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      className="absolute bottom-0 left-0 right-0 z-30 pb-10 pointer-events-none"
     >
-      {/* Track wrapper (Freshman-like "dotted rails") */}
-      <div className="px-6 md:px-10">
+      {/* Track wrapper */}
+      <div className="w-full pointer-events-auto">
         <div className="relative">
-          <div className="pointer-events-none absolute left-0 right-0 top-0 z-20 border-t-2 border-dashed border-white/90" />
-          <div className="pointer-events-none absolute left-0 right-0 bottom-0 z-20 border-b-2 border-dashed border-white/90" />
+          {/* Decorative lines - Dashed & More Visible */}
+          <div className="absolute left-0 right-0 top-0 border-t-2 border-dashed border-white/60" />
+          <div className="absolute left-0 right-0 bottom-0 border-b-2 border-dashed border-white/60" />
 
-          <div className="relative z-10 bg-black/20 backdrop-blur-md py-4">
-            <div className="overflow-hidden" ref={emblaRef} onWheel={handleWheel}>
-              <div className="flex gap-0">
-                {/* Для бесконечной прокрутки дублируем только если проектов меньше 6 */}
-                {(projects.length < 6 ? [...projects, ...projects] : projects).map(
-                  (project, index) => (
-                    <FilmstripItem
-                      key={`${project.id}-${index}`}
-                      project={project}
-                      isSelected={selectedId === project.id}
-                      onSelect={() => onProjectSelect(project)}
-                      noteText={HOVER_NOTES[index % HOVER_NOTES.length] ?? HOVER_NOTES[0] ?? ''}
-                    />
-                  )
-                )}
+          {/* Carousel Content */}
+          <div className="bg-black/40 backdrop-blur-md py-5 overflow-hidden">
+            <div ref={emblaRef} onWheel={handleWheel} className="cursor-grab active:cursor-grabbing">
+              <div className="flex">
+                {displayProjects.map((project, index) => (
+                  <FilmstripItem
+                    key={`${project.id}-carousel-${index}`}
+                    project={project}
+                    isSelected={selectedId === project.id}
+                    // Pick a random note based on index + id hash roughly
+                    noteText={HOVER_NOTES[index % HOVER_NOTES.length] ?? 'Смотреть'}
+                    onSelect={() => onProjectSelect(project)}
+                  />
+                ))}
               </div>
             </div>
           </div>
@@ -91,87 +95,163 @@ export function FilmstripCarousel({
   )
 }
 
-function FilmstripItem({
+const FilmstripItem = memo(function FilmstripItem({
   project,
   isSelected,
-  onSelect,
   noteText,
+  onSelect,
 }: {
   project: FilmstripProject
   isSelected: boolean
+  noteText?: string
   onSelect: () => void
-  noteText: string
 }) {
-  const [isHovered, setIsHovered] = useState(false)
-  const clientLabel = project.client?.trim()
+  const muxRef = useRef<MuxPlayerRefAttributes | null>(null)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Determine which media source to use for the "GIF" effect
+  // Priority: carousel_gif_url > playbackId > thumbnail
+  const carouselGifUrl = project.carousel_gif_url ?? ''
+  const isMuxGif = carouselGifUrl !== '' && !carouselGifUrl.includes('/')
+  const isUrlGif = carouselGifUrl.startsWith('http') || carouselGifUrl.startsWith('/')
+  const isGifImage = isUrlGif && carouselGifUrl.toLowerCase().includes('.gif')
+  const isMuxPlayback = !project.carousel_gif_url && project.playbackId
+
+  // Intersection Observer for autoplay performance
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            if (muxRef.current) muxRef.current.play?.()
+            if (videoRef.current) videoRef.current.play().catch(() => { })
+          } else {
+            if (muxRef.current) muxRef.current.pause?.()
+            if (videoRef.current) videoRef.current.pause()
+          }
+        })
+      },
+      { threshold: 0.1, rootMargin: '100px' }
+    )
+
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
 
   const content = (
-    <motion.div
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="relative flex-shrink-0 flex items-start gap-4 md:gap-5 px-4 md:px-5 group after:content-[''] after:absolute after:right-0 after:top-[-10px] after:bottom-[-10px] after:border-r after:border-dashed after:border-white/40 last:after:hidden"
-      whileHover={{ scale: 1.01 }}
-      transition={{ duration: 0.3 }}
+    <div
+      className={`
+        flex flex-row items-center
+        mx-6 transition-all duration-500
+        ${isSelected ? 'opacity-100 scale-105' : 'opacity-70 hover:opacity-100'}
+      `}
     >
-      <div className="relative w-[120px] md:w-[160px] aspect-video overflow-hidden rounded-sm">
-        {/* Thumbnail */}
-        <Image
-          src={project.thumbnail || '/placeholder.svg'}
-          alt={project.title}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-
-        {/* Grain overlay on hover */}
-        <AnimatePresence>
-          {isHovered && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-background/20 mix-blend-overlay"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-              }}
+      {/* Media container - Reduced size for horizontal layout */}
+      <div
+        ref={containerRef}
+        className="relative w-[180px] h-[101px] overflow-hidden bg-zinc-900 rounded-sm shadow-xl transition-transform duration-500 ease-out group-hover:scale-[1.02]"
+      >
+        {/* GIF/Video Layer */}
+        {isMuxGif ? (
+          <MuxPlayer
+            ref={muxRef}
+            playbackId={project.carousel_gif_url!}
+            streamType="on-demand"
+            muted
+            loop
+            playsInline
+            preload="auto"
+            style={{
+              '--controls': 'none',
+              '--media-object-fit': 'cover',
+            } as any}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : isUrlGif ? (
+          isGifImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={carouselGifUrl}
+              alt={project.title}
+              className="absolute inset-0 w-full h-full object-cover"
             />
-          )}
-        </AnimatePresence>
+          ) : (
+            <video
+              ref={videoRef}
+              src={carouselGifUrl}
+              muted
+              loop
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )
+        ) : isMuxPlayback ? (
+          <MuxPlayer
+            ref={muxRef}
+            playbackId={project.playbackId!}
+            streamType="on-demand"
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            style={{
+              '--controls': 'none',
+              '--media-object-fit': 'cover',
+            } as any}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <Image
+            src={project.thumbnail || '/placeholder.svg'}
+            alt={project.title}
+            fill
+            className="object-cover"
+          />
+        )}
 
-        {/* Selection indicator */}
-        <motion.div
-          className="absolute inset-0 border-2 border-accent pointer-events-none"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: isSelected ? 1 : 0 }}
-          transition={{ duration: 0.2 }}
-        />
+        {/* Dark overlay for text contrast on hover */}
+        <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300 pointer-events-none" />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+        {/* Hover Overlay with Handwritten Text - Red and random */}
+        <div className="absolute inset-0 z-[10] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-transparent">
+          <span className="font-handwritten text-2xl text-[#FF322E] transform -rotate-12 select-none drop-shadow-lg leading-none">
+            {noteText}
+          </span>
+        </div>
       </div>
 
-      <div className="min-w-[140px] md:min-w-[190px] max-w-[200px] md:max-w-[240px] pt-[2px]">
-        {clientLabel && (
-          <p className="text-[12px] md:text-[14px] uppercase tracking-[0.22em] text-white/85 font-heading font-semibold">
-            {clientLabel}
+      {/* Text Container - To the right */}
+      <div className="ml-4 flex flex-col justify-center min-w-[120px] text-left">
+        {/* Client - Top */}
+        {project.client && (
+          <p className="text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-white/50 font-sans font-bold mb-1">
+            {project.client}
           </p>
         )}
-        <p className="mt-1 text-[11px] md:text-[13px] uppercase tracking-[0.2em] text-white/95 font-heading font-medium leading-snug line-clamp-2">
+
+        {/* Project Title - Bottom */}
+        <h3 className="text-lg md:text-xl text-white font-cormorant font-light italic leading-none transition-colors duration-300 whitespace-nowrap">
           {project.title}
-        </p>
+        </h3>
       </div>
-    </motion.div>
+    </div>
   )
 
   return (
-    <HoverNote note={noteText}>
+    <div className="flex-shrink-0 group cursor-pointer">
       {project.slug ? (
-        <Link href={`/projects/${project.slug}`} onClick={onSelect} className="block">
+        <Link href={`/projects/${project.slug}`} onClick={onSelect} className="block outline-none">
           {content}
         </Link>
       ) : (
-        <button type="button" onClick={onSelect} className="w-full">
+        <button type="button" onClick={onSelect} className="block outline-none text-left">
           {content}
         </button>
       )}
-    </HoverNote>
+    </div>
   )
-}
+})

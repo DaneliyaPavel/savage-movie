@@ -29,6 +29,7 @@ const translations: Record<Language, Record<string, string>> = {
     'home.directedBy': 'Режиссёр',
     'home.scroll': 'Скролл',
     'home.heroSubtitle': 'Продакшн-студия, создающая сильные истории для брендов и артистов.',
+    'home.heroTagline': 'Видим смысл',
     'home.noFeaturedProjects': 'Нет избранных проектов для отображения в карусели',
 
     // Projects
@@ -167,6 +168,7 @@ const translations: Record<Language, Record<string, string>> = {
     'home.directedBy': 'Directed by',
     'home.scroll': 'Scroll',
     'home.heroSubtitle': 'A production studio creating high-impact stories for brands and artists.',
+    'home.heroTagline': 'We see the meaning',
     'home.noFeaturedProjects': 'No featured projects to display in carousel',
 
     // Projects

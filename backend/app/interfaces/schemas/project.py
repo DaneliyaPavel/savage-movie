@@ -22,6 +22,7 @@ class ProjectBase(BaseModel):
     behind_scenes: Optional[List[str]] = None
     is_featured: Optional[bool] = False
     mux_playback_id: Optional[str] = None
+    carousel_gif_url: Optional[str] = None
     title_ru: Optional[str] = None
     title_en: Optional[str] = None
     description_ru: Optional[str] = None
@@ -50,6 +51,7 @@ class ProjectUpdate(BaseModel):
     behind_scenes: Optional[List[str]] = None
     is_featured: Optional[bool] = None
     mux_playback_id: Optional[str] = None
+    carousel_gif_url: Optional[str] = None
     title_ru: Optional[str] = None
     title_en: Optional[str] = None
     description_ru: Optional[str] = None

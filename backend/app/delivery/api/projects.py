@@ -30,8 +30,19 @@ async def get_projects(
 
 @router.get("/{slug}", response_model=ProjectSchema)
 async def get_project_by_slug(slug: str, db: AsyncSession = Depends(get_db)):
-    """Получить проект по slug"""
+    """Получить проект по slug или ID"""
     repo = SqlAlchemyProjectsRepository(db)
+    
+    # Пробуем найти по UUID
+    try:
+        project_uuid = UUID(slug)
+        project = await repo.get_by_id(project_uuid)
+        if project:
+            return project
+    except ValueError:
+        pass
+        
+    # Если не нашли по UUID, ищем по slug
     project = await repo.get_by_slug(slug)
     
     if not project:
