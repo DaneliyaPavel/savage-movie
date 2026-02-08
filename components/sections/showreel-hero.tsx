@@ -125,7 +125,7 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
         >
           <div className="text-center px-6">
             {/* Brand name - modern italic bold styling */}
-            <h1 className="text-hero font-brand uppercase text-white tracking-tight leading-[0.82] drop-shadow-[0_20px_60px_rgba(0,0,0,0.65)] italic font-black">
+            <h1 className="text-hero font-brand-hero uppercase text-white tracking-tight leading-[0.82] drop-shadow-[0_20px_60px_rgba(0,0,0,0.65)] font-black">
               SAVAGE MOVIE
             </h1>
 

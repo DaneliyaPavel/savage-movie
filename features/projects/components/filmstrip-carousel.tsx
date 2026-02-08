@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useRef, useEffect, memo } from 'react'
-import type { WheelEvent } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import AutoScroll from 'embla-carousel-auto-scroll'
 import { motion } from 'framer-motion'
@@ -33,30 +32,79 @@ export function FilmstripCarousel({
   onProjectSelect,
   selectedId,
 }: FilmstripCarouselProps) {
+  const autoScroll = useRef(
+    AutoScroll({
+      speed: 0.9,
+      startDelay: 0,
+      stopOnInteraction: false,
+      stopOnMouseEnter: false,
+      playOnInit: true,
+    })
+  )
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
       loop: true,
       dragFree: true,
       containScroll: false,
     },
-    [AutoScroll({ speed: 0.5, stopOnInteraction: false, stopOnMouseEnter: false })]
+    [autoScroll.current]
   )
+  const wheelTargetRef = useRef<HTMLDivElement | null>(null)
+  const wheelResumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const handleWheel = useCallback(
-    (event: WheelEvent<HTMLDivElement>) => {
+  const handleWheelNative = useCallback(
+    (event: WheelEvent) => {
       if (!emblaApi || event.ctrlKey) return
       const delta = Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX
       if (delta === 0) return
       event.preventDefault()
+      autoScroll.current?.stop()
+      if (wheelResumeTimerRef.current) {
+        clearTimeout(wheelResumeTimerRef.current)
+      }
+      wheelResumeTimerRef.current = setTimeout(() => {
+        autoScroll.current?.play()
+      }, 900)
       const engine = emblaApi.internalEngine()
       engine.scrollBody.useBaseFriction().useBaseDuration()
       // Increased sensitivity for better feel
-      engine.scrollTo.distance(engine.axis.direction(delta * 2.5), false)
+      engine.scrollTo.distance(engine.axis.direction(delta * 2.6), false)
     },
     [emblaApi]
   )
 
+  const setEmblaRefs = useCallback(
+    (node: HTMLDivElement | null) => {
+      emblaRef(node)
+    },
+    [emblaRef]
+  )
+
+  useEffect(() => {
+    const node = wheelTargetRef.current
+    if (!node) return
+    node.addEventListener('wheel', handleWheelNative, { passive: false })
+    return () => {
+      node.removeEventListener('wheel', handleWheelNative)
+    }
+  }, [handleWheelNative])
+
+  const handleWheelZone = useCallback(
+    (node: HTMLDivElement | null) => {
+      wheelTargetRef.current = node
+    },
+    []
+  )
+
   const displayProjects = projects.length < 6 ? [...projects, ...projects, ...projects] : projects
+
+  const handleMouseEnter = useCallback(() => {
+    autoScroll.current?.stop()
+  }, [])
+
+  const handleMouseLeave = useCallback(() => {
+    autoScroll.current?.play()
+  }, [])
 
   return (
     <motion.div
@@ -69,12 +117,20 @@ export function FilmstripCarousel({
       <div className="w-full pointer-events-auto">
         <div className="relative">
           {/* Decorative lines - Dashed & More Visible */}
-          <div className="absolute left-0 right-0 top-0 border-t-2 border-dashed border-white/60" />
-          <div className="absolute left-0 right-0 bottom-0 border-b-2 border-dashed border-white/60" />
+          <div className="absolute left-0 right-0 top-0 z-10 border-t border-dashed border-white/70 pointer-events-none" />
+          <div className="absolute left-0 right-0 bottom-0 z-10 border-b border-dashed border-white/70 pointer-events-none" />
 
           {/* Carousel Content */}
-          <div className="bg-black/40 backdrop-blur-md py-5 overflow-hidden">
-            <div ref={emblaRef} onWheel={handleWheel} className="cursor-grab active:cursor-grabbing">
+          <div
+            ref={handleWheelZone}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            className="bg-black/30 backdrop-blur-md py-3 md:py-4 overflow-hidden"
+          >
+            <div
+              ref={setEmblaRefs}
+              className="cursor-grab active:cursor-grabbing"
+            >
               <div className="flex">
                 {displayProjects.map((project, index) => (
                   <FilmstripItem
@@ -213,8 +269,8 @@ const FilmstripItem = memo(function FilmstripItem({
           />
         )}
 
-        {/* Dark overlay for text contrast on hover */}
-        <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-300 pointer-events-none" />
+        {/* Hover-only dim to match reference (no darkening at rest) */}
+        <div className="absolute inset-0 bg-transparent group-hover:bg-black/20 transition-colors duration-300 pointer-events-none" />
 
         {/* Hover Overlay with Handwritten Text - Red and random */}
         <div className="absolute inset-0 z-[10] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-transparent">
@@ -228,13 +284,19 @@ const FilmstripItem = memo(function FilmstripItem({
       <div className="ml-4 flex flex-col justify-center min-w-[120px] text-left">
         {/* Client - Top */}
         {project.client && (
-          <p className="text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-white/50 font-sans font-bold mb-1">
+          <p
+            className="text-[10px] md:text-[11px] uppercase tracking-[0.22em] text-white/60 font-black mb-1"
+            style={{ fontFamily: 'var(--font-brand-hero)' }}
+          >
             {project.client}
           </p>
         )}
 
         {/* Project Title - Bottom */}
-        <h3 className="text-lg md:text-xl text-white font-cormorant font-light italic leading-none transition-colors duration-300 whitespace-nowrap">
+        <h3
+          className="text-lg md:text-xl text-white font-black leading-none transition-colors duration-300 whitespace-nowrap"
+          style={{ fontFamily: 'var(--font-brand-hero)' }}
+        >
           {project.title}
         </h3>
       </div>

@@ -169,8 +169,8 @@ function ProjectRow({
   const isVertical = orientation === 'vertical'
   const MediaCard = isVertical ? VerticalProjectMediaCard : HorizontalProjectMediaCard
   const thumbAspectClass = isVertical ? 'aspect-[9/16]' : 'aspect-video'
-  const mediaColumnClassName = 'col-span-12 md:col-span-6'
-  const infoColumnClassName = 'col-span-12 md:col-span-3'
+  const mediaColumnClassName = 'col-span-12 md:col-span-5'
+  const infoColumnClassName = 'col-span-12 md:col-span-4'
   const mediaCardClassName = 'w-full'
   const mediaAspectClassName = isVertical ? 'aspect-[16/9.2]' : undefined
   const mediaFitClassName = isVertical ? 'object-contain' : 'object-cover'
@@ -296,7 +296,7 @@ function ProjectRow({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-100px' }}
       transition={{ duration: 0.6, delay: index * 0.1 }}
-      className="border-t-2 border-dashed border-muted-foreground/20 py-8 md:py-12"
+      className="border-t-2 border-dashed border-muted-foreground/20 py-6 md:py-8"
       data-orientation={orientation}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -426,41 +426,45 @@ function ProjectRow({
             className="flex flex-col justify-between h-full overflow-hidden transition-opacity hover:opacity-90"
             style={{ maxHeight: mediaHeight ? `${mediaHeight}px` : undefined }}
           >
-            {/* Category - at the top right, larger like project numbers, mixed case */}
-            <div className="flex justify-end mb-2">
-              <span
-                className="text-lg md:text-xl lg:text-2xl text-muted-foreground italic transform -rotate-3"
-                style={{ fontFamily: 'var(--font-handwritten), cursive' }}
-              >
-                {getCategory()}
-              </span>
-            </div>
-
-            {/* Client & Title - larger, positioned above video */}
-            <div className="mb-3">
+            {/* Title + Category aligned at the top */}
+            <div className="flex items-start justify-between gap-4">
               <div className="relative inline-block">
                 <ScribbleStrike
                   active={isHovered}
                   seed={scribbleSeed}
                   trigger={scribbleTrigger}
                 />
-                <h3 className="text-sm md:text-base font-light font-serif uppercase tracking-[0.3em] mb-1 relative z-[1] opacity-80">
+                <h3
+                  className="text-xs md:text-sm uppercase tracking-[0.28em] mb-0.5 relative z-[1] opacity-80"
+                  style={{ fontFamily: 'var(--font-brand-hero)' }}
+                >
                   {getClient()}
                 </h3>
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-tighter leading-[0.95] relative z-[1]" style={{ fontFamily: 'var(--font-sans)' }}>
+                <h2
+                  className="text-3xl md:text-4xl lg:text-[2.6rem] font-black uppercase tracking-tighter leading-[0.92] relative z-[1]"
+                  style={{ fontFamily: 'var(--font-brand-hero)' }}
+                >
                   {getTitle()}
                 </h2>
               </div>
-              <motion.span
-                initial={false}
-                animate={isHovered ? { opacity: 1, y: 0 } : { opacity: 0, y: -6 }}
-                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                className="mt-3 block text-white text-lg md:text-xl"
+
+              <span
+                className="text-lg md:text-xl lg:text-2xl text-muted-foreground italic transform -rotate-3 pt-1"
                 style={{ fontFamily: 'var(--font-handwritten), cursive' }}
               >
-                {language === 'ru' ? 'иЗУЧиТь' : 'eXPLoRe'}
-              </motion.span>
+                {getCategory()}
+              </span>
             </div>
+
+            <motion.span
+              initial={false}
+              animate={isHovered ? { opacity: 1, y: 0 } : { opacity: 0, y: -6 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-2 block text-white text-lg md:text-xl"
+              style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+            >
+              {language === 'ru' ? 'иЗУЧиТь' : 'eXPLoRe'}
+            </motion.span>
 
             {/* Description - at the bottom, larger and readable */}
             <div className="mt-auto">
@@ -610,7 +614,7 @@ export default function ProjectsPageClient({
         )}
 
         {/* Bottom border */}
-        <div className="border-t border-dashed border-muted-foreground/20" />
+        <div className="mt-10 border-t border-dashed border-muted-foreground/20" />
 
         {!showAll && filteredProjects.length > 4 && (
           <motion.div
