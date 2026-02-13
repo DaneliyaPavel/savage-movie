@@ -18,24 +18,24 @@ const EASE_IN: [number, number, number, number] = [0.4, 0, 1, 1]
 const pageVariants: Variants = {
   initial: {
     opacity: 0,
-    y: 20,
-    filter: 'blur(10px)',
+    y: 15,
+    filter: 'blur(6px)',
   },
   animate: {
     opacity: 1,
     y: 0,
     filter: 'blur(0px)',
     transition: {
-      duration: 0.6,
+      duration: 0.8, // Extended for smoother feel
       ease: EASE_OUT_EXPO, // ease-out-expo
     },
   },
   exit: {
     opacity: 0,
-    y: -20,
-    filter: 'blur(10px)',
+    y: -15,
+    filter: 'blur(6px)',
     transition: {
-      duration: 0.4,
+      duration: 0.5, // Extended for smoother feel
       ease: EASE_IN, // ease-in
     },
   },

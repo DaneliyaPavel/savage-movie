@@ -7,6 +7,9 @@ export interface ApiError {
   detail: string
 }
 
+/** Таймаут для fetch в миллисекундах (SSR может зависнуть, если backend недоступен) */
+const FETCH_TIMEOUT_MS = 15_000
+
 export interface ApiRequestOptions extends RequestInit {
   token?: string | null
   allowNoContent?: boolean
@@ -31,16 +34,26 @@ export async function baseApiRequest<T>(url: string, options: ApiRequestOptions 
     headers.set('Authorization', `Bearer ${token}`)
   }
 
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+
   let response: Response
   try {
     response = await fetch(url, {
       ...fetchOptions,
       headers,
+      signal: fetchOptions.signal ?? controller.signal,
     })
   } catch (error) {
-    // Обработка сетевых ошибок (CORS, недоступный сервер и т.д.)
+    clearTimeout(timeoutId)
+    // Обработка сетевых ошибок (CORS, недоступный сервер, таймаут и т.д.)
     console.error('❌ Ошибка fetch:', error)
     console.error('URL:', url)
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(
+        `Таймаут подключения к серверу (${url}). Проверьте, что backend запущен и доступен.`
+      )
+    }
     if (error instanceof TypeError) {
       if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
         throw new Error(
@@ -49,6 +62,8 @@ export async function baseApiRequest<T>(url: string, options: ApiRequestOptions 
       }
     }
     throw error
+  } finally {
+    clearTimeout(timeoutId)
   }
 
   if (!response.ok) {

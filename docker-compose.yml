@@ -64,6 +64,12 @@ services:
       - savage_movie_network
     restart: unless-stopped
     command: sh -c "cd /app/backend && alembic -c /app/backend/alembic.ini upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
 
   frontend:
     image: ${REGISTRY:-ghcr.io/daneliyapavel}/savage-movie-frontend:${IMAGE_TAG:-latest}
@@ -72,8 +78,10 @@ services:
       dockerfile: Dockerfile.frontend
     container_name: savage_movie_frontend
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8001}
+      # Server-side API URL (for internal Docker communication)
       API_URL: http://backend:8000
+      # Client-side API URL (from browser)
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8001}
       NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
       NEXT_PUBLIC_YANDEX_CLIENT_ID: ${NEXT_PUBLIC_YANDEX_CLIENT_ID:-}
       YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID:-}

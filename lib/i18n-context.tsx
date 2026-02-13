@@ -145,6 +145,10 @@ const translations: Record<Language, Record<string, string>> = {
     // Footer
     'footer.rights': 'Все права защищены.',
     'footer.location': 'Москва / Весь мир',
+    'footer.instagram': 'Instagram',
+    'footer.behance': 'Behance',
+    'footer.youtube': 'YouTube',
+    'footer.vimeo': 'Vimeo',
 
     // Common
     'common.viewAll': 'Смотреть все',
@@ -284,6 +288,10 @@ const translations: Record<Language, Record<string, string>> = {
     // Footer
     'footer.rights': 'All rights reserved.',
     'footer.location': 'Moscow / Worldwide',
+    'footer.instagram': 'Instagram',
+    'footer.behance': 'Behance',
+    'footer.youtube': 'YouTube',
+    'footer.vimeo': 'Vimeo',
 
     // Common
     'common.viewAll': 'View All',

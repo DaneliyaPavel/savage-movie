@@ -44,29 +44,29 @@ function TransitionCurtain() {
             animate={{
                 x: [
                     '100%',   // 0ms: Off-screen right
-                    '0%',     // 400ms: Fully covers screen
-                    '0%',     // 600ms: Hold at full coverage
-                    '-100%'   // 1100ms: Slide out to left
+                    '0%',     // 500ms: Fully covers screen
+                    '0%',     // 800ms: Hold at full coverage
+                    '-100%'   // 1400ms: Slide out to left
                 ]
             }}
 
             transition={{
-                duration: 1.1, // Total duration 1.1 seconds
-                times: [0, 0.36, 0.55, 1], // Timing for each keyframe
-                ease: [0.76, 0, 0.24, 1], // Premium cubic-bezier (Power3.inOut)
+                duration: 1.4, // Total duration 1.4 seconds (smoother)
+                times: [0, 0.36, 0.57, 1], // Timing for each keyframe
+                ease: [0.65, 0, 0.35, 1], // Smoother cubic-bezier for gentler motion
             }}
         >
             {/* Logo Container - Visible during hold phase */}
             <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
+                initial={{ opacity: 0, scale: 0.85 }}
                 animate={{
                     opacity: [0, 1, 1, 0],
-                    scale: [0.8, 1, 1, 0.8]
+                    scale: [0.85, 1, 1, 0.85]
                 }}
                 transition={{
-                    duration: 1.1,
-                    times: [0, 0.45, 0.65, 1], // Fade in during cover, hold, fade out during reveal
-                    ease: 'easeInOut'
+                    duration: 1.4,
+                    times: [0, 0.4, 0.65, 1], // Fade in during cover, hold, fade out during reveal
+                    ease: [0.45, 0, 0.55, 1] // Smoother easing for logo
                 }}
                 className="relative w-32 h-32 md:w-48 md:h-48 flex items-center justify-center"
             >

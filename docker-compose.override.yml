@@ -1,0 +1,9 @@
+# Локальная разработка: frontend в dev-режиме (без production build)
+# Автоматически подхватывается при `docker compose up`
+# -H 0.0.0.0 критично: иначе next dev слушает только localhost и недоступен с хоста
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend.dev
+    command: ["npx", "next", "dev", "-H", "0.0.0.0", "-p", "3000"]

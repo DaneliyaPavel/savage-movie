@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useMenu } from './menu-context'
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '@/lib/i18n-context'
@@ -13,7 +14,6 @@ import { cn } from '@/lib/utils'
 // Scribble SVG Component - defined outside to maintain stable identity for AnimatePresence
 const ScribbleStrike = () => (
   <svg viewBox="0 0 200 20" className="w-full h-full absolute top-1/2 left-0 -translate-y-1/2 pointer-events-none overflow-visible">
-    {/* Messy strike-through */}
     <motion.path
       d="M5,15 Q50,5 90,12 T180,5"
       fill="none"
@@ -70,45 +70,45 @@ export function JalousieMenu() {
 
   type CountKey = 'projects' | 'courses' | 'blog' | null
 
-  /* Creative Asymmetry Grid - "Staircase" feel */
+  /* Menu items - Asymmetric layout matching freshman reference */
   const NAV_ITEMS = useMemo(
     () =>
       [
         {
           labelKey: 'nav.home',
           href: '/',
-          positionClass: 'col-span-12 md:col-start-1 md:col-span-5', // Left
           countKey: null as CountKey,
+          position: 'left' as const,
         },
         {
           labelKey: 'nav.projects',
           href: '/projects',
-          positionClass: 'col-span-12 md:col-start-4 md:col-span-6', // Indented
           countKey: 'projects' as CountKey,
+          position: 'right' as const,
         },
         {
           labelKey: 'nav.courses',
           href: '/courses',
-          positionClass: 'col-span-12 md:col-start-2 md:col-span-6', // Back left a bit
           countKey: 'courses' as CountKey,
+          position: 'full' as const,
         },
         {
           labelKey: 'nav.studio',
           href: '/about',
-          positionClass: 'col-span-12 md:col-start-6 md:col-span-5', // Far right
           countKey: null as CountKey,
+          position: 'right' as const,
         },
         {
           labelKey: 'nav.blog',
           href: '/blog',
-          positionClass: 'col-span-12 md:col-start-3 md:col-span-5', // Middle
           countKey: 'blog' as CountKey,
+          position: 'left' as const,
         },
         {
           labelKey: 'nav.contact',
           href: '/contact',
-          positionClass: 'col-span-12 md:col-start-5 md:col-span-6', // Middle-Right
           countKey: null as CountKey,
+          position: 'center' as const,
         },
       ] as const,
     []
@@ -123,7 +123,7 @@ export function JalousieMenu() {
   }
 
   const formatCount = (count: number | null) => {
-    if (count === null) return '(…)'
+    if (count === null) return ''
     return `(${count})`
   }
 
@@ -131,12 +131,31 @@ export function JalousieMenu() {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: { delay: 0.2 } }}
-          transition={{ duration: 0.4 }}
-          className="fixed inset-0 z-50 bg-background"
+          initial={{ clipPath: 'inset(0% 0% 100% 0%)' }}
+          animate={{ clipPath: 'inset(0% 0% 0% 0%)' }}
+          exit={{ clipPath: 'inset(0% 0% 100% 0%)' }}
+          transition={{ duration: 0.7, ease: [0.83, 0, 0.17, 1] }}
+          className="fixed inset-0 z-50 bg-[#a4a49c] overflow-hidden"
         >
+          {/* Brand Logo - Top Center - Clickable */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="absolute top-6 left-1/2 -translate-x-1/2 z-[60]"
+          >
+            <Link href="/" onClick={() => setIsOpen(false)} className="block">
+              <Image
+                src="/sm-logo.svg"
+                alt="SAVAGE MOVIE"
+                width={180}
+                height={60}
+                className="w-32 md:w-44 h-auto opacity-90 hover:opacity-100 transition-opacity cursor-pointer"
+              />
+            </Link>
+          </motion.div>
+
           {/* Language Toggle - Top Left */}
           <motion.button
             initial={{ opacity: 0, scale: 0.8 }}
@@ -144,7 +163,7 @@ export function JalousieMenu() {
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ delay: 0.3 }}
             onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')}
-            className="absolute top-6 left-6 md:left-10 w-12 h-12 rounded-full border border-border flex items-center justify-center text-sm font-medium hover:bg-secondary transition-colors uppercase"
+            className="absolute top-6 left-6 md:left-10 w-12 h-12 rounded-full border border-black/20 flex items-center justify-center text-sm font-medium hover:bg-black/5 transition-colors uppercase text-black/80 z-[60]"
             aria-label={language === 'ru' ? 'Switch to English' : 'Переключить на русский'}
           >
             {language}
@@ -157,7 +176,7 @@ export function JalousieMenu() {
             exit={{ opacity: 0, x: 20 }}
             transition={{ delay: 0.2 }}
             onClick={() => setIsOpen(false)}
-            className="absolute top-6 right-6 md:right-10 flex items-center gap-3 text-foreground group"
+            className="absolute top-6 right-6 md:right-10 flex items-center gap-3 text-black/80 group z-[60]"
             aria-label="Close menu"
           >
             <span className="text-sm font-medium tracking-wide uppercase opacity-60 group-hover:opacity-100 transition-opacity">
@@ -182,91 +201,146 @@ export function JalousieMenu() {
             </motion.div>
           </motion.button>
 
-          {/* Menu Items - Creative Layout */}
-          <nav
-            className="h-full flex flex-col justify-center px-6 md:px-10 lg:px-14 xl:px-20 pt-24 pb-20
-            [@media(max-height:820px)]:justify-start [@media(max-height:820px)]:pt-20 [@media(max-height:820px)]:pb-16"
-          >
-            {NAV_ITEMS.map((item, index) => (
-              <motion.div
-                key={item.href}
-                initial={{ opacity: 0, y: 50, skewY: 2 }}
-                animate={{ opacity: 1, y: 0, skewY: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{
-                  delay: 0.1 + index * 0.06,
-                  duration: 0.5,
-                  ease: [0.25, 0.1, 0.25, 1],
-                }}
-                className="relative border-t border-dashed border-border/70 first:border-t-0"
-                onMouseEnter={() => setHoveredIndex(index)}
-                onMouseLeave={() => setHoveredIndex(null)}
-              >
-                <Link
-                  href={item.href}
-                  onClick={() => setIsOpen(false)}
-                  className="relative block py-4 sm:py-5 md:py-6 lg:py-8 xl:py-10 group overflow-hidden"
-                >
-                  {/* Hover Black Bar Background */}
+          {/* Menu Items - Asymmetric Layout matching freshman reference */}
+          <nav className="absolute inset-0 z-40 overflow-y-auto">
+            <div className="min-h-full w-screen flex flex-col justify-center py-32 relative">
+              {NAV_ITEMS.map((item, index) => {
+                const isLeft = item.position === 'left'
+                const isRight = item.position === 'right'
+                const isCenter = item.position === 'center'
+                const isFull = item.position === 'full'
+
+                return (
                   <motion.div
-                    className="absolute inset-0 bg-black z-0"
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: hoveredIndex === index ? 1 : 0 }}
-                    transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
-                    style={{ originX: 0 }}
-                  />
+                    key={item.href}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{
+                      delay: 0.2 + index * 0.08,
+                      duration: 0.6,
+                      ease: [0.25, 0.1, 0.25, 1],
+                    }}
+                    className="relative w-screen"
+                    onMouseEnter={() => setHoveredIndex(index)}
+                    onMouseLeave={() => setHoveredIndex(null)}
+                  >
+                    {/* Full-width dotted border spanning entire viewport */}
+                    <div
+                      className="absolute top-0 left-0 right-0 border-t border-dotted border-black/20"
+                      style={{
+                        position: 'absolute',
+                        left: '50%',
+                        right: '50%',
+                        marginLeft: '-50vw',
+                        marginRight: '-50vw',
+                        width: '100vw',
+                        borderWidth: '1px',
+                      }}
+                    />
 
-                  {/* Content Container */}
-                  <div className="relative z-10 grid grid-cols-12 pointer-events-none">
-                    <div className={`relative ${item.positionClass} flex items-center`}>
+                    {/* Hover Background - all items */}
+                    <motion.div
+                      className="absolute inset-0 bg-black z-0 pointer-events-none"
+                      initial={{ scaleX: 0 }}
+                      animate={{
+                        scaleX: hoveredIndex === index ? 1 : 0,
+                      }}
+                      transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
+                      style={{ transformOrigin: 'left' }}
+                    />
 
-                      {/* Text with Scribble Overlay */}
-                      <div className="relative inline-block">
-                        <span
-                          className={cn(
-                            "relative text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight uppercase leading-[0.95] transition-colors duration-300 font-brand",
-                            hoveredIndex === index ? "text-white italic" : "text-foreground"
-                          )}
-                        >
-                          {t(item.labelKey)}
-                        </span>
+                    <Link
+                      href={item.href}
+                      onClick={() => setIsOpen(false)}
+                      className="relative block py-6 md:py-8 lg:py-10 group z-10 w-full"
+                    >
+                      <div
+                        className={cn(
+                          "relative flex items-center gap-3 md:gap-4 w-full px-6 md:px-10",
+                          isLeft ? "justify-start" : isRight ? "justify-end" : isCenter || isFull ? "justify-center" : "justify-start"
+                        )}
+                      >
+                        {/* Text with Scribble Overlay */}
+                        <div className="relative inline-block">
+                          <span
+                            className={cn(
+                              "relative text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight uppercase leading-[0.85] transition-colors duration-300",
+                              hoveredIndex === index ? "text-white" : "text-black/85"
+                            )}
+                            style={{ fontFamily: 'var(--font-heading), serif' }}
+                          >
+                            {t(item.labelKey)}
+                          </span>
 
-                        {/* Scribble on Hover */}
-                        <AnimatePresence>
-                          {hoveredIndex === index && <ScribbleStrike />}
-                        </AnimatePresence>
+                          {/* Scribble on Hover */}
+                          {
+                            <AnimatePresence>
+                              {hoveredIndex === index && <ScribbleStrike />}
+                            </AnimatePresence>
+                          }
+                        </div>
+
+                        {/* Count */}
+                        {item.countKey && formatCount(getCountForKey(item.countKey)) && (
+                          <span
+                            className={cn(
+                              "relative text-lg md:text-xl lg:text-2xl transition-colors duration-300",
+                              hoveredIndex === index ? "text-white/60" : "text-black/40"
+                            )}
+                            style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+                          >
+                            {formatCount(getCountForKey(item.countKey))}
+                          </span>
+                        )}
                       </div>
+                    </Link>
+                  </motion.div>
+                )
+              })}
+            </div>
 
-                      {/* Count */}
-                      {item.countKey ? (
-                        <span
-                          className={cn(
-                            "ml-3 relative -top-4 text-xs sm:text-sm md:text-base transition-colors duration-300",
-                            hoveredIndex === index ? "text-white/60" : "text-muted-foreground"
-                          )}
-                          style={{ fontFamily: 'var(--font-handwritten), cursive' }}
-                        >
-                          {formatCount(getCountForKey(item.countKey))}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
+            {/* Bottom Info - Repositioned inside scrollable area */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ delay: 0.6 }}
+              className="w-full px-6 md:px-10 flex justify-between items-end text-sm text-black/60 mt-12 mb-6"
+            >
+              {/* Tagline - Bottom Left */}
+              <div className="flex flex-col gap-1">
+                <span
+                  className="text-base md:text-lg italic"
+                  style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+                >
+                  {t('home.heroTagline')}
+                </span>
+                <span className="text-xs">{t('footer.location')}</span>
+              </div>
+
+              {/* Social Links - Bottom Right */}
+              <div className="flex items-center gap-4 md:gap-6">
+                <a
+                  href="https://instagram.com/savagemovie"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs uppercase tracking-wide hover:text-black transition-colors"
+                >
+                  {t('footer.instagram')}
+                </a>
+                <a
+                  href="https://behance.net/savagemovie"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs uppercase tracking-wide hover:text-black transition-colors"
+                >
+                  {t('footer.behance')}
+                </a>
+                <span className="font-mono text-xs">© 2026</span>
+              </div>
+            </motion.div>
           </nav>
-
-          {/* Bottom Info */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ delay: 0.5 }}
-            className="absolute bottom-6 left-6 md:left-10 right-6 md:right-10 flex justify-between items-end text-sm text-muted-foreground"
-          >
-            <span>{t('footer.location')}</span>
-            <span className="font-mono">© 2026</span>
-          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
