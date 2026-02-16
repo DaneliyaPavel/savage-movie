@@ -47,7 +47,7 @@ const RowContent = ({
       />
 
       {/* Контент строки - элегантная типографика с каскадным расположением */}
-      <div className="relative h-full flex items-center px-8 md:px-12 lg:px-16 py-4 md:py-6">
+      <div className="relative h-full flex items-center px-6 md:px-10 lg:px-16 py-1 md:py-2 lg:py-3">
         <motion.div
           style={{
             marginLeft: offsetX,
@@ -69,8 +69,8 @@ const RowContent = ({
           <div className="relative inline-block">
             {/* Текст меню - утонченная serif типографика */}
             <motion.span
-              className="font-playfair font-normal text-3xl md:text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl leading-none menu-text-elegant"
-              style={{ letterSpacing: '-0.015em' }}
+              className="font-playfair font-normal leading-none menu-text-elegant"
+              style={{ fontSize: 'clamp(1.25rem, 2.5vw + 0.5rem, 3.5rem)', letterSpacing: '-0.015em' }}
               animate={{
                 color: isHovered ? '#000000' : '#1a1a1a',
                 letterSpacing: isHovered ? '-0.005em' : '-0.015em',
@@ -92,7 +92,7 @@ const RowContent = ({
           {/* Счетчик - элегантное отображение */}
           {count !== undefined && (
             <motion.span
-              className="text-base md:text-lg lg:text-xl font-mono"
+              className="text-sm md:text-base lg:text-lg font-mono"
               animate={{
                 color: isHovered ? 'rgba(0, 0, 0, 0.7)' : 'rgba(26, 26, 26, 0.5)',
                 scale: isHovered ? 1.05 : 1,
@@ -106,7 +106,7 @@ const RowContent = ({
           {/* Стрелка для CTA - улучшенная анимация */}
           {isCTA && (
             <motion.span
-              className="text-2xl md:text-3xl"
+              className="text-xl md:text-2xl lg:text-3xl"
               animate={{
                 color: isHovered ? '#000000' : '#1a1a1a',
                 x: [0, 8, 0],
