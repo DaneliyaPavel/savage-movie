@@ -58,6 +58,9 @@ backend/uploads/videos/*
 !backend/uploads/images/.gitkeep
 !backend/uploads/videos/.gitkeep
 
+# Claude / agent worktrees
+.claude/
+
 # IDE
 .vscode/
 .idea/
