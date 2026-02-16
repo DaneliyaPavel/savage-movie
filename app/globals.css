@@ -75,16 +75,19 @@
 }
 
 @theme inline {
-  --font-secondary: 'Inter 28pt ExtraLight';
-  --font-sans: var(--font-secondary), 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-heading: 'Oranienbaum', 'Times New Roman', serif;
-  --font-brand: 'Epilogue Black', 'Oranienbaum', serif;
-  --font-brand-hero: 'Montserrat Black Italic', 'Epilogue Black', 'Oranienbaum', serif;
+  --font-secondary: 'Inter 28pt ExtraLight', 'Inter', system-ui, -apple-system, 'Segoe UI',
+    sans-serif;
+  --font-sans: var(--font-secondary);
+  --font-heading: var(--font-sans);
+  --font-brand: 'Epilogue Black', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-brand-hero:
+    'Montserrat Black Italic', 'Epilogue Black', 'Inter', system-ui, -apple-system, 'Segoe UI',
+    sans-serif;
   --font-mono:
     ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
   --font-handwritten: 'Sa No Rules Regular', 'Comic Sans MS', cursive;
-  --font-serif-subtitle: var(--font-secondary);
-  --font-serif-menu: var(--font-secondary);
+  --font-serif-subtitle: var(--font-sans);
+  --font-serif-menu: var(--font-sans);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -331,7 +334,7 @@
   }
 
   .font-oranienbaum {
-    font-family: 'Oranienbaum', serif;
+    font-family: var(--font-sans);
     font-weight: 400;
   }
 

@@ -268,7 +268,7 @@ export function JalousieMenu() {
                               "relative text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight uppercase leading-[0.85] transition-colors duration-300",
                               hoveredIndex === index ? "text-white" : "text-black/85"
                             )}
-                            style={{ fontFamily: 'var(--font-heading), serif' }}
+                            style={{ fontFamily: 'var(--font-heading)' }}
                           >
                             {t(item.labelKey)}
                           </span>
