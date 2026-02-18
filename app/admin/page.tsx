@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Film, GraduationCap, Settings, Info, PlusCircle, FileText } from 'lucide-react'
+import { Film, GraduationCap, Settings, Info, PlusCircle, FileText, Users, BarChart3 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
@@ -13,6 +13,7 @@ import { getProjects } from '@/features/projects/api'
 import { getCourses } from '@/features/courses/api'
 import { getSettings, type JsonValue } from '@/lib/api/settings'
 import { getBlogPosts } from '@/lib/api/blog'
+import { getAdminStatsCourses, type AdminCourseStats } from '@/lib/api/admin'
 import type { LucideIcon } from 'lucide-react'
 
 function isTeamArray(v: JsonValue | undefined): v is JsonValue[] {
@@ -26,22 +27,25 @@ export default function AdminPage() {
     blog: 0,
   })
   const [teamCount, setTeamCount] = useState<number | null>(null)
+  const [courseStats, setCourseStats] = useState<AdminCourseStats[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const [projects, courses, blogPosts, settings] = await Promise.all([
+        const [projects, courses, blogPosts, settings, stats] = await Promise.all([
           getProjects().catch(() => []),
           getCourses().catch(() => []),
           getBlogPosts().catch(() => []),
           getSettings().catch(() => ({})),
+          getAdminStatsCourses().catch(() => []),
         ])
         setCounts({
           projects: projects.length,
           courses: courses.length,
           blog: blogPosts.length,
         })
+        setCourseStats(stats)
 
         const rawTeam = (settings as { about_team?: JsonValue }).about_team
         setTeamCount(isTeamArray(rawTeam) ? rawTeam.length : 0)
@@ -113,6 +117,18 @@ export default function AdminPage() {
       ],
     },
     {
+      title: 'Пользователи и аналитика',
+      description: 'Учётные записи и статистика по курсам.',
+      items: [
+        {
+          title: 'Пользователи',
+          description: 'Список пользователей и их записи на курсы.',
+          href: '/admin/users',
+          icon: Users,
+        },
+      ],
+    },
+    {
       title: 'Настройки сайта',
       description: 'Контакты, статистика и базовые параметры.',
       items: [
@@ -162,6 +178,48 @@ export default function AdminPage() {
             </div>
           </div>
         ))}
+
+        {courseStats.length > 0 && (
+          <div className="mb-10">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                Аналитика по курсам
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Количество записей и выручка по каждому курсу
+              </p>
+            </div>
+            <Card>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="text-left p-3">Курс</th>
+                        <th className="text-right p-3">Записей</th>
+                        <th className="text-right p-3">Оплат</th>
+                        <th className="text-right p-3">Выручка</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {courseStats.map(s => (
+                        <tr key={s.course_id} className="border-b">
+                          <td className="p-3 font-medium">{s.course_title}</td>
+                          <td className="p-3 text-right">{s.enrollments_count}</td>
+                          <td className="p-3 text-right">{s.payments_count}</td>
+                          <td className="p-3 text-right">
+                            {s.revenue.toLocaleString('ru-RU')} ₽
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Quick Actions */}
         <Card>

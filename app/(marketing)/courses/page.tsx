@@ -2,8 +2,7 @@
 
 import type React from 'react'
 import { useState, useRef, useEffect } from 'react'
-import { motion, useInView, AnimatePresence } from 'framer-motion'
-import Image from 'next/image'
+import { motion, useInView } from 'framer-motion'
 import Link from 'next/link'
 import { TopBar } from '@/components/ui/top-bar'
 import { JalousieMenu } from '@/components/ui/jalousie-menu'
@@ -12,6 +11,7 @@ import { HoverNote } from '@/components/ui/hover-note'
 import { useI18n } from '@/lib/i18n-context'
 import { getCourses } from '@/features/courses/api'
 import { toMarketingCourse, type MarketingCourse } from '@/features/courses/mappers'
+import { CourseCard } from '@/features/courses/components/CourseCard'
 
 function AnimatedSection({
   children,
@@ -37,8 +37,8 @@ function AnimatedSection({
 }
 
 export default function CoursesPage() {
-  const [expandedCourse, setExpandedCourse] = useState<string | null>(null)
   const [courses, setCourses] = useState<MarketingCourse[]>([])
+  const [formatFilter, setFormatFilter] = useState<'all' | 'online' | 'offline'>('all')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const coursesRef = useRef<MarketingCourse[]>([])
@@ -83,41 +83,10 @@ export default function CoursesPage() {
     }
   }, [t])
 
-  const getTitle = (c: MarketingCourse) => (language === 'ru' ? c.titleRu : c.titleEn)
-  const getDescription = (c: MarketingCourse) =>
-    language === 'ru' ? c.descriptionRu : c.descriptionEn
-  const getTopics = (c: MarketingCourse) => (language === 'ru' ? c.topicsRu : c.topicsEn)
-  const getForWhom = (c: MarketingCourse) => (language === 'ru' ? c.forWhomRu : c.forWhomEn)
-
-  const getLevelLabel = (level: string) => {
-    const labels: Record<string, Record<string, string>> = {
-      beginner: { ru: 'Начинающий', en: 'Beginner' },
-      intermediate: { ru: 'Средний', en: 'Intermediate' },
-      advanced: { ru: 'Продвинутый', en: 'Advanced' },
-      all: { ru: 'Все уровни', en: 'All levels' },
-    }
-    return labels[level]?.[language] || level
-  }
-
-  const getFormatLabel = (format: string | null) => {
-    if (!format) return language === 'ru' ? 'Не указан' : 'Not specified'
-    const labels: Record<string, Record<string, string>> = {
-      online: { ru: 'Онлайн', en: 'Online' },
-      offline: { ru: 'Офлайн', en: 'Offline' },
-      hybrid: { ru: 'Гибридный', en: 'Hybrid' },
-      'online+live': { ru: 'Онлайн + живые сессии', en: 'Online + live sessions' },
-    }
-    return labels[format]?.[language] || format
-  }
-
-  const getCertificateLabel = (certificate: string | null) => {
-    if (!certificate) return language === 'ru' ? 'Нет' : 'No'
-    const labels: Record<string, Record<string, string>> = {
-      yes: { ru: 'Да', en: 'Yes' },
-      no: { ru: 'Нет', en: 'No' },
-    }
-    return labels[certificate]?.[language] || certificate
-  }
+  const filteredCourses =
+    formatFilter === 'all'
+      ? courses
+      : courses.filter(c => (c.format ?? '').toLowerCase() === formatFilter)
 
   return (
     <main className="min-h-screen bg-background">
@@ -155,206 +124,76 @@ export default function CoursesPage() {
       {/* Courses Grid */}
       <section className="px-6 md:px-10 lg:px-20 pb-20">
         {isLoading ? (
-          <div className="text-center py-12">
+          <div className="py-12 text-center">
             <p className="text-muted-foreground">{t('courses.loading')}</p>
           </div>
         ) : error ? (
-          <div className="text-center py-12">
+          <div className="py-12 text-center">
             <p className="text-muted-foreground">{error}</p>
           </div>
         ) : (
-          <div className="space-y-8">
-            {courses.map((course, index) => (
-              <AnimatedSection key={course.id}>
-                <motion.article
-                  layout
-                  className={`relative rounded-lg overflow-hidden border border-border bg-gradient-to-br ${course.color} transition-all duration-500`}
+          <>
+            <div className="mb-8 flex flex-wrap items-center gap-3">
+              <span className="text-sm text-muted-foreground">
+                {language === 'ru' ? 'Формат:' : 'Format:'}
+              </span>
+              {(['all', 'online', 'offline'] as const).map(value => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setFormatFilter(value)}
+                  className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    formatFilter === value
+                      ? 'border-foreground bg-foreground text-background'
+                      : 'border-border bg-transparent text-muted-foreground hover:border-foreground/50 hover:text-foreground'
+                  }`}
                 >
-                  <div
-                    className="p-6 md:p-10 cursor-pointer"
-                    onClick={() =>
-                      setExpandedCourse(expandedCourse === course.id ? null : course.id)
+                  {value === 'all'
+                    ? language === 'ru'
+                      ? 'Все'
+                      : 'All'
+                    : value === 'online'
+                      ? language === 'ru'
+                        ? 'Онлайн'
+                        : 'Online'
+                      : language === 'ru'
+                        ? 'Офлайн'
+                        : 'Offline'}
+                </button>
+              ))}
+            </div>
+            {filteredCourses.length === 0 ? (
+              <div className="py-12 text-center">
+                <p className="text-muted-foreground">
+                  {language === 'ru' ? 'Курсы не найдены' : 'No courses found'}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
+                {filteredCourses.map(course => (
+                  <CourseCard
+                    key={course.id}
+                    title={language === 'ru' ? course.titleRu : course.titleEn}
+                    slug={language === 'ru' ? course.slugRu : course.slugEn}
+                    shortDescription={
+                      language === 'ru' ? course.shortDescriptionRu : course.shortDescriptionEn
                     }
-                  >
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                      {/* Left - Number & Icon */}
-                      <div className="lg:col-span-1 flex lg:flex-col items-center lg:items-start gap-4">
-                        <span className="text-5xl md:text-6xl font-light text-accent/50">
-                          {String(index + 1).padStart(2, '0')}
-                        </span>
-                        <span className="text-3xl">{course.icon}</span>
-                      </div>
-
-                      {/* Middle - Content */}
-                      <div className="lg:col-span-7">
-                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-light tracking-tight mb-4 group-hover:text-accent transition-colors">
-                          {getTitle(course)}
-                        </h2>
-                        <p className="text-muted-foreground text-lg leading-relaxed mb-6">
-                          {getDescription(course)}
-                        </p>
-
-                        {/* Stats */}
-                        <div className="flex flex-wrap gap-6 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">{t('courses.duration')}</span>
-                            <span className="ml-2 font-medium">
-                              {course.duration} {t('courses.weeks')}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">{t('courses.level')}</span>
-                            <span className="ml-2 font-medium">{getLevelLabel(course.level)}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">{t('courses.students')}</span>
-                            <span className="ml-2 font-medium">{course.students}+</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right - Image */}
-                      <div className="lg:col-span-4">
-                        <div className="relative aspect-[4/3] rounded-sm overflow-hidden">
-                          <Image
-                            src={course.image || '/placeholder.svg'}
-                            alt={getTitle(course)}
-                            fill
-                            className="object-cover transition-transform duration-700 hover:scale-105"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Expand Indicator */}
-                    <div className="flex justify-center mt-6">
-                      <motion.div
-                        animate={{ rotate: expandedCourse === course.id ? 180 : 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="text-muted-foreground"
-                      >
-                        <svg
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                        >
-                          <path d="M6 9l6 6 6-6" />
-                        </svg>
-                      </motion.div>
-                    </div>
-                  </div>
-
-                  {/* Expanded Content */}
-                  <AnimatePresence>
-                    {expandedCourse === course.id && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-                        className="overflow-hidden"
-                      >
-                        <div className="px-6 md:px-10 pb-10 pt-0 border-t border-border/50">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mt-8">
-                            {/* What You'll Learn */}
-                            <div>
-                              <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-6">
-                                {t('courses.whatYouLearn')}
-                              </h3>
-                              <ul className="space-y-3">
-                                {getTopics(course).map((topic, i) => (
-                                  <motion.li
-                                    key={i}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.1 }}
-                                    className="flex items-start gap-3"
-                                  >
-                                    <SvgMark
-                                      type="plus"
-                                      className="text-accent flex-shrink-0 mt-1"
-                                      size={12}
-                                    />
-                                    <span>{topic}</span>
-                                  </motion.li>
-                                ))}
-                              </ul>
-                            </div>
-
-                            {/* For Whom */}
-                            <div>
-                              <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-6">
-                                {t('courses.forWhom')}
-                              </h3>
-                              <ul className="space-y-3">
-                                {getForWhom(course).map((item, i) => (
-                                  <motion.li
-                                    key={i}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.1 + 0.2 }}
-                                    className="flex items-start gap-3"
-                                  >
-                                    <SvgMark
-                                      type="arrow"
-                                      className="text-accent flex-shrink-0 mt-1"
-                                      size={12}
-                                    />
-                                    <span>{item}</span>
-                                  </motion.li>
-                                ))}
-                              </ul>
-
-                              {/* Course Details */}
-                              <div className="mt-8 pt-6 border-t border-border/50 space-y-3 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">
-                                    {t('courses.format')}
-                                  </span>
-                                  <span>{getFormatLabel(course.format)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">
-                                    {t('courses.certificate')}
-                                  </span>
-                                  <span>{getCertificateLabel(course.certificate)}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* CTA */}
-                          <div className="mt-10 flex flex-wrap gap-4">
-                            <HoverNote note={language === 'ru' ? 'записаться' : 'enroll'}>
-                              <Link
-                                href="/contact"
-                                className="inline-flex items-center gap-3 px-8 py-4 bg-foreground text-background font-medium rounded-sm hover:bg-accent transition-colors"
-                              >
-                                {t('courses.enroll')}
-                                <svg
-                                  width="16"
-                                  height="16"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                >
-                                  <path d="M5 12h14M12 5l7 7-7 7" />
-                                </svg>
-                              </Link>
-                            </HoverNote>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.article>
-              </AnimatedSection>
-            ))}
-          </div>
+                    format={course.format}
+                    durationText={course.durationText}
+                    locationText={course.locationText}
+                    scheduleText={course.scheduleText}
+                    tags={course.tags}
+                    badgeText={course.badgeText}
+                    ctaText={course.ctaText}
+                    cardCover={course.cardCover}
+                    coverImage={course.image}
+                    coverVideoUrl={course.videoPromoUrl}
+                    showPlayIcon={course.format === 'online'}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </section>
 

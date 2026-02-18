@@ -2,7 +2,6 @@
  * API функции для записей на курсы
  */
 import { apiGet, apiPost, apiPut } from './client'
-import type { Course } from './courses'
 
 export interface Enrollment {
   id: string
@@ -13,15 +12,24 @@ export interface Enrollment {
   completed_at?: string
 }
 
+/** Минимальные поля курса в ответе списка записей */
+export interface CourseSummary {
+  id: string
+  title: string
+  slug: string
+  cover_image: string | null
+  format: string | null
+}
+
 export interface EnrollmentWithCourse extends Enrollment {
-  course: Course
+  course: CourseSummary
 }
 
 /**
  * Получить список записей пользователя (client-side)
  */
-export async function getEnrollments(): Promise<Enrollment[]> {
-  return apiGet<Enrollment[]>('/api/enrollments')
+export async function getEnrollments(): Promise<EnrollmentWithCourse[]> {
+  return apiGet<EnrollmentWithCourse[]>('/api/enrollments')
 }
 
 /**
@@ -29,9 +37,9 @@ export async function getEnrollments(): Promise<Enrollment[]> {
  */
 export async function getEnrollmentsServer(cookies?: {
   get: (name: string) => { value: string } | undefined
-}): Promise<Enrollment[]> {
+}): Promise<EnrollmentWithCourse[]> {
   const { apiGet: apiGetServer } = await import('./server')
-  return apiGetServer<Enrollment[]>('/api/enrollments', cookies)
+  return apiGetServer<EnrollmentWithCourse[]>('/api/enrollments', cookies)
 }
 
 /**

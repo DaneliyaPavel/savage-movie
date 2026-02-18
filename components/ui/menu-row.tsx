@@ -47,7 +47,7 @@ const RowContent = ({
       />
 
       {/* Контент строки - элегантная типографика с каскадным расположением */}
-      <div className="relative h-full flex items-center px-6 md:px-10 lg:px-16 py-1 md:py-2 lg:py-3">
+      <div className="relative h-full flex items-center px-6 md:px-10 lg:px-16 py-0.5 md:py-1">
         <motion.div
           style={{
             marginLeft: offsetX,

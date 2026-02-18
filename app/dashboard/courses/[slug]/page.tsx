@@ -5,23 +5,23 @@ import { notFound, redirect } from 'next/navigation'
 import { getCurrentUserServer } from '@/lib/api/auth'
 import { getCourseBySlugServer } from '@/features/courses/api'
 import { getEnrollmentByCourseServer } from '@/lib/api/enrollments'
-import { VideoPlayer } from '@/features/projects/components/VideoPlayer'
+import { getCourseMaterialsServer } from '@/lib/api/course-materials'
+import { DashboardCoursePlayer } from '@/features/courses/components/DashboardCoursePlayer'
+import { CourseCover } from '@/features/courses/components/CourseCover'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
-import { Badge } from '@/components/ui/badge'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
-import { CheckCircle2, Play } from 'lucide-react'
+import { FileText, ExternalLink } from 'lucide-react'
 import type { Course } from '@/features/courses/api'
 import { cookies } from 'next/headers'
+import Link from 'next/link'
 
-export default async function DashboardCoursePage({ params }: { params: { slug: string } }) {
-  // Проверяем аутентификацию
+export default async function DashboardCoursePage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
   const cookieStore = await cookies()
   const user = await getCurrentUserServer(cookieStore)
 
@@ -29,10 +29,9 @@ export default async function DashboardCoursePage({ params }: { params: { slug: 
     redirect('/')
   }
 
-  // Загружаем курс
   let course: Course | null = null
   try {
-    course = await getCourseBySlugServer(params.slug, cookieStore)
+    course = await getCourseBySlugServer(slug, cookieStore)
   } catch (error) {
     console.warn('Ошибка загрузки курса:', error)
   }
@@ -41,23 +40,18 @@ export default async function DashboardCoursePage({ params }: { params: { slug: 
     notFound()
   }
 
-  // Проверяем, записан ли пользователь на курс
   let enrollment = null
   try {
     enrollment = await getEnrollmentByCourseServer(course.id, cookieStore)
   } catch {
-    // Если запись не найдена, редиректим на страницу курса
-    redirect(`/courses/${params.slug}`)
+    redirect(`/courses/${slug}`)
   }
 
-  // Модули уже загружены вместе с курсом
-  const modulesWithLessons = course.modules || []
-
-  // Извлекаем playback ID из Mux URL
-  const getPlaybackId = (url: string | null) => {
-    if (!url) return null
-    const muxMatch = url.match(/mux\.com\/([^/?]+)/)
-    return muxMatch?.[1] ?? null
+  let materials: Awaited<ReturnType<typeof getCourseMaterialsServer>> = []
+  try {
+    materials = await getCourseMaterialsServer(course.id, cookieStore)
+  } catch {
+    // материалы опциональны
   }
 
   return (
@@ -73,91 +67,59 @@ export default async function DashboardCoursePage({ params }: { params: { slug: 
           <p className="text-muted-foreground">Прогресс: {enrollment.progress}%</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Video Player */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardContent className="p-0">
-                <div className="aspect-video bg-muted">
-                  {modulesWithLessons && modulesWithLessons[0]?.lessons?.[0]?.video_url ? (
-                    (() => {
-                      const firstLesson = modulesWithLessons[0].lessons[0]
-                      const videoUrl = firstLesson.video_url
-                      if (!videoUrl) {
-                        return (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <p className="text-muted-foreground">Выберите урок для просмотра</p>
-                          </div>
-                        )
-                      }
-                      const playbackId = getPlaybackId(videoUrl)
-                      return playbackId ? (
-                        <VideoPlayer
-                          playbackId={playbackId}
-                          title={firstLesson.title}
-                          controls
-                          className="w-full h-full"
-                        />
-                      ) : (
-                        <video src={videoUrl} controls className="w-full h-full object-cover" />
-                      )
-                    })()
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <p className="text-muted-foreground">Выберите урок для просмотра</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Lessons List */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle>Уроки</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Accordion type="single" collapsible className="w-full">
-                  {modulesWithLessons?.map(module => (
-                    <AccordionItem key={module.id} value={module.id}>
-                      <AccordionTrigger>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold">{module.title}</span>
-                          <Badge variant="outline" className="ml-auto">
-                            {module.lessons?.length || 0}
-                          </Badge>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <ul className="space-y-2 mt-2">
-                          {module.lessons?.map(lesson => {
-                            return (
-                              <li key={lesson.id}>
-                                <button className="w-full text-left flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors">
-                                  <Play className="w-4 h-4 text-muted-foreground" />
-                                  <span className="text-sm flex-1">{lesson.title}</span>
-                                  {lesson.duration && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {Math.floor(lesson.duration / 60)}:
-                                      {(lesson.duration % 60).toString().padStart(2, '0')}
-                                    </span>
-                                  )}
-                                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                                </button>
-                              </li>
-                            )
-                          })}
-                        </ul>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </CardContent>
-            </Card>
-          </div>
+        <div className="mb-8 overflow-hidden rounded-xl border border-border">
+          <CourseCover
+            settings={course.card_cover ?? undefined}
+            coverImage={course.cover_image}
+            coverVideoUrl={course.video_promo_url}
+            coverMediaType={course.card_cover?.media_type ?? 'image'}
+            format={course.format}
+          />
         </div>
+
+        <DashboardCoursePlayer course={course} enrollment={enrollment} />
+
+        {materials.length > 0 && (
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>Материалы курса</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3">
+                {materials.map(m => (
+                  <li key={m.id}>
+                    {m.material_type === 'link' && m.external_url ? (
+                      <Link
+                        href={m.external_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                      >
+                        <ExternalLink className="w-5 h-5 text-muted-foreground" />
+                        <span className="font-medium">{m.title}</span>
+                      </Link>
+                    ) : m.file_url ? (
+                      <Link
+                        href={m.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                      >
+                        <FileText className="w-5 h-5 text-muted-foreground" />
+                        <span className="font-medium">{m.title}</span>
+                      </Link>
+                    ) : (
+                      <div className="flex items-center gap-3 p-3 rounded-lg border opacity-75">
+                        <FileText className="w-5 h-5 text-muted-foreground" />
+                        <span className="font-medium">{m.title}</span>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )

@@ -6,16 +6,32 @@
 
 ## Для новой БД (рекомендуемый путь)
 
-Локально:
+Локально (из корня проекта):
+
+```bash
+./scripts/run-migrations.sh
+```
+
+Скрипт подставляет `python3 -m alembic`, если команда `alembic` недоступна в PATH. Требуются установленные зависимости (`pip install -r backend/requirements.txt`) и настроенный `backend/.env` с `DATABASE_URL`.
+
+Либо вручную:
 
 ```bash
 alembic -c backend/alembic.ini upgrade head
+# или, если alembic не в PATH:
+python3 -m alembic -c backend/alembic.ini upgrade head
 ```
 
-В Docker (backend контейнер):
+В Docker (backend контейнер; конфиг лежит в `/app/backend/`):
 
 ```bash
 docker exec savage_movie_backend alembic -c /app/backend/alembic.ini upgrade head
+```
+
+Либо зайти в контейнер и запустить из рабочей директории:
+
+```bash
+docker exec -it savage_movie_backend sh -c "cd /app/backend && alembic -c alembic.ini upgrade head"
 ```
 
 ## Для существующей БД (созданной SQL-скриптами)

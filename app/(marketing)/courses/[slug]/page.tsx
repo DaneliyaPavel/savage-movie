@@ -2,9 +2,8 @@
  * Детальная страница курса
  */
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
-import { getCourseBySlug } from '@/features/courses/api'
-import { VideoPlayer } from '@/features/projects/components/VideoPlayer'
+import { cookies } from 'next/headers'
+import { getCourseBySlugServer } from '@/features/courses/api'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -15,16 +14,23 @@ import {
 } from '@/components/ui/accordion'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
-import { CheckCircle2, Clock, User } from 'lucide-react'
+import { CheckCircle2, Clock, MapPin, User } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
-import { CourseEnrollmentButton } from '@/features/courses/components/CourseEnrollmentButton'
+import { CourseEnrollmentForm } from '@/features/courses/components/CourseEnrollmentForm'
 import type { Course } from '@/features/courses/api'
+import { getCurrentUserServer } from '@/lib/api/auth'
 
-export default async function CourseDetailPage({ params }: { params: { slug: string } }) {
+export default async function CourseDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  const cookieStore = await cookies()
   let course: Course | null = null
 
   try {
-    course = await getCourseBySlug(params.slug)
+    course = await getCourseBySlugServer(slug, cookieStore)
   } catch (error) {
     console.warn('Ошибка загрузки курса:', error)
   }
@@ -32,6 +38,8 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
   if (!course) {
     notFound()
   }
+
+  const user = await getCurrentUserServer(cookieStore)
 
   // Модули уже загружены вместе с курсом и отсортированы
   const modulesWithLessons = course.modules || []
@@ -43,41 +51,9 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
     production: 'Продакшн',
   }
 
-  // Извлекаем playback ID из Mux URL
-  const getPlaybackId = (url: string | null) => {
-    if (!url) return null
-    const muxMatch = url.match(/mux\.com\/([^/?]+)/)
-    if (muxMatch) return muxMatch[1]
-    return null
-  }
-
-  const promoPlaybackId = course.video_promo_url ? getPlaybackId(course.video_promo_url) : null
-
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
-      <div className="relative w-full aspect-video bg-muted">
-        {promoPlaybackId ? (
-          <VideoPlayer
-            playbackId={promoPlaybackId}
-            title={course.title}
-            controls
-            className="w-full h-full"
-          />
-        ) : course.video_promo_url ? (
-          <video src={course.video_promo_url} controls className="w-full h-full object-cover" />
-        ) : course.cover_image ? (
-          <Image
-            src={course.cover_image}
-            alt={course.title}
-            fill
-            sizes="100vw"
-            className="object-cover"
-          />
-        ) : null}
-      </div>
-
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 pt-8 pb-12">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-8">
@@ -86,8 +62,15 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
               className="mb-4"
             />
             <BackButton href="/courses" className="mb-4" />
-            <div className="flex items-center gap-4 mb-4">
+            <div className="mb-4 flex flex-wrap items-center gap-2">
               <Badge variant="secondary">{categoryLabels[course.category]}</Badge>
+              {course.tags?.length ? (
+                course.tags.map((tag, i) => (
+                  <Badge key={i} variant="outline">
+                    {tag}
+                  </Badge>
+                ))
+              ) : null}
             </div>
             <h1 className="font-heading font-bold text-4xl md:text-5xl mb-4">{course.title}</h1>
             {course.description && (
@@ -98,18 +81,35 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
           </div>
 
           {/* Course Info */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-1 gap-4 mb-8 md:grid-cols-3">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <Clock className="w-5 h-5 text-primary" />
                   <div>
                     <p className="text-sm text-muted-foreground">Длительность</p>
-                    <p className="font-semibold">{course.duration || 'N/A'} мин</p>
+                    <p className="font-semibold">
+                      {course.duration_text ?? (course.duration != null ? `${course.duration} нед.` : 'N/A')}
+                    </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
+            {(course.location_text || course.schedule_text) && (
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <MapPin className="w-5 h-5 text-primary" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Локация / Расписание</p>
+                      <p className="font-semibold">
+                        {[course.location_text, course.schedule_text].filter(Boolean).join(' · ')}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
@@ -133,12 +133,13 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
             </Card>
           </div>
 
-          {/* CTA Button */}
+          {/* Форма записи на курс / переход к оплате */}
           <div className="mb-12">
-            <CourseEnrollmentButton
+            <CourseEnrollmentForm
               courseId={course.id}
               courseTitle={course.title}
               price={Number(course.price)}
+              initialUser={user}
             />
           </div>
 
@@ -203,15 +204,17 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
-                        <ul className="space-y-2 mt-2">
+                        <ul className="mt-3 space-y-0 divide-y divide-border/50">
                           {module.lessons?.map(lesson => (
-                            <li key={lesson.id} className="flex items-center gap-3 text-sm">
-                              <Clock className="w-4 h-4 text-muted-foreground" />
-                              <span>{lesson.title}</span>
-                              {lesson.duration && (
-                                <span className="text-muted-foreground ml-auto">
-                                  {Math.floor(lesson.duration / 60)}:
-                                  {(lesson.duration % 60).toString().padStart(2, '0')}
+                            <li
+                              key={lesson.id}
+                              className="flex items-center gap-3 py-3 first:pt-0 text-sm"
+                            >
+                              <Clock className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                              <span className="min-w-0 flex-1">{lesson.title}</span>
+                              {lesson.duration != null && (
+                                <span className="ml-auto flex-shrink-0 text-muted-foreground">
+                                  {lesson.duration} мин
                                 </span>
                               )}
                             </li>

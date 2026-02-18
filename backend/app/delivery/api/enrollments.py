@@ -10,20 +10,38 @@ from app.infrastructure.db.session import get_db
 from app.infrastructure.db.models.user import User
 from app.infrastructure.db.repositories.courses import SqlAlchemyCoursesRepository
 from app.infrastructure.db.repositories.enrollments import SqlAlchemyEnrollmentsRepository
-from app.interfaces.schemas.enrollment import Enrollment as EnrollmentSchema, EnrollmentCreate, EnrollmentUpdate
+from app.interfaces.schemas.enrollment import (
+    Enrollment as EnrollmentSchema,
+    EnrollmentWithCourse,
+    EnrollmentCreate,
+    EnrollmentUpdate,
+    CourseSummary,
+)
 from app.delivery.api.auth import get_current_user
 
 router = APIRouter(prefix="/api/enrollments", tags=["enrollments"])
 
 
-@router.get("", response_model=List[EnrollmentSchema])
+@router.get("", response_model=List[EnrollmentWithCourse])
 async def get_enrollments(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Получить список записей пользователя на курсы"""
+    """Получить список записей пользователя на курсы с данными курса"""
     repo = SqlAlchemyEnrollmentsRepository(db)
-    return await repo.list_by_user(current_user.id)
+    rows = await repo.list_by_user(current_user.id)
+    return [
+        EnrollmentWithCourse(
+            id=e.id,
+            user_id=e.user_id,
+            course_id=e.course_id,
+            progress=e.progress,
+            enrolled_at=e.enrolled_at,
+            completed_at=e.completed_at,
+            course=CourseSummary.model_validate(e.course),
+        )
+        for e in rows
+    ]
 
 
 @router.get("/{course_id}", response_model=EnrollmentSchema)

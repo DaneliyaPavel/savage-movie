@@ -31,5 +31,17 @@ class Enrollment(EnrollmentBase):
         from_attributes = True
 
 
+class CourseSummary(BaseModel):
+    """Минимальные поля курса для ответа в списке записей"""
+    id: UUID
+    title: str
+    slug: str
+    cover_image: Optional[str] = None
+    format: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 class EnrollmentWithCourse(Enrollment):
-    course: dict  # Course данные
+    course: CourseSummary

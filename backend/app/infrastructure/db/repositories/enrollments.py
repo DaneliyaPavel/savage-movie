@@ -8,6 +8,7 @@ from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.infrastructure.db.models.enrollment import Enrollment
 
@@ -21,6 +22,7 @@ class SqlAlchemyEnrollmentsRepository:
             select(Enrollment)
             .where(Enrollment.user_id == user_id)
             .order_by(Enrollment.enrolled_at.desc())
+            .options(selectinload(Enrollment.course))
         )
         return result.scalars().all()
 

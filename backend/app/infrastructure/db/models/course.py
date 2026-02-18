@@ -2,7 +2,7 @@
 Модели курсов, модулей и уроков
 """
 from sqlalchemy import Column, String, Text, Integer, Numeric, DateTime, func, ARRAY, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 import uuid
 from app.infrastructure.db.session import Base
@@ -27,6 +27,15 @@ class Course(Base):
     certificate = Column(String, nullable=True)  # 'yes', 'no'
     format = Column(String, nullable=True)  # 'online', 'offline', 'hybrid', 'online+live'
     display_order = Column(Integer, nullable=True, default=0)  # Порядок отображения
+    # Card / listing fields
+    short_description = Column(Text, nullable=True)
+    duration_text = Column(String, nullable=True)  # e.g. "6 недель", "2 дня"
+    location_text = Column(String, nullable=True)  # for offline
+    schedule_text = Column(String, nullable=True)
+    tags = Column(ARRAY(Text), nullable=True)
+    badge_text = Column(String, nullable=True)
+    cta_text = Column(String, nullable=True)
+    card_cover = Column(JSONB, nullable=True)  # preset, accent1/2/3, showGrid, etc.
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

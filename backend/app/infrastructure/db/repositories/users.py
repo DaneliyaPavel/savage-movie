@@ -3,7 +3,9 @@ SQLAlchemy repository for User.
 """
 from __future__ import annotations
 
-from typing import Optional
+from __future__ import annotations
+
+from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy import select, or_, and_
@@ -15,6 +17,12 @@ from app.infrastructure.db.models.user import User
 class SqlAlchemyUsersRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+
+    async def list_all(self, limit: int = 100, offset: int = 0) -> List[User]:
+        result = await self._session.execute(
+            select(User).order_by(User.created_at.desc()).limit(limit).offset(offset)
+        )
+        return list(result.scalars().all())
 
     async def get_by_id(self, user_id: UUID) -> Optional[User]:
         result = await self._session.execute(select(User).where(User.id == user_id))

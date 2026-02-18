@@ -1,123 +1,138 @@
-/**
- * Премиум карточка курса в стиле Freshman.tv
- * Минималистичный дизайн, крупная типографика
- */
 'use client'
 
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import Link from 'next/link'
-import { Clock } from 'lucide-react'
-import { GrainOverlay } from '@/components/ui/grain-overlay'
-import { HoverNote } from '@/components/ui/hover-note'
+import type { CardCoverSettings } from '@/features/courses/api'
+import { CourseCover } from '@/features/courses/components/CourseCover'
+import { cn } from '@/lib/utils'
 
-interface CourseCardProps {
+export interface CourseCardProps {
   title: string
   slug: string
-  category: 'ai' | 'shooting' | 'editing' | 'production'
-  coverImage?: string
-  price: number
-  duration?: number
+  shortDescription?: string
+  format: string | null
+  durationText?: string | null
+  locationText?: string | null
+  scheduleText?: string | null
+  tags?: string[]
+  badgeText?: string | null
+  ctaText?: string | null
+  cardCover?: CardCoverSettings | null
+  coverImage?: string | null
+  /** Video URL for card cover (e.g. video_promo_url) */
+  coverVideoUrl?: string | null
+  /** Show play icon on cover when format is online */
+  showPlayIcon?: boolean
 }
 
-const categoryLabels: Record<string, string> = {
-  ai: 'ИИ-генерация',
-  shooting: 'Съемка',
-  editing: 'Монтаж',
-  production: 'Продакшн',
+const formatLabels: Record<string, string> = {
+  online: 'Онлайн',
+  offline: 'Офлайн',
+  hybrid: 'Гибрид',
+  'online+live': 'Онлайн + живые',
 }
 
 export function CourseCard({
   title,
   slug,
-  category,
+  shortDescription,
+  format,
+  durationText,
+  locationText,
+  scheduleText,
+  tags = [],
+  badgeText,
+  ctaText,
+  cardCover,
   coverImage,
-  price,
-  duration,
+  coverVideoUrl,
+  showPlayIcon,
 }: CourseCardProps) {
+  const coverSettings = cardCover
+    ? { ...cardCover, show_play_icon: showPlayIcon ?? cardCover.show_play_icon ?? format === 'online' }
+    : undefined
+
+  const metaParts = [
+    format ? formatLabels[format] ?? format : null,
+    durationText,
+    locationText,
+    scheduleText,
+  ].filter(Boolean)
+
   return (
-    <HoverNote text="learn" position="top" className="block w-full h-full">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        whileHover={{ y: -4 }}
-        className="group h-full flex flex-col"
+    <motion.article
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+      whileHover={{ y: -4 }}
+      className="group flex h-full flex-col"
+    >
+      <Link
+        href={`/courses/${slug}`}
+        className="flex h-full flex-col rounded-xl border border-border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:border-border hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <Link href={`/courses/${slug}`}>
-          <div className="relative overflow-hidden bg-[#050505] border border-[#1A1A1A] hover:border-[#FFFFFF]/30 transition-all duration-500 h-full flex flex-col">
-            {/* Cover Image */}
-            <div className="relative aspect-video overflow-hidden bg-[#000000]">
-              {coverImage ? (
-                <>
-                  <Image
-                    src={coverImage}
-                    alt={title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                  />
-                  <GrainOverlay />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#000000]/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                </>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-[#050505]">
-                  <GrainOverlay />
-                  <motion.span
-                    className="text-6xl font-heading font-bold text-[#FFFFFF]/20"
-                    whileHover={{ scale: 1.1 }}
-                  >
-                    {title.charAt(0)}
-                  </motion.span>
-                </div>
-              )}
+        <CourseCover
+          settings={coverSettings}
+          coverImage={coverImage}
+          coverVideoUrl={coverVideoUrl}
+          coverMediaType={cardCover?.media_type ?? 'image'}
+          badgeText={badgeText}
+          format={format}
+        />
 
-              {/* Category Badge */}
-              <div className="absolute top-4 left-4">
-                <div className="px-3 py-1 bg-[#000000]/80 backdrop-blur-sm border border-[#1A1A1A]">
-                  <span className="text-xs font-medium text-[#FFFFFF]/60 uppercase tracking-wider">
-                    {categoryLabels[category]}
-                  </span>
-                </div>
-              </div>
+        <div className="flex flex-1 flex-col p-5">
+          {/* Meta row */}
+          {metaParts.length > 0 && (
+            <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              {metaParts.map((part, i) => (
+                <span key={i}>{part}</span>
+              ))}
             </div>
+          )}
 
-            {/* Content */}
-            <div className="p-6 md:p-8 flex-1 flex flex-col">
-              {/* Title - крупный */}
-              <h3 className="text-xl md:text-2xl lg:text-3xl font-heading font-bold text-[#FFFFFF] mb-4 group-hover:text-[#ff2936] transition-colors leading-tight">
-                {title}
-              </h3>
+          <h3 className="mb-2 text-xl font-medium leading-tight tracking-tight group-hover:text-accent transition-colors">
+            {title}
+          </h3>
+          {shortDescription && (
+            <p className="mb-4 line-clamp-2 text-sm text-muted-foreground leading-relaxed">
+              {shortDescription}
+            </p>
+          )}
 
-              {/* Meta */}
-              <div className="flex items-center gap-4 text-sm text-[#FFFFFF]/40 mb-6">
-                {duration && (
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    <span>{duration} мин</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Price и подчеркивание при hover */}
-              <div className="mt-auto pt-6 border-t border-[#1A1A1A] group-hover:border-[#FFFFFF]/30 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="text-2xl md:text-3xl font-heading font-bold text-[#FFFFFF]">
-                    {price.toLocaleString('ru-RU')} ₽
-                  </div>
-                  <motion.div
-                    className="text-[#FFFFFF]/60 group-hover:text-[#ff2936] transition-colors"
-                    whileHover={{ x: 5 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    →
-                  </motion.div>
-                </div>
-              </div>
+          {/* Tags */}
+          {tags.length > 0 && (
+            <div className="mb-4 flex flex-wrap gap-1.5">
+              {tags.slice(0, 5).map((tag, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    'rounded-md border border-border bg-muted/50 px-2 py-0.5 text-xs text-muted-foreground'
+                  )}
+                >
+                  {tag}
+                </span>
+              ))}
             </div>
+          )}
+
+          {/* CTA */}
+          <div className="mt-auto pt-4 border-t border-border">
+            <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground group-hover:text-accent transition-colors">
+              {ctaText || 'Подробнее'}
+              <svg
+                className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </span>
           </div>
-        </Link>
-      </motion.div>
-    </HoverNote>
+        </div>
+      </Link>
+    </motion.article>
   )
 }

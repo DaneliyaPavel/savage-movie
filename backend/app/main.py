@@ -4,7 +4,23 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.delivery.api import auth, projects, courses, enrollments, contact, sitemap, upload, clients, testimonials, settings as settings_api, payments, blog
+from app.delivery.api import (
+    auth,
+    projects,
+    courses,
+    enrollments,
+    contact,
+    sitemap,
+    upload,
+    clients,
+    testimonials,
+    settings as settings_api,
+    payments,
+    blog,
+    course_materials,
+    admin,
+    platform,
+)
 
 from sqlalchemy import select
 from app.infrastructure.db.session import AsyncSessionLocal
@@ -39,6 +55,9 @@ app.include_router(testimonials.router)
 app.include_router(settings_api.router)
 app.include_router(payments.router)
 app.include_router(blog.router)
+app.include_router(course_materials.router)
+app.include_router(admin.router)
+app.include_router(platform.router)
 
 
 @app.on_event("startup")

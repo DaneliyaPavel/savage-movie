@@ -49,6 +49,9 @@ class Settings(BaseSettings):
 
     # App URL
     APP_URL: str = "http://localhost:3000"
+
+    # Educational platform API (optional). If set, webhook POSTs enrollment data there; else mock/log.
+    PLATFORM_API_URL: str = ""
     
     @property
     def database_url(self) -> str:

@@ -88,8 +88,22 @@ class SqlAlchemyCoursesRepository:
         return course
 
     async def update(self, course: Course, data: dict) -> Course:
+        modules_data = data.pop("modules", None)
         for field, value in data.items():
             setattr(course, field, value)
+        if modules_data is not None:
+            for module in list(course.modules):
+                await self._session.delete(module)
+            await self._session.flush()
+            for module_data in modules_data:
+                module_payload = dict(module_data)
+                lessons_data = module_payload.pop("lessons", []) or []
+                new_module = CourseModule(**module_payload, course_id=course.id)
+                self._session.add(new_module)
+                await self._session.flush()
+                for lesson_data in lessons_data:
+                    new_lesson = Lesson(**lesson_data, module_id=new_module.id)
+                    self._session.add(new_lesson)
         await self._session.commit()
         updated = await self.get_by_id_with_relations(course.id)
         if updated is None:
@@ -106,6 +120,14 @@ class SqlAlchemyCoursesRepository:
                 course.display_order = display_order
 
         await self._session.commit()
+
+    async def delete(self, course_id: UUID) -> bool:
+        course = await self.get_by_id(course_id)
+        if not course:
+            return False
+        await self._session.delete(course)
+        await self._session.commit()
+        return True
 
     @staticmethod
     def _sort_modules(course: Optional[Course]) -> None:

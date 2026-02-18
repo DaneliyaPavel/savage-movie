@@ -95,10 +95,18 @@ export function CoursesPageClient({ courses, category: initialCategory }: Course
                 <CourseCard
                   title={course.title}
                   slug={course.slug}
-                  category={course.category}
-                  coverImage={course.cover_image || undefined}
-                  price={Number(course.price)}
-                  duration={course.duration || undefined}
+                  shortDescription={course.short_description ?? (course.description ? course.description.slice(0, 160) + (course.description.length > 160 ? '…' : '') : undefined)}
+                  format={course.format}
+                  durationText={course.duration_text}
+                  locationText={course.location_text}
+                  scheduleText={course.schedule_text}
+                  tags={course.tags ?? []}
+                  badgeText={course.badge_text}
+                  ctaText={course.cta_text}
+                  cardCover={course.card_cover ?? undefined}
+                  coverImage={course.cover_image}
+                  coverVideoUrl={course.video_promo_url}
+                  showPlayIcon={course.format === 'online'}
                 />
               </motion.div>
             ))}

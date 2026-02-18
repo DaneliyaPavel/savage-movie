@@ -3,6 +3,7 @@
 """
 from sqlalchemy import Column, Integer, DateTime, func, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 import uuid
 from app.infrastructure.db.session import Base
 
@@ -16,6 +17,8 @@ class Enrollment(Base):
     progress = Column(Integer, nullable=False, default=0)
     enrolled_at = Column(DateTime(timezone=True), server_default=func.now())
     completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    course = relationship("Course", lazy="selectin")
 
     __table_args__ = (
         UniqueConstraint('user_id', 'course_id', name='unique_user_course'),

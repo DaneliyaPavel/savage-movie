@@ -2,10 +2,28 @@
 Pydantic схемы для курсов
 """
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Any
 from datetime import datetime
 from uuid import UUID
 from decimal import Decimal
+
+
+class CardCoverSettings(BaseModel):
+    """Настройки обложки карточки курса (mesh, grid, scanlines, orbs, etc.)"""
+    preset: Optional[str] = None  # mesh, meshGrid, meshGridScanlines, minimalTech
+    accent1: Optional[str] = None
+    accent2: Optional[str] = None
+    accent3: Optional[str] = None
+    show_grid: Optional[bool] = None
+    show_noise: Optional[bool] = None
+    show_scanlines: Optional[bool] = None
+    show_orbs: Optional[bool] = None
+    show_frame_corners: Optional[bool] = None
+    show_play_icon: Optional[bool] = None
+    overlay_strength: Optional[str] = None  # low, medium, high
+
+    class Config:
+        extra = 'ignore'
 
 
 class LessonBase(BaseModel):
@@ -62,6 +80,14 @@ class CourseBase(BaseModel):
     certificate: Optional[str] = None  # 'yes', 'no'
     format: Optional[str] = None  # 'online', 'offline', 'hybrid', 'online+live'
     display_order: Optional[int] = None
+    short_description: Optional[str] = None
+    duration_text: Optional[str] = None
+    location_text: Optional[str] = None
+    schedule_text: Optional[str] = None
+    tags: Optional[List[str]] = None
+    badge_text: Optional[str] = None
+    cta_text: Optional[str] = None
+    card_cover: Optional[dict[str, Any]] = None  # CardCoverSettings as dict from JSONB
 
 
 class CourseCreate(CourseBase):
@@ -84,7 +110,16 @@ class CourseUpdate(BaseModel):
     certificate: Optional[str] = None
     format: Optional[str] = None
     display_order: Optional[int] = None
+    short_description: Optional[str] = None
+    duration_text: Optional[str] = None
+    location_text: Optional[str] = None
+    schedule_text: Optional[str] = None
+    tags: Optional[List[str]] = None
+    badge_text: Optional[str] = None
+    cta_text: Optional[str] = None
+    card_cover: Optional[dict[str, Any]] = None
     instructor_id: Optional[UUID] = None
+    modules: Optional[List[CourseModuleCreate]] = None
 
 
 class Course(CourseBase):

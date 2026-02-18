@@ -24,6 +24,30 @@ export interface CourseModule {
   created_at: string
 }
 
+export type CardCoverPreset = 'mesh' | 'meshGrid' | 'meshGridScanlines' | 'minimalTech'
+export type OverlayStrength = 'low' | 'medium' | 'high'
+
+export type CardCoverMediaType = 'image' | 'video'
+
+export interface CardCoverSettings {
+  preset?: CardCoverPreset | null
+  accent1?: string | null
+  accent2?: string | null
+  accent3?: string | null
+  show_grid?: boolean | null
+  show_noise?: boolean | null
+  show_scanlines?: boolean | null
+  show_orbs?: boolean | null
+  show_frame_corners?: boolean | null
+  show_play_icon?: boolean | null
+  overlay_strength?: OverlayStrength | null
+  media_type?: CardCoverMediaType | null
+  /** Чистая обложка без оформления (mesh, сетка, шум и т.д.) — только картинка или видео */
+  no_overlay?: boolean | null
+  /** Цвет мигающего маркера у бейджа (HEX). Если не задан — по формату курса (онлайн/офлайн и т.д.) */
+  badge_dot_color?: string | null
+}
+
 export interface Course {
   id: string
   title: string
@@ -42,6 +66,14 @@ export interface Course {
   certificate: string | null
   format: string | null
   display_order: number | null
+  short_description?: string | null
+  duration_text?: string | null
+  location_text?: string | null
+  schedule_text?: string | null
+  tags?: string[] | null
+  badge_text?: string | null
+  cta_text?: string | null
+  card_cover?: CardCoverSettings | null
   created_at: string
   updated_at: string
 }
@@ -66,6 +98,17 @@ export async function getCourseById(id: string): Promise<Course> {
  */
 export async function getCourseBySlug(slug: string): Promise<Course> {
   return apiGet<Course>(`/api/courses/${slug}`)
+}
+
+/**
+ * Получить курс по ID (server-side)
+ */
+export async function getCourseByIdServer(
+  id: string,
+  cookies?: { get: (name: string) => { value: string } | undefined }
+): Promise<Course> {
+  const { apiGet: apiGetServer } = await import('@/lib/api/server')
+  return apiGetServer<Course>(`/api/courses/${id}`, cookies)
 }
 
 /**
@@ -108,6 +151,14 @@ export interface CourseCreate {
   certificate?: string | null
   format?: string | null
   display_order?: number | null
+  short_description?: string | null
+  duration_text?: string | null
+  location_text?: string | null
+  schedule_text?: string | null
+  tags?: string[] | null
+  badge_text?: string | null
+  cta_text?: string | null
+  card_cover?: CardCoverSettings | null
 }
 
 export interface CourseUpdate {
@@ -125,6 +176,15 @@ export interface CourseUpdate {
   certificate?: string | null
   format?: string | null
   display_order?: number | null
+  short_description?: string | null
+  duration_text?: string | null
+  location_text?: string | null
+  schedule_text?: string | null
+  tags?: string[] | null
+  badge_text?: string | null
+  cta_text?: string | null
+  card_cover?: CardCoverSettings | null
+  modules?: CourseModuleCreate[]
 }
 
 /**

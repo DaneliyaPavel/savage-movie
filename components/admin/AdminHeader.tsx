@@ -27,6 +27,7 @@ import {
   LayoutDashboard,
   PlusCircle,
   FileText,
+  Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -80,6 +81,12 @@ const blocksLinks: LinkItem[] = [
 ]
 
 const settingsLinks: LinkItem[] = [
+  {
+    title: 'Пользователи',
+    href: '/admin/users',
+    description: 'Список пользователей и записи на курсы',
+    icon: Users,
+  },
   {
     title: 'Настройки сайта',
     href: '/admin/settings',

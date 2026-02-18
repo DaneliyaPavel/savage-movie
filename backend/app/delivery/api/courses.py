@@ -27,19 +27,51 @@ async def get_courses(
     return await repo.list_courses(category, limit, offset)
 
 
-@router.get("/{slug}", response_model=CourseSchema)
-async def get_course_by_slug(slug: str, db: AsyncSession = Depends(get_db)):
-    """Получить курс по slug с модулями и уроками"""
+def _is_uuid(value: str) -> bool:
+    try:
+        UUID(value)
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+@router.get("/{id_or_slug}", response_model=CourseSchema)
+async def get_course(id_or_slug: str, db: AsyncSession = Depends(get_db)):
+    """Получить курс по id (UUID) или slug с модулями и уроками"""
     repo = SqlAlchemyCoursesRepository(db)
-    course = await repo.get_by_slug(slug)
-    
+    if _is_uuid(id_or_slug):
+        course = await repo.get_by_id_with_relations(UUID(id_or_slug))
+    else:
+        course = await repo.get_by_slug(id_or_slug)
+
     if not course:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Курс не найден"
         )
-    
+
     return course
+
+
+@router.delete("/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_course(
+    course_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Удалить курс (только для админов)"""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Только администраторы могут удалять курсы"
+        )
+    repo = SqlAlchemyCoursesRepository(db)
+    deleted = await repo.delete(course_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Курс не найден"
+        )
 
 
 @router.post("", response_model=CourseSchema, status_code=status.HTTP_201_CREATED)
@@ -97,16 +129,19 @@ async def update_course(
         )
     
     repo = SqlAlchemyCoursesRepository(db)
-    course = await repo.get_by_id(course_id)
-    
+    update_data = course_data.model_dump(exclude_unset=True)
+    # Если обновляются модули — грузим курс с relations, иначе ленивая загрузка course.modules вызовет MissingGreenlet в async
+    if "modules" in update_data:
+        course = await repo.get_by_id_with_relations(course_id)
+    else:
+        course = await repo.get_by_id(course_id)
+
     if not course:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Курс не найден"
         )
-    
-    # Обновляем поля
-    update_data = course_data.model_dump(exclude_unset=True)
+
     return await repo.update(course, update_data)
 
 

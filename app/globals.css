@@ -164,6 +164,21 @@
   font-size: 1.125rem;
 }
 
+/* Badge indicator dot (pulse), respects reduced motion */
+@keyframes badge-dot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.badge-dot-pulse {
+  animation: badge-dot-pulse 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .badge-dot-pulse {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 /* Grain overlay effect */
 .grain-overlay {
   position: fixed;

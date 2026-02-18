@@ -11,23 +11,45 @@ import { getCourses } from '@/features/courses/api'
 import { getBlogPosts } from '@/lib/api/blog'
 import { cn } from '@/lib/utils'
 
-// Scribble SVG Component - defined outside to maintain stable identity for AnimatePresence
-const ScribbleStrike = () => (
-  <svg viewBox="0 0 200 20" className="w-full h-full absolute top-1/2 left-0 -translate-y-1/2 pointer-events-none overflow-visible">
-    <motion.path
-      d="M5,15 Q50,5 90,12 T180,5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="6"
-      strokeLinecap="round"
-      className="text-[#FF322E]"
-      initial={{ pathLength: 0, opacity: 0 }}
-      animate={{ pathLength: 1, opacity: 1 }}
-      exit={{ pathLength: 0, opacity: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-    />
-  </svg>
-)
+// Ещё в 2× крупнее — viewBox 25×12.5
+const SCRIBBLE_PATHS = [
+  'M1,6.25 C5.5,2.25 12,6.5 17.5,3.5 C22,6.25 24,5.25 25,6',
+  'M2,6 C7,1.5 13.75,6 12.5,9.75 C11,12.25 5.25,9.5 4.5,6.5 C6.5,3.5 12,7 10.75,10 C9.5,12 4.75,9.75 3.5,7',
+  'M3,6.5 C8.5,2.75 14.5,6.5 13.25,9.75 C12,12.25 7,10.25 6,7.25 C8.25,4.5 13.5,7.75 12.25,10.25 C11,12.25 6,10.75 4.75,7.75',
+  'M1.5,7 C6.5,3.5 12.25,7 11.5,9.75 C10.75,12 6.5,10.25 7.25,7.75 C9,5.25 14.75,8.25 13.5,10.25 C12.25,12 7,11 7.75,8.5 C9.75,6 15.75,8.75 14.5,6.5',
+  'M2.25,6.25 C7.25,3 13.25,6.5 12.25,9.5 C11.25,11.5 7,9.75 6.5,7 C8.5,4.5 14,7.25 12.75,9.75 C11.5,12 6.5,10.25 6,7.25 M14.75,6 C18.5,2.75 23.5,6.25 22.25,9 C21,11 16.5,9 15.75,6.5',
+  'M1.25,6.5 C7,2.5 13.25,6.5 12.25,9.75 C11.25,12 6.5,10.25 7,7.75 C9,5 14.75,8.25 13.5,10.75 C12.25,12.25 7.25,11 7.75,8.5 C9.75,5.75 15.25,8.5 14,11 C12.75,12.25 8.25,11.25 7.25,9',
+]
+
+function ScribbleStrike({ variant = 0 }: { variant?: number }) {
+  const path = SCRIBBLE_PATHS[variant % SCRIBBLE_PATHS.length]
+  return (
+    <svg
+      viewBox="0 0 25 12.5"
+      className="w-full h-full absolute top-1/2 left-0 -translate-y-1/2 pointer-events-none overflow-visible"
+    >
+      <motion.path
+        d={path}
+        fill="none"
+        stroke="#e11b1b"
+        strokeWidth="0.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{
+          pathLength: 1,
+          opacity: 0.9,
+          transition: { duration: 0.38, ease: [0.25, 0.1, 0.25, 1] },
+        }}
+        exit={{
+          pathLength: 1,
+          opacity: 0,
+          transition: { duration: 0.24, ease: [0.4, 0, 1, 1] },
+        }}
+      />
+    </svg>
+  )
+}
 
 export function JalousieMenu() {
   const { isOpen, setIsOpen } = useMenu()
@@ -135,212 +157,177 @@ export function JalousieMenu() {
           animate={{ clipPath: 'inset(0% 0% 0% 0%)' }}
           exit={{ clipPath: 'inset(0% 0% 100% 0%)' }}
           transition={{ duration: 0.7, ease: [0.83, 0, 0.17, 1] }}
-          className="fixed inset-0 z-50 bg-[#a4a49c] overflow-hidden"
+          className="fixed inset-0 z-50 h-dvh max-h-dvh w-full bg-[#a4a49c] overflow-hidden flex flex-col"
         >
-          {/* Brand Logo - Top Center - Clickable */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="absolute top-6 left-1/2 -translate-x-1/2 z-[60]"
-          >
-            <Link href="/" onClick={() => setIsOpen(false)} className="block">
-              <Image
-                src="/sm-logo.svg"
-                alt="SAVAGE MOVIE"
-                width={180}
-                height={60}
-                className="w-32 md:w-44 h-auto opacity-90 hover:opacity-100 transition-opacity cursor-pointer"
-              />
-            </Link>
-          </motion.div>
-
-          {/* Language Toggle - Top Left */}
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ delay: 0.3 }}
-            onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')}
-            className="absolute top-6 left-6 md:left-10 w-12 h-12 rounded-full border border-black/20 flex items-center justify-center text-sm font-medium hover:bg-black/5 transition-colors uppercase text-black/80 z-[60]"
-            aria-label={language === 'ru' ? 'Switch to English' : 'Переключить на русский'}
-          >
-            {language}
-          </motion.button>
-
-          {/* Close Button - Top Right */}
-          <motion.button
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            transition={{ delay: 0.2 }}
-            onClick={() => setIsOpen(false)}
-            className="absolute top-6 right-6 md:right-10 flex items-center gap-3 text-black/80 group z-[60]"
-            aria-label="Close menu"
-          >
-            <span className="text-sm font-medium tracking-wide uppercase opacity-60 group-hover:opacity-100 transition-opacity">
-              {t('nav.close')}
-            </span>
-            <motion.div
-              className="w-8 h-8 flex items-center justify-center"
-              whileHover={{ rotate: 90 }}
-              transition={{ duration: 0.3 }}
+          {/* Top bar: logo, language, close */}
+          <div className="flex-shrink-0 relative flex items-center justify-between px-6 md:px-10 py-4 md:py-5">
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ delay: 0.3 }}
+              onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')}
+              className="w-12 h-12 rounded-full border border-black/20 flex items-center justify-center text-sm font-medium hover:bg-black/5 transition-colors uppercase text-black/80"
+              aria-label={language === 'ru' ? 'Switch to English' : 'Переключить на русский'}
             >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 20 20"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <line x1="4" y1="4" x2="16" y2="16" />
-                <line x1="16" y1="4" x2="4" y2="16" />
-              </svg>
-            </motion.div>
-          </motion.button>
+              {language}
+            </motion.button>
 
-          {/* Menu Items - Asymmetric Layout matching freshman reference */}
-          <nav className="absolute inset-0 z-40 overflow-y-auto">
-            <div className="min-h-full w-screen flex flex-col justify-center py-32 relative">
-              {NAV_ITEMS.map((item, index) => {
-                const isLeft = item.position === 'left'
-                const isRight = item.position === 'right'
-                const isCenter = item.position === 'center'
-                const isFull = item.position === 'full'
-
-                return (
-                  <motion.div
-                    key={item.href}
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    transition={{
-                      delay: 0.2 + index * 0.08,
-                      duration: 0.6,
-                      ease: [0.25, 0.1, 0.25, 1],
-                    }}
-                    className="relative w-screen"
-                    onMouseEnter={() => setHoveredIndex(index)}
-                    onMouseLeave={() => setHoveredIndex(null)}
-                  >
-                    {/* Full-width dotted border spanning entire viewport */}
-                    <div
-                      className="absolute top-0 left-0 right-0 border-t border-dotted border-black/20"
-                      style={{
-                        position: 'absolute',
-                        left: '50%',
-                        right: '50%',
-                        marginLeft: '-50vw',
-                        marginRight: '-50vw',
-                        width: '100vw',
-                        borderWidth: '1px',
-                      }}
-                    />
-
-                    {/* Hover Background - all items */}
-                    <motion.div
-                      className="absolute inset-0 bg-black z-0 pointer-events-none"
-                      initial={{ scaleX: 0 }}
-                      animate={{
-                        scaleX: hoveredIndex === index ? 1 : 0,
-                      }}
-                      transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
-                      style={{ transformOrigin: 'left' }}
-                    />
-
-                    <Link
-                      href={item.href}
-                      onClick={() => setIsOpen(false)}
-                      className="relative block py-6 md:py-8 lg:py-10 group z-10 w-full"
-                    >
-                      <div
-                        className={cn(
-                          "relative flex items-center gap-3 md:gap-4 w-full px-6 md:px-10",
-                          isLeft ? "justify-start" : isRight ? "justify-end" : isCenter || isFull ? "justify-center" : "justify-start"
-                        )}
-                      >
-                        {/* Text with Scribble Overlay */}
-                        <div className="relative inline-block">
-                          <span
-                            className={cn(
-                              "relative text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight uppercase leading-[0.85] transition-colors duration-300",
-                              hoveredIndex === index ? "text-white" : "text-black/85"
-                            )}
-                            style={{ fontFamily: 'var(--font-heading)' }}
-                          >
-                            {t(item.labelKey)}
-                          </span>
-
-                          {/* Scribble on Hover */}
-                          {
-                            <AnimatePresence>
-                              {hoveredIndex === index && <ScribbleStrike />}
-                            </AnimatePresence>
-                          }
-                        </div>
-
-                        {/* Count */}
-                        {item.countKey && formatCount(getCountForKey(item.countKey)) && (
-                          <span
-                            className={cn(
-                              "relative text-lg md:text-xl lg:text-2xl transition-colors duration-300",
-                              hoveredIndex === index ? "text-white/60" : "text-black/40"
-                            )}
-                            style={{ fontFamily: 'var(--font-handwritten), cursive' }}
-                          >
-                            {formatCount(getCountForKey(item.countKey))}
-                          </span>
-                        )}
-                      </div>
-                    </Link>
-                  </motion.div>
-                )
-              })}
-            </div>
-
-            {/* Bottom Info - Repositioned inside scrollable area */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ delay: 0.6 }}
-              className="w-full px-6 md:px-10 flex justify-between items-end text-sm text-black/60 mt-12 mb-6"
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
             >
-              {/* Tagline - Bottom Left */}
-              <div className="flex flex-col gap-1">
-                <span
-                  className="text-base md:text-lg italic"
-                  style={{ fontFamily: 'var(--font-handwritten), cursive' }}
-                >
-                  {t('home.heroTagline')}
-                </span>
-                <span className="text-xs">{t('footer.location')}</span>
-              </div>
-
-              {/* Social Links - Bottom Right */}
-              <div className="flex items-center gap-4 md:gap-6">
-                <a
-                  href="https://instagram.com/savagemovie"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs uppercase tracking-wide hover:text-black transition-colors"
-                >
-                  {t('footer.instagram')}
-                </a>
-                <a
-                  href="https://behance.net/savagemovie"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs uppercase tracking-wide hover:text-black transition-colors"
-                >
-                  {t('footer.behance')}
-                </a>
-                <span className="font-mono text-xs">© 2026</span>
-              </div>
+              <Link href="/" onClick={() => setIsOpen(false)} className="block">
+                <Image
+                  src="/sm-logo.svg"
+                  alt="SAVAGE MOVIE"
+                  width={180}
+                  height={60}
+                  className="w-28 md:w-36 h-auto opacity-90 hover:opacity-100 transition-opacity cursor-pointer"
+                />
+              </Link>
             </motion.div>
+
+            <motion.button
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ delay: 0.2 }}
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-3 text-black/80 group"
+              aria-label="Close menu"
+            >
+              <span className="text-sm font-medium tracking-wide uppercase opacity-60 group-hover:opacity-100 transition-opacity">
+                {t('nav.close')}
+              </span>
+              <motion.div className="w-8 h-8 flex items-center justify-center" whileHover={{ rotate: 90 }} transition={{ duration: 0.3 }}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <line x1="4" y1="4" x2="16" y2="16" />
+                  <line x1="16" y1="4" x2="4" y2="16" />
+                </svg>
+              </motion.div>
+            </motion.button>
+          </div>
+
+          {/* Menu items — по высоте экрана без прокрутки, минимальные зазоры до пунктира */}
+          <nav className="flex-1 min-h-0 flex flex-col relative z-40">
+            {NAV_ITEMS.map((item, index) => {
+              const isLeft = item.position === 'left'
+              const isRight = item.position === 'right'
+              const isCenter = item.position === 'center'
+              const isFull = item.position === 'full'
+
+              return (
+                <motion.div
+                  key={item.href}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ delay: 0.2 + index * 0.08, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+                  className="relative flex-1 min-h-0 flex flex-col justify-center"
+                  onMouseEnter={() => setHoveredIndex(index)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                >
+                  {/* Пунктирная линия — мелкий чёткий пунктир */}
+                  <div
+                    className="flex-shrink-0 w-full h-px"
+                    style={{
+                      backgroundImage:
+                        'repeating-linear-gradient(to right, rgba(0,0,0,0.4) 0px, rgba(0,0,0,0.4) 5px, transparent 5px, transparent 10px)',
+                    }}
+                  />
+
+                  {/* Hover Background — заполнение снизу вверх */}
+                  <motion.div
+                    className="absolute inset-0 bg-black z-0 pointer-events-none"
+                    initial={{ scaleY: 0 }}
+                    animate={{ scaleY: hoveredIndex === index ? 1 : 0 }}
+                    transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
+                    style={{ transformOrigin: 'bottom' }}
+                  />
+
+                  <Link
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className="relative flex-1 min-h-0 flex items-center py-1 md:py-2 group z-10 w-full"
+                  >
+                    <div
+                      className={cn(
+                        'relative flex items-center gap-3 md:gap-4 w-full px-6 md:px-10',
+                        isLeft ? 'justify-start' : isRight ? 'justify-end' : isCenter || isFull ? 'justify-center' : 'justify-start'
+                      )}
+                    >
+                      <div className="relative inline-block">
+                        <span
+                          className={cn(
+                            'relative text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-light tracking-tight uppercase leading-[0.85] transition-colors duration-300',
+                            hoveredIndex === index ? 'text-white' : 'text-black/85'
+                          )}
+                          style={{ fontFamily: 'var(--font-heading)' }}
+                        >
+                          {t(item.labelKey)}
+                        </span>
+                        <AnimatePresence>
+                          {hoveredIndex === index && <ScribbleStrike key={index} variant={index} />}
+                        </AnimatePresence>
+                      </div>
+                      {item.countKey && formatCount(getCountForKey(item.countKey)) && (
+                        <span
+                          className={cn(
+                            'relative text-sm md:text-base lg:text-lg transition-colors duration-300',
+                            hoveredIndex === index ? 'text-white/60' : 'text-black/40'
+                          )}
+                          style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+                        >
+                          {formatCount(getCountForKey(item.countKey))}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                </motion.div>
+              )
+            })}
           </nav>
+
+          {/* Footer: слева соцсети, по центру внизу 2026 + слоган, справа юридические ссылки */}
+          <div className="relative flex-shrink-0 flex justify-between items-end px-6 md:px-10 pb-3 md:pb-4 pt-1 gap-4">
+            <div className="flex flex-col gap-0.5 text-xs md:text-sm font-mono uppercase tracking-wider">
+              <a
+                href="https://t.me/mariseven"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-black/50 hover:text-black transition-colors"
+              >
+                Telegram
+              </a>
+              <a
+                href="https://www.instagram.com/mari.seven/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-black/50 hover:text-black transition-colors"
+              >
+                Instagram
+              </a>
+            </div>
+            <div className="flex flex-col gap-0.5 text-xs md:text-sm font-mono uppercase tracking-wider text-right">
+              <a href="/privacy" className="text-black/50 hover:text-black transition-colors">
+                Политика (конфиденциальности)
+              </a>
+              <a href="/terms" className="text-black/50 hover:text-black transition-colors">
+                Условия
+              </a>
+            </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="absolute left-1/2 -translate-x-1/2 bottom-3 md:bottom-4 text-sm text-black/50 font-mono text-center pointer-events-none"
+            >
+              2026© {t('home.heroTagline')}
+            </motion.div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

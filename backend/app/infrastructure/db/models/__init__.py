@@ -1,7 +1,9 @@
 from app.infrastructure.db.models.user import User
 from app.infrastructure.db.models.project import Project
 from app.infrastructure.db.models.course import Course, CourseModule, Lesson
+from app.infrastructure.db.models.course_material import CourseMaterial
 from app.infrastructure.db.models.enrollment import Enrollment
+from app.infrastructure.db.models.payment import Payment
 from app.infrastructure.db.models.booking import Booking
 from app.infrastructure.db.models.contact import ContactSubmission
 from app.infrastructure.db.models.client import Client
@@ -15,7 +17,9 @@ __all__ = [
     "Course",
     "CourseModule",
     "Lesson",
+    "CourseMaterial",
     "Enrollment",
+    "Payment",
     "Booking",
     "ContactSubmission",
     "Client",
