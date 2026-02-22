@@ -538,6 +538,8 @@ export default function ProjectsPageClient({
       <TopBar />
       <JalousieMenu />
 
+      {/* Curtain: sits above fixed footer; when it scrolls up, footer (under spacer) becomes visible */}
+      <div className="relative z-20 bg-background">
       {/* Header - Freshman.tv style */}
       <header className="pt-20 pb-8 flex items-center justify-center relative">
         <div className="text-center">
@@ -643,6 +645,10 @@ export default function ProjectsPageClient({
           </motion.div>
         )}
       </section>
+      </div>
+
+      {/* Transparent spacer: creates scroll room; footer (z-10) paints on top so it’s visible here */}
+      <div className="min-h-screen" aria-hidden="true" />
 
       <ProjectsJalousieFooter />
     </main>

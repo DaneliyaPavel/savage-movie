@@ -8,8 +8,9 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Копирование requirements и установка зависимостей
+# Копирование requirements и установка зависимостей (увеличен таймаут для нестабильной сети)
 COPY backend/requirements.txt .
+ENV PIP_DEFAULT_TIMEOUT=300
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Копирование кода приложения

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### This Week's Highlights (2026-02-13 to 2026-02-18)
+
+- Implemented a full course enrollment flow with form submission and guest payment.
+- Fixed the responsive navigation so the mobile menu fits all screen sizes without scroll, and improved the footer.
+- Updated backend configuration and added `.claude` to `.gitignore`.
+- Added `CLAUDE.md` with project conventions and architecture notes.
+- Consolidated repository-wide updates into a maintenance commit.
+
 ### Added
 
 - Alembic migrations and config for the backend database.

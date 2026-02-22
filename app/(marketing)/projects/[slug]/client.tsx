@@ -52,7 +52,8 @@ export function ProjectDetailClient({ project, nextProject }: ProjectDetailClien
 
   return (
     <>
-      <div className="min-h-screen bg-[#000000]">
+      {/* Curtain: sits above fixed footer; when it scrolls up, footer (under spacer) becomes visible */}
+      <div className="relative z-20 min-h-screen bg-[#000000]">
         <TopBar />
         <JalousieMenu />
 
@@ -272,6 +273,9 @@ export function ProjectDetailClient({ project, nextProject }: ProjectDetailClien
           </div>
         </div>
       </div>
+
+      {/* Transparent spacer: creates scroll room; footer (z-10) paints on top so it's visible here */}
+      <div className="min-h-screen" aria-hidden="true" />
 
       <ProjectsJalousieFooter />
 

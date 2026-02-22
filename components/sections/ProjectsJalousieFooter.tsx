@@ -1,10 +1,12 @@
 /**
- * Projects footer with jalousie reveal (pre-footer slides out, footer slides in).
+ * Projects footer with curtain reveal (Freshman.tv style):
+ * Footer is fixed at bottom. Page content (projects list) acts as the curtain —
+ * when you scroll past the end of the list, that content reveals the footer underneath.
+ * No extra curtain block; parent must wrap content in a layer with z-index above footer and pb-[100vh].
  */
 'use client'
 
-import { useRef, useState, type FormEvent } from 'react'
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { useState, type FormEvent } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { useI18n } from '@/lib/i18n-context'
 
@@ -12,17 +14,6 @@ export function ProjectsJalousieFooter() {
   const { language } = useI18n()
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
-  const ref = useRef<HTMLElement>(null)
-
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start end', 'start start'],
-  })
-
-  const contentY = useTransform(scrollYProgress, [0, 1], ['12%', '0%'])
-  const contentOpacity = useTransform(scrollYProgress, [0, 1], [0, 1])
-  const footerRowY = useTransform(scrollYProgress, [0, 1], ['30%', '0%'])
-  const footerRowOpacity = useTransform(scrollYProgress, [0, 1], [0, 1])
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -43,12 +34,8 @@ export function ProjectsJalousieFooter() {
   }
 
   return (
-    <section ref={ref} className="relative h-screen bg-[#ff2936]">
-      <div className="sticky top-0 h-screen overflow-hidden">
-        <motion.div
-          style={{ y: contentY, opacity: contentOpacity }}
-          className="absolute inset-0 flex flex-col items-center justify-center px-4 py-12 text-background"
-        >
+    <footer className="fixed inset-x-0 bottom-0 z-10 min-h-screen bg-[#ff2936] flex flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-12 text-background">
           {/* Hashtag icon */}
           <div className="mb-6">
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-background">
@@ -106,12 +93,9 @@ export function ProjectsJalousieFooter() {
             </button>
           </form>
           {error && <p className="mt-3 text-sm text-background/80 font-secondary">{error}</p>}
-        </motion.div>
+        </div>
 
-        <motion.div
-          style={{ y: footerRowY, opacity: footerRowOpacity }}
-          className="absolute inset-x-0 bottom-0 px-6 md:px-10 pb-6 pt-4 text-background"
-        >
+        <div className="px-6 md:px-10 pb-6 pt-4 text-background shrink-0">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 text-sm md:text-base">
             <div className="flex flex-col gap-2 uppercase tracking-[0.25em]">
               <span
@@ -151,8 +135,7 @@ export function ProjectsJalousieFooter() {
               </a>
             </div>
           </div>
-        </motion.div>
-      </div>
-    </section>
+        </div>
+      </footer>
   )
 }
