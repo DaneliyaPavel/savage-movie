@@ -1,6 +1,7 @@
 /**
  * Страница блога
  */
+import type { Metadata } from 'next'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
@@ -12,6 +13,12 @@ import { TopBar } from '@/components/ui/top-bar'
 import { JalousieMenu } from '@/components/ui/jalousie-menu'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'Блог | SAVAGE MOVIE — статьи о видеопродакшне и ИИ-генерации',
+  description:
+    'Полезные статьи о видеопродакшне, ИИ-генерации, съемке и монтаже. Опыт студии Savage Movie.',
+}
 
 export default async function BlogPage() {
   let posts: BlogPost[] = []

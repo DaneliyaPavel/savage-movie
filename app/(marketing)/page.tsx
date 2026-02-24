@@ -2,11 +2,24 @@
  * Главная страница - портировано из v0 reference
  * Fullscreen showreel hero + filmstrip carousel внизу
  */
+import type { Metadata } from 'next'
 import { ShowreelHero } from '@/components/sections/showreel-hero'
 import { getProjectsServer } from '@/features/projects/api'
 import { publicEnv } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
+
+const metaDescription =
+  'Полный цикл видеопродакшна: реклама, клипы, имиджевые видео. Обучение ИИ-генерации, съемке и монтажу. Savage Movie.'
+
+export const metadata: Metadata = {
+  title: 'SAVAGE MOVIE | Видеопродакшн | ИИ-генерация | Обучение',
+  description: metaDescription,
+  openGraph: {
+    title: 'SAVAGE MOVIE | Видеопродакшн | ИИ-генерация | Обучение',
+    description: metaDescription,
+  },
+}
 
 // Mux Playback ID для showreel - из env или fallback
 const SHOWREEL_PLAYBACK_ID =

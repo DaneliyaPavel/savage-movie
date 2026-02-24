@@ -1,10 +1,12 @@
 /**
  * Детальная страница курса
  */
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { getCourseBySlugServer } from '@/features/courses/api'
 import { Badge } from '@/components/ui/badge'
+import { JsonLdScripts } from '@/components/seo/json-ld-scripts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Accordion,
@@ -19,6 +21,54 @@ import ReactMarkdown from 'react-markdown'
 import { CourseEnrollmentForm } from '@/features/courses/components/CourseEnrollmentForm'
 import type { Course } from '@/features/courses/api'
 import { getCurrentUserServer } from '@/lib/api/auth'
+
+const SITE_NAME = 'SAVAGE MOVIE'
+
+function truncate(str: string, max: number): string {
+  if (str.length <= max) return str
+  return str.slice(0, max - 1).trim() + '…'
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  let course: Course | null = null
+  try {
+    course = await getCourseBySlugServer(slug)
+  } catch {
+    course = null
+  }
+  if (!course) return { title: SITE_NAME }
+
+  const title = truncate(`${course.title} | Курсы | ${SITE_NAME}`, 60)
+  const description = course.short_description ?? course.description
+    ? truncate(
+        (course.short_description || course.description || '').replace(/\s+/g, ' ').trim(),
+        160
+      )
+    : `Курс ${course.title} — обучение видеопродакшну, ИИ-генерации и монтажу. Savage Movie.`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      images: course.cover_image
+        ? [{ url: course.cover_image, width: 1200, height: 630, alt: course.title }]
+        : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
+  }
+}
 
 export default async function CourseDetailPage({
   params,
@@ -51,8 +101,27 @@ export default async function CourseDetailPage({
     production: 'Продакшн',
   }
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://savagemovie.ru'
+  const courseUrl = `${baseUrl}/courses/${slug}`
+  const courseJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Course',
+    name: course.title,
+    description:
+      (course.short_description || course.description || '').replace(/\s+/g, ' ').trim() ||
+      `Курс ${course.title} — обучение видеопродакшну, ИИ-генерации и монтажу. Savage Movie.`,
+    url: courseUrl,
+    image: course.cover_image ?? undefined,
+    provider: {
+      '@type': 'Organization',
+      name: 'SAVAGE MOVIE',
+      url: baseUrl,
+    },
+  }
+
   return (
     <div className="min-h-screen">
+      <JsonLdScripts scripts={[JSON.stringify(courseJsonLd)]} />
       <div className="container mx-auto px-4 pt-8 pb-12">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
