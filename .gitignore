@@ -32,6 +32,9 @@ yarn-error.log*
 .env*.local
 .env
 
+# Docker override (local dev only, не для сервера)
+docker-compose.override.yml
+
 # deployment artifacts
 backups/
 
