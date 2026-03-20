@@ -47,36 +47,36 @@ function buildTelegramMessage(data: {
   projectType: string | null
 }): string {
   const lines: string[] = [
-    '📩 *Новая заявка с сайта*',
+    '📩 <b>Новая заявка с сайта</b>',
     '',
-    `👤 *Имя:* ${escapeMarkdown(data.name)}`,
-    `📱 *Телефон:* ${escapeMarkdown(data.phone)}`,
+    `👤 <b>Имя:</b> ${escapeHtml(data.name)}`,
+    `📱 <b>Телефон:</b> ${escapeHtml(data.phone)}`,
   ]
 
   if (data.company) {
-    lines.push(`🏢 *Компания:* ${escapeMarkdown(data.company)}`)
+    lines.push(`🏢 <b>Компания:</b> ${escapeHtml(data.company)}`)
   }
 
   if (data.projectType) {
     const label = PROJECT_TYPE_LABELS[data.projectType] || data.projectType
-    lines.push(`🎬 *Тип проекта:* ${escapeMarkdown(label)}`)
+    lines.push(`🎬 <b>Тип проекта:</b> ${escapeHtml(label)}`)
   }
 
   if (data.budget !== null) {
-    lines.push(`💰 *Бюджет:* ${escapeMarkdown(formatBudgetRu(data.budget))}`)
+    lines.push(`💰 <b>Бюджет:</b> ${escapeHtml(formatBudgetRu(data.budget))}`)
   }
 
   if (data.message) {
-    lines.push('', `💬 *Сообщение:*`, escapeMarkdown(data.message))
+    lines.push('', `💬 <b>Сообщение:</b>`, escapeHtml(data.message))
   }
 
-  lines.push('', `🕐 ${escapeMarkdown(new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }))}`)
+  lines.push('', `🕐 ${escapeHtml(new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }))}`)
 
   return lines.join('\n')
 }
 
-function escapeMarkdown(text: string): string {
-  return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&')
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 async function sendTelegramMessage(text: string): Promise<void> {
@@ -88,7 +88,7 @@ async function sendTelegramMessage(text: string): Promise<void> {
     body: JSON.stringify({
       chat_id: TELEGRAM_CHAT_ID,
       text,
-      parse_mode: 'MarkdownV2',
+      parse_mode: 'HTML',
     }),
   })
 
