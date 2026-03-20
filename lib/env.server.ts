@@ -23,6 +23,10 @@ const ServerEnvSchema = z
     RESEND_FROM_EMAIL: optionalNonEmptyString,
     ADMIN_EMAIL: optionalNonEmptyString,
 
+    // Telegram
+    TELEGRAM_BOT_TOKEN: optionalNonEmptyString,
+    TELEGRAM_CHAT_ID: optionalNonEmptyString,
+
     // Uploads
     UPLOAD_DIR: optionalNonEmptyString,
   })

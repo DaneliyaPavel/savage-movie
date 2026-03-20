@@ -15,10 +15,12 @@ export default function ContactPage() {
   const [selectedType, setSelectedType] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    phone: '',
     company: '',
     message: '',
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
   const { language, t } = useI18n()
 
@@ -75,10 +77,38 @@ export default function ContactPage() {
     { name: 'Telegram', url: 'https://t.me/mariseven' },
   ].filter(social => Boolean(social.url))
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log({ ...formData, budget, projectType: selectedType })
-    // TODO: Wire to actual API
+    setIsSubmitting(true)
+    setSubmitStatus('idle')
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          phone: formData.phone,
+          company: formData.company || null,
+          message: formData.message,
+          budget,
+          projectType: selectedType,
+        }),
+      })
+
+      if (response.ok) {
+        setSubmitStatus('success')
+        setFormData({ name: '', phone: '', company: '', message: '' })
+        setSelectedType(null)
+        setBudget(budgetConfig.defaultValue)
+      } else {
+        setSubmitStatus('error')
+      }
+    } catch {
+      setSubmitStatus('error')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -139,25 +169,25 @@ export default function ContactPage() {
               />
             </motion.div>
 
-            {/* Email */}
+            {/* Phone */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
               <label
-                htmlFor="contact-email"
+                htmlFor="contact-phone"
                 className="text-xs uppercase tracking-widest text-muted-foreground mb-3 block"
               >
-                {t('contact.email')}
+                {t('contact.phone')}
               </label>
               <input
-                id="contact-email"
-                type="email"
-                value={formData.email}
-                onChange={e => setFormData({ ...formData, email: e.target.value })}
+                id="contact-phone"
+                type="tel"
+                value={formData.phone}
+                onChange={e => setFormData({ ...formData, phone: e.target.value })}
                 className="w-full bg-transparent border-b border-border py-3 text-lg focus:outline-none focus:border-accent transition-colors"
-                placeholder={t('contact.emailPlaceholder')}
+                placeholder={t('contact.phonePlaceholder')}
                 required
               />
             </motion.div>
@@ -296,13 +326,33 @@ export default function ContactPage() {
           </motion.div>
 
           {/* Submit Button */}
+          {submitStatus === 'success' && (
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 text-green-500 text-lg"
+            >
+              {language === 'ru' ? 'Заявка отправлена! Мы свяжемся с вами в ближайшее время.' : 'Request sent! We will contact you soon.'}
+            </motion.p>
+          )}
+          {submitStatus === 'error' && (
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 text-red-500 text-lg"
+            >
+              {language === 'ru' ? 'Ошибка отправки. Попробуйте ещё раз.' : 'Failed to send. Please try again.'}
+            </motion.p>
+          )}
+
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}>
             <HoverNote note={t('contact.sendIt')}>
               <button
                 type="submit"
-                className="group relative inline-flex items-center gap-4 px-10 py-5 bg-foreground text-background font-medium text-lg rounded-sm overflow-hidden transition-transform hover:scale-[1.02]"
+                disabled={isSubmitting}
+                className="group relative inline-flex items-center gap-4 px-10 py-5 bg-foreground text-background font-medium text-lg rounded-sm overflow-hidden transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="relative z-10">{t('contact.submit')}</span>
+                <span className="relative z-10">{isSubmitting ? (language === 'ru' ? 'Отправка...' : 'Sending...') : t('contact.submit')}</span>
                 <motion.svg
                   width="20"
                   height="20"
