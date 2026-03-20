@@ -7,8 +7,12 @@ import type { Client } from '@/lib/api/clients'
 import { ClientsPageClient } from './client'
 
 export const metadata: Metadata = {
-  title: 'Клиенты | SAVAGE MOVIE',
-  description: 'Бренды и артисты, с которыми работала студия Savage Movie.',
+  title: 'Клиенты Savage Movie — бренды и артисты',
+  description:
+    'Бренды и артисты, которые доверяют Savage Movie. Видеопродакшн для бизнеса в Санкт-Петербурге и Москве.',
+  alternates: {
+    canonical: '/clients',
+  },
 }
 
 export default async function ClientsPage() {

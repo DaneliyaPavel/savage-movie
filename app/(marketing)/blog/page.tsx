@@ -15,9 +15,12 @@ import { JalousieMenu } from '@/components/ui/jalousie-menu'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Блог | SAVAGE MOVIE — статьи о видеопродакшне и ИИ-генерации',
+  title: 'Блог о видеопродакшне и AI-генерации — Savage Movie',
   description:
-    'Полезные статьи о видеопродакшне, ИИ-генерации, съемке и монтаже. Опыт студии Savage Movie.',
+    'Статьи, гайды и кейсы: AI-генерация видео, тренды видеопродакшна, лайфхаки по съёмке и монтажу от студии Savage Movie.',
+  alternates: {
+    canonical: '/blog',
+  },
 }
 
 export default async function BlogPage() {

@@ -10,14 +10,17 @@ import { publicEnv } from '@/lib/env'
 export const dynamic = 'force-dynamic'
 
 const metaDescription =
-  'Полный цикл видеопродакшна: реклама, клипы, имиджевые видео. Обучение ИИ-генерации, съемке и монтажу. Savage Movie.'
+  'Продакшн-студия полного цикла в Санкт-Петербурге и Москве. Рекламные ролики, музыкальные клипы, имиджевые видео, AI-генерация контента. Обсудить проект →'
 
 export const metadata: Metadata = {
-  title: 'SAVAGE MOVIE | Видеопродакшн | ИИ-генерация | Обучение',
+  title: 'Видеопродакшн в СПб и Москве — Savage Movie | Реклама, клипы, AI-видео',
   description: metaDescription,
   openGraph: {
-    title: 'SAVAGE MOVIE | Видеопродакшн | ИИ-генерация | Обучение',
+    title: 'Видеопродакшн в СПб и Москве — Savage Movie | Реклама, клипы, AI-видео',
     description: metaDescription,
+  },
+  alternates: {
+    canonical: '/',
   },
 }
 
@@ -100,6 +103,24 @@ export default async function HomePage() {
   return (
     <main className="relative">
       <ShowreelHero showreelPlaybackId={SHOWREEL_PLAYBACK_ID} projects={projects} />
+
+      {/* SEO text block — compact, in site style */}
+      <section className="bg-background px-6 md:px-10 lg:px-20 py-16 md:py-20">
+        <div className="max-w-3xl">
+          <h1 className="text-2xl md:text-3xl font-light tracking-tight mb-6 text-foreground">
+            Видеопродакшн полного цикла — Санкт-Петербург и Москва
+          </h1>
+          <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-4">
+            Savage Movie — продакшн-студия полного цикла в Санкт-Петербурге с проектами по всей России.
+          </p>
+          <p className="text-sm md:text-base text-muted-foreground/80 leading-relaxed">
+            Рекламные ролики · Музыкальные клипы · Имиджевое видео · AI-генерация · Обучение
+          </p>
+          <p className="text-sm md:text-base text-muted-foreground/80 leading-relaxed mt-2">
+            От идеи и сценария до съёмки, постпродакшна и публикации.
+          </p>
+        </div>
+      </section>
     </main>
   )
 }

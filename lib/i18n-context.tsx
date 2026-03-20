@@ -17,6 +17,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.projects': 'Проекты',
     'nav.studio': 'О нас',
     'nav.courses': 'Обучение',
+    'nav.services': 'Услуги',
     'nav.contact': 'Контакты',
     'nav.blog': 'Блог',
     'nav.menu': 'Меню',
@@ -144,7 +145,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Footer
     'footer.rights': 'Все права защищены.',
-    'footer.location': 'Москва / Весь мир',
+    'footer.location': 'Санкт-Петербург / Москва / Весь мир',
     'footer.instagram': 'Instagram',
     'footer.behance': 'Behance',
     'footer.youtube': 'YouTube',
@@ -160,6 +161,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.projects': 'Projects',
     'nav.studio': 'About',
     'nav.courses': 'Courses',
+    'nav.services': 'Services',
     'nav.contact': 'Contact',
     'nav.blog': 'Blog',
     'nav.menu': 'Menu',
@@ -287,7 +289,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Footer
     'footer.rights': 'All rights reserved.',
-    'footer.location': 'Moscow / Worldwide',
+    'footer.location': 'St. Petersburg / Moscow / Worldwide',
     'footer.instagram': 'Instagram',
     'footer.behance': 'Behance',
     'footer.youtube': 'YouTube',

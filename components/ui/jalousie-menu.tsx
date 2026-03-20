@@ -109,10 +109,16 @@ export function JalousieMenu() {
           position: 'right' as const,
         },
         {
+          labelKey: 'nav.services',
+          href: '/services',
+          countKey: null as CountKey,
+          position: 'full' as const,
+        },
+        {
           labelKey: 'nav.courses',
           href: '/courses',
           countKey: 'courses' as CountKey,
-          position: 'full' as const,
+          position: 'left' as const,
         },
         {
           labelKey: 'nav.studio',
@@ -309,6 +315,14 @@ export function JalousieMenu() {
                 className="text-black/50 hover:text-black transition-colors"
               >
                 Instagram
+              </a>
+              <a
+                href="https://vk.ru/mari_seven"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-black/50 hover:text-black transition-colors"
+              >
+                VK
               </a>
             </div>
             <div className="flex flex-col gap-0.5 text-xs md:text-sm font-mono uppercase tracking-wider text-right">

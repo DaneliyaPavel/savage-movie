@@ -6,9 +6,12 @@ import ProjectsPageClient from './projects-client'
 export const revalidate = 60
 
 export const metadata: Metadata = {
-  title: 'Проекты | SAVAGE MOVIE — видеопродакшн, реклама, клипы',
+  title: 'Портфолио — рекламные ролики, клипы, AI-видео | Savage Movie СПб',
   description:
-    'Портфолио видеопроектов: реклама, музыкальные клипы, имиджевые ролики, ИИ-контент. Savage Movie.',
+    'Видеопроекты Savage Movie: рекламные ролики, имиджевое видео, музыкальные клипы, AI-контент. Смотреть кейсы →',
+  alternates: {
+    canonical: '/projects',
+  },
 }
 
 export default async function ProjectsPage() {

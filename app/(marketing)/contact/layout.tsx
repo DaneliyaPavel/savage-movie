@@ -1,9 +1,12 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Контакты | SAVAGE MOVIE — обсудить проект',
+  title: 'Контакты Savage Movie — видеопродакшн СПб | Заказать съёмку',
   description:
-    'Свяжитесь с Savage Movie для обсуждения видеопроекта: реклама, клипы, обучение. Форма заявки и контакты.',
+    'Обсудить видеопроект: рекламные ролики, клипы, AI-видео. Студия в Санкт-Петербурге. Телефон, email, форма заявки.',
+  alternates: {
+    canonical: '/contact',
+  },
 }
 
 export default function ContactLayout({ children }: { children: React.ReactNode }) {

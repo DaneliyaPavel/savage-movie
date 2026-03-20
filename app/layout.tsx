@@ -30,7 +30,7 @@ const saNoRules = localFont({
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://savagemovie.ru'
 
 const metaDescription =
-  'Полный цикл видеопродакшна: реклама, клипы, имиджевые видео. Обучение ИИ-генерации, съемке и монтажу. Savage Movie.'
+  'Продакшн-студия полного цикла в Санкт-Петербурге и Москве. Рекламные ролики, музыкальные клипы, имиджевые видео, AI-генерация контента. Обсудить проект →'
 
 export const viewport = {
   width: 'device-width',
@@ -39,15 +39,23 @@ export const viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
-  title: 'SAVAGE MOVIE | Видеопродакшн | ИИ-генерация | Обучение',
+  alternates: {
+    canonical: '/',
+  },
+  title: 'Видеопродакшн в СПб и Москве — Savage Movie | Реклама, клипы, AI-видео',
   description: metaDescription,
   keywords: [
     'видеопродакшн',
+    'видеопродакшн спб',
+    'видеопродакшн москва',
+    'видеосъёмка спб',
+    'AI-генерация видео',
+    'рекламные ролики',
+    'музыкальные клипы',
     'ИИ-генерация',
     'обучение видео',
     'съемка',
     'монтаж',
-    'продюсирование',
   ],
   icons: {
     icon: [
@@ -60,23 +68,42 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'ru_RU',
     siteName: 'SAVAGE MOVIE',
-    title: 'SAVAGE MOVIE | Видеопродакшн | ИИ-генерация | Обучение',
+    title: 'Видеопродакшн в СПб и Москве — Savage Movie | Реклама, клипы, AI-видео',
     description: metaDescription,
     images: [{ url: '/apple-touch-icon.png', width: 180, height: 180, alt: 'SAVAGE MOVIE' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SAVAGE MOVIE | Видеопродакшн | ИИ-генерация | Обучение',
+    title: 'Видеопродакшн в СПб и Москве — Savage Movie | Реклама, клипы, AI-видео',
     description: metaDescription,
   },
 }
 
 const organizationJsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'SAVAGE MOVIE',
+  '@type': 'VideoProductionCompany',
+  name: 'Savage Movie',
   url: baseUrl,
-  logo: `${baseUrl}/sm_logo.svg`,
+  logo: `${baseUrl}/sm-logo.svg`,
+  description: 'Продакшн-студия полного цикла в Санкт-Петербурге',
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Санкт-Петербург',
+    addressCountry: 'RU',
+  },
+  areaServed: ['Санкт-Петербург', 'Москва', 'Россия'],
+  serviceType: [
+    'Видеопродакшн',
+    'Рекламные ролики',
+    'Музыкальные клипы',
+    'AI-генерация видео',
+    'Обучение видеопроизводству',
+  ],
+  sameAs: [
+    'https://vk.ru/mari_seven',
+    'https://t.me/mariseven',
+    'https://www.instagram.com/mari.seven/',
+  ],
 }
 
 const websiteJsonLd = {

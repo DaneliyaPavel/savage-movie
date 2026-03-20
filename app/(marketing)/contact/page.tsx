@@ -73,9 +73,9 @@ export default function ContactPage() {
 
   const SOCIAL_LINKS = [
     { name: 'Instagram', url: 'https://www.instagram.com/mari.seven/' },
-    { name: 'Vimeo', url: '' },
     { name: 'Telegram', url: 'https://t.me/mariseven' },
-  ].filter(social => Boolean(social.url))
+    { name: 'VK', url: 'https://vk.ru/mari_seven' },
+  ]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -393,7 +393,7 @@ export default function ContactPage() {
             <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-4">
               {t('contact.location')}
             </h3>
-            <p className="text-lg">{language === 'ru' ? 'Москва, Россия' : 'Moscow, Russia'}</p>
+            <p className="text-lg">{language === 'ru' ? 'Санкт-Петербург, Россия' : 'St. Petersburg, Russia'}</p>
           </div>
           <div>
             <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-4">

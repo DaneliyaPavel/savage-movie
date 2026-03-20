@@ -1,9 +1,12 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Курсы | SAVAGE MOVIE — обучение видеопродакшну и ИИ-генерации',
+  title: 'Курсы по AI-генерации видео и видеопродакшну — Savage Movie',
   description:
-    'Онлайн и офлайн курсы: ИИ-генерация, съемка, монтаж, продакшн. Обучение от практиков Savage Movie.',
+    'Обучение AI-генерации видео (Sora, Runway, Kling), съёмке и монтажу. Онлайн и офлайн курсы от практиков. Записаться →',
+  alternates: {
+    canonical: '/courses',
+  },
 }
 
 export default function CoursesLayout({ children }: { children: React.ReactNode }) {
