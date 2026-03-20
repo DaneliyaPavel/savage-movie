@@ -50,8 +50,10 @@ export const metadata: Metadata = {
     'продюсирование',
   ],
   icons: {
-    icon: '/sm_logo.svg',
-    shortcut: '/sm_logo.svg',
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/sm_logo.svg', type: 'image/svg+xml' },
+    ],
     apple: '/apple-touch-icon.png',
   },
   openGraph: {
