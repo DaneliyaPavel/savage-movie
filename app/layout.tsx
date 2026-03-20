@@ -70,7 +70,7 @@ export const metadata: Metadata = {
     siteName: 'SAVAGE MOVIE',
     title: 'Видеопродакшн в СПб и Москве — Savage Movie | Реклама, клипы, AI-видео',
     description: metaDescription,
-    images: [{ url: '/apple-touch-icon.png', width: 180, height: 180, alt: 'SAVAGE MOVIE' }],
+    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Savage Movie — видеопродакшн в СПб и Москве' }],
   },
   twitter: {
     card: 'summary_large_image',
