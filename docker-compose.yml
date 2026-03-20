@@ -55,8 +55,8 @@ services:
     volumes:
       - ./backend:/app/backend
       - ./backend/uploads:/app/backend/uploads
-    ports:
-      - '${BACKEND_PORT:-8001}:8000'
+    expose:
+      - '8000'
     depends_on:
       db:
         condition: service_healthy
@@ -98,9 +98,25 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
     volumes:
       - ./backend/uploads:/app/backend/uploads:ro
-    ports:
-      - '${FRONTEND_PORT:-3000}:3000'
+    expose:
+      - '3000'
     depends_on:
+      - backend
+    networks:
+      - savage_movie_network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: savage_movie_nginx
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./infra/ssl:/etc/ssl:ro
+    depends_on:
+      - frontend
       - backend
     networks:
       - savage_movie_network
