@@ -60,10 +60,6 @@ jobs:
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
-        env:
-          GHCR_PAT: ${{ secrets.GHCR_PAT }}
-          REGISTRY_OWNER: ${{ env.REGISTRY_OWNER }}
-          VDS_PATH: ${{ secrets.VDS_PATH }}
         with:
           host: ${{ secrets.VDS_HOST }}
           username: ${{ secrets.VDS_USER }}
@@ -71,11 +67,6 @@ jobs:
           passphrase: ${{ secrets.VDS_SSH_PASSPHRASE }}
           port: ${{ secrets.VDS_SSH_PORT || '22' }}
           command_timeout: 30m
-          envs: GHCR_PAT,REGISTRY_OWNER,VDS_PATH
           script: |
-            mkdir -p ~/.docker
-            GHCR_AUTH=$(printf '%s:%s' "$REGISTRY_OWNER" "$GHCR_PAT" | base64)
-            printf '{"auths":{"ghcr.io":{"auth":"%s"}}}' "$GHCR_AUTH" > ~/.docker/config.json
-            chmod 600 ~/.docker/config.json
-            cd "$VDS_PATH"
+            cd ${{ secrets.VDS_PATH }}
             ./scripts/deploy.sh main --force
