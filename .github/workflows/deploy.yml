@@ -73,6 +73,9 @@ jobs:
           command_timeout: 30m
           envs: GHCR_PAT,REGISTRY_OWNER,VDS_PATH
           script: |
-            echo "$GHCR_PAT" | docker login ghcr.io -u "$REGISTRY_OWNER" --password-stdin
+            mkdir -p ~/.docker
+            GHCR_AUTH=$(printf '%s:%s' "$REGISTRY_OWNER" "$GHCR_PAT" | base64)
+            printf '{"auths":{"ghcr.io":{"auth":"%s"}}}' "$GHCR_AUTH" > ~/.docker/config.json
+            chmod 600 ~/.docker/config.json
             cd "$VDS_PATH"
             ./scripts/deploy.sh main --force
