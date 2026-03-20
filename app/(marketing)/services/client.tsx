@@ -13,12 +13,14 @@ import { useI18n } from '@/lib/i18n-context'
 function AnimatedSection({
   children,
   className = '',
+  noDelay = false,
 }: {
   children: React.ReactNode
   className?: string
+  noDelay?: boolean
 }) {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: '-100px' })
+  const isInView = useInView(ref, { once: true, margin: noDelay ? '0px' : '-100px' })
 
   return (
     <motion.section
@@ -151,6 +153,7 @@ export default function ServicesPageClient() {
         <AnimatedSection
           key={service.id}
           className="border-t border-border"
+          noDelay={index === 0}
         >
           <div
             id={service.id}
