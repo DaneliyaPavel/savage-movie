@@ -119,7 +119,7 @@ export default function RootLayout({
   return (
     <html lang="ru" className="dark">
       <head>
-        <link rel="preconnect" href="https://image.mux.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://image.mux.com" />
         <link rel="preconnect" href="https://stream.mux.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://inferred.litix.io" crossOrigin="anonymous" />
       </head>

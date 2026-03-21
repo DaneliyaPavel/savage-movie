@@ -81,9 +81,17 @@ export default async function HomePage() {
     }
   }
 
+  // Preload the first carousel image (LCP element) for faster loading
+  const firstCarouselUrl = projects[0]?.carousel_gif_url || null
+
   return (
-    <main className="relative">
-      <ShowreelHero showreelPlaybackId={SHOWREEL_PLAYBACK_ID} projects={projects} />
-    </main>
+    <>
+      {firstCarouselUrl && (
+        <link rel="preload" as="image" href={firstCarouselUrl} fetchPriority="high" />
+      )}
+      <main className="relative">
+        <ShowreelHero showreelPlaybackId={SHOWREEL_PLAYBACK_ID} projects={projects} />
+      </main>
+    </>
   )
 }
