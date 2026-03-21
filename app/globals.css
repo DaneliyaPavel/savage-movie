@@ -238,15 +238,6 @@
   font-display: swap;
 }
 
-/* Oranienbaum font face */
-@font-face {
-  font-family: 'Oranienbaum';
-  src: url('/fonts/Oranienbaum-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
 /* Epilogue Black font face */
 @font-face {
   font-family: 'Epilogue Black';
@@ -265,15 +256,6 @@
   font-display: swap;
 }
 
-/* Cinzel font faces */
-@font-face {
-  font-family: 'Cinzel';
-  src: url('/fonts/Cinzel-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
 /* Montserrat Black Italic font face */
 @font-face {
   font-family: 'Montserrat Black Italic';
@@ -281,49 +263,6 @@
   font-weight: 900;
   font-style: italic;
   font-display: swap;
-}
-
-@font-face {
-  font-family: 'Cinzel';
-  src: url('/fonts/Cinzel-Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* Roboto Thin font faces */
-@font-face {
-  font-family: 'Roboto Thin';
-  src: url('/fonts/Roboto-Thin.ttf') format('truetype');
-  font-weight: 100;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* Cormorant Garamond Italic - для subtitle */
-@font-face {
-  font-family: 'Cormorant Garamond';
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-  src: url('https://fonts.gstatic.com/s/cormorantgaramond/v16/co3WmX5slCNuHLi8bLeY9MK7whWMhyjQAllvuQWJ5heb_w.woff2') format('woff2');
-}
-
-/* Playfair Display - для menu */
-@font-face {
-  font-family: 'Playfair Display';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('https://fonts.gstatic.com/s/playfairdisplay/v36/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvUDQZNLo_U2r.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Playfair Display';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('https://fonts.gstatic.com/s/playfairdisplay/v36/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvXDTZNLo_U2r.woff2') format('woff2');
 }
 
 /* SVG stroke draw animation */

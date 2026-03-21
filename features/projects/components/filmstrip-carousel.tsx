@@ -140,6 +140,7 @@ export function FilmstripCarousel({
                     key={`${project.id}-carousel-${index}`}
                     project={project}
                     isSelected={selectedId === project.id}
+                    isLCP={index === 0}
                     // Pick a random note based on index + id hash roughly
                     noteText={HOVER_NOTES[index % HOVER_NOTES.length] ?? 'Смотреть'}
                     onSelect={() => onProjectSelect(project)}
@@ -157,11 +158,13 @@ export function FilmstripCarousel({
 const FilmstripItem = memo(function FilmstripItem({
   project,
   isSelected,
+  isLCP = false,
   noteText,
   onSelect,
 }: {
   project: FilmstripProject
   isSelected: boolean
+  isLCP?: boolean
   noteText?: string
   onSelect: () => void
 }) {
@@ -173,10 +176,12 @@ const FilmstripItem = memo(function FilmstripItem({
   // Priority: carousel_gif_url > playbackId > thumbnail
   const rawCarouselGifUrl = project.carousel_gif_url ?? ''
 
-  // Optimize Mux animated GIFs: convert to WebP and match container size (180x101)
+  // Optimize Mux animated GIFs: convert to WebP, match container size, reduce fps
   const carouselGifUrl = rawCarouselGifUrl.includes('image.mux.com') && rawCarouselGifUrl.includes('animated.gif')
-    ? rawCarouselGifUrl.replace('animated.gif', 'animated.webp').replace(/width=\d+/, 'width=180')
-    : rawCarouselGifUrl
+    ? rawCarouselGifUrl.replace('animated.gif', 'animated.webp').replace(/width=\d+/, 'width=180') + (rawCarouselGifUrl.includes('fps=') ? '' : '&fps=8')
+    : rawCarouselGifUrl.includes('image.mux.com') && rawCarouselGifUrl.includes('animated.webp') && !rawCarouselGifUrl.includes('fps=')
+      ? rawCarouselGifUrl + (rawCarouselGifUrl.includes('?') ? '&fps=8' : '?fps=8')
+      : rawCarouselGifUrl
 
   const isMuxGif = carouselGifUrl !== '' && !carouselGifUrl.includes('/')
   const isUrlGif = carouselGifUrl.startsWith('http') || carouselGifUrl.startsWith('/')
@@ -242,8 +247,9 @@ const FilmstripItem = memo(function FilmstripItem({
             <img
               src={carouselGifUrl}
               alt={project.title}
-              loading="lazy"
-              decoding="async"
+              loading={isLCP ? 'eager' : 'lazy'}
+              decoding={isLCP ? 'sync' : 'async'}
+              fetchPriority={isLCP ? 'high' : 'auto'}
               width={180}
               height={101}
               className="absolute inset-0 w-full h-full object-cover"

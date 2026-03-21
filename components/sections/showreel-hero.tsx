@@ -90,15 +90,15 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
           <AnimatePresence mode="wait">
             <motion.div
               key={currentPlaybackId}
-              initial={{ opacity: 0, filter: 'blur(10px)' }}
-              animate={{ opacity: 1, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, filter: 'blur(10px)' }}
-              style={{ willChange: 'opacity, filter' }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.6, ease: 'easeInOut' }}
               className="absolute inset-0"
             >
               <VideoPlayer
                 playbackId={currentPlaybackId}
+                poster={`https://image.mux.com/${currentPlaybackId}/thumbnail.webp?width=1920&height=1080&fit_mode=smartcrop`}
                 autoPlay
                 muted
                 loop
