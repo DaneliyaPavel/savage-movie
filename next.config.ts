@@ -22,7 +22,17 @@ const nextConfig: NextConfig = {
   },
   // Оптимизация для видео
   experimental: {
-    optimizePackageImports: ['@mux/mux-player-react', 'lucide-react'],
+    optimizePackageImports: [
+      '@mux/mux-player-react',
+      'lucide-react',
+      'framer-motion',
+      'date-fns',
+      '@radix-ui/react-accordion',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-tabs',
+      '@radix-ui/react-tooltip',
+    ],
   },
   // Поддержка статических файлов из uploads через API route
   async rewrites() {

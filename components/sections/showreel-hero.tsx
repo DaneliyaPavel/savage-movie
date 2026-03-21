@@ -93,6 +93,7 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
               initial={{ opacity: 0, filter: 'blur(10px)' }}
               animate={{ opacity: 1, filter: 'blur(0px)' }}
               exit={{ opacity: 0, filter: 'blur(10px)' }}
+              style={{ willChange: 'opacity, filter' }}
               transition={{ duration: 0.6, ease: 'easeInOut' }}
               className="absolute inset-0"
             >

@@ -168,10 +168,16 @@ const FilmstripItem = memo(function FilmstripItem({
 
   // Determine which media source to use for the "GIF" effect
   // Priority: carousel_gif_url > playbackId > thumbnail
-  const carouselGifUrl = project.carousel_gif_url ?? ''
+  const rawCarouselGifUrl = project.carousel_gif_url ?? ''
+
+  // Optimize Mux animated GIFs: convert to WebP and match container size (180x101)
+  const carouselGifUrl = rawCarouselGifUrl.includes('image.mux.com') && rawCarouselGifUrl.includes('animated.gif')
+    ? rawCarouselGifUrl.replace('animated.gif', 'animated.webp').replace(/width=\d+/, 'width=180')
+    : rawCarouselGifUrl
+
   const isMuxGif = carouselGifUrl !== '' && !carouselGifUrl.includes('/')
   const isUrlGif = carouselGifUrl.startsWith('http') || carouselGifUrl.startsWith('/')
-  const isGifImage = isUrlGif && carouselGifUrl.toLowerCase().includes('.gif')
+  const isGifImage = isUrlGif && (carouselGifUrl.toLowerCase().includes('.gif') || carouselGifUrl.toLowerCase().includes('.webp'))
   const isMuxPlayback = !project.carousel_gif_url && project.playbackId
 
   // Intersection Observer for autoplay performance
@@ -233,6 +239,10 @@ const FilmstripItem = memo(function FilmstripItem({
             <img
               src={carouselGifUrl}
               alt={project.title}
+              loading="lazy"
+              decoding="async"
+              width={180}
+              height={101}
               className="absolute inset-0 w-full h-full object-cover"
             />
           ) : (

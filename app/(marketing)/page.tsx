@@ -7,7 +7,7 @@ import { ShowreelHero } from '@/components/sections/showreel-hero'
 import { getProjectsServer } from '@/features/projects/api'
 import { publicEnv } from '@/lib/env'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600 // ISR: revalidate every hour
 
 const metaDescription =
   'Продакшн-студия полного цикла в Санкт-Петербурге и Москве. Рекламные ролики, музыкальные клипы, имиджевые видео, AI-генерация контента. Обсудить проект →'

@@ -259,7 +259,7 @@
 /* Inter 28pt ExtraLight font face */
 @font-face {
   font-family: 'Inter 28pt ExtraLight';
-  src: url('/fonts/Inter_28pt-ExtraLight.ttf') format('truetype');
+  src: url('/fonts/Inter_28pt-ExtraLight.woff2') format('woff2');
   font-weight: 200;
   font-style: normal;
   font-display: swap;
@@ -277,7 +277,7 @@
 /* Montserrat Black Italic font face */
 @font-face {
   font-family: 'Montserrat Black Italic';
-  src: url('/fonts/Montserrat-BlackItalic.ttf') format('truetype');
+  src: url('/fonts/Montserrat-BlackItalic.woff2') format('woff2');
   font-weight: 900;
   font-style: italic;
   font-display: swap;
