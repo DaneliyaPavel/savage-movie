@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { TopBar } from '@/components/ui/top-bar'
 import { JalousieMenu } from '@/components/ui/jalousie-menu'
 import { useI18n } from '@/lib/i18n-context'
+import { useMenu } from '@/components/ui/menu-context'
 import { ProjectsJalousieFooter } from '@/components/sections/ProjectsJalousieFooter'
 import {
   HorizontalProjectMediaCard,
@@ -560,9 +561,26 @@ export default function ProjectsPageClient({
   initialProjects: MarketingProject[]
 }) {
   const { language, t } = useI18n()
+  const { setHeaderDark } = useMenu()
   const [showAll, setShowAll] = useState(false)
   const [projects, setProjects] = useState<MarketingProject[]>(initialProjects)
   const [orientationFilter, setOrientationFilter] = useState<ProjectOrientationFilter>('all')
+  const curtainRef = useRef<HTMLDivElement>(null)
+
+  // Switch header to dark when red footer is revealed
+  useEffect(() => {
+    const handleScroll = () => {
+      const curtain = curtainRef.current
+      if (!curtain) return
+      const rect = curtain.getBoundingClientRect()
+      setHeaderDark(rect.bottom < 80)
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      setHeaderDark(false)
+    }
+  }, [setHeaderDark])
 
   useEffect(() => {
     if (initialProjects.length > 0) return
@@ -611,7 +629,7 @@ export default function ProjectsPageClient({
       <JalousieMenu />
 
       {/* Curtain: sits above fixed footer; when it scrolls up, footer (under spacer) becomes visible */}
-      <div className="relative z-20 bg-background">
+      <div ref={curtainRef} className="relative z-20 bg-background">
       {/* Header - Freshman.tv style */}
       <header className="pt-20 pb-8 flex items-center justify-center relative">
         <div className="text-center">
