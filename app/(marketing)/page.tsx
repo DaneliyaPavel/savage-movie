@@ -72,32 +72,13 @@ export default async function HomePage() {
       }
     })
 
-    // Отладочная информация в development
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`✅ Загружено ${featuredProjects.length} featured проектов`)
-      console.log(`✅ Преобразовано ${projects.length} проектов для carousel`)
-      if (projects.length > 0) {
-        console.log(
-          'Проекты для carousel:',
-          projects.map(p => ({ id: p.id, title: p.titleRu, thumbnail: p.thumbnail }))
-        )
-      }
-    }
   } catch (error) {
-    console.error(
-      '❌ Ошибка загрузки featured проектов:',
-      error instanceof Error ? error.message : String(error)
-    )
     if (process.env.NODE_ENV === 'development') {
-      console.error('Детали ошибки:', error)
+      console.error(
+        '❌ Ошибка загрузки featured проектов:',
+        error instanceof Error ? error.message : String(error)
+      )
     }
-  }
-
-  // Отладочная информация в development
-  if (process.env.NODE_ENV === 'development' && projects.length === 0) {
-    console.warn('⚠️ Нет featured проектов для отображения в carousel. Проверьте:')
-    console.warn('1. Есть ли проекты с is_featured = true в базе данных')
-    console.warn('2. Заполнены ли thumbnail_url или images для проектов')
   }
 
   return (

@@ -4,9 +4,12 @@ import { useCallback, useRef, useEffect, memo } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import AutoScroll from 'embla-carousel-auto-scroll'
 import { motion } from 'framer-motion'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
-import MuxPlayer, { type MuxPlayerRefAttributes } from '@mux/mux-player-react'
+import type { MuxPlayerRefAttributes } from '@mux/mux-player-react'
+
+const MuxPlayer = dynamic(() => import('@mux/mux-player-react'), { ssr: false })
 
 interface FilmstripProject {
   id: string
@@ -275,6 +278,7 @@ const FilmstripItem = memo(function FilmstripItem({
             src={project.thumbnail || '/placeholder.svg'}
             alt={project.title}
             fill
+            sizes="180px"
             className="object-cover"
           />
         )}
