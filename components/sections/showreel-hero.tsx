@@ -131,9 +131,13 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
 
             {/* Subtitle - much closer to brand */}
             <div className="mt-2 md:mt-3 space-y-2">
-              <p className="text-base md:text-lg text-white/85 font-cormorant font-light tracking-wide leading-relaxed">
-                {t('home.heroSubtitle')}
-              </p>
+              <div className="text-sm md:text-base text-white/75 font-light tracking-wide leading-relaxed max-w-xl mx-auto">
+                {t('home.heroSubtitle').split('\n').map((line, i) => (
+                  <p key={i} className={i > 0 ? 'mt-1 text-white/55 text-xs md:text-sm tracking-widest' : ''}>
+                    {line}
+                  </p>
+                ))}
+              </div>
               {/* Tagline - handwritten style */}
               <p
                 className="text-lg md:text-xl text-white/70 tracking-wide"
