@@ -184,10 +184,9 @@ fi
 
 $COMPOSE_CMD -f "$COMPOSE_FILE" up -d --remove-orphans --no-build
 
-# Reload nginx config (volume-mounted config doesn't auto-reload)
-$COMPOSE_CMD -f "$COMPOSE_FILE" exec -T nginx nginx -s reload 2>/dev/null \
-  || $COMPOSE_CMD -f "$COMPOSE_FILE" restart nginx 2>/dev/null \
-  || true
+# Force restart nginx to pick up volume-mounted config changes
+echo "Restarting nginx to apply config changes..."
+$COMPOSE_CMD -f "$COMPOSE_FILE" restart nginx
 
 if [ "$PRUNE" -eq 1 ]; then
   docker image prune -f || true
