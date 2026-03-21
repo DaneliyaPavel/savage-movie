@@ -55,13 +55,10 @@ export function ProjectsJalousieFooter() {
           </p>
 
           {/* Large Logo */}
-          <div className="relative mb-8">
-            <h2 className="text-[15vw] md:text-[12vw] font-brand text-background leading-none tracking-tight">
+          <div className="mb-8">
+            <h2 className="text-[15vw] md:text-[12vw] font-brand text-background leading-none tracking-tight text-center">
               savage movie
             </h2>
-            <span className="absolute -top-2 -right-4 md:-right-8 text-background text-xl md:text-2xl">
-              ®
-            </span>
           </div>
 
           {/* Newsletter text */}
@@ -98,14 +95,14 @@ export function ProjectsJalousieFooter() {
         <div className="px-4 sm:px-6 md:px-10 pb-4 sm:pb-6 pt-4 text-background shrink-0">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between text-xs sm:text-sm md:text-base">
             {/* Socials */}
-            <div className="flex items-center justify-between md:justify-start md:flex-col md:items-start gap-2">
+            <div className="flex flex-col items-center md:items-start gap-2">
               <span
                 className="text-[10px] sm:text-xs md:text-sm text-background/70 uppercase tracking-[0.25em]"
                 style={{ fontFamily: 'var(--font-handwritten), cursive' }}
               >
                 {language === 'ru' ? '(соцсети)' : '(socials)'}
               </span>
-              <div className="flex items-center gap-3 sm:gap-4 uppercase tracking-[0.25em]">
+              <div className="flex items-center gap-4 sm:gap-5 uppercase tracking-[0.25em]">
                 <a href="https://www.instagram.com/mari.seven/" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
                   IG
                 </a>
@@ -118,24 +115,27 @@ export function ProjectsJalousieFooter() {
               </div>
             </div>
 
+            {/* Contact */}
+            <div className="flex flex-col items-center md:items-start gap-2 order-2 md:order-none">
+              <span
+                className="text-[10px] sm:text-xs md:text-sm text-background/70 uppercase tracking-[0.25em]"
+                style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+              >
+                {language === 'ru' ? '(контакт)' : '(contact)'}
+              </span>
+              <a
+                href="mailto:savage.movie@yandex.ru"
+                className="uppercase tracking-[0.15em] sm:tracking-[0.25em] text-xs sm:text-sm md:text-base hover:opacity-70 transition-opacity"
+              >
+                SAVAGE.MOVIE@YANDEX.RU
+              </a>
+            </div>
+
             {/* Copyright */}
-            <div className="text-center font-secondary order-last md:order-none">
+            <div className="text-center font-secondary order-last">
               <span className="uppercase tracking-[0.15em] sm:tracking-[0.25em] font-secondary text-[10px] sm:text-xs md:text-base">
                 {new Date().getFullYear()}© {language === 'ru' ? 'Видим смысл' : 'See the meaning'}
               </span>
-            </div>
-
-            {/* Legal links */}
-            <div className="flex items-center gap-3 sm:gap-4 uppercase tracking-[0.15em] sm:tracking-[0.25em] font-secondary">
-              <a href="/privacy" className="hover:text-background transition-colors">
-                {language === 'ru' ? 'Политика' : 'Privacy'}
-              </a>
-              <a href="/terms" className="hover:text-background transition-colors">
-                {language === 'ru' ? 'Условия' : 'Terms'}
-              </a>
-              <a href="/cookies" className="hover:text-background transition-colors">
-                Cookies
-              </a>
             </div>
           </div>
         </div>

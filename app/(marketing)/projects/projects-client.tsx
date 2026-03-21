@@ -155,11 +155,14 @@ function ProjectRow({
   const [mediaHeight, setMediaHeight] = useState<number | null>(null)
   const [scribbleSeed, setScribbleSeed] = useState(0)
   const [scribbleTrigger, setScribbleTrigger] = useState(0)
+  const [isInViewport, setIsInViewport] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const muxRef = useRef<MuxPlayerRefAttributes | null>(null)
   const videoContainerRef = useRef<HTMLDivElement>(null)
   const videoAspectRef = useRef<HTMLDivElement>(null)
   const thumbnailsContainerRef = useRef<HTMLDivElement>(null)
+  const rowRef = useRef<HTMLDivElement>(null)
   const lastScribbleRef = useRef<number | null>(null)
 
   const visibleThumbs = useMemo(() => project.thumbnails.slice(0, 5), [project.thumbnails])
@@ -169,8 +172,6 @@ function ProjectRow({
   const isVertical = orientation === 'vertical'
   const MediaCard = isVertical ? VerticalProjectMediaCard : HorizontalProjectMediaCard
   const thumbAspectClass = isVertical ? 'aspect-[9/16]' : 'aspect-video'
-  const mediaColumnClassName = 'col-span-12 md:col-span-5'
-  const infoColumnClassName = 'col-span-12 md:col-span-4'
   const mediaCardClassName = 'w-full'
   const mediaAspectClassName = isVertical ? 'aspect-[16/9.2]' : undefined
   const mediaFitClassName = isVertical ? 'object-contain' : 'object-cover'
@@ -179,10 +180,41 @@ function ProjectRow({
     '--media-object-fit': isVertical ? 'contain' : 'cover',
   }
 
+  const shouldPlay = isMobile ? isInViewport : isHovered
+
   const getTitle = () => (language === 'ru' ? project.titleRu : project.titleEn)
   const getClient = () => (language === 'ru' ? project.clientRu : project.clientEn)
   const getCategory = () => (language === 'ru' ? project.categoryRu : project.category)
   const getDescription = () => (language === 'ru' ? project.descriptionRu : project.descriptionEn)
+
+  // Detect mobile
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 767px)')
+    setIsMobile(mql.matches)
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [])
+
+  // IntersectionObserver for mobile auto-play
+  useEffect(() => {
+    const row = rowRef.current
+    if (!row) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const inView = entry?.isIntersecting ?? false
+        setIsInViewport(inView)
+        if (inView && project.videoUrl && !videoSrc && !playbackId) {
+          setVideoSrc(project.videoUrl)
+        }
+      },
+      { threshold: 0.3 }
+    )
+
+    observer.observe(row)
+    return () => observer.disconnect()
+  }, [project.videoUrl, videoSrc, playbackId])
 
   const handleMouseEnter = () => {
     setIsHovered(true)
@@ -214,11 +246,12 @@ function ProjectRow({
     return () => window.clearInterval(intervalId)
   }, [isHovered, cycleLength])
 
+  // Video play/pause
   useEffect(() => {
     if (playbackId) {
       const player = muxRef.current
       if (!player) return
-      if (isHovered) {
+      if (shouldPlay) {
         const playPromise = player.play?.()
         if (playPromise?.catch) {
           playPromise.catch(() => { })
@@ -230,7 +263,7 @@ function ProjectRow({
     }
 
     if (!videoRef.current) return
-    if (isHovered) {
+    if (shouldPlay) {
       const playPromise = videoRef.current.play()
       if (playPromise) {
         playPromise.catch(() => { })
@@ -238,9 +271,9 @@ function ProjectRow({
     } else {
       videoRef.current.pause()
     }
-  }, [isHovered, videoSrc, playbackId])
+  }, [shouldPlay, videoSrc, playbackId])
 
-  // Calculate thumbnail size to match video height exactly (5 thumbnails = video height)
+  // Calculate thumbnail size to match video height exactly (desktop only)
   useEffect(() => {
     const thumbAspectRatio = isVertical ? 9 / 16 : 16 / 9
 
@@ -290,8 +323,47 @@ function ProjectRow({
     }
   }, [isVertical])
 
+  const videoContent = (
+    <>
+      {playbackId ? (
+        <MuxPlayer
+          ref={muxRef}
+          playbackId={playbackId}
+          streamType="on-demand"
+          metadata={{ video_title: getTitle() }}
+          muted
+          loop
+          playsInline
+          autoPlay={false}
+          style={muxStyle}
+          className="absolute inset-0 w-full h-full"
+        />
+      ) : project.videoUrl ? (
+        <video
+          ref={videoRef}
+          src={videoSrc ?? undefined}
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          className={`absolute inset-0 w-full h-full ${mediaFitClassName}`}
+        />
+      ) : (
+        <Image
+          src={project.thumbnails[0] || '/placeholder.svg'}
+          alt={getTitle()}
+          fill
+          sizes={MAIN_IMAGE_SIZES}
+          quality={70}
+          className={mediaFitClassName}
+        />
+      )}
+    </>
+  )
+
   return (
     <motion.div
+      ref={rowRef}
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-100px' }}
@@ -301,9 +373,9 @@ function ProjectRow({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="grid grid-cols-12 gap-6 md:gap-3 items-start">
-        {/* Column 1: Project Number - much larger */}
-        <div className="col-span-12 md:col-span-1 order-1 md:order-none">
+      <div className="flex flex-col gap-3 md:grid md:grid-cols-12 md:gap-3 md:items-start">
+        {/* Number */}
+        <div className="md:col-span-1">
           <span
             className="text-xl md:text-2xl lg:text-3xl text-muted-foreground"
             style={{ fontFamily: 'var(--font-handwritten), cursive' }}
@@ -312,10 +384,10 @@ function ProjectRow({
           </span>
         </div>
 
-        {/* Column 2: Thumbnail Strip - sized to match video height exactly (5 thumbnails = video height), centered in column */}
+        {/* Thumbnails - desktop only */}
         <div
           ref={thumbnailsContainerRef}
-          className="col-span-12 md:col-span-2 flex flex-col gap-3 items-center order-4 md:order-none"
+          className="hidden md:flex md:flex-col md:gap-3 md:items-center md:col-span-2"
         >
           {visibleThumbs.map((thumb, thumbIndex) => (
             <motion.div
@@ -341,59 +413,51 @@ function ProjectRow({
           ))}
         </div>
 
-        {/* Column 3: Main Video - slightly smaller to match thumbnails height */}
+        {/* Mobile info header - mobile only */}
+        <div className="md:hidden flex items-start justify-between gap-4">
+          <div>
+            <h3
+              className="text-xs uppercase tracking-[0.28em] mb-0.5 opacity-80"
+              style={{ fontFamily: 'var(--font-brand-hero)' }}
+            >
+              {getClient()}
+            </h3>
+            <h2
+              className="text-2xl font-black uppercase tracking-tighter leading-[0.92]"
+              style={{ fontFamily: 'var(--font-brand-hero)' }}
+            >
+              {getTitle()}
+            </h2>
+          </div>
+          <span
+            className="text-base text-muted-foreground italic transform -rotate-3 pt-1 shrink-0"
+            style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+          >
+            {getCategory()}
+          </span>
+        </div>
+
+        {/* Video */}
         <div
           ref={videoContainerRef}
-          className={`${mediaColumnClassName} relative order-2 md:order-none`}
+          className="md:col-span-5 relative"
         >
           <MediaCard
             innerRef={videoAspectRef}
             className={mediaCardClassName}
             aspectClassName={mediaAspectClassName}
           >
-            {playbackId ? (
-              <MuxPlayer
-                ref={muxRef}
-                playbackId={playbackId}
-                streamType="on-demand"
-                metadata={{ video_title: getTitle() }}
-                muted
-                loop
-                playsInline
-                autoPlay={false}
-                style={muxStyle}
-                className="absolute inset-0 w-full h-full"
-              />
-            ) : project.videoUrl ? (
-              <video
-                ref={videoRef}
-                src={videoSrc ?? undefined}
-                muted
-                loop
-                playsInline
-                preload="metadata"
-                className={`absolute inset-0 w-full h-full ${mediaFitClassName}`}
-              />
-            ) : (
-              <Image
-                src={project.thumbnails[0] || '/placeholder.svg'}
-                alt={getTitle()}
-                fill
-                sizes={MAIN_IMAGE_SIZES}
-                quality={70}
-                className={mediaFitClassName}
-              />
-            )}
+            {videoContent}
 
             {(playbackId || project.videoUrl) && (
               <motion.span
                 initial={false}
-                animate={isHovered ? { opacity: 1 } : { opacity: 0 }}
+                animate={shouldPlay ? { opacity: 1 } : { opacity: 0 }}
                 transition={{ duration: 0.3 }}
                 className="absolute inset-0 flex items-center justify-center pointer-events-none"
               >
                 <span
-                  className="text-white text-2xl md:text-3xl tracking-wider"
+                  className="text-white text-2xl md:text-3xl tracking-wider hidden md:inline"
                   style={{ fontFamily: 'var(--font-handwritten), cursive' }}
                 >
                   {language === 'ru' ? '[СМОТРеТЬ]' : '[VIEW]'}
@@ -416,10 +480,18 @@ function ProjectRow({
           </MediaCard>
         </div>
 
-        {/* Column 4: Project Info - Category on top, Title/Client larger, Description at bottom - wider */}
+        {/* Mobile description - mobile only */}
+        <p
+          className="md:hidden text-[15px] text-foreground/90 leading-[1.65] line-clamp-4"
+          style={{ fontFamily: 'var(--font-sans)', fontWeight: 300 }}
+        >
+          {getDescription()}
+        </p>
+
+        {/* Desktop info column - desktop only */}
         <Link
           href={`/projects/${project.slug}`}
-          className={`${infoColumnClassName} block h-full cursor-pointer order-3 md:order-none`}
+          className="hidden md:block md:col-span-4 h-full cursor-pointer"
           aria-label={`Открыть проект ${getTitle()}`}
         >
           <div
@@ -466,7 +538,7 @@ function ProjectRow({
               {language === 'ru' ? 'иЗУЧиТь' : 'eXPLoRe'}
             </motion.span>
 
-            {/* Description - at the bottom, larger and readable */}
+            {/* Description - at the bottom */}
             <div className="mt-auto">
               <p
                 className="text-[15px] md:text-[16px] lg:text-[17px] xl:text-[19px] 2xl:text-[21px] text-foreground/90 leading-[1.65] line-clamp-4"
@@ -647,7 +719,7 @@ export default function ProjectsPageClient({
       </section>
       </div>
 
-      {/* Transparent spacer: creates scroll room; footer (z-10) paints on top so it’s visible here */}
+      {/* Transparent spacer: creates scroll room; footer (z-10) paints on top so it's visible here */}
       <div className="min-h-screen" aria-hidden="true" />
 
       <ProjectsJalousieFooter />
