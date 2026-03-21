@@ -77,7 +77,6 @@ function TransitionCurtain() {
                     width={192}
                     height={192}
                     className="w-full h-full object-contain invert" // Invert to make it white on red
-                    priority
                 />
             </motion.div>
         </motion.div>
