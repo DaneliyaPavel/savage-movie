@@ -4,7 +4,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 
 export function BookingModal() {
   const [isBookingOpen, setIsBookingOpen] = useState(false)
@@ -22,6 +22,7 @@ export function BookingModal() {
   return (
     <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogTitle className="sr-only">Бронирование консультации</DialogTitle>
         <iframe
           src={process.env.NEXT_PUBLIC_CALENDLY_URL || 'https://calendly.com'}
           width="100%"

@@ -2,8 +2,11 @@
 
 import type React from 'react'
 
-import MuxPlayer from '@mux/mux-player-react'
+import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
+import { useCallback } from 'react'
+
+const MuxPlayer = dynamic(() => import('@mux/mux-player-react'), { ssr: false })
 
 type MuxStyle = React.CSSProperties & Record<`--${string}`, string>
 
@@ -28,6 +31,13 @@ export function VideoPlayer({
 }: VideoPlayerProps) {
   const effectiveMuted = autoPlay ? true : muted
 
+  const handleError = useCallback((e: Event) => {
+    // Suppress non-critical MediaError from autoplay / stream loading
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[VideoPlayer] Media error suppressed:', (e as CustomEvent)?.detail ?? e)
+    }
+  }, [])
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -44,6 +54,7 @@ export function VideoPlayer({
         playsInline
         streamType="on-demand"
         className="absolute inset-0 w-full h-full"
+        onError={handleError}
         style={
           {
             width: '100%',
