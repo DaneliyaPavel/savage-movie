@@ -85,7 +85,7 @@
     sans-serif;
   --font-mono:
     ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
-  --font-handwritten: 'Sa No Rules Regular', 'Comic Sans MS', cursive;
+  --font-handwritten: 'Comic Sans MS', cursive;
   --font-serif-subtitle: var(--font-sans);
   --font-serif-menu: var(--font-sans);
   --color-background: var(--background);
@@ -229,14 +229,7 @@
   box-shadow: 0 0 20px oklch(from var(--foreground) l c h / 0.3);
 }
 
-/* Handwritten font face */
-@font-face {
-  font-family: 'Sa No Rules Regular';
-  src: url('/fonts/SANoRulesRegular.woff2') format('woff2');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
+/* Handwritten font: loaded via next/font/local in layout.tsx (--font-handwritten variable) */
 
 /* Epilogue Black font face */
 @font-face {

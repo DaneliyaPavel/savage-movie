@@ -122,7 +122,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://image.mux.com" />
         <link rel="preconnect" href="https://stream.mux.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://inferred.litix.io" crossOrigin="anonymous" />
-
+        {/* DNS prefetch for Mux CDN domains used for video streaming chunks */}
+        <link rel="dns-prefetch" href="https://cfcdn.mux.com" />
+        <link rel="dns-prefetch" href="https://edgemv.mux.com" />
       </head>
       <body className={`${saNoRules.variable} font-sans antialiased`}>
         <JsonLdScripts scripts={jsonLdScripts} />
