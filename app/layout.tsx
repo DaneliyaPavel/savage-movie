@@ -122,6 +122,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://image.mux.com" />
         <link rel="preconnect" href="https://stream.mux.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://inferred.litix.io" crossOrigin="anonymous" />
+        <link rel="preload" as="font" href="/fonts/SANoRulesRegular.woff2" type="font/woff2" crossOrigin="anonymous" />
       </head>
       <body className={`${saNoRules.variable} font-sans antialiased`}>
         <JsonLdScripts scripts={jsonLdScripts} />

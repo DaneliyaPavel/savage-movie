@@ -241,7 +241,7 @@
 /* Epilogue Black font face */
 @font-face {
   font-family: 'Epilogue Black';
-  src: url('/fonts/Epilogue-Black.otf') format('opentype');
+  src: url('/fonts/Epilogue-Black.woff2') format('woff2');
   font-weight: 900;
   font-style: normal;
   font-display: swap;

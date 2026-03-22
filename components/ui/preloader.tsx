@@ -64,7 +64,7 @@ export function Preloader({ onComplete }: PreloaderProps) {
 
     const timer = setTimeout(() => {
       setIsFinishing(true)
-    }, 1200) // Run for 1.2 seconds
+    }, 800) // Run for 0.8 seconds
 
     return () => {
       clearInterval(interval)
