@@ -1,7 +1,7 @@
 /**
  * Premium Page Transition Component
  * Inspired by freshman.tv - Horizontal curtain wipe with logo reveal
- * 
+ *
  * Animation Flow:
  * 1. COVER: Red curtain slides in from right (scaleX: 0 → 1)
  * 2. HOLD: Brief pause with logo visible at full coverage
@@ -12,9 +12,17 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
+import { useRef } from 'react'
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
+    const isInitialLoad = useRef(true)
+
+    // On first render, skip the curtain — only show on subsequent navigations
+    if (isInitialLoad.current) {
+        isInitialLoad.current = false
+        return <div key={pathname}>{children}</div>
+    }
 
     return (
         <>
