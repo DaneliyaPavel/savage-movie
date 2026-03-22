@@ -20,12 +20,15 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Loader2, ShoppingCart } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import Link from 'next/link'
 import type { User } from '@/lib/api/auth'
 
 const enrollmentFormSchema = z.object({
   name: z.string().min(1, 'Укажите имя'),
   email: z.string().email('Некорректный email'),
   phone: z.string().min(1, 'Укажите телефон'),
+  consent: z.literal(true, { error: 'Необходимо дать согласие на обработку персональных данных' }),
 })
 
 type EnrollmentFormValues = z.infer<typeof enrollmentFormSchema>
@@ -46,6 +49,7 @@ export function CourseEnrollmentForm({
 }: CourseEnrollmentFormProps) {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [authConsent, setAuthConsent] = useState(false)
 
   const form = useForm<EnrollmentFormValues>({
     resolver: zodResolver(enrollmentFormSchema),
@@ -53,6 +57,7 @@ export function CourseEnrollmentForm({
       name: initialUser?.full_name ?? '',
       email: initialUser?.email ?? '',
       phone: '',
+      consent: false as unknown as true,
     },
   })
 
@@ -192,11 +197,29 @@ export function CourseEnrollmentForm({
               {submitError}
             </p>
           )}
+          <div className="flex items-start space-x-3 mb-4">
+            <Checkbox
+              id="auth-consent"
+              checked={authConsent}
+              onCheckedChange={(checked) => setAuthConsent(checked === true)}
+              className="mt-0.5"
+            />
+            <label htmlFor="auth-consent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
+              Даю{' '}
+              <Link href="/consent" className="underline hover:text-foreground transition-colors">
+                согласие на обработку персональных данных
+              </Link>{' '}
+              в соответствии с{' '}
+              <Link href="/privacy" className="underline hover:text-foreground transition-colors">
+                Политикой обработки ПД
+              </Link>
+            </label>
+          </div>
           <Button
             size="lg"
             className="w-full text-lg px-8 py-6"
             onClick={handleAuthUserSubmit}
-            disabled={isLoading}
+            disabled={isLoading || !authConsent}
           >
             {isLoading ? (
               <>
@@ -267,6 +290,34 @@ export function CourseEnrollmentForm({
                     <Input type="tel" placeholder="+7 (999) 123-45-67" {...field} />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="consent"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value === true}
+                      onCheckedChange={field.onChange}
+                      className="mt-0.5"
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="text-sm font-normal text-muted-foreground cursor-pointer">
+                      Даю{' '}
+                      <Link href="/consent" className="underline hover:text-foreground transition-colors">
+                        согласие на обработку персональных данных
+                      </Link>{' '}
+                      в соответствии с{' '}
+                      <Link href="/privacy" className="underline hover:text-foreground transition-colors">
+                        Политикой обработки ПД
+                      </Link>
+                    </FormLabel>
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />

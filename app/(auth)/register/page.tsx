@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { OAuthButtons } from '@/components/auth/OAuthButtons'
 import { register } from '@/lib/api/auth'
 import { Loader2 } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import Link from 'next/link'
 
 export default function RegisterPage() {
@@ -21,9 +22,14 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [consent, setConsent] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!consent) {
+      setError('Необходимо дать согласие на обработку персональных данных')
+      return
+    }
     setError('')
     setIsLoading(true)
 
@@ -93,7 +99,27 @@ export default function RegisterPage() {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="consent"
+                checked={consent}
+                onCheckedChange={(checked) => setConsent(checked === true)}
+                disabled={isLoading}
+                className="mt-0.5"
+              />
+              <label htmlFor="consent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
+                Даю{' '}
+                <Link href="/consent" className="text-primary hover:underline">
+                  согласие на обработку персональных данных
+                </Link>{' '}
+                в соответствии с{' '}
+                <Link href="/privacy" className="text-primary hover:underline">
+                  Политикой обработки ПД
+                </Link>
+              </label>
+            </div>
+
+            <Button type="submit" className="w-full" disabled={isLoading || !consent}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

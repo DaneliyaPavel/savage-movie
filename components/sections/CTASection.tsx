@@ -20,6 +20,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Textarea } from '@/components/ui/textarea'
 import { CheckCircle2, Loader2 } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { logger } from '@/lib/utils/logger'
 
@@ -29,6 +31,7 @@ const formSchema = z.object({
   phone: z.string().optional(),
   message: z.string().min(10, 'Сообщение должно содержать минимум 10 символов'),
   budget: z.array(z.number()).length(1),
+  consent: z.literal(true, { error: 'Необходимо дать согласие на обработку персональных данных' }),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -45,6 +48,7 @@ export function CTASection() {
       phone: '',
       message: '',
       budget: [50000],
+      consent: false as unknown as true,
     },
   })
 
@@ -294,6 +298,41 @@ export function CTASection() {
                               <span>1 000 000 ₽</span>
                             </div>
                             <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, delay: 0.35 }}
+                    >
+                      <FormField
+                        control={form.control}
+                        name="consent"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value === true}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel className="text-sm font-normal text-muted-foreground cursor-pointer">
+                                Даю{' '}
+                                <Link href="/consent" className="underline hover:text-foreground transition-colors">
+                                  согласие на обработку персональных данных
+                                </Link>{' '}
+                                в соответствии с{' '}
+                                <Link href="/privacy" className="underline hover:text-foreground transition-colors">
+                                  Политикой обработки ПД
+                                </Link>
+                              </FormLabel>
+                              <FormMessage />
+                            </div>
                           </FormItem>
                         )}
                       />

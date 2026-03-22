@@ -22,6 +22,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Textarea } from '@/components/ui/textarea'
 import { CheckCircle2, Loader2 } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import Link from 'next/link'
 import { motion, useSpring, useMotionValue } from 'framer-motion'
 import { HoverNote } from '@/components/ui/hover-note'
 
@@ -31,6 +33,7 @@ const formSchema = z.object({
   phone: z.string().optional(),
   message: z.string().min(10, 'Сообщение должно содержать минимум 10 символов'),
   budget: z.array(z.number()).length(1),
+  consent: z.literal(true, { error: 'Необходимо дать согласие на обработку персональных данных' }),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -51,6 +54,7 @@ export function ContactForm({ className = '' }: ContactFormProps) {
       phone: '',
       message: '',
       budget: [50000],
+      consent: false as unknown as true,
     },
   })
 
@@ -319,6 +323,42 @@ export function ContactForm({ className = '' }: ContactFormProps) {
                           <span>1 000 000 ₽</span>
                         </div>
                         <FormMessage className="text-[#FFFFFF]/60" />
+                      </FormItem>
+                    )}
+                  />
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <FormField
+                    control={form.control}
+                    name="consent"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value === true}
+                            onCheckedChange={field.onChange}
+                            className="mt-0.5 border-[#FFFFFF]/30 data-[state=checked]:bg-[#FFFFFF] data-[state=checked]:text-[#000000]"
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="text-sm font-normal text-[#FFFFFF]/60 cursor-pointer">
+                            Даю{' '}
+                            <Link href="/consent" className="underline hover:text-[#FFFFFF] transition-colors">
+                              согласие на обработку персональных данных
+                            </Link>{' '}
+                            в соответствии с{' '}
+                            <Link href="/privacy" className="underline hover:text-[#FFFFFF] transition-colors">
+                              Политикой обработки ПД
+                            </Link>
+                          </FormLabel>
+                          <FormMessage className="text-[#FFFFFF]/60" />
+                        </div>
                       </FormItem>
                     )}
                   />

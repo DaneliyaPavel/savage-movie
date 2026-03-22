@@ -8,14 +8,23 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { motion } from 'framer-motion'
 import { CheckCircle2, Loader2 } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import Link from 'next/link'
 
 export function NewsletterSection() {
   const [email, setEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [consent, setConsent] = useState(false)
+  const [consentError, setConsentError] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!consent) {
+      setConsentError(true)
+      return
+    }
+    setConsentError(false)
     setIsSubmitting(true)
 
     try {
@@ -25,6 +34,7 @@ export function NewsletterSection() {
 
       setIsSuccess(true)
       setEmail('')
+      setConsent(false)
 
       setTimeout(() => {
         setIsSuccess(false)
@@ -66,30 +76,58 @@ export function NewsletterSection() {
           ) : (
             <form
               onSubmit={handleSubmit}
-              className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto"
+              className="max-w-lg mx-auto"
             >
-              <Input
-                type="email"
-                placeholder="Ваш email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                className="flex-1 h-14 text-base border-border/50 bg-background rounded-none focus:border-foreground focus:ring-0"
-              />
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="h-14 px-8 bg-foreground hover:bg-foreground/90 text-background rounded-none font-medium"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Отправка...
-                  </>
-                ) : (
-                  'Подписаться'
-                )}
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Input
+                  type="email"
+                  placeholder="Ваш email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  className="flex-1 h-14 text-base border-border/50 bg-background rounded-none focus:border-foreground focus:ring-0"
+                />
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="h-14 px-8 bg-foreground hover:bg-foreground/90 text-background rounded-none font-medium"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Отправка...
+                    </>
+                  ) : (
+                    'Подписаться'
+                  )}
+                </Button>
+              </div>
+              <div className="flex items-start gap-3 mt-4">
+                <Checkbox
+                  id="newsletter-consent"
+                  checked={consent}
+                  onCheckedChange={(checked) => {
+                    setConsent(checked === true)
+                    if (checked) setConsentError(false)
+                  }}
+                  className="mt-0.5"
+                />
+                <label htmlFor="newsletter-consent" className="text-xs text-muted-foreground leading-relaxed cursor-pointer text-left">
+                  Даю{' '}
+                  <Link href="/consent" className="underline hover:text-foreground transition-colors">
+                    согласие на обработку персональных данных
+                  </Link>{' '}
+                  в соответствии с{' '}
+                  <Link href="/privacy" className="underline hover:text-foreground transition-colors">
+                    Политикой обработки ПД
+                  </Link>
+                </label>
+              </div>
+              {consentError && (
+                <p className="text-xs text-destructive mt-2 text-center">
+                  Необходимо дать согласие на обработку персональных данных
+                </p>
+              )}
             </form>
           )}
         </motion.div>

@@ -9,6 +9,7 @@ import { JalousieMenu } from '@/components/ui/jalousie-menu'
 import { SvgMark } from '@/components/ui/svg-mark'
 import { HoverNote } from '@/components/ui/hover-note'
 import { useI18n } from '@/lib/i18n-context'
+import Link from 'next/link'
 
 export default function ContactPage() {
   const [budget, setBudget] = useState(50000)
@@ -21,6 +22,8 @@ export default function ContactPage() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [consent, setConsent] = useState(false)
+  const [consentError, setConsentError] = useState(false)
 
   const { language, t } = useI18n()
 
@@ -79,6 +82,11 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!consent) {
+      setConsentError(true)
+      return
+    }
+    setConsentError(false)
     setIsSubmitting(true)
     setSubmitStatus('idle')
 
@@ -101,6 +109,7 @@ export default function ContactPage() {
         setFormData({ name: '', phone: '', company: '', message: '' })
         setSelectedType(null)
         setBudget(budgetConfig.defaultValue)
+        setConsent(false)
       } else {
         setSubmitStatus('error')
       }
@@ -323,6 +332,41 @@ export default function ContactPage() {
               placeholder={t('contact.messagePlaceholder')}
               required
             />
+          </motion.div>
+
+          {/* Consent Checkbox */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.65 }}
+            className="mb-8"
+          >
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={e => {
+                  setConsent(e.target.checked)
+                  if (e.target.checked) setConsentError(false)
+                }}
+                className="mt-1 h-4 w-4 rounded-sm border border-border accent-accent shrink-0"
+              />
+              <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors leading-relaxed">
+                Даю{' '}
+                <Link href="/consent" className="underline hover:text-accent transition-colors">
+                  согласие на обработку персональных данных
+                </Link>{' '}
+                в соответствии с{' '}
+                <Link href="/privacy" className="underline hover:text-accent transition-colors">
+                  Политикой обработки ПД
+                </Link>
+              </span>
+            </label>
+            {consentError && (
+              <p className="text-sm text-red-500 mt-2">
+                Необходимо дать согласие на обработку персональных данных
+              </p>
+            )}
           </motion.div>
 
           {/* Submit Button */}
