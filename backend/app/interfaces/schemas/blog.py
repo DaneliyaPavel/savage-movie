@@ -15,6 +15,8 @@ class BlogPostBase(BaseModel):
     author: Optional[str] = None
     reading_time: Optional[str] = None
     content: Optional[str] = None
+    cover_image: Optional[str] = None
+    is_featured: Optional[bool] = False
     is_published: Optional[bool] = False
     published_at: Optional[datetime] = None
 
@@ -31,6 +33,8 @@ class BlogPostUpdate(BaseModel):
     author: Optional[str] = None
     reading_time: Optional[str] = None
     content: Optional[str] = None
+    cover_image: Optional[str] = None
+    is_featured: Optional[bool] = None
     is_published: Optional[bool] = None
     published_at: Optional[datetime] = None
 

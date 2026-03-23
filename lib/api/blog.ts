@@ -12,6 +12,8 @@ export interface BlogPost {
   author: string | null
   reading_time: string | null
   content: string | null
+  cover_image: string | null
+  is_featured: boolean
   is_published: boolean
   published_at: string | null
   created_at: string
@@ -26,6 +28,8 @@ export interface BlogPostCreate {
   author?: string | null
   reading_time?: string | null
   content?: string | null
+  cover_image?: string | null
+  is_featured?: boolean
   is_published?: boolean
   published_at?: string | null
 }
@@ -38,6 +42,8 @@ export interface BlogPostUpdate {
   author?: string | null
   reading_time?: string | null
   content?: string | null
+  cover_image?: string | null
+  is_featured?: boolean
   is_published?: boolean
   published_at?: string | null
 }

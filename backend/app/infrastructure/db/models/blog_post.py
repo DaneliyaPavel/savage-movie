@@ -18,6 +18,8 @@ class BlogPost(Base):
     author = Column(Text, nullable=True)
     reading_time = Column(Text, nullable=True)
     content = Column(Text, nullable=True)
+    cover_image = Column(Text, nullable=True)
+    is_featured = Column(Boolean, nullable=False, default=False)
     is_published = Column(Boolean, nullable=False, default=False)
     published_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

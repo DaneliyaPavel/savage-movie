@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
 import { createBlogPost } from '@/lib/api/blog'
@@ -37,6 +38,8 @@ const formSchema = z.object({
   category: z.string().optional(),
   author: z.string().optional(),
   reading_time: z.string().optional(),
+  cover_image: z.string().optional(),
+  is_featured: z.boolean().optional(),
   content: z.string().optional(),
   status: z.enum(['draft', 'published']),
 })
@@ -55,6 +58,8 @@ export default function NewBlogPostPage() {
       category: '',
       author: '',
       reading_time: '',
+      cover_image: '',
+      is_featured: false,
       content: '',
       status: 'draft',
     },
@@ -78,6 +83,8 @@ export default function NewBlogPostPage() {
         category: normalize(values.category),
         author: normalize(values.author),
         reading_time: normalize(values.reading_time),
+        cover_image: normalize(values.cover_image),
+        is_featured: values.is_featured ?? false,
         content: normalize(values.content),
         is_published: values.status === 'published',
       })
@@ -213,6 +220,41 @@ export default function NewBlogPostPage() {
               )}
             />
           </div>
+
+          <FormField
+            control={form.control}
+            name="cover_image"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>URL обложки</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="https://..." />
+                </FormControl>
+                <FormDescription>
+                  Ссылка на изображение обложки для карточки и шапки статьи.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="is_featured"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                <FormControl>
+                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Закреплённая статья</FormLabel>
+                  <FormDescription>
+                    Будет показана крупным блоком в начале страницы блога.
+                  </FormDescription>
+                </div>
+              </FormItem>
+            )}
+          />
 
           <FormField
             control={form.control}
