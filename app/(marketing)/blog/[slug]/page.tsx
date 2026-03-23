@@ -162,6 +162,16 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                     <ol className="list-decimal pl-6 space-y-2 text-foreground/90">{children}</ol>
                   ),
                   li: ({ children }) => <li>{children}</li>,
+                  a: ({ href, children }) => (
+                    <a
+                      href={href}
+                      className="underline underline-offset-4 decoration-primary/50 hover:decoration-primary transition-colors"
+                      target={href?.startsWith('http') ? '_blank' : undefined}
+                      rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
+                    >
+                      {children}
+                    </a>
+                  ),
                 }}
               >
                 {post.content}
