@@ -112,7 +112,7 @@ export default function ArticleClient({ post, relatedPosts, articleUrl }: Articl
                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                   <span>{post.author || 'Savage Movie'}</span>
                   <span className="opacity-40">|</span>
-                  <span className="text-base text-white/70" style={{ fontFamily: 'var(--font-handwritten), cursive' }}>{date}</span>
+                  <span className="text-base text-white uppercase" style={{ fontFamily: 'var(--font-handwritten), cursive' }}>{date}</span>
                 </div>
               </motion.header>
 

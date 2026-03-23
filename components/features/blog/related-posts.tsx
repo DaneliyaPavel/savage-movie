@@ -35,7 +35,7 @@ export function RelatedPosts({ posts }: RelatedPostsProps) {
     >
       <div className="flex items-baseline gap-4 mb-10">
         <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Читайте также</h2>
-        <span className="text-lg text-white/70" style={{ fontFamily: 'var(--font-handwritten), cursive' }}>[ ЕЩЁ ]</span>
+        <span className="text-lg text-white uppercase" style={{ fontFamily: 'var(--font-handwritten), cursive' }}>ЕЩЁ</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -68,7 +68,7 @@ export function RelatedPosts({ posts }: RelatedPostsProps) {
                 >
                   {post.category || 'Блог'}
                 </Badge>
-                <span className="text-xs text-white/60" style={{ fontFamily: 'var(--font-handwritten), cursive' }}>
+                <span className="text-xs text-white uppercase" style={{ fontFamily: 'var(--font-handwritten), cursive' }}>
                   {formatDate(post.published_at || post.created_at)}
                 </span>
               </div>

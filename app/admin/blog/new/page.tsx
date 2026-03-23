@@ -28,6 +28,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
+import { FileUpload } from '@/components/admin/FileUpload'
 import { createBlogPost } from '@/lib/api/blog'
 import { slugify } from '@/lib/utils/slugify'
 
@@ -226,12 +227,28 @@ export default function NewBlogPostPage() {
             name="cover_image"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>URL обложки</FormLabel>
+                <FormLabel>Обложка статьи</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="https://..." />
+                  <div className="space-y-3">
+                    <FileUpload
+                      type="image"
+                      onUpload={(url) => field.onChange(url)}
+                      existingFiles={field.value ? [field.value] : []}
+                      onRemove={() => field.onChange('')}
+                    />
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">или URL:</span>
+                      <Input
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        placeholder="https://..."
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
                 </FormControl>
                 <FormDescription>
-                  Ссылка на изображение обложки для карточки и шапки статьи.
+                  Загрузите изображение или вставьте ссылку. Для карточки и шапки статьи.
                 </FormDescription>
                 <FormMessage />
               </FormItem>

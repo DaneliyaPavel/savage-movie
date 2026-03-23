@@ -85,7 +85,7 @@
     sans-serif;
   --font-mono:
     ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
-  --font-handwritten: 'Comic Sans MS', cursive;
+  --font-handwritten: 'SA No Rules Regular', 'Kalam', 'Caveat', cursive;
   --font-serif-subtitle: var(--font-sans);
   --font-serif-menu: var(--font-sans);
   --color-background: var(--background);
