@@ -55,7 +55,7 @@ function FeaturedPost({ post }: { post: BlogPost }) {
           </div>
         ) : (
           <div className="relative aspect-video bg-muted/30 flex items-center justify-center">
-            <span className="font-handwritten text-6xl text-muted-foreground/20">#01</span>
+            <span className="text-6xl text-white/20" style={{ fontFamily: 'var(--font-handwritten), cursive' }}>#01</span>
           </div>
         )}
 
@@ -84,7 +84,7 @@ function FeaturedPost({ post }: { post: BlogPost }) {
           )}
 
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span className="font-handwritten text-base">{date}</span>
+            <span className="text-base" style={{ fontFamily: 'var(--font-handwritten), cursive' }}>{date}</span>
             <span className="opacity-40">|</span>
             <span>{post.author || 'Savage Movie'}</span>
           </div>
@@ -130,13 +130,19 @@ function BlogCard({ post, index }: { post: BlogPost, index: number }) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
             {/* Handwritten number */}
-            <span className="absolute top-3 left-4 font-handwritten text-xl text-white/60">
+            <span
+              className="absolute top-3 left-4 text-xl text-white/60"
+              style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+            >
               #{num}
             </span>
           </div>
         ) : (
           <div className="relative aspect-[16/10] bg-muted/20 mb-5 flex items-end justify-start p-4">
-            <span className="font-handwritten text-4xl text-muted-foreground/15 absolute top-3 left-4">
+            <span
+              className="text-4xl text-white/15 absolute top-3 left-4"
+              style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+            >
               #{num}
             </span>
           </div>
@@ -150,7 +156,7 @@ function BlogCard({ post, index }: { post: BlogPost, index: number }) {
           >
             {post.category || 'Блог'}
           </Badge>
-          <span className="text-xs text-muted-foreground font-handwritten">{date}</span>
+          <span className="text-xs text-white/60" style={{ fontFamily: 'var(--font-handwritten), cursive' }}>{date}</span>
         </div>
 
         {/* Title with animated underline */}
@@ -285,9 +291,10 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.25, ease: EASE }}
-            className="font-handwritten text-lg text-muted-foreground/50"
+            className="text-lg text-white/70"
+            style={{ fontFamily: 'var(--font-handwritten), cursive' }}
           >
-            [заПиСки]
+            [ ЗАПИСКИ ]
           </motion.span>
         </div>
 
