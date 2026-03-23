@@ -294,7 +294,10 @@ const FilmstripItem = memo(function FilmstripItem({
 
         {/* Hover Overlay with Handwritten Text - Red and random */}
         <div className="absolute inset-0 z-[10] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-transparent">
-          <span className="font-handwritten text-2xl text-[#FF322E] transform -rotate-12 select-none drop-shadow-lg leading-none">
+          <span
+            className="text-2xl text-[#FF322E] transform -rotate-12 select-none drop-shadow-lg leading-none"
+            style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+          >
             {noteText}
           </span>
         </div>
