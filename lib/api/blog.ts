@@ -58,7 +58,7 @@ export async function getBlogPosts(published?: boolean): Promise<BlogPost[]> {
 }
 
 export async function getBlogPost(id: string): Promise<BlogPost> {
-  return apiGet<BlogPost>(`/api/blog/${id}`)
+  return apiGet<BlogPost>(`/api/blog/by-id/${id}`)
 }
 
 export async function getBlogPostsServer(

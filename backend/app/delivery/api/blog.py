@@ -64,6 +64,28 @@ async def get_posts(
     return await repo.list_posts(published, limit, offset)
 
 
+@router.get("/by-id/{post_id}", response_model=BlogPostSchema)
+async def get_post_by_id(
+    post_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Получить статью по ID (только для админов, включая черновики)"""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Только администраторы могут просматривать статьи по ID",
+        )
+
+    repo = SqlAlchemyBlogRepository(db)
+    post = await repo.get_by_id(post_id)
+
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Статья не найдена")
+
+    return post
+
+
 @router.get("/{slug}", response_model=BlogPostSchema)
 async def get_post_by_slug(slug: str, db: AsyncSession = Depends(get_db)):
     """Получить опубликованную статью по slug"""
