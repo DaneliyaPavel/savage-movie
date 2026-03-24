@@ -126,9 +126,9 @@ export default function RootLayout({
         {/* DNS prefetch for Mux CDN domains used for video streaming chunks */}
         <link rel="dns-prefetch" href="https://cfcdn.mux.com" />
         <link rel="dns-prefetch" href="https://edgemv.mux.com" />
+        <YandexMetrika />
       </head>
       <body className={`${saNoRules.variable} font-sans antialiased`}>
-        <YandexMetrika />
         <JsonLdScripts scripts={jsonLdScripts} />
         {children}
       </body>

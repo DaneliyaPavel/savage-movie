@@ -1,5 +1,3 @@
-'use client'
-
 import Script from 'next/script'
 
 const METRIKA_ID = 108213944
@@ -9,7 +7,7 @@ export function YandexMetrika() {
     <>
       <Script
         id="yandex-metrika"
-        strategy="afterInteractive"
+        strategy="beforeInteractive"
         dangerouslySetInnerHTML={{
           __html: `
             (function(m,e,t,r,i,k,a){
