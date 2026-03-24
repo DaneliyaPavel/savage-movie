@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import './globals.css'
 import { JsonLdScripts } from '@/components/seo/json-ld-scripts'
+import { YandexMetrika } from '@/components/analytics/yandex-metrika'
 
 // Handwritten font "Sa No Rules Regular" - next/font/local fails build if files are missing; fallback is runtime only.
 const saNoRules = localFont({
@@ -127,6 +128,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://edgemv.mux.com" />
       </head>
       <body className={`${saNoRules.variable} font-sans antialiased`}>
+        <YandexMetrika />
         <JsonLdScripts scripts={jsonLdScripts} />
         {children}
       </body>
