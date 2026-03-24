@@ -7,6 +7,7 @@ from app.config import settings
 from app.delivery.api import (
     auth,
     projects,
+    project_videos,
     courses,
     enrollments,
     contact,
@@ -45,6 +46,7 @@ app.add_middleware(
 # Подключаем роутеры
 app.include_router(auth.router)
 app.include_router(projects.router)
+app.include_router(project_videos.router)
 app.include_router(courses.router)
 app.include_router(enrollments.router)
 app.include_router(contact.router)

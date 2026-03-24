@@ -145,6 +145,82 @@ export interface ProjectUpdate {
 }
 
 /**
+ * Дополнительное видео проекта
+ */
+export interface ProjectVideo {
+  id: string
+  project_id: string
+  title: string | null
+  mux_playback_id: string
+  orientation: 'horizontal' | 'vertical'
+  display_order: number
+  created_at: string
+}
+
+export interface ProjectVideoCreate {
+  title?: string | null
+  mux_playback_id: string
+  orientation?: string
+  display_order?: number
+}
+
+export interface ProjectVideoUpdate {
+  title?: string | null
+  mux_playback_id?: string
+  orientation?: string
+  display_order?: number
+}
+
+/**
+ * Получить дополнительные видео проекта
+ */
+export async function getProjectVideos(projectId: string): Promise<ProjectVideo[]> {
+  return apiGet<ProjectVideo[]>(`/api/projects/${projectId}/videos`)
+}
+
+/**
+ * Получить дополнительные видео проекта (server-side)
+ */
+export async function getProjectVideosServer(
+  projectId: string,
+  cookies?: { get: (name: string) => { value: string } | undefined }
+): Promise<ProjectVideo[]> {
+  const { apiGet: apiGetServer } = await import('@/lib/api/server')
+  return apiGetServer<ProjectVideo[]>(`/api/projects/${projectId}/videos`, cookies)
+}
+
+/**
+ * Добавить видео к проекту
+ */
+export async function createProjectVideo(
+  projectId: string,
+  data: ProjectVideoCreate
+): Promise<ProjectVideo> {
+  return apiPost<ProjectVideo>(`/api/projects/${projectId}/videos`, data)
+}
+
+/**
+ * Обновить видео проекта
+ */
+export async function updateProjectVideo(
+  projectId: string,
+  videoId: string,
+  data: ProjectVideoUpdate
+): Promise<ProjectVideo> {
+  return apiPut<ProjectVideo>(`/api/projects/${projectId}/videos/${videoId}`, data)
+}
+
+/**
+ * Удалить видео проекта
+ */
+export async function deleteProjectVideo(
+  projectId: string,
+  videoId: string
+): Promise<void> {
+  return apiDelete<void>(`/api/projects/${projectId}/videos/${videoId}`)
+}
+
+/**
  * Обновить порядок проектов
  */
 export async function updateProjectsOrder(

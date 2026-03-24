@@ -15,11 +15,12 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { ProjectsJalousieFooter } from '@/components/sections/ProjectsJalousieFooter'
-import type { Project } from '@/features/projects/api'
+import type { Project, ProjectVideo } from '@/features/projects/api'
 
 interface ProjectDetailClientProps {
   project: Project
   nextProject: Project | null
+  projectVideos?: ProjectVideo[]
 }
 
 // Извлекаем playback ID из Mux URL
@@ -30,9 +31,11 @@ const getPlaybackId = (url: string | null): string | null => {
   return rawId ? rawId.replace(/\.m3u8$/, '') : null
 }
 
-export function ProjectDetailClient({ project, nextProject }: ProjectDetailClientProps) {
+export function ProjectDetailClient({ project, nextProject, projectVideos = [] }: ProjectDetailClientProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [isVideoOpen, setIsVideoOpen] = useState(false)
+  const [activeVideoPlaybackId, setActiveVideoPlaybackId] = useState<string | null>(null)
+  const [activeVideoTitle, setActiveVideoTitle] = useState<string | undefined>(undefined)
   const playbackId = project.video_url ? getPlaybackId(project.video_url) : null
   const hasVideo = Boolean(playbackId || project.video_url)
   const hasGallery = (project.images?.length ?? 0) > 0 || (project.behind_scenes?.length ?? 0) > 0
@@ -92,7 +95,11 @@ export function ProjectDetailClient({ project, nextProject }: ProjectDetailClien
           {hasVideo && (
             <button
               type="button"
-              onClick={() => setIsVideoOpen(true)}
+              onClick={() => {
+                setActiveVideoPlaybackId(playbackId)
+                setActiveVideoTitle(project.title)
+                setIsVideoOpen(true)
+              }}
               onMouseEnter={event => {
                 setIsCursorVisible(true)
                 handleHeroMouseMove(event)
@@ -166,6 +173,61 @@ export function ProjectDetailClient({ project, nextProject }: ProjectDetailClien
                   >
                     {project.description}
                   </ReactMarkdown>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Дополнительные видео */}
+            {projectVideos.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className="mb-16 md:mb-24"
+              >
+                <div
+                  className="text-center text-xl md:text-2xl text-[#FFFFFF]/70 mb-10"
+                  style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+                >
+                  (Другие видео)
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {projectVideos.map((video, index) => (
+                    <motion.div
+                      key={video.id}
+                      initial={{ opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.6, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                      className={`relative overflow-hidden bg-[#050505] border border-[#1A1A1A] cursor-pointer group ${
+                        video.orientation === 'vertical'
+                          ? 'aspect-[9/16] max-w-[280px] mx-auto'
+                          : 'aspect-video'
+                      }`}
+                      onClick={() => {
+                        setActiveVideoPlaybackId(video.mux_playback_id)
+                        setActiveVideoTitle(video.title ?? undefined)
+                        setIsVideoOpen(true)
+                      }}
+                    >
+                      <VideoPlayer
+                        playbackId={video.mux_playback_id}
+                        title={video.title ?? undefined}
+                        autoplay
+                        muted
+                        loop
+                        controls={false}
+                        className="absolute inset-0 w-full h-full pointer-events-none [--media-object-fit:cover]"
+                      />
+                      <span className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
+                      {video.title && (
+                        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent z-10">
+                          <p className="text-[#FFFFFF] text-sm font-secondary">{video.title}</p>
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
                 </div>
               </motion.div>
             )}
@@ -327,10 +389,14 @@ export function ProjectDetailClient({ project, nextProject }: ProjectDetailClien
 
       <FullScreenVideoPlayer
         isOpen={isVideoOpen}
-        onClose={() => setIsVideoOpen(false)}
-        videoUrl={project.video_url ?? undefined}
-        playbackId={playbackId ?? undefined}
-        title={project.title}
+        onClose={() => {
+          setIsVideoOpen(false)
+          setActiveVideoPlaybackId(null)
+          setActiveVideoTitle(undefined)
+        }}
+        videoUrl={activeVideoPlaybackId === playbackId ? (project.video_url ?? undefined) : undefined}
+        playbackId={activeVideoPlaybackId ?? undefined}
+        title={activeVideoTitle ?? project.title}
       />
     </>
   )

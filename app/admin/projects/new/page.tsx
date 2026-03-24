@@ -30,8 +30,13 @@ import { FileUpload } from '@/components/admin/FileUpload'
 import { ArrayInput } from '@/components/admin/ArrayInput'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
-import { createProject, type ProjectCreate } from '@/features/projects/api'
+import {
+  createProject,
+  createProjectVideo,
+  type ProjectCreate,
+} from '@/features/projects/api'
 import Link from 'next/link'
+import { Plus, Trash2 } from 'lucide-react'
 
 const formSchema = z.object({
   title: z.string().min(1, 'Название обязательно'),
@@ -62,6 +67,8 @@ export default function NewProjectPage() {
   const [behindScenes, setBehindScenes] = useState<string[]>([]) // URL изображений для behind the scenes
   const [behindScenesFiles, setBehindScenesFiles] = useState<string[]>([]) // Загруженные файлы для behind the scenes
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [newVideos, setNewVideos] = useState<Array<{ mux_playback_id: string; title: string | null; orientation: string; display_order: number }>>([])
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -128,7 +135,15 @@ export default function NewProjectPage() {
         carousel_gif_url: values.carousel_gif_url || null,
         year: values.year || null,
       }
-      await createProject(projectData)
+      const createdProject = await createProject(projectData)
+
+      // Создаём дополнительные видео
+      for (const video of newVideos) {
+        if (video.mux_playback_id) {
+          await createProjectVideo(createdProject.id, video)
+        }
+      }
+
       router.push('/admin/projects')
     } catch (error) {
       console.error('Ошибка создания проекта:', error)
@@ -487,6 +502,92 @@ export default function NewProjectPage() {
                 Всего загружено: {behindScenes.length + behindScenesFiles.length} изображений
               </p>
             </div>
+          </div>
+
+          {/* Дополнительные видео */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold mb-2">Дополнительные видео</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Видео, которые будут показаны в отдельном разделе на странице проекта.
+              Основное видео задаётся через Mux Playback ID выше.
+            </p>
+
+            {newVideos.map((video, index) => (
+              <div
+                key={index}
+                className="mb-3 p-4 bg-muted/30 rounded-lg border border-border"
+              >
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs font-medium mb-1 block">Mux Playback ID</label>
+                    <Input
+                      value={video.mux_playback_id}
+                      onChange={e => {
+                        const v = newVideos[index]!
+                        const updated = [...newVideos]
+                        updated[index] = { mux_playback_id: e.target.value, title: v.title, orientation: v.orientation, display_order: v.display_order }
+                        setNewVideos(updated)
+                      }}
+                      placeholder="Playback ID"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium mb-1 block">Название (опционально)</label>
+                    <Input
+                      value={video.title ?? ''}
+                      onChange={e => {
+                        const v = newVideos[index]!
+                        const updated = [...newVideos]
+                        updated[index] = { mux_playback_id: v.mux_playback_id, title: e.target.value || null, orientation: v.orientation, display_order: v.display_order }
+                        setNewVideos(updated)
+                      }}
+                      placeholder="Название видео"
+                    />
+                  </div>
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <label className="text-xs font-medium mb-1 block">Ориентация</label>
+                      <select
+                        value={video.orientation ?? 'horizontal'}
+                        onChange={e => {
+                          const v = newVideos[index]!
+                          const updated = [...newVideos]
+                          updated[index] = { mux_playback_id: v.mux_playback_id, title: v.title, orientation: e.target.value, display_order: v.display_order }
+                          setNewVideos(updated)
+                        }}
+                        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                      >
+                        <option value="horizontal">Горизонтальное (16:9)</option>
+                        <option value="vertical">Вертикальное (9:16)</option>
+                      </select>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setNewVideos(newVideos.filter((_, i) => i !== index))}
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setNewVideos([
+                  ...newVideos,
+                  { mux_playback_id: '', title: null, orientation: 'horizontal', display_order: newVideos.length },
+                ])
+              }
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Добавить видео
+            </Button>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

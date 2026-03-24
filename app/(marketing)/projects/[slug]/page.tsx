@@ -3,7 +3,7 @@
  */
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { getProjectBySlugServer, getProjectsServer } from '@/features/projects/api'
+import { getProjectBySlugServer, getProjectsServer, getProjectVideosServer } from '@/features/projects/api'
 import { ProjectDetailClient } from './client'
 
 const SITE_NAME = 'SAVAGE MOVIE'
@@ -65,12 +65,16 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     notFound()
   }
 
-  // Загружаем все проекты для навигации к следующему
+  // Загружаем все проекты и дополнительные видео параллельно
   let allProjects: Awaited<ReturnType<typeof getProjectsServer>> = []
+  let projectVideos: Awaited<ReturnType<typeof getProjectVideosServer>> = []
   try {
-    allProjects = await getProjectsServer()
+    ;[allProjects, projectVideos] = await Promise.all([
+      getProjectsServer().catch(() => []),
+      getProjectVideosServer(project.id).catch(() => []),
+    ])
   } catch (error) {
-    console.warn('Ошибка загрузки всех проектов:', error)
+    console.warn('Ошибка загрузки данных:', error)
   }
 
   const currentIndex = allProjects.findIndex(p => p.id === project.id)
@@ -79,5 +83,5 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       ? (allProjects[currentIndex + 1] ?? null)
       : (allProjects[0] ?? null)
 
-  return <ProjectDetailClient project={project} nextProject={nextProject} />
+  return <ProjectDetailClient project={project} nextProject={nextProject} projectVideos={projectVideos} />
 }
