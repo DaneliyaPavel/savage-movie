@@ -116,7 +116,8 @@ services:
       - '443:443'
     volumes:
       - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./infra/ssl:/etc/ssl:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
     depends_on:
       - frontend
       - backend
