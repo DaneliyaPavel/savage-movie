@@ -23,18 +23,13 @@ interface ProjectDetailClientProps {
   projectVideos?: ProjectVideo[]
 }
 
-// Если videoUrl содержит Bunny Video ID, используем его напрямую
-const getPlaybackId = (url: string | null): string | null => {
-  if (!url) return null
-  return url
-}
-
 export function ProjectDetailClient({ project, nextProject, projectVideos = [] }: ProjectDetailClientProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [isVideoOpen, setIsVideoOpen] = useState(false)
   const [activeVideoPlaybackId, setActiveVideoPlaybackId] = useState<string | null>(null)
   const [activeVideoTitle, setActiveVideoTitle] = useState<string | undefined>(undefined)
-  const playbackId = project.video_url ? getPlaybackId(project.video_url) : null
+  // Предпочитаем mux_playback_id (Bunny Video ID), fallback на video_url
+  const playbackId = project.mux_playback_id || project.video_url || null
   const hasVideo = Boolean(playbackId || project.video_url)
   const hasGallery = (project.images?.length ?? 0) > 0 || (project.behind_scenes?.length ?? 0) > 0
   const heroRef = useRef<HTMLDivElement>(null)
