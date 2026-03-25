@@ -24,16 +24,9 @@ const categoryLabels: Record<string, string> = {
   other: 'Другое',
 }
 
-// Извлекаем playback ID из Mux URL
-const getPlaybackId = (url: string | null): string | null => {
-  if (!url) return null
-  const muxMatch = url.match(/mux\.com\/([^/?]+)/)
-  return muxMatch?.[1] ?? null
-}
-
 export function WorkCard({ project }: WorkCardProps) {
   const [isHovered, setIsHovered] = useState(false)
-  const playbackId = project.video_url ? getPlaybackId(project.video_url) : null
+  const playbackId = project.mux_playback_id || null
 
   return (
     <HoverNote text="watch" position="top" className="w-full">

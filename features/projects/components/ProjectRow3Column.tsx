@@ -27,19 +27,12 @@ const categoryLabels: Record<string, string> = {
   other: 'Другое',
 }
 
-// Извлекаем playback ID из Mux URL
-const getPlaybackId = (url: string | null): string | null => {
-  if (!url) return null
-  const muxMatch = url.match(/mux\.com\/([^/?]+)/)
-  return muxMatch?.[1] ?? null
-}
-
 export function ProjectRow3Column({ project, index }: ProjectRow3ColumnProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
 
-  const playbackId = project.video_url ? getPlaybackId(project.video_url) : null
+  const playbackId = project.mux_playback_id || null
   const screenshots = project.images || []
   const categoryLabel = project.category ? categoryLabels[project.category] : ''
   const orientation = getProjectOrientation(project)

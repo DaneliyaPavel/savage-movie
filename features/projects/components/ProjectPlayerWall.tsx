@@ -20,13 +20,6 @@ interface ProjectPlayerWallProps {
   initialProjectId?: string
 }
 
-// Извлекаем playback ID из Mux URL
-const getPlaybackId = (url: string | null): string | null => {
-  if (!url) return null
-  const muxMatch = url.match(/mux\.com\/([^/?]+)/)
-  return muxMatch?.[1] ?? null
-}
-
 export function ProjectPlayerWall({ projects, initialProjectId }: ProjectPlayerWallProps) {
   const router = useRouter()
   const [selectedProject, setSelectedProject] = useState<Project | null>(
@@ -89,9 +82,7 @@ export function ProjectPlayerWall({ projects, initialProjectId }: ProjectPlayerW
   }
 
   const selectedVideoUrl = selectedProject?.video_url || undefined
-  const selectedPlaybackId = selectedProject?.video_url
-    ? (getPlaybackId(selectedProject.video_url) ?? undefined)
-    : undefined
+  const selectedPlaybackId = selectedProject?.mux_playback_id || undefined
   const selectedPoster = selectedProject?.images?.[0]
 
   return (

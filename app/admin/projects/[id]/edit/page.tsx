@@ -35,6 +35,7 @@ import {
   updateProject,
   getProjectVideos,
   createProjectVideo,
+  updateProjectVideo,
   deleteProjectVideo,
   type ProjectUpdate,
   type ProjectVideo,
@@ -188,6 +189,18 @@ export default function EditProjectPage() {
       // Удаляем помеченные видео
       for (const videoId of deletedVideoIds) {
         await deleteProjectVideo(projectId, videoId)
+      }
+
+      // Обновляем изменённые существующие видео
+      for (const video of projectVideos) {
+        if (!deletedVideoIds.includes(video.id)) {
+          await updateProjectVideo(projectId, video.id, {
+            mux_playback_id: video.mux_playback_id,
+            title: video.title,
+            orientation: video.orientation,
+            display_order: video.display_order,
+          })
+        }
       }
 
       // Создаём новые видео
@@ -553,38 +566,66 @@ export default function EditProjectPage() {
               Основное видео проекта задаётся выше через Bunny Video ID.
             </p>
 
-            {/* Существующие видео */}
+            {/* Существующие видео (редактируемые) */}
             {projectVideos
               .filter(v => !deletedVideoIds.includes(v.id))
-              .map(video => (
+              .map((video, idx) => (
                 <div
                   key={video.id}
-                  className="mb-3 p-4 bg-muted/30 rounded-lg border border-border flex items-center gap-4"
+                  className="mb-3 p-4 bg-muted/30 rounded-lg border border-border"
                 >
-                  <div className="flex-1 grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="text-xs text-muted-foreground">Bunny Video ID</label>
-                      <p className="text-sm font-mono truncate">{video.mux_playback_id}</p>
+                      <label className="text-xs font-medium mb-1 block">Bunny Video ID</label>
+                      <Input
+                        value={video.mux_playback_id}
+                        onChange={e => {
+                          const updated = [...projectVideos]
+                          updated[idx] = { ...video, mux_playback_id: e.target.value }
+                          setProjectVideos(updated)
+                        }}
+                        placeholder="Bunny Video ID"
+                        className="font-mono"
+                      />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground">Название</label>
-                      <p className="text-sm">{video.title || '—'}</p>
+                      <label className="text-xs font-medium mb-1 block">Название (опционально)</label>
+                      <Input
+                        value={video.title ?? ''}
+                        onChange={e => {
+                          const updated = [...projectVideos]
+                          updated[idx] = { ...video, title: e.target.value || null }
+                          setProjectVideos(updated)
+                        }}
+                        placeholder="Название видео"
+                      />
                     </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">Ориентация</label>
-                      <p className="text-sm">
-                        {video.orientation === 'vertical' ? 'Вертикальное (9:16)' : 'Горизонтальное (16:9)'}
-                      </p>
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1">
+                        <label className="text-xs font-medium mb-1 block">Ориентация</label>
+                        <select
+                          value={video.orientation}
+                          onChange={e => {
+                            const updated = [...projectVideos]
+                            updated[idx] = { ...video, orientation: e.target.value as 'horizontal' | 'vertical' }
+                            setProjectVideos(updated)
+                          }}
+                          className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                        >
+                          <option value="horizontal">Горизонтальное (16:9)</option>
+                          <option value="vertical">Вертикальное (9:16)</option>
+                        </select>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeletedVideoIds([...deletedVideoIds, video.id])}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeletedVideoIds([...deletedVideoIds, video.id])}
-                  >
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </Button>
                 </div>
               ))}
 

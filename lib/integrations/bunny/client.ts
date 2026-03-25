@@ -9,6 +9,10 @@ const CDN_HOSTNAME = publicEnv.NEXT_PUBLIC_BUNNY_CDN_HOSTNAME
  * HLS stream URL для видео
  */
 export function getStreamUrl(videoId: string): string {
+  if (!CDN_HOSTNAME) {
+    console.warn('[Bunny] NEXT_PUBLIC_BUNNY_CDN_HOSTNAME is not set')
+    return ''
+  }
   return `https://${CDN_HOSTNAME}/${videoId}/playlist.m3u8`
 }
 
@@ -19,6 +23,7 @@ export function getThumbnailUrl(
   videoId: string,
   opts?: { width?: number, height?: number }
 ): string {
+  if (!CDN_HOSTNAME) return ''
   const params = new URLSearchParams()
   if (opts?.width) params.set('width', String(opts.width))
   if (opts?.height) params.set('height', String(opts.height))
@@ -30,5 +35,6 @@ export function getThumbnailUrl(
  * URL анимированного превью (animated gif/webp)
  */
 export function getAnimatedThumbnailUrl(videoId: string): string {
+  if (!CDN_HOSTNAME) return ''
   return `https://${CDN_HOSTNAME}/${videoId}/preview.webp`
 }

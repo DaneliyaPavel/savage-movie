@@ -28,11 +28,10 @@ const categoryLabels: Record<string, string> = {
   other: 'Другое',
 }
 
-// Извлекаем playback ID из Mux URL
+// Возвращаем Bunny Video ID напрямую
 const getPlaybackId = (url: string | null): string | null => {
   if (!url) return null
-  const muxMatch = url.match(/mux\.com\/([^/?]+)/)
-  return muxMatch?.[1] ?? null
+  return url
 }
 
 export function ProjectCard({
