@@ -331,13 +331,13 @@ export default function EditProjectPage() {
               name="mux_playback_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Mux Playback ID</FormLabel>
+                  <FormLabel>Bunny Video ID ⭐</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Qf6mbMSob4v5nv7c6Mbf7TAipjM01PfHe01bDaDC1otOM" />
+                    <Input {...field} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
                   </FormControl>
                   <FormMessage />
                   <p className="text-xs text-muted-foreground">
-                    Используется для видео на главной странице
+                    GUID видео из Bunny Stream. Используется для видео на главной странице
                   </p>
                 </FormItem>
               )}
@@ -348,13 +348,13 @@ export default function EditProjectPage() {
               name="carousel_gif_url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Carousel GIF (Mux ID или URL)</FormLabel>
+                  <FormLabel>Carousel GIF (Bunny Video ID или URL)</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Mux Playback ID или прямая ссылка" />
+                    <Input {...field} placeholder="Bunny Video ID или прямая ссылка" />
                   </FormControl>
                   <FormMessage />
                   <p className="text-xs text-muted-foreground">
-                    Приоритетное видео для карусели на главной. Если указан Mux ID, будет использоваться плеер Mux.
+                    Приоритетное видео для карусели на главной. Bunny Video ID или прямая ссылка на GIF/WebP.
                   </p>
                 </FormItem>
               )}
@@ -550,7 +550,7 @@ export default function EditProjectPage() {
             <h3 className="text-lg font-semibold mb-2">Дополнительные видео</h3>
             <p className="text-sm text-muted-foreground mb-4">
               Видео, которые будут показаны в отдельном разделе на странице проекта.
-              Основное видео проекта задаётся выше через Mux Playback ID.
+              Основное видео проекта задаётся выше через Bunny Video ID.
             </p>
 
             {/* Существующие видео */}
@@ -563,7 +563,7 @@ export default function EditProjectPage() {
                 >
                   <div className="flex-1 grid grid-cols-3 gap-3">
                     <div>
-                      <label className="text-xs text-muted-foreground">Mux Playback ID</label>
+                      <label className="text-xs text-muted-foreground">Bunny Video ID</label>
                       <p className="text-sm font-mono truncate">{video.mux_playback_id}</p>
                     </div>
                     <div>
@@ -596,7 +596,7 @@ export default function EditProjectPage() {
               >
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="text-xs font-medium mb-1 block">Mux Playback ID</label>
+                    <label className="text-xs font-medium mb-1 block">Bunny Video ID</label>
                     <Input
                       value={video.mux_playback_id}
                       onChange={e => {

@@ -17,8 +17,7 @@ import type { Course, CourseModule, Lesson } from '@/features/courses/api'
 
 function getPlaybackId(url: string | null): string | null {
   if (!url) return null
-  const muxMatch = url.match(/mux\.com\/([^/?]+)/)
-  return muxMatch?.[1] ?? null
+  return url
 }
 
 function flattenLessons(modules: CourseModule[]): { lesson: Lesson; moduleTitle: string }[] {

@@ -13,10 +13,8 @@ import {
   HorizontalProjectMediaCard,
   VerticalProjectMediaCard,
 } from '@/features/projects/components/ProjectMediaCard'
-import MuxPlayer, {
-  type MuxCSSProperties,
-  type MuxPlayerRefAttributes,
-} from '@mux/mux-player-react'
+import Hls from 'hls.js'
+import { getStreamUrl } from '@/lib/integrations/bunny/client'
 import { getProjects } from '@/features/projects/api'
 import { toMarketingProject, type MarketingProject } from '@/features/projects/mappers'
 import {
@@ -32,9 +30,7 @@ const SCRIBBLE_VARIANTS = 14
 
 const getPlaybackId = (url?: string | null): string | null => {
   if (!url) return null
-  const muxMatch = url.match(/mux\.com\/([^/?]+)/) || url.match(/playbackId=([^&]+)/)
-  const rawId = muxMatch?.[1] ?? null
-  return rawId ? rawId.replace(/\.m3u8$/, '') : null
+  return url
 }
 
 const createScribblePath = (seed: number) => {
@@ -159,7 +155,7 @@ function ProjectRow({
   const [isInViewport, setIsInViewport] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
-  const muxRef = useRef<MuxPlayerRefAttributes | null>(null)
+  const hlsRef = useRef<Hls | null>(null)
   const videoContainerRef = useRef<HTMLDivElement>(null)
   const videoAspectRef = useRef<HTMLDivElement>(null)
   const thumbnailsContainerRef = useRef<HTMLDivElement>(null)
@@ -176,10 +172,7 @@ function ProjectRow({
   const mediaCardClassName = 'w-full'
   const mediaAspectClassName = isVertical ? 'aspect-[16/9.2]' : undefined
   const mediaFitClassName = isVertical ? 'object-contain' : 'object-cover'
-  const muxStyle: MuxCSSProperties = {
-    '--controls': 'none',
-    '--media-object-fit': isVertical ? 'contain' : 'cover',
-  }
+  const videoObjectFit = isVertical ? 'contain' : 'cover'
 
   const shouldPlay = isMobile ? isInViewport : isHovered
 
@@ -247,22 +240,32 @@ function ProjectRow({
     return () => window.clearInterval(intervalId)
   }, [isHovered, cycleLength])
 
-  // Video play/pause
+  // Init HLS for Bunny Stream
   useEffect(() => {
-    if (playbackId) {
-      const player = muxRef.current
-      if (!player) return
-      if (shouldPlay) {
-        const playPromise = player.play?.()
-        if (playPromise?.catch) {
-          playPromise.catch(() => { })
-        }
-      } else {
-        player.pause?.()
-      }
-      return
+    const video = videoRef.current
+    if (!video || !playbackId) return
+
+    const src = getStreamUrl(playbackId)
+
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = src
+    } else if (Hls.isSupported()) {
+      const hls = new Hls({ enableWorker: true, startLevel: -1 })
+      hls.loadSource(src)
+      hls.attachMedia(video)
+      hlsRef.current = hls
     }
 
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy()
+        hlsRef.current = null
+      }
+    }
+  }, [playbackId])
+
+  // Video play/pause
+  useEffect(() => {
     if (!videoRef.current) return
     if (shouldPlay) {
       const playPromise = videoRef.current.play()
@@ -327,17 +330,14 @@ function ProjectRow({
   const videoContent = (
     <>
       {playbackId ? (
-        <MuxPlayer
-          ref={muxRef}
-          playbackId={playbackId}
-          streamType="on-demand"
-          metadata={{ video_title: getTitle() }}
+        <video
+          ref={videoRef}
           muted
           loop
           playsInline
-          autoPlay={false}
-          style={muxStyle}
+          title={getTitle()}
           className="absolute inset-0 w-full h-full"
+          style={{ objectFit: videoObjectFit as 'cover' | 'contain' }}
         />
       ) : project.videoUrl ? (
         <video

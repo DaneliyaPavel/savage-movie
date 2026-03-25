@@ -14,9 +14,10 @@ const ServerEnvSchema = z
     YOOKASSA_SHOP_ID: optionalNonEmptyString,
     YOOKASSA_SECRET_KEY: optionalNonEmptyString,
 
-    // Video
-    MUX_TOKEN_ID: optionalNonEmptyString,
-    MUX_TOKEN_SECRET: optionalNonEmptyString,
+    // Video (Bunny Stream)
+    BUNNY_STREAM_API_KEY: optionalNonEmptyString,
+    BUNNY_STREAM_LIBRARY_ID: optionalNonEmptyString,
+    BUNNY_STREAM_CDN_HOSTNAME: optionalNonEmptyString,
 
     // Email
     RESEND_API_KEY: optionalNonEmptyString,

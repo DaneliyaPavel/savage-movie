@@ -1,14 +1,13 @@
+/**
+ * Компонент для воспроизведения видео через Bunny Stream (HLS)
+ * Используется в showreel hero и других полноэкранных контекстах
+ */
 'use client'
 
-import type React from 'react'
-
-import dynamic from 'next/dynamic'
+import { useEffect, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { useCallback } from 'react'
-
-const MuxPlayer = dynamic(() => import('@mux/mux-player-react'), { ssr: false })
-
-type MuxStyle = React.CSSProperties & Record<`--${string}`, string>
+import Hls from 'hls.js'
+import { getStreamUrl } from '@/lib/integrations/bunny/client'
 
 interface VideoPlayerProps {
   playbackId: string
@@ -29,12 +28,39 @@ export function VideoPlayer({
   loop = true,
   controls = false,
 }: VideoPlayerProps) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const hlsRef = useRef<Hls | null>(null)
   const effectiveMuted = autoPlay ? true : muted
 
-  const handleError = useCallback((e: Event) => {
-    // Suppress non-critical MediaError from autoplay / stream loading
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !playbackId) return
+
+    const src = getStreamUrl(playbackId)
+
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = src
+    } else if (Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        startLevel: -1,
+      })
+      hls.loadSource(src)
+      hls.attachMedia(video)
+      hlsRef.current = hls
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy()
+        hlsRef.current = null
+      }
+    }
+  }, [playbackId])
+
+  const handleError = useCallback(() => {
     if (process.env.NODE_ENV === 'development') {
-      console.warn('[VideoPlayer] Media error suppressed:', (e as CustomEvent)?.detail ?? e)
+      console.warn('[VideoPlayer] Media error suppressed')
     }
   }, [])
 
@@ -45,27 +71,17 @@ export function VideoPlayer({
       transition={{ duration: 0.8 }}
       className={`relative overflow-hidden ${className}`}
     >
-      <MuxPlayer
-        playbackId={playbackId}
+      <video
+        ref={videoRef}
         poster={poster}
         autoPlay={autoPlay}
         muted={effectiveMuted}
         loop={loop}
         playsInline
-        streamType="on-demand"
-        className="absolute inset-0 w-full h-full"
+        controls={controls}
         onError={handleError}
-        style={
-          {
-            width: '100%',
-            height: '100%',
-            // Mux Player uses CSS custom properties for the internal media element.
-            // Setting these avoids letterboxing/pillarboxing and makes the video truly fullscreen.
-            '--media-object-fit': 'cover',
-            '--media-object-position': 'center',
-            '--controls': controls ? 'flex' : 'none',
-          } as MuxStyle
-        }
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ objectPosition: 'center' }}
       />
     </motion.div>
   )

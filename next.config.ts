@@ -10,11 +10,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: '**.mux.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'image.mux.com',
+        hostname: '**.b-cdn.net',
       },
     ],
     // Разрешаем загруженные файлы с локального сервера
@@ -23,7 +19,7 @@ const nextConfig: NextConfig = {
   // Оптимизация для видео
   experimental: {
     optimizePackageImports: [
-      '@mux/mux-player-react',
+      'hls.js',
       'lucide-react',
       'framer-motion',
       'date-fns',

@@ -23,12 +23,10 @@ interface ProjectDetailClientProps {
   projectVideos?: ProjectVideo[]
 }
 
-// Извлекаем playback ID из Mux URL
+// Если videoUrl содержит Bunny Video ID, используем его напрямую
 const getPlaybackId = (url: string | null): string | null => {
   if (!url) return null
-  const muxMatch = url.match(/mux\.com\/([^/?]+)/) || url.match(/playbackId=([^&]+)/)
-  const rawId = muxMatch?.[1] ?? null
-  return rawId ? rawId.replace(/\.m3u8$/, '') : null
+  return url
 }
 
 export function ProjectDetailClient({ project, nextProject, projectVideos = [] }: ProjectDetailClientProps) {

@@ -4,13 +4,12 @@
  */
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
-import dynamic from 'next/dynamic'
+import Hls from 'hls.js'
 import { GrainOverlay } from './grain-overlay'
-
-const MuxPlayer = dynamic(() => import('@mux/mux-player-react'), { ssr: false })
+import { getStreamUrl } from '@/lib/integrations/bunny/client'
 
 interface PremiumFullscreenPlayerProps {
   playbackId: string | null
@@ -27,6 +26,9 @@ export function PremiumFullscreenPlayer({
   onClose,
   poster,
 }: PremiumFullscreenPlayerProps) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const hlsRef = useRef<Hls | null>(null)
+
   // ESC key handler
   useEffect(() => {
     if (!isOpen) return
@@ -52,6 +54,30 @@ export function PremiumFullscreenPlayer({
       document.body.style.overflow = 'unset'
     }
   }, [isOpen])
+
+  // Init HLS when open + playbackId available
+  useEffect(() => {
+    const video = videoRef.current
+    if (!isOpen || !playbackId || !video) return
+
+    const src = getStreamUrl(playbackId)
+
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = src
+    } else if (Hls.isSupported()) {
+      const hls = new Hls({ enableWorker: true, startLevel: -1 })
+      hls.loadSource(src)
+      hls.attachMedia(video)
+      hlsRef.current = hls
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy()
+        hlsRef.current = null
+      }
+    }
+  }, [isOpen, playbackId])
 
   if (!playbackId) return null
 
@@ -93,17 +119,16 @@ export function PremiumFullscreenPlayer({
 
             {/* Video Player */}
             <div className="relative w-full h-full bg-[#000000] rounded-sm overflow-hidden">
-              <MuxPlayer
-                playbackId={playbackId}
-                streamType="on-demand"
-                metadata={{
-                  video_title: title,
-                }}
+              <video
+                ref={videoRef}
                 autoPlay
                 muted
                 loop={false}
-                className="w-full h-full"
+                playsInline
+                controls
                 poster={poster}
+                title={title}
+                className="w-full h-full"
               />
             </div>
           </motion.div>

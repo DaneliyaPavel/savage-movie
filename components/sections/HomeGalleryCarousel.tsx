@@ -8,7 +8,8 @@ import { motion } from 'framer-motion'
 import type { Project } from '@/features/projects/api'
 import { Play } from 'lucide-react'
 import NextImage from 'next/image'
-import MuxPlayer, { type MuxPlayerRefAttributes } from '@mux/mux-player-react'
+import Hls from 'hls.js'
+import { getStreamUrl } from '@/lib/integrations/bunny/client'
 
 interface HomeGalleryCarouselProps {
   projects: Project[]
@@ -93,13 +94,37 @@ const CarouselItem = memo(function CarouselItem({
 }) {
   const thumbnailUrl = project.images && project.images[0] ? project.images[0] : null
 
-  const muxRef = useRef<MuxPlayerRefAttributes | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  const hlsRef = useRef<Hls | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Determine which media source to use for the "GIF" effect
-  const isMuxGif = project.carousel_gif_url && !project.carousel_gif_url.includes('/')
+  const isBunnyVideoId = project.carousel_gif_url && !project.carousel_gif_url.includes('/') && !project.carousel_gif_url.includes('.')
   const isUrlGif = project.carousel_gif_url && (project.carousel_gif_url.startsWith('http') || project.carousel_gif_url.startsWith('/'))
+
+  // Init HLS for Bunny video IDs
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !isBunnyVideoId || !project.carousel_gif_url) return
+
+    const src = getStreamUrl(project.carousel_gif_url)
+
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = src
+    } else if (Hls.isSupported()) {
+      const hls = new Hls({ enableWorker: true, startLevel: 0 })
+      hls.loadSource(src)
+      hls.attachMedia(video)
+      hlsRef.current = hls
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy()
+        hlsRef.current = null
+      }
+    }
+  }, [isBunnyVideoId, project.carousel_gif_url])
 
   // Intersection Observer for autoplay performance
   useEffect(() => {
@@ -110,10 +135,8 @@ const CarouselItem = memo(function CarouselItem({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            if (muxRef.current) muxRef.current.play?.()
             if (videoRef.current) videoRef.current.play().catch(() => { })
           } else {
-            if (muxRef.current) muxRef.current.pause?.()
             if (videoRef.current) videoRef.current.pause()
           }
         })
@@ -135,19 +158,13 @@ const CarouselItem = memo(function CarouselItem({
         <div ref={containerRef} className="relative w-[180px] h-[101px] overflow-hidden rounded-sm bg-zinc-900 shadow-xl transition-transform duration-500 group-hover:scale-[1.02]">
           {/* Media Layer */}
           {/* Only play video if it's explicitly a GIF/Video, otherwise just show thumbnail */}
-          {isMuxGif ? (
-            <MuxPlayer
-              ref={muxRef}
-              playbackId={project.carousel_gif_url!}
-              streamType="on-demand"
+          {isBunnyVideoId ? (
+            <video
+              ref={videoRef}
               muted
               loop
               playsInline
               preload="auto"
-              style={{
-                '--controls': 'none',
-                '--media-object-fit': 'cover',
-              } as any}
               className="absolute inset-0 w-full h-full object-cover"
             />
           ) : isUrlGif ? (

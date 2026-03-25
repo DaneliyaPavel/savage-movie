@@ -18,11 +18,10 @@ interface VideoStageProps {
   title?: string
 }
 
-// Извлекаем playback ID из Mux URL
+// Если videoUrl содержит ID напрямую, используем его
 const getPlaybackId = (url: string | null): string | null => {
   if (!url) return null
-  const muxMatch = url.match(/mux\.com\/([^/?]+)/)
-  return muxMatch?.[1] ?? null
+  return url
 }
 
 export function VideoStage({ videoUrl, playbackId, poster, title }: VideoStageProps) {

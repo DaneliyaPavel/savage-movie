@@ -189,7 +189,7 @@ export default function NewTestimonialPage() {
             name="video_playback_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Mux Playback ID</FormLabel>
+                <FormLabel>Bunny Video ID</FormLabel>
                 <FormControl>
                   <Input {...field} />
                 </FormControl>

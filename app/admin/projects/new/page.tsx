@@ -172,7 +172,7 @@ export default function NewProjectPage() {
           <p className="font-medium mb-2">💡 Подсказка:</p>
           <p className="text-muted-foreground">
             Для отображения проекта на главной странице обязательно заполните:{' '}
-            <strong>Mux Playback ID</strong>, <strong>URL миниатюры</strong> и отметьте{' '}
+            <strong>Bunny Video ID</strong>, <strong>URL миниатюры</strong> и отметьте{' '}
             <strong>&quot;Показать на главной странице&quot;</strong>.
           </p>
         </div>
@@ -287,13 +287,13 @@ export default function NewProjectPage() {
               name="mux_playback_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Mux Playback ID ⭐</FormLabel>
+                  <FormLabel>Bunny Video ID ⭐</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Qf6mbMSob4v5nv7c6Mbf7TAipjM01PfHe01bDaDC1otOM" />
+                    <Input {...field} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
                   </FormControl>
                   <FormMessage />
                   <p className="text-xs text-muted-foreground">
-                    Обязательно для отображения на главной странице
+                    GUID видео из Bunny Stream. Обязательно для отображения на главной странице
                   </p>
                 </FormItem>
               )}
@@ -304,13 +304,13 @@ export default function NewProjectPage() {
               name="carousel_gif_url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Carousel GIF (Mux ID или URL)</FormLabel>
+                  <FormLabel>Carousel GIF (Bunny Video ID или URL)</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Mux Playback ID или прямая ссылка" />
+                    <Input {...field} placeholder="Bunny Video ID или прямая ссылка" />
                   </FormControl>
                   <FormMessage />
                   <p className="text-xs text-muted-foreground">
-                    Приоритетное видео для карусели на главной. Если указан Mux ID, будет использоваться плеер Mux.
+                    Приоритетное видео для карусели на главной. Bunny Video ID или прямая ссылка на GIF/WebP.
                   </p>
                 </FormItem>
               )}
@@ -509,7 +509,7 @@ export default function NewProjectPage() {
             <h3 className="text-lg font-semibold mb-2">Дополнительные видео</h3>
             <p className="text-sm text-muted-foreground mb-4">
               Видео, которые будут показаны в отдельном разделе на странице проекта.
-              Основное видео задаётся через Mux Playback ID выше.
+              Основное видео задаётся через Bunny Video ID выше.
             </p>
 
             {newVideos.map((video, index) => (
@@ -519,7 +519,7 @@ export default function NewProjectPage() {
               >
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="text-xs font-medium mb-1 block">Mux Playback ID</label>
+                    <label className="text-xs font-medium mb-1 block">Bunny Video ID</label>
                     <Input
                       value={video.mux_playback_id}
                       onChange={e => {

@@ -120,12 +120,10 @@ export default function RootLayout({
   return (
     <html lang="ru" className="dark">
       <head>
-        <link rel="preconnect" href="https://image.mux.com" />
-        <link rel="preconnect" href="https://stream.mux.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://inferred.litix.io" crossOrigin="anonymous" />
-        {/* DNS prefetch for Mux CDN domains used for video streaming chunks */}
-        <link rel="dns-prefetch" href="https://cfcdn.mux.com" />
-        <link rel="dns-prefetch" href="https://edgemv.mux.com" />
+        {/* Preconnect to Bunny Stream CDN */}
+        {process.env.NEXT_PUBLIC_BUNNY_CDN_HOSTNAME && (
+          <link rel="preconnect" href={`https://${process.env.NEXT_PUBLIC_BUNNY_CDN_HOSTNAME}`} crossOrigin="anonymous" />
+        )}
         <YandexMetrika />
       </head>
       <body className={`${saNoRules.variable} font-sans antialiased`}>

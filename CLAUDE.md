@@ -10,7 +10,7 @@ Premium portfolio website for a videographer/producer. Full-stack app with video
 **Backend:** FastAPI, SQLAlchemy 2 (async), PostgreSQL 16, Alembic migrations
 **Infra:** Docker Compose, Nginx, GitHub Actions CI/CD, VDS deployment
 
-**Key integrations:** Mux (video), YooKassa (payments), Resend (email), Calendly (booking), Google/Yandex OAuth
+**Key integrations:** Bunny Stream (video), YooKassa (payments), Resend (email), Calendly (booking), Google/Yandex OAuth
 
 ## Commands
 
@@ -57,7 +57,7 @@ features/               # Domain modules (each has api.ts, mappers.ts, component
 
 lib/                    # Shared utilities
   api/                  # API clients (client.ts, server.ts, base.ts + domain files)
-  integrations/         # Mux, YooKassa, Resend SDKs
+  integrations/         # Bunny Stream, YooKassa, Resend SDKs
   env.ts                # Public env validation (Zod)
   env.server.ts         # Server-only env validation
   utils/                # cn(), logger, slugify
@@ -101,9 +101,9 @@ scripts/                # Docker, deploy, backup, admin scripts
 
 ## Environment Variables
 
-Public (client-safe): `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_MUX_ENV_KEY`, `NEXT_PUBLIC_CALENDLY_URL`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_YANDEX_CLIENT_ID`
+Public (client-safe): `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BUNNY_CDN_HOSTNAME`, `NEXT_PUBLIC_SHOWREEL_VIDEO_ID`, `NEXT_PUBLIC_CALENDLY_URL`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_YANDEX_CLIENT_ID`
 
-Server-only: `API_URL`, `JWT_SECRET`, `MUX_TOKEN_*`, `YOOKASSA_*`, `RESEND_API_KEY`, `GOOGLE_CLIENT_SECRET`, `YANDEX_CLIENT_SECRET`, DB credentials
+Server-only: `API_URL`, `JWT_SECRET`, `BUNNY_STREAM_API_KEY`, `BUNNY_STREAM_LIBRARY_ID`, `BUNNY_STREAM_CDN_HOSTNAME`, `YOOKASSA_*`, `RESEND_API_KEY`, `GOOGLE_CLIENT_SECRET`, `YANDEX_CLIENT_SECRET`, DB credentials
 
 Validated at startup via Zod schemas in `lib/env.ts` and `lib/env.server.ts`.
 

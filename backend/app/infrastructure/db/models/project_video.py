@@ -1,5 +1,5 @@
 """
-Модель дополнительного видео проекта
+Модель дополнительного видео проекта (Bunny Stream)
 """
 from sqlalchemy import Column, String, Text, Integer, DateTime, func, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID

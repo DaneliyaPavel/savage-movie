@@ -4,12 +4,10 @@ import { useCallback, useRef, useEffect, memo } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import AutoScroll from 'embla-carousel-auto-scroll'
 import { motion } from 'framer-motion'
-import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
-import type { MuxPlayerRefAttributes } from '@mux/mux-player-react'
-
-const MuxPlayer = dynamic(() => import('@mux/mux-player-react'), { ssr: false })
+import Hls from 'hls.js'
+import { getStreamUrl } from '@/lib/integrations/bunny/client'
 
 interface FilmstripProject {
   id: string
@@ -168,25 +166,45 @@ const FilmstripItem = memo(function FilmstripItem({
   noteText?: string
   onSelect: () => void
 }) {
-  const muxRef = useRef<MuxPlayerRefAttributes | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  const hlsRef = useRef<Hls | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Determine which media source to use for the "GIF" effect
   // Priority: carousel_gif_url > playbackId > thumbnail
   const rawCarouselGifUrl = project.carousel_gif_url ?? ''
 
-  // Optimize Mux animated GIFs: convert to WebP, match container size, reduce fps
-  const carouselGifUrl = rawCarouselGifUrl.includes('image.mux.com') && rawCarouselGifUrl.includes('animated.gif')
-    ? rawCarouselGifUrl.replace('animated.gif', 'animated.webp').replace(/width=\d+/, 'width=180') + (rawCarouselGifUrl.includes('fps=') ? '' : '&fps=8')
-    : rawCarouselGifUrl.includes('image.mux.com') && rawCarouselGifUrl.includes('animated.webp') && !rawCarouselGifUrl.includes('fps=')
-      ? rawCarouselGifUrl + (rawCarouselGifUrl.includes('?') ? '&fps=8' : '?fps=8')
-      : rawCarouselGifUrl
+  // Check if carousel_gif_url is a Bunny Video ID (no slashes, no dots = just a GUID)
+  const isBunnyVideoId = rawCarouselGifUrl !== '' && !rawCarouselGifUrl.includes('/') && !rawCarouselGifUrl.includes('.')
+  const isUrlGif = rawCarouselGifUrl.startsWith('http') || rawCarouselGifUrl.startsWith('/')
+  const isGifImage = isUrlGif && (rawCarouselGifUrl.toLowerCase().includes('.gif') || rawCarouselGifUrl.toLowerCase().includes('.webp'))
+  const usePlaybackHls = !project.carousel_gif_url && project.playbackId
 
-  const isMuxGif = carouselGifUrl !== '' && !carouselGifUrl.includes('/')
-  const isUrlGif = carouselGifUrl.startsWith('http') || carouselGifUrl.startsWith('/')
-  const isGifImage = isUrlGif && (carouselGifUrl.toLowerCase().includes('.gif') || carouselGifUrl.toLowerCase().includes('.webp'))
-  const isMuxPlayback = !project.carousel_gif_url && project.playbackId
+  // HLS init for Bunny video IDs or playbackId fallback
+  const hlsVideoId = isBunnyVideoId ? rawCarouselGifUrl : (usePlaybackHls ? project.playbackId : null)
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !hlsVideoId) return
+
+    const src = getStreamUrl(hlsVideoId)
+
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = src
+    } else if (Hls.isSupported()) {
+      const hls = new Hls({ enableWorker: true, startLevel: 0 })
+      hls.loadSource(src)
+      hls.attachMedia(video)
+      hlsRef.current = hls
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy()
+        hlsRef.current = null
+      }
+    }
+  }, [hlsVideoId])
 
   // Intersection Observer for autoplay performance
   useEffect(() => {
@@ -197,10 +215,8 @@ const FilmstripItem = memo(function FilmstripItem({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            if (muxRef.current) muxRef.current.play?.()
             if (videoRef.current) videoRef.current.play().catch(() => { })
           } else {
-            if (muxRef.current) muxRef.current.pause?.()
             if (videoRef.current) videoRef.current.pause()
           }
         })
@@ -226,26 +242,20 @@ const FilmstripItem = memo(function FilmstripItem({
         className="relative w-[180px] h-[101px] overflow-hidden bg-zinc-900 rounded-sm shadow-xl transition-transform duration-500 ease-out group-hover:scale-[1.02]"
       >
         {/* GIF/Video Layer */}
-        {isMuxGif ? (
-          <MuxPlayer
-            ref={muxRef}
-            playbackId={project.carousel_gif_url!}
-            streamType="on-demand"
+        {(isBunnyVideoId || usePlaybackHls) ? (
+          <video
+            ref={videoRef}
             muted
             loop
             playsInline
-            preload="auto"
-            style={{
-              '--controls': 'none',
-              '--media-object-fit': 'cover',
-            } as any}
+            preload={isBunnyVideoId ? 'auto' : 'metadata'}
             className="absolute inset-0 w-full h-full object-cover"
           />
         ) : isUrlGif ? (
           isGifImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={carouselGifUrl}
+              src={rawCarouselGifUrl}
               alt={project.title}
               loading={isLCP ? 'eager' : 'lazy'}
               decoding={isLCP ? 'sync' : 'async'}
@@ -257,28 +267,13 @@ const FilmstripItem = memo(function FilmstripItem({
           ) : (
             <video
               ref={videoRef}
-              src={carouselGifUrl}
+              src={rawCarouselGifUrl}
               muted
               loop
               playsInline
               className="absolute inset-0 w-full h-full object-cover"
             />
           )
-        ) : isMuxPlayback ? (
-          <MuxPlayer
-            ref={muxRef}
-            playbackId={project.playbackId!}
-            streamType="on-demand"
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            style={{
-              '--controls': 'none',
-              '--media-object-fit': 'cover',
-            } as any}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
         ) : (
           <Image
             src={project.thumbnail || '/placeholder.svg'}

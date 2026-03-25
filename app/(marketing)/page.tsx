@@ -24,9 +24,8 @@ export const metadata: Metadata = {
   },
 }
 
-// Mux Playback ID для showreel - из env или fallback
-const SHOWREEL_PLAYBACK_ID =
-  publicEnv.NEXT_PUBLIC_SHOWREEL_PLAYBACK_ID || 'Qf6mbMSob4v5nv7c6Mbf7TAipjM01PfHe01bDaDC1otOM'
+// Bunny Video ID для showreel - из env
+const SHOWREEL_VIDEO_ID = publicEnv.NEXT_PUBLIC_SHOWREEL_VIDEO_ID || ''
 
 export default async function HomePage() {
   // Загружаем проекты для filmstrip carousel
@@ -66,7 +65,7 @@ export default async function HomePage() {
         directorEn: '',
         client: p.client || null,
         thumbnail: thumbnail,
-        playbackId: p.mux_playback_id || SHOWREEL_PLAYBACK_ID,
+        playbackId: p.mux_playback_id || SHOWREEL_VIDEO_ID,
         carousel_gif_url: p.carousel_gif_url || null,
         slug: p.slug,
       }
@@ -90,7 +89,7 @@ export default async function HomePage() {
         <link rel="preload" as="image" href={firstCarouselUrl} fetchPriority="high" />
       )}
       <main className="relative">
-        <ShowreelHero showreelPlaybackId={SHOWREEL_PLAYBACK_ID} projects={projects} />
+        <ShowreelHero showreelPlaybackId={SHOWREEL_VIDEO_ID} projects={projects} />
       </main>
     </>
   )

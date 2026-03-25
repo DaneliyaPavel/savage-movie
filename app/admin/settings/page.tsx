@@ -133,9 +133,9 @@ export default function SettingsPage() {
               name="hero_video_playback_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Mux Playback ID для Hero</FormLabel>
+                  <FormLabel>Bunny Video ID для Hero</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Или используйте Mux ID" />
+                    <Input {...field} placeholder="Bunny Stream Video ID" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

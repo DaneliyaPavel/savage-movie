@@ -29,27 +29,15 @@ export function HomePageClient({ showreelPlaybackId, projects }: HomePageClientP
 
   // Обработчик клика на миниатюру (открывает fullscreen player)
   const handleThumbnailClick = useCallback((project: Project) => {
-    if (project.video_url) {
-      // Extract Mux playback ID from URL
-      const muxMatch =
-        project.video_url.match(/mux\.com\/([^/?]+)/) ||
-        project.video_url.match(/playbackId=([^&]+)/)
-      const playbackId = muxMatch ? muxMatch[1] : null
-
-      if (playbackId) {
-        setSelectedProject(project)
-        setIsPlayerOpen(true)
-      }
+    if (project.video_url || project.mux_playback_id) {
+      setSelectedProject(project)
+      setIsPlayerOpen(true)
     }
   }, [])
 
-  // Extract playback ID for fullscreen player
+  // Get Bunny Video ID for fullscreen player
   const getFullscreenPlaybackId = () => {
-    if (!selectedProject?.video_url) return null
-    const muxMatch =
-      selectedProject.video_url.match(/mux\.com\/([^/?]+)/) ||
-      selectedProject.video_url.match(/playbackId=([^&]+)/)
-    return muxMatch?.[1] ?? null
+    return selectedProject?.mux_playback_id ?? selectedProject?.video_url ?? null
   }
 
   const poster =
