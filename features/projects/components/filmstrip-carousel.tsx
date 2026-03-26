@@ -192,7 +192,7 @@ const FilmstripItem = memo(function FilmstripItem({
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src
     } else if (Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true, startLevel: 0 })
+      const hls = new Hls({ enableWorker: true, startLevel: -1, capLevelToPlayerSize: true })
       hls.loadSource(src)
       hls.attachMedia(video)
       hlsRef.current = hls
