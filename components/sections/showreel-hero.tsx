@@ -98,7 +98,6 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
             >
               <VideoPlayer
                 playbackId={currentPlaybackId}
-                poster={`https://${process.env.NEXT_PUBLIC_BUNNY_CDN_HOSTNAME}/${currentPlaybackId}/thumbnail.jpg?width=1920&height=1080`}
                 autoPlay
                 muted
                 loop

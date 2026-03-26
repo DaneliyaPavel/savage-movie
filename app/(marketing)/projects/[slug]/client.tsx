@@ -67,7 +67,8 @@ export function ProjectDetailClient({ project, nextProject, projectVideos = [] }
                 muted
                 loop
                 controls={false}
-                className="absolute inset-0 w-full h-full pointer-events-none [--media-object-fit:cover]"
+                objectFit="cover"
+                className="absolute inset-0 w-full h-full pointer-events-none"
               />
             ) : (
               <video
@@ -211,7 +212,8 @@ export function ProjectDetailClient({ project, nextProject, projectVideos = [] }
                         muted
                         loop
                         controls={false}
-                        className="absolute inset-0 w-full h-full pointer-events-none [--media-object-fit:cover]"
+                        objectFit="cover"
+                className="absolute inset-0 w-full h-full pointer-events-none"
                       />
                       <span className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
                       {video.title && (

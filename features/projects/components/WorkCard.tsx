@@ -67,7 +67,8 @@ export function WorkCard({ project }: WorkCardProps) {
                     muted
                     loop
                     controls={false}
-                    className="w-full h-full object-cover"
+                    objectFit="cover"
+                    className="w-full h-full"
                   />
                 </motion.div>
               )}

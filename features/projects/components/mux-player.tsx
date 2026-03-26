@@ -43,7 +43,9 @@ export function VideoPlayer({
     } else if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
+        capLevelToPlayerSize: true,
         startLevel: -1,
+        maxBufferLength: 30,
       })
       hls.loadSource(src)
       hls.attachMedia(video)

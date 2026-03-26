@@ -72,7 +72,8 @@ export function HeroSection({
               muted
               loop
               controls={false}
-              className="w-full h-full object-cover"
+              objectFit="cover"
+              className="w-full h-full"
             />
           </div>
         ) : videoUrl ? (

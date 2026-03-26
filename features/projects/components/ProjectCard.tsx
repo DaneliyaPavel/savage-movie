@@ -87,7 +87,8 @@ export function ProjectCard({
                     muted
                     loop
                     controls={false}
-                    className="w-full h-full object-cover"
+                    objectFit="cover"
+                    className="w-full h-full"
                   />
                 ) : videoUrl ? (
                   <video autoPlay muted loop playsInline className="w-full h-full object-cover">

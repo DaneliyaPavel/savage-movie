@@ -46,7 +46,9 @@ export function VideoPlayer({
     } else if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
+        capLevelToPlayerSize: true,
         startLevel: -1,
+        maxBufferLength: 30,
       })
       hls.loadSource(src)
       hls.attachMedia(video)
@@ -72,8 +74,7 @@ export function VideoPlayer({
         controls={controls}
         onCanPlay={onCanPlay}
         title={title}
-        className="w-full h-full"
-        style={objectFit ? { objectFit } : undefined}
+        className={`w-full h-full${objectFit ? ` object-${objectFit}` : ''}`}
       />
     </div>
   )

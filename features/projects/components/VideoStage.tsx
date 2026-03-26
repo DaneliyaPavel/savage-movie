@@ -102,7 +102,8 @@ export function VideoStage({ videoUrl, playbackId, poster, title }: VideoStagePr
                   muted
                   loop
                   controls={false}
-                  className="w-full h-full object-cover"
+                  objectFit="cover"
+                  className="w-full h-full"
                   onCanPlay={handleVideoLoaded}
                 />
               ) : videoUrl ? (
