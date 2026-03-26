@@ -120,10 +120,7 @@ export default function RootLayout({
   return (
     <html lang="ru" className="dark">
       <head>
-        {/* Preconnect to Bunny Stream CDN */}
-        {process.env.NEXT_PUBLIC_BUNNY_CDN_HOSTNAME && (
-          <link rel="preconnect" href={`https://${process.env.NEXT_PUBLIC_BUNNY_CDN_HOSTNAME}`} crossOrigin="anonymous" />
-        )}
+        {/* Bunny CDN is now proxied through /cdn/ — no preconnect needed */}
         <YandexMetrika />
       </head>
       <body className={`${saNoRules.variable} font-sans antialiased`}>
