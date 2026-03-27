@@ -64,6 +64,7 @@ class ProjectUpdate(BaseModel):
 
 class Project(ProjectBase):
     id: UUID
+    display_order: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
