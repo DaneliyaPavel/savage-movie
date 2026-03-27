@@ -196,8 +196,8 @@ export function ProjectDetailClient({ project, nextProject, projectVideos = [] }
                       transition={{ duration: 0.6, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] }}
                       className={`relative overflow-hidden bg-[#050505] border border-[#1A1A1A] cursor-pointer group ${
                         video.orientation === 'vertical'
-                          ? 'aspect-[9/16] max-w-[280px] mx-auto'
-                          : 'aspect-video'
+                          ? 'aspect-[9/16] w-full max-w-[280px] mx-auto'
+                          : 'aspect-video w-full'
                       }`}
                       onClick={() => {
                         setActiveVideoPlaybackId(video.mux_playback_id)
