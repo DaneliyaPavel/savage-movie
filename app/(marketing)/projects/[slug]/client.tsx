@@ -3,7 +3,7 @@
  */
 'use client'
 
-import { useRef, useState, type MouseEvent } from 'react'
+import { useCallback, useRef, useState, type MouseEvent } from 'react'
 import { motion, useMotionValue, useSpring } from 'framer-motion'
 import { VideoPlayer } from '@/features/projects/components/VideoPlayer'
 import { FullScreenVideoPlayer } from '@/features/projects/components/FullScreenVideoPlayer'
@@ -16,6 +16,54 @@ import { ArrowRight } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { ProjectsJalousieFooter } from '@/components/sections/ProjectsJalousieFooter'
 import type { Project, ProjectVideo } from '@/features/projects/api'
+
+type Orientation = 'landscape' | 'portrait' | 'unknown'
+
+function GalleryImage({
+  src,
+  alt,
+  index,
+  onClick,
+}: {
+  src: string
+  alt: string
+  index: number
+  onClick: () => void
+}) {
+  const [orientation, setOrientation] = useState<Orientation>('unknown')
+
+  const handleLoad = useCallback((e: { target: EventTarget }) => {
+    const img = e.target as HTMLImageElement
+    if (img.naturalWidth && img.naturalHeight) {
+      setOrientation(img.naturalWidth >= img.naturalHeight ? 'landscape' : 'portrait')
+    }
+  }, [])
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] }}
+      className={`relative overflow-hidden bg-[#050505] border border-[#1A1A1A] cursor-pointer group ${
+        orientation === 'portrait'
+          ? 'aspect-[3/4] md:col-span-1'
+          : orientation === 'landscape'
+            ? 'aspect-video md:col-span-1'
+            : 'aspect-video md:col-span-1'
+      }`}
+      onClick={onClick}
+    >
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+        onLoad={handleLoad}
+      />
+    </motion.div>
+  )
+}
 
 interface ProjectDetailClientProps {
   project: Project
@@ -240,24 +288,15 @@ export function ProjectDetailClient({ project, nextProject, projectVideos = [] }
                   Галерея
                 </h2>
                 {project.images && project.images.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 auto-rows-auto">
                     {project.images.map((image, index) => (
-                      <motion.div
+                      <GalleryImage
                         key={index}
-                        initial={{ opacity: 0, y: 30 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.6, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] }}
-                        className="relative aspect-video overflow-hidden bg-[#050505] border border-[#1A1A1A] cursor-pointer group"
+                        src={image}
+                        alt={`${project.title} - изображение ${index + 1}`}
+                        index={index}
                         onClick={() => setSelectedImage(image)}
-                      >
-                        <Image
-                          src={image}
-                          alt={`${project.title} - изображение ${index + 1}`}
-                          fill
-                          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                        />
-                      </motion.div>
+                      />
                     ))}
                   </div>
                 )}
@@ -270,28 +309,15 @@ export function ProjectDetailClient({ project, nextProject, projectVideos = [] }
                     >
                       Бекстейдж
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 auto-rows-auto">
                       {project.behind_scenes.map((image, index) => (
-                        <motion.div
+                        <GalleryImage
                           key={index}
-                          initial={{ opacity: 0, y: 30 }}
-                          whileInView={{ opacity: 1, y: 0 }}
-                          viewport={{ once: true }}
-                          transition={{
-                            duration: 0.6,
-                            delay: index * 0.1,
-                            ease: [0.16, 1, 0.3, 1],
-                          }}
-                          className="relative aspect-video overflow-hidden bg-[#050505] border border-[#1A1A1A] cursor-pointer group"
+                          src={image}
+                          alt={`${project.title} - за кадром ${index + 1}`}
+                          index={index}
                           onClick={() => setSelectedImage(image)}
-                        >
-                          <Image
-                            src={image}
-                            alt={`${project.title} - за кадром ${index + 1}`}
-                            fill
-                            className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                          />
-                        </motion.div>
+                        />
                       ))}
                     </div>
                   </div>
