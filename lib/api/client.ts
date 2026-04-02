@@ -3,22 +3,22 @@
  */
 import { baseApiRequest, type ApiRequestOptions } from './base'
 import { publicEnv } from '@/lib/env'
+import { getAccessToken } from './token-store'
 
 const API_URL = publicEnv.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
 
 export type { ApiError } from './base'
 
 /**
- * Базовая функция для запросов к API (client-side)
+ * Базовая функция для запросов к API (client-side).
+ * Токен берётся из памяти (не localStorage) — защита от XSS.
  */
 export async function apiRequest<T>(endpoint: string, options: ApiRequestOptions = {}): Promise<T> {
   const url = `${API_URL}${endpoint}`
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
-
   return baseApiRequest<T>(url, {
     ...options,
-    token,
+    token: getAccessToken(),
   })
 }
 

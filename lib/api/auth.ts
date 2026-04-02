@@ -2,6 +2,7 @@
  * API функции для аутентификации
  */
 import { apiGet, apiPost } from './client'
+import { setAccessToken } from './token-store'
 
 export interface User {
   id: string
@@ -32,37 +33,36 @@ export interface RegisterData {
 }
 
 /**
- * Сохраняет токены в localStorage
+ * Сохраняет токены: access_token в памяти (для API calls),
+ * оба токена в HttpOnly cookies через /api/auth/session (для SSR).
+ * localStorage больше НЕ используется — защита от XSS.
  */
-function saveTokens(tokens: TokenResponse) {
-  if (typeof window !== 'undefined') {
-    // Сохраняем в localStorage для клиентской части
-    localStorage.setItem('access_token', tokens.access_token)
-  }
+async function saveTokens(tokens: TokenResponse): Promise<void> {
+  setAccessToken(tokens.access_token)
+
+  // Синхронизируем в HttpOnly cookies для SSR
+  await syncAuthCookies(tokens)
 }
 
 /**
  * Синхронизирует токены с HttpOnly cookies для server-side доступа
  */
-export async function syncAuthCookies(tokens?: TokenResponse): Promise<void> {
+export async function syncAuthCookies(tokens: TokenResponse): Promise<void> {
   if (typeof window === 'undefined') return
 
-  const accessToken = tokens?.access_token ?? localStorage.getItem('access_token')
-  const refreshToken = tokens?.refresh_token
-
-  if (!accessToken || !refreshToken) return
+  if (!tokens.access_token || !tokens.refresh_token) return
 
   try {
     await fetch('/api/auth/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        access_token: accessToken,
-        refresh_token: refreshToken,
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
       }),
     })
   } catch {
-    // Если не удалось синхронизировать cookies, остаемся на localStorage.
+    // Если не удалось синхронизировать cookies — не критично для текущей сессии.
   }
 }
 
@@ -80,36 +80,27 @@ async function clearAuthCookies(): Promise<void> {
 }
 
 /**
- * Удаляет токены из localStorage и cookies
+ * Удаляет токены из памяти, cookies и localStorage (миграция)
  */
 export function clearTokens() {
+  setAccessToken(null)
+
   if (typeof window !== 'undefined') {
+    // Очистка legacy localStorage (для пользователей, обновляющихся с прошлой версии)
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
-
-    // На случай старых non-HttpOnly cookies.
-    document.cookie = 'access_token=; path=/; max-age=0'
-    document.cookie = 'refresh_token=; path=/; max-age=0'
   }
 }
 
-/**
- * Получает access token
- */
-export function getAccessToken(): string | null {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('access_token')
-  }
-  return null
-}
+// Re-export для обратной совместимости
+export { getAccessToken } from './token-store'
 
 /**
  * Регистрация пользователя
  */
 export async function register(data: RegisterData): Promise<TokenResponse> {
   const tokens = await apiPost<TokenResponse>('/api/auth/register', data)
-  saveTokens(tokens)
-  await syncAuthCookies(tokens)
+  await saveTokens(tokens)
   return tokens
 }
 
@@ -118,8 +109,7 @@ export async function register(data: RegisterData): Promise<TokenResponse> {
  */
 export async function login(credentials: LoginCredentials): Promise<TokenResponse> {
   const tokens = await apiPost<TokenResponse>('/api/auth/login', credentials)
-  saveTokens(tokens)
-  await syncAuthCookies(tokens)
+  await saveTokens(tokens)
   return tokens
 }
 
@@ -149,20 +139,22 @@ export async function getCurrentUserServer(cookies?: {
 }
 
 /**
- * Обновление токена
+ * Обновление токена через серверный proxy (refresh_token хранится в HttpOnly cookie)
  */
 export async function refreshToken(): Promise<TokenResponse> {
-  const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null
+  // Refresh token хранится только в HttpOnly cookie — отправляем запрос через
+  // Next.js API route, который имеет доступ к cookie.
+  const res = await fetch('/api/auth/refresh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  })
 
-  if (!refreshToken) {
-    throw new Error('Refresh token не найден')
+  if (!res.ok) {
+    throw new Error('Не удалось обновить токен')
   }
 
-  const tokens = await apiPost<TokenResponse>('/api/auth/refresh', {
-    refresh_token: refreshToken,
-  })
-  saveTokens(tokens)
-  await syncAuthCookies(tokens)
+  const tokens: TokenResponse = await res.json()
+  await saveTokens(tokens)
   return tokens
 }
 

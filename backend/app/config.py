@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     DB_PORT: int = 5432
     DB_NAME: str = "savage_movie"
     DB_USER: str = "postgres"
-    DB_PASSWORD: str = "postgres"
+    DB_PASSWORD: str = ""
     
     # JWT
     JWT_SECRET: str = ""

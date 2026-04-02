@@ -81,11 +81,6 @@ export async function baseApiRequest<T>(url: string, options: ApiRequestOptions 
 
     // Специальная обработка для ошибок авторизации
     if (response.status === 401) {
-      // Очищаем токены если они недействительны
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-      }
       // Важно: 401 может означать как "просроченная сессия", так и "неверный логин/пароль".
       // Поэтому сохраняем сообщение от API (если оно есть), чтобы UX был корректным.
       throw new Error(errorMessage || 'Требуется авторизация. Пожалуйста, войдите снова.')
