@@ -1,14 +1,13 @@
 /**
- * Callback page для обработки OAuth токенов
- * OAuth провайдеры редиректят сюда с токенами в query параметрах
+ * Callback page для обработки OAuth.
+ * Токены теперь приходят через HttpOnly cookies, не через URL params.
  */
 import { AuthCallbackClient } from './client'
 
 export default function AuthCallbackPage({
   searchParams,
 }: {
-  searchParams: Promise<{ access_token?: string; refresh_token?: string }>
+  searchParams: Promise<{ provider?: string }>
 }) {
-  // В Next.js 15 searchParams может быть Promise
   return <AuthCallbackClient searchParams={searchParams} />
 }

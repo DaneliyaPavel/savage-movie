@@ -1,7 +1,10 @@
 """
 API роуты для аутентификации
 """
+import os
+
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
+from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -19,9 +22,34 @@ from app.infrastructure.integrations.oauth_service import (
 )
 from app.utils.security import hash_password, verify_password
 from app.config import settings
+from app.rate_limit import limiter
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 security = HTTPBearer(auto_error=False)
+
+_is_production = os.getenv("ENV", "").lower() == "production"
+
+
+def _set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
+    """Устанавливает JWT токены как HttpOnly cookies в redirect response."""
+    response.set_cookie(
+        "access_token",
+        access_token,
+        httponly=True,
+        secure=_is_production,
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+    )
+    response.set_cookie(
+        "refresh_token",
+        refresh_token,
+        httponly=True,
+        secure=_is_production,
+        samesite="lax",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
+        path="/",
+    )
 
 
 async def get_current_user(
@@ -57,7 +85,8 @@ async def get_current_user(
 
 
 @router.post("/register", response_model=Token)
-async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
+@limiter.limit("3/minute")
+async def register(request: Request, user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     """Регистрация нового пользователя"""
     # Проверяем, существует ли пользователь
     repo = SqlAlchemyUsersRepository(db)
@@ -96,7 +125,8 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def login(request: Request, credentials: UserLogin, db: AsyncSession = Depends(get_db)):
     """Вход пользователя"""
     repo = SqlAlchemyUsersRepository(db)
     user = await repo.get_by_email(credentials.email)
@@ -135,9 +165,11 @@ async def get_me(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/refresh", response_model=Token)
+@limiter.limit("10/minute")
 async def refresh_token(
+    request: Request,
     refresh_token: str,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Обновление access token"""
     token_data = verify_token(refresh_token, token_type="refresh")
@@ -247,13 +279,14 @@ async def google_oauth_callback(
     jwt_refresh_token = create_refresh_token(
         data={"sub": str(user.id), "email": user.email}
     )
-    
-    # Редиректим на frontend с токенами
-    redirect_url = f"{settings.APP_URL}/callback?access_token={jwt_access_token}&refresh_token={jwt_refresh_token}"
-    return Response(
+
+    # Устанавливаем токены как HttpOnly cookies (не в URL)
+    response = RedirectResponse(
+        url=f"{settings.APP_URL}/callback?provider=google",
         status_code=status.HTTP_302_FOUND,
-        headers={"Location": redirect_url}
     )
+    _set_auth_cookies(response, jwt_access_token, jwt_refresh_token)
+    return response
 
 
 @router.get("/oauth/yandex")
@@ -328,13 +361,14 @@ async def yandex_oauth_callback(
     jwt_refresh_token = create_refresh_token(
         data={"sub": str(user.id), "email": user.email}
     )
-    
-    # Редиректим на frontend с токенами
-    redirect_url = f"{settings.APP_URL}/callback?access_token={jwt_access_token}&refresh_token={jwt_refresh_token}"
-    return Response(
+
+    # Устанавливаем токены как HttpOnly cookies (не в URL)
+    response = RedirectResponse(
+        url=f"{settings.APP_URL}/callback?provider=yandex",
         status_code=status.HTTP_302_FOUND,
-        headers={"Location": redirect_url}
     )
+    _set_auth_cookies(response, jwt_access_token, jwt_refresh_token)
+    return response
 
 
 @router.post("/logout")

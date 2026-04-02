@@ -1,7 +1,7 @@
 """
 API роуты для контактной формы
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.db.session import get_db
@@ -9,14 +9,17 @@ from app.infrastructure.db.models.contact import ContactSubmission
 from app.infrastructure.integrations.email_service import send_contact_form_notification
 from app.config import settings
 from app.interfaces.schemas.contact import ContactFormData
+from app.rate_limit import limiter
 
 router = APIRouter(prefix="/api/contact", tags=["contact"])
 
 
 @router.post("")
+@limiter.limit("3/minute")
 async def submit_contact_form(
+    request: Request,
     form_data: ContactFormData,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Отправить заявку с контактной формы"""
     # Сохраняем в БД

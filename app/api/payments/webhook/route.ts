@@ -8,10 +8,10 @@ import { serverEnv } from '@/lib/env.server'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    // Читаем raw body — нельзя парсить и re-serialize,
+    // иначе HMAC-подпись не совпадёт на backend.
+    const rawBody = await request.arrayBuffer()
 
-    // Тонкий прокси на backend: вся бизнес-логика (проверка статуса, идемпотентность, enrollment, email)
-    // находится в FastAPI.
     let API_URL = serverEnv.API_URL || publicEnv.NEXT_PUBLIC_API_URL
     if (!API_URL) {
       if (process.env.NODE_ENV === 'production') {
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       backendResponse = await fetch(`${API_URL}/api/payments/yookassa/webhook`, {
         method: 'POST',
         headers,
-        body: JSON.stringify(body),
+        body: rawBody,
         signal: controller.signal,
       })
     } finally {

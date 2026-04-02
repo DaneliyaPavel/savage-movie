@@ -10,6 +10,7 @@ from app.infrastructure.db.models.user import User
 from app.infrastructure.db.repositories.projects import SqlAlchemyProjectsRepository
 from app.infrastructure.db.session import get_db
 from app.interfaces.schemas.project import Project as ProjectSchema, ProjectCreate, ProjectUpdate
+from app.interfaces.schemas.reorder import ReorderRequest
 from app.delivery.api.auth import get_current_user
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
@@ -136,9 +137,9 @@ async def delete_project(
 
 @router.post("/reorder", status_code=status.HTTP_200_OK)
 async def reorder_projects(
-    updates: dict,
+    body: ReorderRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Обновить порядок проектов (только для админов)"""
     if current_user.role != "admin":
@@ -147,7 +148,6 @@ async def reorder_projects(
             detail="Только администраторы могут изменять порядок проектов"
         )
     
-    updates_list = updates.get("updates", [])
     repo = SqlAlchemyProjectsRepository(db)
-    await repo.reorder(updates_list)
+    await repo.reorder([{"id": str(u.id), "display_order": u.display_order} for u in body.updates])
     return {"message": "Порядок проектов обновлен"}

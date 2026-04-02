@@ -1,14 +1,15 @@
 /**
- * Клиентский компонент для обработки OAuth токенов
+ * Клиентский компонент для обработки OAuth callback.
+ * Токены теперь приходят через HttpOnly cookies (установлены backend),
+ * а не через URL query params.
  */
 'use client'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { syncAuthCookies } from '@/lib/api/auth'
 
 interface AuthCallbackClientProps {
-  searchParams: Promise<{ access_token?: string; refresh_token?: string }>
+  searchParams: Promise<{ provider?: string }>
 }
 
 export function AuthCallbackClient({ searchParams }: AuthCallbackClientProps) {
@@ -17,21 +18,11 @@ export function AuthCallbackClient({ searchParams }: AuthCallbackClientProps) {
 
   useEffect(() => {
     searchParams.then(async params => {
-      if (params.access_token && params.refresh_token) {
-        // Сохраняем токены
-        localStorage.setItem('access_token', params.access_token)
-        localStorage.setItem('refresh_token', params.refresh_token)
-        await syncAuthCookies({
-          access_token: params.access_token,
-          refresh_token: params.refresh_token,
-          token_type: 'bearer',
-        })
-
-        // Редиректим в dashboard
+      if (params.provider) {
+        // Токены уже в HttpOnly cookies — просто редиректим в dashboard
         router.push('/dashboard')
         router.refresh()
       } else {
-        // Если токены не получены, редиректим на главную
         router.push('/')
       }
       setIsLoading(false)

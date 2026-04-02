@@ -1,7 +1,7 @@
 """
 API роуты для загрузки файлов
 """
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile, File
 from fastapi.responses import JSONResponse
 from pathlib import Path
 import uuid
@@ -9,6 +9,7 @@ from typing import List
 
 from app.delivery.api.auth import get_current_user
 from app.infrastructure.db.models.user import User
+from app.rate_limit import limiter
 
 router = APIRouter(prefix="/api/upload", tags=["upload"])
 
@@ -49,10 +50,31 @@ def get_file_extension(content_type: str) -> str:
     return mapping.get(content_type, "")
 
 
+# Magic bytes для валидации реального типа файла (защита от MIME spoofing)
+_MAGIC_SIGNATURES: dict[str, list[bytes]] = {
+    "image/jpeg": [b"\xff\xd8\xff"],
+    "image/png": [b"\x89PNG\r\n\x1a\n"],
+    "image/webp": [b"RIFF"],  # RIFF....WEBP
+    "video/mp4": [b"\x00\x00\x00\x18ftyp", b"\x00\x00\x00\x1cftyp", b"\x00\x00\x00\x20ftyp", b"ftyp"],
+    "video/quicktime": [b"\x00\x00\x00\x14ftypqt"],
+    "video/x-msvideo": [b"RIFF"],  # RIFF....AVI
+}
+
+
+def _validate_magic_bytes(contents: bytes, declared_type: str) -> bool:
+    """Проверяет magic bytes файла против заявленного content-type."""
+    signatures = _MAGIC_SIGNATURES.get(declared_type)
+    if not signatures:
+        return False
+    return any(contents[:len(sig)] == sig for sig in signatures)
+
+
 @router.post("/image")
+@limiter.limit("10/minute")
 async def upload_image(
+    request: Request,
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Загрузить изображение (только для админов)"""
     if current_user.role != "admin":
@@ -73,33 +95,42 @@ async def upload_image(
     if len(contents) > MAX_IMAGE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Файл слишком большой. Максимальный размер: {MAX_IMAGE_SIZE / 1024 / 1024}MB"
+            detail=f"Файл слишком большой. Максимальный размер: {MAX_IMAGE_SIZE / 1024 / 1024}MB",
         )
-    
+
+    # Проверяем magic bytes (защита от MIME spoofing)
+    if not _validate_magic_bytes(contents, file.content_type):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Содержимое файла не соответствует заявленному типу",
+        )
+
     # Генерируем уникальное имя файла
     file_extension = get_file_extension(file.content_type)
     file_name = f"{uuid.uuid4()}{file_extension}"
     file_path = UPLOAD_DIR / "images" / file_name
-    
+
     # Сохраняем файл
     with open(file_path, "wb") as f:
         f.write(contents)
-    
+
     # Возвращаем URL файла (относительный путь для Next.js API route)
     file_url = f"/uploads/images/{file_name}"
-    
+
     return JSONResponse({
         "url": file_url,
         "filename": file_name,
         "size": len(contents),
-        "content_type": file.content_type
+        "content_type": file.content_type,
     })
 
 
 @router.post("/video")
+@limiter.limit("10/minute")
 async def upload_video(
+    request: Request,
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Загрузить видео (только для админов)"""
     if current_user.role != "admin":
@@ -120,33 +151,42 @@ async def upload_video(
     if len(contents) > MAX_VIDEO_SIZE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Файл слишком большой. Максимальный размер: {MAX_VIDEO_SIZE / 1024 / 1024}MB"
+            detail=f"Файл слишком большой. Максимальный размер: {MAX_VIDEO_SIZE / 1024 / 1024}MB",
         )
-    
+
+    # Проверяем magic bytes (защита от MIME spoofing)
+    if not _validate_magic_bytes(contents, file.content_type):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Содержимое файла не соответствует заявленному типу",
+        )
+
     # Генерируем уникальное имя файла
     file_extension = get_file_extension(file.content_type)
     file_name = f"{uuid.uuid4()}{file_extension}"
     file_path = UPLOAD_DIR / "videos" / file_name
-    
+
     # Сохраняем файл
     with open(file_path, "wb") as f:
         f.write(contents)
-    
+
     # Возвращаем URL файла (относительный путь для Next.js API route)
     file_url = f"/uploads/videos/{file_name}"
-    
+
     return JSONResponse({
         "url": file_url,
         "filename": file_name,
         "size": len(contents),
-        "content_type": file.content_type
+        "content_type": file.content_type,
     })
 
 
 @router.post("/images")
+@limiter.limit("10/minute")
 async def upload_images(
+    request: Request,
     files: List[UploadFile] = File(...),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Загрузить несколько изображений (только для админов)"""
     if current_user.role != "admin":
@@ -161,11 +201,15 @@ async def upload_images(
         # Проверка типа файла
         if file.content_type not in ALLOWED_IMAGE_TYPES:
             continue  # Пропускаем неподдерживаемые файлы
-        
+
         # Читаем файл
         contents = await file.read()
         if len(contents) > MAX_IMAGE_SIZE:
             continue  # Пропускаем слишком большие файлы
+
+        # Проверяем magic bytes
+        if not _validate_magic_bytes(contents, file.content_type):
+            continue
         
         # Генерируем уникальное имя файла
         file_extension = get_file_extension(file.content_type)

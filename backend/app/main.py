@@ -4,9 +4,12 @@
 import os
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 from app.config import settings
+from app.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 from app.delivery.api import (
@@ -42,6 +45,18 @@ app = FastAPI(
     docs_url=None if _is_production else "/docs",
     redoc_url=None if _is_production else "/redoc",
 )
+
+# Rate limiter
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Слишком много запросов. Попробуйте позже."},
+    )
+
 
 # CORS middleware
 app.add_middleware(

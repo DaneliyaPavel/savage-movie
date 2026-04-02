@@ -2,13 +2,16 @@
 API роуты для платежей (YooKassa webhook)
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from uuid import UUID
 import base64
+import hashlib
+import hmac
+import json
 import logging
 import httpx
 from typing import Any, Dict, Optional
@@ -22,6 +25,7 @@ from app.infrastructure.db.models.payment import Payment
 from app.infrastructure.db.repositories.courses import SqlAlchemyCoursesRepository
 from app.infrastructure.db.repositories.enrollments import SqlAlchemyEnrollmentsRepository
 from app.infrastructure.db.repositories.users import SqlAlchemyUsersRepository
+from app.rate_limit import limiter
 
 
 router = APIRouter(prefix="/api/payments", tags=["payments"])
@@ -79,13 +83,51 @@ async def _notify_platform_enrollment(
         logger.info("Platform enrollment (mock): %s", body)
 
 
+def _verify_webhook_signature(raw_body: bytes, signature_header: str | None) -> None:
+    """
+    Проверяет HMAC-SHA256 подпись webhook от YooKassa.
+    YooKassa отправляет заголовок Content-Hmac в формате: sha256=<hex-digest>.
+    Ключ — YOOKASSA_SECRET_KEY.
+    """
+    if not settings.YOOKASSA_SECRET_KEY:
+        raise HTTPException(status_code=500, detail="YOOKASSA_SECRET_KEY not configured")
+
+    if not signature_header:
+        logger.warning("Webhook rejected: missing Content-Hmac header")
+        raise HTTPException(status_code=401, detail="Missing webhook signature")
+
+    # Формат: "sha256=<hex>"
+    parts = signature_header.split("=", 1)
+    if len(parts) != 2 or parts[0] != "sha256":
+        logger.warning("Webhook rejected: invalid Content-Hmac format: %s", signature_header[:50])
+        raise HTTPException(status_code=401, detail="Invalid webhook signature format")
+
+    expected = hmac.new(
+        settings.YOOKASSA_SECRET_KEY.encode("utf-8"),
+        raw_body,
+        hashlib.sha256,
+    ).hexdigest()
+
+    if not hmac.compare_digest(expected, parts[1]):
+        logger.warning("Webhook rejected: HMAC mismatch")
+        raise HTTPException(status_code=401, detail="Invalid webhook signature")
+
+
 @router.post("/yookassa/webhook")
-async def yookassa_webhook(payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+@limiter.limit("30/minute")
+async def yookassa_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Webhook от YooKassa.
     Обрабатывает payment.succeeded, подтверждает статус через YooKassa API,
     идемпотентно создаёт enrollment и (только при первом создании) отправляет email.
     """
+    raw_body = await request.body()
+
+    # Проверяем HMAC-подпись
+    signature = request.headers.get("Content-Hmac")
+    _verify_webhook_signature(raw_body, signature)
+
+    payload: Dict[str, Any] = json.loads(raw_body)
     event = payload.get("event")
     obj = payload.get("object") or {}
     payment_id = obj.get("id")

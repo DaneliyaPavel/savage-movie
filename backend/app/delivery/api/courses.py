@@ -10,6 +10,7 @@ from app.infrastructure.db.session import get_db
 from app.infrastructure.db.models.user import User
 from app.infrastructure.db.repositories.courses import SqlAlchemyCoursesRepository
 from app.interfaces.schemas.course import Course as CourseSchema, CourseCreate, CourseUpdate
+from app.interfaces.schemas.reorder import ReorderRequest
 from app.delivery.api.auth import get_current_user
 
 router = APIRouter(prefix="/api/courses", tags=["courses"])
@@ -147,9 +148,9 @@ async def update_course(
 
 @router.post("/reorder", status_code=status.HTTP_200_OK)
 async def reorder_courses(
-    updates: dict,
+    body: ReorderRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Обновить порядок курсов (только для админов)"""
     if current_user.role != "admin":
@@ -158,7 +159,6 @@ async def reorder_courses(
             detail="Только администраторы могут изменять порядок курсов"
         )
     
-    updates_list = updates.get("updates", [])
     repo = SqlAlchemyCoursesRepository(db)
-    await repo.reorder(updates_list)
+    await repo.reorder([{"id": str(u.id), "display_order": u.display_order} for u in body.updates])
     return {"message": "Порядок курсов обновлен"}
