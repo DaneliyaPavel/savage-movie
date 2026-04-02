@@ -24,8 +24,16 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/backend
 ENV PATH="/app/backend:$PATH"
 
+# Создание non-root пользователя
+RUN addgroup --system --gid 1001 appuser && \
+    adduser --system --uid 1001 --ingroup appuser appuser
+RUN chown -R appuser:appuser /app/backend/uploads
+
 # Порт
 EXPOSE 8000
+
+# Запуск от non-root пользователя
+USER appuser
 
 # Команда запуска
 WORKDIR /app/backend

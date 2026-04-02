@@ -1,9 +1,14 @@
 """
 Главный файл FastAPI приложения
 """
+import os
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 from app.delivery.api import (
     auth,
     projects,
@@ -28,10 +33,14 @@ from app.infrastructure.db.session import AsyncSessionLocal
 from app.infrastructure.db.models.user import User
 from app.utils.security import hash_password
 
+_is_production = os.getenv("ENV", "").lower() == "production"
+
 app = FastAPI(
     title="SAVAGE MOVIE API",
     description="API для сайта видеографа и продюсера",
     version="1.0.0",
+    docs_url=None if _is_production else "/docs",
+    redoc_url=None if _is_production else "/redoc",
 )
 
 # CORS middleware
@@ -39,8 +48,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # Подключаем роутеры
@@ -60,6 +69,27 @@ app.include_router(blog.router)
 app.include_router(course_materials.router)
 app.include_router(admin.router)
 app.include_router(platform.router)
+
+
+@app.on_event("startup")
+async def validate_security_config() -> None:
+    """Проверка критических настроек безопасности при старте."""
+    if _is_production:
+        if not settings.JWT_SECRET or settings.JWT_SECRET == "change_me_in_production":
+            raise RuntimeError(
+                "JWT_SECRET is not configured! "
+                "Set a strong random secret (at least 32 characters) via environment variable."
+            )
+        if len(settings.JWT_SECRET) < 32:
+            raise RuntimeError(
+                f"JWT_SECRET is too short ({len(settings.JWT_SECRET)} chars). "
+                "Use at least 32 characters for production."
+            )
+    elif not settings.JWT_SECRET:
+        logger.warning(
+            "JWT_SECRET is empty. This is acceptable for development, "
+            "but MUST be set for production (ENV=production)."
+        )
 
 
 @app.on_event("startup")
