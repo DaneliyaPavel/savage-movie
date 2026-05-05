@@ -3,6 +3,7 @@ import localFont from 'next/font/local'
 import './globals.css'
 import { JsonLdScripts } from '@/components/seo/json-ld-scripts'
 import { YandexMetrika } from '@/components/analytics/yandex-metrika'
+import { TokenBootstrap } from '@/components/providers/token-bootstrap'
 
 // Handwritten font "Sa No Rules Regular" - next/font/local fails build if files are missing; fallback is runtime only.
 const saNoRules = localFont({
@@ -125,6 +126,7 @@ export default function RootLayout({
       </head>
       <body className={`${saNoRules.variable} font-sans antialiased`}>
         <JsonLdScripts scripts={jsonLdScripts} />
+        <TokenBootstrap />
         {children}
       </body>
     </html>

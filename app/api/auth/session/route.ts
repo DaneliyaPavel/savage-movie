@@ -19,6 +19,11 @@ const cookieOptions = {
   path: '/',
 }
 
+export async function GET(request: NextRequest) {
+  const accessToken = request.cookies.get('access_token')?.value ?? null
+  return NextResponse.json({ access_token: accessToken })
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null)
 
