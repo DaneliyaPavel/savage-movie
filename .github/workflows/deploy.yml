@@ -60,6 +60,9 @@ jobs:
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ env.REGISTRY_OWNER }}
         with:
           host: ${{ secrets.VDS_HOST }}
           username: ${{ secrets.VDS_USER }}
@@ -67,6 +70,8 @@ jobs:
           passphrase: ${{ secrets.VDS_SSH_PASSPHRASE }}
           port: ${{ secrets.VDS_SSH_PORT || '22' }}
           command_timeout: 30m
+          envs: GHCR_TOKEN,GHCR_USER
           script: |
             cd ${{ secrets.VDS_PATH }}
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             ./scripts/deploy.sh main --force
