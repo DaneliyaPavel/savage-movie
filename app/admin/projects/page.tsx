@@ -14,6 +14,7 @@ import {
   updateProjectsOrder,
   type Project,
 } from '@/features/projects/api'
+import { revalidateAdminPaths } from '@/lib/api/admin-revalidate'
 import { SortableList } from '@/components/admin/SortableList'
 import { Plus, Trash2, Pencil } from 'lucide-react'
 import {
@@ -66,6 +67,7 @@ export default function ProjectsPage() {
         display_order: index,
       }))
       await updateProjectsOrder(updates)
+      await revalidateAdminPaths(['/', '/projects'])
     } catch (error) {
       console.error('Ошибка обновления порядка:', error)
       alert('Ошибка сохранения порядка. Перезагрузите страницу.')
@@ -81,6 +83,7 @@ export default function ProjectsPage() {
       setProjects(projects.filter(p => p.id !== projectToDelete.id))
       setDeleteDialogOpen(false)
       setProjectToDelete(null)
+      await revalidateAdminPaths(['/', '/projects', `/projects/${projectToDelete.slug}`])
     } catch (error) {
       console.error('Ошибка удаления проекта:', error)
       alert('Ошибка удаления проекта')

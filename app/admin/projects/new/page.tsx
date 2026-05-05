@@ -35,6 +35,7 @@ import {
   createProjectVideo,
   type ProjectCreate,
 } from '@/features/projects/api'
+import { revalidateAdminPaths } from '@/lib/api/admin-revalidate'
 import Link from 'next/link'
 import { Plus, Trash2 } from 'lucide-react'
 
@@ -143,6 +144,8 @@ export default function NewProjectPage() {
           await createProjectVideo(createdProject.id, video)
         }
       }
+
+      await revalidateAdminPaths(['/', '/projects', `/projects/${createdProject.slug}`])
 
       router.push('/admin/projects')
     } catch (error) {

@@ -41,6 +41,7 @@ import {
   type ProjectUpdate,
   type ProjectVideo,
 } from '@/features/projects/api'
+import { revalidateAdminPaths } from '@/lib/api/admin-revalidate'
 import Link from 'next/link'
 import { Plus, Trash2 } from 'lucide-react'
 
@@ -214,6 +215,8 @@ export default function EditProjectPage() {
           })
         }
       }
+
+      await revalidateAdminPaths(['/', '/projects', `/projects/${values.slug}`])
 
       router.push('/admin/projects')
     } catch (error) {
