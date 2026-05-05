@@ -61,7 +61,7 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_TOKEN: ${{ secrets.GHCR_PAT }}
           GHCR_USER: ${{ env.REGISTRY_OWNER }}
         with:
           host: ${{ secrets.VDS_HOST }}
