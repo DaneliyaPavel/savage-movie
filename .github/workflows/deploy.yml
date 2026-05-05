@@ -81,5 +81,11 @@ jobs:
             echo "--- login ---"
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             echo "--- diag: manual pull backend ---"
-            docker pull "ghcr.io/$GHCR_USER/savage-movie-backend:latest" 2>&1 | tail -20 || echo "DIAG: manual pull failed exit=$?"
+            docker pull "ghcr.io/$GHCR_USER/savage-movie-backend:latest" 2>&1 | tail -3 || echo "DIAG: manual pull failed exit=$?"
+            echo "--- diag: .env keys (values redacted for secrets) ---"
+            grep -E "^(REGISTRY|IMAGE_TAG)=" .env || echo "no REGISTRY/IMAGE_TAG keys"
+            echo -n "REGISTRY_USER set: "; grep -cE "^REGISTRY_USER=" .env || true
+            echo -n "REGISTRY_TOKEN set: "; grep -cE "^REGISTRY_TOKEN=" .env || true
+            echo "--- diag: compose-resolved images ---"
+            docker compose config --images 2>&1 | head -10 || docker-compose config --images 2>&1 | head -10
             ./scripts/deploy.sh main --force
