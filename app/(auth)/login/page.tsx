@@ -47,14 +47,6 @@ function LoginForm() {
     try {
       await login({ email, password })
 
-      // Проверяем, что токены сохранены
-      if (typeof window !== 'undefined') {
-        const savedToken = localStorage.getItem('access_token')
-        if (!savedToken) {
-          throw new Error('Токен не был сохранен. Попробуйте снова.')
-        }
-      }
-
       // Проверяем, есть ли redirect параметр (только относительные пути)
       const redirectParam = searchParams.get('redirect')
       const redirectTo =
