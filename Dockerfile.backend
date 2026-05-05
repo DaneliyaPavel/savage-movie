@@ -6,6 +6,7 @@ WORKDIR /app
 # Установка системных зависимостей
 RUN apt-get update && apt-get install -y \
     postgresql-client \
+    gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # Копирование requirements и установка зависимостей (увеличен таймаут для нестабильной сети)
@@ -30,12 +31,17 @@ RUN addgroup --system --gid 1001 appuser && \
     adduser --system --uid 1001 --ingroup appuser appuser
 RUN chown -R appuser:appuser /app/backend/uploads
 
+# Entrypoint: чиним права на смонтированный uploads volume (нужен root),
+# затем через gosu сбрасываем привилегии на appuser.
+COPY backend/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Порт
 EXPOSE 8000
 
-# Запуск от non-root пользователя
-USER appuser
-
-# Команда запуска
+# Контейнер стартует как root и через gosu переключается на appuser
+# (см. docker-entrypoint.sh). Это позволяет починить ownership bind-mount'а
+# uploads и при этом запускать само приложение под non-root.
 WORKDIR /app/backend
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
