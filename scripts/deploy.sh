@@ -149,9 +149,12 @@ fi
 git reset --hard "origin/$BRANCH"
 chmod +x up scripts/*.sh || true
 
-# Логин в registry (если задан)
+# Логин в registry (если задан). REGISTRY может содержать namespace
+# (например, "ghcr.io/daneliyapavel"), а docker login ждёт только host.
 if [ -n "${REGISTRY_USER:-}" ] && [ -n "${REGISTRY_TOKEN:-}" ]; then
-  echo "$REGISTRY_TOKEN" | docker login "${REGISTRY:-ghcr.io}" -u "$REGISTRY_USER" --password-stdin
+  REGISTRY_HOST="${REGISTRY:-ghcr.io}"
+  REGISTRY_HOST="${REGISTRY_HOST%%/*}"
+  echo "$REGISTRY_TOKEN" | docker login "$REGISTRY_HOST" -u "$REGISTRY_USER" --password-stdin
 fi
 
 # Быстрый деплой: pull + restart без сборки на сервере
