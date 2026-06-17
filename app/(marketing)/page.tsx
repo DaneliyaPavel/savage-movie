@@ -24,10 +24,28 @@ export const metadata: Metadata = {
   },
 }
 
-// Bunny Video ID для showreel - из env
-const SHOWREEL_VIDEO_ID = publicEnv.NEXT_PUBLIC_SHOWREEL_VIDEO_ID || ''
+// Fallback Bunny Video ID из env — используется, если в админке не задан hero_video_playback_id
+const SHOWREEL_VIDEO_ID_FALLBACK = publicEnv.NEXT_PUBLIC_SHOWREEL_VIDEO_ID || ''
 
 export default async function HomePage() {
+  // Showreel video ID: приоритет настройке из админки, фолбэк на env
+  let showreelVideoId = SHOWREEL_VIDEO_ID_FALLBACK
+  try {
+    const { apiGet: apiGetServer } = await import('@/lib/api/server')
+    const response = await apiGetServer<{ settings: Record<string, unknown> }>('/api/settings')
+    const fromAdmin = response.settings?.hero_video_playback_id
+    if (typeof fromAdmin === 'string' && fromAdmin.trim() !== '') {
+      showreelVideoId = fromAdmin.trim()
+    }
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error(
+        'Ошибка загрузки настроек showreel:',
+        error instanceof Error ? error.message : String(error)
+      )
+    }
+  }
+
   // Загружаем проекты для filmstrip carousel
   let projects: Array<{
     id: string
@@ -65,7 +83,7 @@ export default async function HomePage() {
         directorEn: '',
         client: p.client || null,
         thumbnail: thumbnail,
-        playbackId: p.mux_playback_id || SHOWREEL_VIDEO_ID,
+        playbackId: p.mux_playback_id || showreelVideoId,
         carousel_gif_url: p.carousel_gif_url || null,
         slug: p.slug,
       }
@@ -89,7 +107,7 @@ export default async function HomePage() {
         <link rel="preload" as="image" href={firstCarouselUrl} fetchPriority="high" />
       )}
       <main className="relative">
-        <ShowreelHero showreelPlaybackId={SHOWREEL_VIDEO_ID} projects={projects} />
+        <ShowreelHero showreelPlaybackId={showreelVideoId} projects={projects} />
       </main>
     </>
   )

@@ -17,10 +17,10 @@ import {
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
 import { getSettings, updateSettings } from '@/lib/api/settings'
+import { revalidateAdminPaths } from '@/lib/api/admin-revalidate'
 import { Loader2 } from 'lucide-react'
 
 const formSchema = z.object({
-  hero_video_url: z.string().url().optional().or(z.literal('')),
   hero_video_playback_id: z.string().optional(),
   stats_projects: z.string(),
   stats_clients: z.string(),
@@ -33,7 +33,6 @@ export default function SettingsPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      hero_video_url: '',
       hero_video_playback_id: '',
       stats_projects: '100',
       stats_clients: '50',
@@ -46,8 +45,6 @@ export default function SettingsPage() {
       try {
         const settings = await getSettings()
         form.reset({
-          hero_video_url:
-            typeof settings.hero_video_url === 'string' ? settings.hero_video_url : '',
           hero_video_playback_id:
             typeof settings.hero_video_playback_id === 'string'
               ? settings.hero_video_playback_id
@@ -83,12 +80,12 @@ export default function SettingsPage() {
     setIsSubmitting(true)
     try {
       await updateSettings({
-        hero_video_url: values.hero_video_url || null,
         hero_video_playback_id: values.hero_video_playback_id || null,
         stats_projects: values.stats_projects,
         stats_clients: values.stats_clients,
         stats_years: values.stats_years,
       })
+      await revalidateAdminPaths(['/'])
       alert('Настройки сохранены!')
     } catch {
       alert('Ошибка сохранения настроек')
@@ -115,19 +112,6 @@ export default function SettingsPage() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Hero секция</h2>
-            <FormField
-              control={form.control}
-              name="hero_video_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL видео для Hero</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="https://example.com/video.mp4" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <FormField
               control={form.control}
               name="hero_video_playback_id"
