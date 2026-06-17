@@ -38,7 +38,14 @@ export function VideoPlayer({
 
     const src = getStreamUrl(playbackId)
 
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    // Только Safari действительно умеет нативный HLS. Chrome 149+ возвращает
+    // canPlayType="maybe" для HLS, но реально декодить не может — видео зависает
+    // с readyState=0. Всё, что не Safari, гоним через hls.js.
+    const isAppleSafari =
+      typeof navigator !== 'undefined' &&
+      /^((?!chrome|android|crios|fxios|edg).)*safari/i.test(navigator.userAgent)
+
+    if (isAppleSafari && video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src
     } else if (Hls.isSupported()) {
       const hls = new Hls({
