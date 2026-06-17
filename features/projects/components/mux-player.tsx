@@ -44,8 +44,13 @@ export function VideoPlayer({
       const hls = new Hls({
         enableWorker: true,
         capLevelToPlayerSize: true,
-        startLevel: -1,
         maxBufferLength: 30,
+        // Старт сразу с высокого качества — без 2–5с замера канала на низком битрейте
+        abrEwmaDefaultEstimate: 5_000_000,
+        testBandwidth: false,
+      })
+      hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
+        hls.startLevel = data.levels.length - 1
       })
       hls.loadSource(src)
       hls.attachMedia(video)
