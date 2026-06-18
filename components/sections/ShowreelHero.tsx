@@ -4,26 +4,16 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { GrainOverlay } from '@/components/ui/grain-overlay'
 import { VideoPlayer } from '@/components/features/mux-player'
+import { getThumbnailUrl } from '@/lib/integrations/bunny/client'
 
 interface ShowreelHeroProps {
   playbackId: string
 }
 
 export function ShowreelHero({ playbackId }: ShowreelHeroProps) {
-  const [isLoaded, setIsLoaded] = useState(false)
-
-  useEffect(() => {
-    // Таймаут для показа loading состояния
-    const timer = setTimeout(() => {
-      setIsLoaded(true)
-    }, 500)
-
-    return () => clearTimeout(timer)
-  }, [])
+  const poster = getThumbnailUrl(playbackId)
 
   return (
     <div className="relative w-full h-screen h-[100svh] bg-[#000000] overflow-hidden">
@@ -31,21 +21,17 @@ export function ShowreelHero({ playbackId }: ShowreelHeroProps) {
       <GrainOverlay />
 
       {/* Video Player - Fullscreen */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: isLoaded ? 1 : 0 }}
-        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-        className="absolute inset-0 w-full h-full"
-      >
+      <div className="absolute inset-0 w-full h-full">
         <VideoPlayer
           playbackId={playbackId}
+          poster={poster}
           autoPlay
           muted
           loop
           controls={false}
           className="w-full h-full"
         />
-      </motion.div>
+      </div>
 
       {/* Subtle gradient overlay for better text readability (optional, barely visible) */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#000000]/20 via-transparent to-transparent pointer-events-none" />

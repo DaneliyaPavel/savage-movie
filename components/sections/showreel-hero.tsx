@@ -8,6 +8,7 @@ import { TopBar } from '@/components/ui/top-bar'
 import { JalousieMenu } from '@/components/ui/jalousie-menu'
 import { Preloader } from '@/components/ui/preloader'
 import { useI18n } from '@/lib/i18n-context'
+import { getThumbnailUrl } from '@/lib/integrations/bunny/client'
 
 interface Project {
   id: string
@@ -87,7 +88,7 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
       <section className="relative h-svh w-full overflow-hidden bg-background">
         {/* Main Video Player - Fullscreen */}
         <div className="absolute inset-0">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={currentPlaybackId}
               initial={{ opacity: 0 }}
@@ -98,6 +99,7 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
             >
               <VideoPlayer
                 playbackId={currentPlaybackId}
+                poster={getThumbnailUrl(currentPlaybackId)}
                 autoPlay
                 muted
                 loop
