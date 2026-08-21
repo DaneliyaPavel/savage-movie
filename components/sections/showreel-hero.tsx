@@ -99,7 +99,11 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
             >
               <VideoPlayer
                 playbackId={currentPlaybackId}
-                poster={getThumbnailUrl(currentPlaybackId)}
+                poster={
+                  currentPlaybackId === showreelPlaybackId
+                    ? '/showreel-poster.jpg'
+                    : getThumbnailUrl(currentPlaybackId)
+                }
                 autoPlay
                 muted
                 loop
