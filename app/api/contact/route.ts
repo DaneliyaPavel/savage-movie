@@ -35,6 +35,7 @@ interface ContactFormBody {
   name?: unknown
   email?: unknown
   phone?: unknown
+  telegram?: unknown
   company?: unknown
   message?: unknown
   budget?: unknown
@@ -45,6 +46,7 @@ interface ContactSubmission {
   name: string
   email: string | null
   phone: string | null
+  telegram: string | null
   company: string | null
   message: string
   budget: number | null
@@ -62,6 +64,9 @@ const PROJECT_TYPE_LABELS: Record<string, string> = {
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/** Ник в Telegram: 5-32 символа, буквы/цифры/подчёркивание */
+const TELEGRAM_HANDLE_PATTERN = /^[a-zA-Z0-9_]{5,32}$/
 
 function sanitizeString(value: unknown, maxLength: number = 1000): string {
   if (typeof value !== 'string') return ''
@@ -93,6 +98,19 @@ function escapeTelegram(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
+/**
+ * Приводит любой способ написать ник к виду @name.
+ * Люди присылают и «@name», и «name», и ссылку t.me/name.
+ */
+function normalizeTelegramHandle(value: unknown): string {
+  const raw = sanitizeString(value, 60)
+    .replace(/^https?:\/\//i, '')
+    .replace(/^t\.me\//i, '')
+    .replace(/^@/, '')
+
+  return TELEGRAM_HANDLE_PATTERN.test(raw) ? `@${raw}` : ''
+}
+
 function projectTypeLabel(projectType: string): string {
   return PROJECT_TYPE_LABELS[projectType] || projectType
 }
@@ -106,6 +124,15 @@ function buildEmailHtml(data: ContactSubmission): string {
 
   if (data.phone) {
     rows.push(`<p><strong>Телефон:</strong> ${escapeHtml(data.phone)}</p>`)
+  }
+
+  if (data.telegram) {
+    const handle = data.telegram.replace(/^@/, '')
+    rows.push(
+      `<p><strong>Telegram:</strong> <a href="https://t.me/${escapeHtml(handle)}">${escapeHtml(
+        data.telegram
+      )}</a></p>`
+    )
   }
 
   if (data.email) {
@@ -148,6 +175,10 @@ function buildTelegramMessage(data: ContactSubmission): string {
 
   if (data.phone) {
     lines.push(`📱 <b>Телефон:</b> ${escapeTelegram(data.phone)}`)
+  }
+
+  if (data.telegram) {
+    lines.push(`💬 <b>Telegram:</b> ${escapeTelegram(data.telegram)}`)
   }
 
   if (data.email) {
@@ -205,10 +236,11 @@ function buildSubject(data: ContactSubmission): string {
 export async function POST(request: NextRequest) {
   try {
     const body: ContactFormBody = await request.json()
-    const { name, email, phone, company, message, budget, projectType } = body
+    const { name, email, phone, telegram, company, message, budget, projectType } = body
 
     const sanitizedName = sanitizeString(name, 100)
     const sanitizedPhone = sanitizeString(phone, 20)
+    const sanitizedTelegram = normalizeTelegramHandle(telegram)
     const rawEmail = sanitizeString(email, 200).toLowerCase()
     const sanitizedEmail = EMAIL_PATTERN.test(rawEmail) ? rawEmail : ''
     const sanitizedCompany = sanitizeString(company, 200)
@@ -221,9 +253,9 @@ export async function POST(request: NextRequest) {
     // Формы на сайте различаются: где-то обязателен телефон, где-то email.
     // Достаточно любого рабочего контакта.
     const hasPhone = sanitizedPhone.length >= 5
-    if (!hasPhone && !sanitizedEmail) {
+    if (!hasPhone && !sanitizedEmail && !sanitizedTelegram) {
       return NextResponse.json(
-        { error: 'Укажите телефон или email для связи' },
+        { error: 'Укажите телефон, Telegram или email для связи' },
         { status: 400 }
       )
     }
@@ -240,6 +272,7 @@ export async function POST(request: NextRequest) {
       name: sanitizedName,
       email: sanitizedEmail || null,
       phone: hasPhone ? sanitizedPhone : null,
+      telegram: sanitizedTelegram || null,
       company: sanitizedCompany || null,
       message: sanitizedMessage,
       budget: sanitizedBudget,

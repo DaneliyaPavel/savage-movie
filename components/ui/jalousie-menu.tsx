@@ -138,6 +138,12 @@ export function JalousieMenu() {
           countKey: null as CountKey,
           position: 'center' as const,
         },
+        {
+          labelKey: 'nav.booking',
+          href: '/booking',
+          countKey: null as CountKey,
+          position: 'right' as const,
+        },
       ] as const,
     []
   )

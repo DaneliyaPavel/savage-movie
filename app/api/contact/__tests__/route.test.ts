@@ -85,6 +85,46 @@ describe('POST /api/contact', () => {
     expect(sendEmail).not.toHaveBeenCalled()
   })
 
+  it('принимает заявку только с ником в Telegram', async () => {
+    process.env.RESEND_API_KEY = 'test-key'
+    const { POST } = await loadRoute()
+
+    const response = await POST(
+      makeRequest({ name: 'Иван', telegram: 'ivan_petrov', message: 'Заявка на созвон' })
+    )
+
+    expect(response.status).toBe(200)
+    expect(sendEmail).toHaveBeenCalledTimes(1)
+    expect(sendEmail.mock.calls[0][0].html).toContain('https://t.me/ivan_petrov')
+  })
+
+  it('нормализует ссылку t.me и голый ник до вида @name', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'bot-token'
+    process.env.TELEGRAM_CHAT_ID = 'chat-id'
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: async () => '' })
+    vi.stubGlobal('fetch', fetchMock)
+    const { POST } = await loadRoute()
+
+    const response = await POST(
+      makeRequest({ name: 'Иван', telegram: 'https://t.me/ivan_petrov' })
+    )
+
+    expect(response.status).toBe(200)
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
+    expect(body.text).toContain('@ivan_petrov')
+    vi.unstubAllGlobals()
+  })
+
+  it('отклоняет мусор в поле Telegram, если других контактов нет', async () => {
+    process.env.RESEND_API_KEY = 'test-key'
+    const { POST } = await loadRoute()
+
+    const response = await POST(makeRequest({ name: 'Иван', telegram: '???' }))
+
+    expect(response.status).toBe(400)
+    expect(sendEmail).not.toHaveBeenCalled()
+  })
+
   it('успешен, если Telegram упал, но письмо ушло', async () => {
     process.env.RESEND_API_KEY = 'test-key'
     process.env.TELEGRAM_BOT_TOKEN = 'token'

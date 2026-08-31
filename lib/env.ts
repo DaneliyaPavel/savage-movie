@@ -8,7 +8,6 @@ const optionalNonEmptyString = z.preprocess(emptyToUndefined, z.string().min(1).
 const PublicEnvSchema = z.object({
   NEXT_PUBLIC_API_URL: optionalNonEmptyString,
   NEXT_PUBLIC_APP_URL: optionalNonEmptyString,
-  NEXT_PUBLIC_CALENDLY_URL: optionalNonEmptyString,
   NEXT_PUBLIC_GOOGLE_CLIENT_ID: optionalNonEmptyString,
   NEXT_PUBLIC_YANDEX_CLIENT_ID: optionalNonEmptyString,
   NEXT_PUBLIC_BUNNY_CDN_HOSTNAME: optionalNonEmptyString,
@@ -19,7 +18,6 @@ const PublicEnvSchema = z.object({
 export const publicEnv = PublicEnvSchema.parse({
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-  NEXT_PUBLIC_CALENDLY_URL: process.env.NEXT_PUBLIC_CALENDLY_URL,
   NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
   NEXT_PUBLIC_YANDEX_CLIENT_ID: process.env.NEXT_PUBLIC_YANDEX_CLIENT_ID,
   NEXT_PUBLIC_BUNNY_CDN_HOSTNAME: process.env.NEXT_PUBLIC_BUNNY_CDN_HOSTNAME,
