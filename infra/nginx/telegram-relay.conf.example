@@ -10,11 +10,22 @@
 #      ОБЯЗАТЕЛЬНО серая тучка (DNS only), НЕ оранжевая. При проксировании
 #      Cloudflare терминирует TLS и видит токен бота, а nginx получает IP
 #      Cloudflare вместо основного сервера — allow ниже отрежет всё подряд.
-#   2) На французском VPS СНАЧАЛА выпустить сертификат, иначе nginx с этим
-#      конфигом не стартует — ssl_certificate ниже указывает на несуществующий
-#      файл. Порт 80 должен быть свободен:
+#   2) СНАЧАЛА выпустить сертификат, иначе nginx с этим конфигом не стартует —
+#      ssl_certificate ниже указывает на несуществующий файл.
+#
+#      Сперва проверь, есть ли на сервере уже другие сертификаты:
+#        grep -H -E "authenticator|webroot_path" /etc/letsencrypt/renewal/*.conf
+#
+#      Если там webroot — бери ТОТ ЖЕ путь, иначе продление начнёт конфликтовать:
+#        certbot certonly --webroot -w /var/www/certbot -d tg.savagemovie.ru
+#
+#      Если сервер чистый и 80-й свободен — можно standalone:
 #        systemctl stop nginx
 #        certbot certonly --standalone -d tg.savagemovie.ru
+#
+#      НЕ вешай глобальные хуки в /etc/letsencrypt/renewal-hooks/ с остановкой
+#      nginx: они применяются ко ВСЕМ сертификатам на сервере и ломают продление
+#      тех, что используют webroot — им nginx нужен живым.
 #   3) Положить этот файл в /etc/nginx/conf.d/telegram-relay.conf, затем:
 #        nginx -t && systemctl start nginx
 #   4) На основном сервере в .env:
