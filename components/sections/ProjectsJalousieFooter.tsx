@@ -124,10 +124,10 @@ export function ProjectsJalousieFooter() {
                 {language === 'ru' ? '(контакт)' : '(contact)'}
               </span>
               <a
-                href="mailto:savage.movie@yandex.ru"
+                href="mailto:hello@savagemovie.ru"
                 className="uppercase tracking-[0.15em] sm:tracking-[0.25em] text-xs sm:text-sm md:text-base hover:opacity-70 transition-opacity"
               >
-                SAVAGE.MOVIE@YANDEX.RU
+                hello@savagemovie.ru
               </a>
             </div>
 

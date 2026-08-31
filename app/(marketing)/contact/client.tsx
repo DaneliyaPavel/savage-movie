@@ -50,7 +50,7 @@ export function ContactPageClient() {
             </HoverNote>
             <div className="space-y-8">
               <motion.a
-                href="mailto:savage.movie@yandex.ru"
+                href="mailto:hello@savagemovie.ru"
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
@@ -66,7 +66,7 @@ export function ContactPageClient() {
                     Email
                   </p>
                   <p className="text-base md:text-lg font-medium text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">
-                    savage.movie@yandex.ru
+                    hello@savagemovie.ru
                   </p>
                 </div>
               </motion.a>

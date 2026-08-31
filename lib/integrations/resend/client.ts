@@ -11,6 +11,7 @@ interface EmailOptions {
   subject: string
   html: string
   from?: string
+  replyTo?: string
 }
 
 function escapeHtml(value: string): string {
@@ -46,6 +47,7 @@ export async function sendEmail(options: EmailOptions) {
       to: Array.isArray(options.to) ? options.to : [options.to],
       subject: options.subject,
       html: options.html,
+      ...(options.replyTo ? { replyTo: options.replyTo } : {}),
     })
 
     if (error) {

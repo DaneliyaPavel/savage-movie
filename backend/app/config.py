@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     
     # Email
     RESEND_API_KEY: str = ""
-    ADMIN_EMAIL: str = "savage.movie@yandex.ru"
+    ADMIN_EMAIL: str = "hello@savagemovie.ru"
     
     # Dev helpers (НЕ включать в production)
     # Если SEED_ADMIN=true, то при старте backend будет создан/обновлён админ-пользователь.

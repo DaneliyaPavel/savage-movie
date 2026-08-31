@@ -91,11 +91,11 @@ export function Footer() {
                 transition={{ duration: 0.5, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
               >
                 <a
-                  href="mailto:savage.movie@yandex.ru"
+                  href="mailto:hello@savagemovie.ru"
                   className="text-[#FFFFFF]/60 hover:text-[#FFFFFF] transition-colors flex items-center gap-3 group"
                 >
                   <Mail className="w-5 h-5 group-hover:text-[#ff2936] transition-colors shrink-0" />
-                  <span>savage.movie@yandex.ru</span>
+                  <span>hello@savagemovie.ru</span>
                 </a>
               </motion.li>
               <motion.li
