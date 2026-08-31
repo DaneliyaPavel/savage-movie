@@ -3,8 +3,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Установка системных зависимостей
-RUN apt-get update && apt-get install -y \
+# Установка системных зависимостей.
+# apt-get upgrade подтягивает патчи безопасности базового образа (openssl и т.п.),
+# иначе Trivy валит сборку на уже исправленных в Debian CVE.
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     postgresql-client \
     gosu \
     && rm -rf /var/lib/apt/lists/*
@@ -14,6 +16,16 @@ COPY backend/requirements.txt .
 ENV PIP_DEFAULT_TIMEOUT=300
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
+
+# pip и ensurepip в рантайме не нужны, но тянут за собой уязвимые vendored-копии
+# (msgpack в pip/_vendor, setuptools 70.x в ensurepip/_bundled).
+RUN rm -rf /usr/local/lib/python3.11/ensurepip \
+    /usr/local/lib/python3.11/site-packages/pip \
+    /usr/local/lib/python3.11/site-packages/pip-*.dist-info \
+    /usr/local/lib/python3.11/site-packages/wheel \
+    /usr/local/lib/python3.11/site-packages/wheel-*.dist-info \
+    /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.11 \
+    /usr/local/bin/wheel
 
 # Копирование кода приложения
 COPY backend/ ./backend/
