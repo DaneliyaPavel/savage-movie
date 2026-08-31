@@ -87,6 +87,56 @@ describe('POST /api/contact', () => {
     vi.unstubAllGlobals()
   })
 
+  it('доставляет только через Telegram, когда Resend не настроен', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'bot-token'
+    process.env.TELEGRAM_CHAT_ID = '123456'
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, text: async () => 'ok' })
+    vi.stubGlobal('fetch', fetchMock)
+    const { POST } = await loadRoute()
+
+    const response = await POST(makeRequest(validSubmission))
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ success: true })
+    expect(sendEmail).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('https://api.telegram.org/botbot-token/sendMessage')
+    const payload = JSON.parse(init.body)
+    expect(payload.chat_id).toBe('123456')
+    expect(payload.parse_mode).toBe('HTML')
+    expect(payload.text).toContain('Иван')
+    expect(payload.text).toContain('+79990000000')
+    expect(payload.text).toContain('Коммерция')
+    vi.unstubAllGlobals()
+  })
+
+  it('не ломает кавычки и угловые скобки в тексте для Telegram', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'bot-token'
+    process.env.TELEGRAM_CHAT_ID = '123456'
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, text: async () => 'ok' })
+    vi.stubGlobal('fetch', fetchMock)
+    const { POST } = await loadRoute()
+
+    await POST(
+      makeRequest({
+        name: 'Иван',
+        phone: '+79990000000',
+        message: 'Хочу "крутое" видео <про нас> & команду',
+      })
+    )
+
+    const payload = JSON.parse(fetchMock.mock.calls[0][1].body)
+    // кавычки остаются как есть — Telegram их не декодирует
+    expect(payload.text).toContain('"крутое"')
+    // а вот угловые скобки и амперсанд обязаны быть экранированы
+    expect(payload.text).toContain('&lt;про нас&gt;')
+    expect(payload.text).toContain('&amp; команду')
+    expect(payload.text).not.toContain('&quot;')
+    vi.unstubAllGlobals()
+  })
+
   it('отвечает 500, если ни один канал доставки не настроен', async () => {
     const { POST } = await loadRoute()
 

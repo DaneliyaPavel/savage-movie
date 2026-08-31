@@ -57,6 +57,7 @@ function formatBudgetRu(value: number): string {
   return `${value} ₽`
 }
 
+/** Полное экранирование для HTML-письма */
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
@@ -64,6 +65,15 @@ function escapeHtml(text: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
+}
+
+/**
+ * Экранирование для Telegram parse_mode=HTML.
+ * Telegram требует экранировать только &, < и >; кавычки трогать нельзя,
+ * иначе в сообщении вместо « " » видно « &quot; ».
+ */
+function escapeTelegram(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 function projectTypeLabel(projectType: string): string {
@@ -116,34 +126,34 @@ function buildTelegramMessage(data: ContactSubmission): string {
   const lines: string[] = [
     '📩 <b>Новая заявка с сайта</b>',
     '',
-    `👤 <b>Имя:</b> ${escapeHtml(data.name)}`,
+    `👤 <b>Имя:</b> ${escapeTelegram(data.name)}`,
   ]
 
   if (data.phone) {
-    lines.push(`📱 <b>Телефон:</b> ${escapeHtml(data.phone)}`)
+    lines.push(`📱 <b>Телефон:</b> ${escapeTelegram(data.phone)}`)
   }
 
   if (data.email) {
-    lines.push(`✉️ <b>Email:</b> ${escapeHtml(data.email)}`)
+    lines.push(`✉️ <b>Email:</b> ${escapeTelegram(data.email)}`)
   }
 
   if (data.company) {
-    lines.push(`🏢 <b>Компания:</b> ${escapeHtml(data.company)}`)
+    lines.push(`🏢 <b>Компания:</b> ${escapeTelegram(data.company)}`)
   }
 
   if (data.projectType) {
-    lines.push(`🎬 <b>Тип проекта:</b> ${escapeHtml(projectTypeLabel(data.projectType))}`)
+    lines.push(`🎬 <b>Тип проекта:</b> ${escapeTelegram(projectTypeLabel(data.projectType))}`)
   }
 
   if (data.budget !== null) {
-    lines.push(`💰 <b>Бюджет:</b> ${escapeHtml(formatBudgetRu(data.budget))}`)
+    lines.push(`💰 <b>Бюджет:</b> ${escapeTelegram(formatBudgetRu(data.budget))}`)
   }
 
   if (data.message) {
-    lines.push('', `💬 <b>Сообщение:</b>`, escapeHtml(data.message))
+    lines.push('', `💬 <b>Сообщение:</b>`, escapeTelegram(data.message))
   }
 
-  lines.push('', `🕐 ${escapeHtml(formatSubmittedAt())}`)
+  lines.push('', `🕐 ${escapeTelegram(formatSubmittedAt())}`)
 
   return lines.join('\n')
 }
