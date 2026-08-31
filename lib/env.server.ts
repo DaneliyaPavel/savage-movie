@@ -24,9 +24,18 @@ const ServerEnvSchema = z
     RESEND_FROM_EMAIL: optionalNonEmptyString,
     ADMIN_EMAIL: optionalNonEmptyString,
 
+    // SMTP (Яндекс 360) — основной канал доставки заявок
+    SMTP_HOST: optionalNonEmptyString,
+    SMTP_PORT: optionalNonEmptyString,
+    SMTP_USER: optionalNonEmptyString,
+    SMTP_PASSWORD: optionalNonEmptyString,
+    SMTP_FROM: optionalNonEmptyString,
+
     // Telegram
     TELEGRAM_BOT_TOKEN: optionalNonEmptyString,
     TELEGRAM_CHAT_ID: optionalNonEmptyString,
+    // Реле Bot API, если прямой доступ закрыт
+    TELEGRAM_API_BASE: optionalNonEmptyString,
 
     // Uploads
     UPLOAD_DIR: optionalNonEmptyString,

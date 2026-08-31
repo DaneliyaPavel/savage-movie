@@ -2,9 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NextRequest } from 'next/server'
 
 const sendEmail = vi.fn()
+const sendSmtpMail = vi.fn()
 
 vi.mock('@/lib/integrations/resend/client', () => ({
   sendEmail: (...args: unknown[]) => sendEmail(...args),
+}))
+
+vi.mock('@/lib/integrations/smtp/client', () => ({
+  sendSmtpMail: (...args: unknown[]) => sendSmtpMail(...args),
+  isSmtpConfigured: () =>
+    Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD),
 }))
 
 vi.mock('@/lib/utils/logger', () => ({
@@ -36,7 +43,12 @@ describe('POST /api/contact', () => {
     delete process.env.ADMIN_EMAIL
     delete process.env.TELEGRAM_BOT_TOKEN
     delete process.env.TELEGRAM_CHAT_ID
+    delete process.env.TELEGRAM_API_BASE
+    delete process.env.SMTP_HOST
+    delete process.env.SMTP_USER
+    delete process.env.SMTP_PASSWORD
     sendEmail.mockResolvedValue({ id: 'email_1' })
+    sendSmtpMail.mockResolvedValue({ messageId: 'smtp_1' })
   })
 
   it('отправляет заявку на hello@savagemovie.ru, когда ADMIN_EMAIL не задан', async () => {
@@ -164,5 +176,117 @@ describe('POST /api/contact', () => {
     await POST(makeRequest(validSubmission))
 
     expect(sendEmail.mock.calls[0][0]).toMatchObject({ to: 'studio@savagemovie.ru' })
+  })
+})
+
+describe('POST /api/contact — SMTP и реле Telegram', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    delete process.env.RESEND_API_KEY
+    delete process.env.ADMIN_EMAIL
+    delete process.env.TELEGRAM_BOT_TOKEN
+    delete process.env.TELEGRAM_CHAT_ID
+    delete process.env.TELEGRAM_API_BASE
+    delete process.env.SMTP_HOST
+    delete process.env.SMTP_USER
+    delete process.env.SMTP_PASSWORD
+    sendEmail.mockResolvedValue({ id: 'email_1' })
+    sendSmtpMail.mockResolvedValue({ messageId: 'smtp_1' })
+  })
+
+  function configureSmtp() {
+    process.env.SMTP_HOST = 'smtp.yandex.ru'
+    process.env.SMTP_USER = 'hello@savagemovie.ru'
+    process.env.SMTP_PASSWORD = 'app-password'
+  }
+
+  it('доставляет заявку через SMTP на hello@savagemovie.ru', async () => {
+    configureSmtp()
+    const { POST } = await loadRoute()
+
+    const response = await POST(makeRequest(validSubmission))
+
+    expect(response.status).toBe(200)
+    expect(sendSmtpMail).toHaveBeenCalledTimes(1)
+    expect(sendSmtpMail.mock.calls[0][0]).toMatchObject({ to: 'hello@savagemovie.ru' })
+    expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('ставит email клиента в reply-to письма SMTP', async () => {
+    configureSmtp()
+    const { POST } = await loadRoute()
+
+    await POST(makeRequest({ name: 'Иван', email: 'client@example.com', message: 'Привет' }))
+
+    expect(sendSmtpMail.mock.calls[0][0]).toMatchObject({ replyTo: 'client@example.com' })
+  })
+
+  it('заявка доходит письмом, даже если Telegram недоступен', async () => {
+    configureSmtp()
+    process.env.TELEGRAM_BOT_TOKEN = 'bot-token'
+    process.env.TELEGRAM_CHAT_ID = '123'
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('ETIMEDOUT')))
+    const { POST } = await loadRoute()
+
+    const response = await POST(makeRequest(validSubmission))
+
+    expect(response.status).toBe(200)
+    expect(sendSmtpMail).toHaveBeenCalledTimes(1)
+    vi.unstubAllGlobals()
+  })
+
+  it('шлёт Telegram через реле, когда задан TELEGRAM_API_BASE', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'bot-token'
+    process.env.TELEGRAM_CHAT_ID = '123'
+    process.env.TELEGRAM_API_BASE = 'https://tg-relay.example.com'
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, text: async () => 'ok' })
+    vi.stubGlobal('fetch', fetchMock)
+    const { POST } = await loadRoute()
+
+    await POST(makeRequest(validSubmission))
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'https://tg-relay.example.com/botbot-token/sendMessage'
+    )
+    vi.unstubAllGlobals()
+  })
+
+  it('срезает хвостовой слеш у адреса реле', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'bot-token'
+    process.env.TELEGRAM_CHAT_ID = '123'
+    process.env.TELEGRAM_API_BASE = 'https://tg-relay.example.com/'
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, text: async () => 'ok' })
+    vi.stubGlobal('fetch', fetchMock)
+    const { POST } = await loadRoute()
+
+    await POST(makeRequest(validSubmission))
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'https://tg-relay.example.com/botbot-token/sendMessage'
+    )
+    vi.unstubAllGlobals()
+  })
+
+  it('без реле идёт напрямую в api.telegram.org', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'bot-token'
+    process.env.TELEGRAM_CHAT_ID = '123'
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, text: async () => 'ok' })
+    vi.stubGlobal('fetch', fetchMock)
+    const { POST } = await loadRoute()
+
+    await POST(makeRequest(validSubmission))
+
+    expect(fetchMock.mock.calls[0][0]).toBe('https://api.telegram.org/botbot-token/sendMessage')
+    vi.unstubAllGlobals()
+  })
+
+  it('500, если SMTP упал и других каналов нет', async () => {
+    configureSmtp()
+    sendSmtpMail.mockRejectedValue(new Error('SMTP auth failed'))
+    const { POST } = await loadRoute()
+
+    const response = await POST(makeRequest(validSubmission))
+
+    expect(response.status).toBe(500)
   })
 })

@@ -1,0 +1,53 @@
+# Реле Telegram Bot API.
+#
+# Ставится на СЕРВЕР ВНЕ РФ, а не на основной VDS. Нужен потому, что с
+# российского хостинга api.telegram.org недоступен: на корень отвечает
+# заглушка провайдера, а сами запросы к /bot<token>/... уходят в таймаут.
+#
+# После установки на основном сервере в .env:
+#   TELEGRAM_API_BASE=https://tg-relay.example.com
+# и перезапуск: docker compose up -d frontend
+#
+# ВАЖНО про безопасность: токен бота передаётся прямо в пути запроса,
+# поэтому реле обязано быть закрыто по IP основного сервера и работать
+# только по HTTPS. Открытое реле = отданный наружу токен.
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name tg-relay.example.com;
+
+    # Выпустить сертификат: certbot --nginx -d tg-relay.example.com
+    ssl_certificate     /etc/letsencrypt/live/tg-relay.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/tg-relay.example.com/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    # Токен не должен попадать в логи — путь пишется целиком.
+    access_log off;
+
+    location / {
+        # ЗАМЕНИ на IP основного сервера (сейчас — прод savagemovie.ru).
+        allow 89.169.4.92;
+        deny all;
+
+        proxy_pass https://api.telegram.org;
+        proxy_ssl_server_name on;
+        proxy_ssl_name api.telegram.org;
+        proxy_set_header Host api.telegram.org;
+
+        # Заявки уходят быстро, но пусть будет запас на медленную сеть.
+        proxy_connect_timeout 10s;
+        proxy_send_timeout    20s;
+        proxy_read_timeout    20s;
+
+        # Форма отправляет компактный JSON, большие тела не нужны.
+        client_max_body_size 1m;
+    }
+}
+
+# Простой редирект с http на https, чтобы не ходить в открытую.
+server {
+    listen 80;
+    server_name tg-relay.example.com;
+    return 301 https://$host$request_uri;
+}

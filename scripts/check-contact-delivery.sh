@@ -63,7 +63,7 @@ fi
 # Читаем значения из контейнера — это единственный авторитетный источник.
 # Наружу отдаём только длину, чтобы не светить секреты.
 ENV_DUMP=$(compose exec -T "$SERVICE" sh -c '
-for v in TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID RESEND_API_KEY RESEND_FROM_EMAIL ADMIN_EMAIL; do
+for v in TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID TELEGRAM_API_BASE SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD SMTP_FROM RESEND_API_KEY RESEND_FROM_EMAIL ADMIN_EMAIL; do
   eval "val=\${$v:-}"
   printf "%s\t%s\n" "$v" "$val"
 done' 2>/dev/null | tr -d '\r')
@@ -79,7 +79,7 @@ while IFS=$'\t' read -r name value; do
   [ -z "$name" ] && continue
   case "$name" in
     # Адреса не секретны — показываем как есть, их полезно видеть глазами
-    ADMIN_EMAIL|RESEND_FROM_EMAIL|TELEGRAM_CHAT_ID)
+    ADMIN_EMAIL|RESEND_FROM_EMAIL|TELEGRAM_CHAT_ID|TELEGRAM_API_BASE|SMTP_HOST|SMTP_PORT|SMTP_USER|SMTP_FROM)
       if [ -n "$value" ]; then echo "  $name = $value"; else echo "  $name = ПУСТО"; fi ;;
     *)
       if [ -n "$value" ]; then
@@ -92,6 +92,10 @@ done <<< "$ENV_DUMP"
 
 TG_TOKEN=$(get_var TELEGRAM_BOT_TOKEN)
 TG_CHAT=$(get_var TELEGRAM_CHAT_ID)
+# Если задано реле, проверяем именно его — приложение ходит туда же.
+TG_BASE=$(get_var TELEGRAM_API_BASE)
+TG_BASE="${TG_BASE:-https://api.telegram.org}"
+TG_BASE="${TG_BASE%/}"
 
 # Частая причина «правильный токен не работает»: кавычки или пробелы
 # из .env уезжают в значение как есть.
@@ -110,16 +114,29 @@ fi
 
 echo
 echo "=============================================="
-echo " 2. Есть ли связь с api.telegram.org"
+echo " 2. Есть ли связь с Bot API ($TG_BASE)"
 echo "=============================================="
 echo "  (проверяется БЕЗ токена — только сетевая доступность)"
 
-PROBE_HTTP=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://api.telegram.org/" 2>/dev/null)
+# Бьём именно в Bot API с заведомо неверным токеном: живой Telegram
+# отвечает 401 мгновенно. Проверять корень api.telegram.org бесполезно —
+# на него отвечает заглушка провайдера, и блокировка выглядит как успех.
+PROBE_HTTP=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
+  "${TG_BASE}/bot0:INVALID/getMe" 2>/dev/null)
 PROBE_RC=$?
 
-if [ "$PROBE_RC" -eq 0 ]; then
-  echo "  Связь есть (HTTP $PROBE_HTTP). Сеть не при чём."
+if [ "$PROBE_RC" -eq 0 ] && [ "$PROBE_HTTP" = "401" ]; then
+  echo "  Связь есть: Bot API ответил 401 на неверный токен, как и должен."
   TG_REACHABLE=1
+elif [ "$PROBE_RC" -eq 0 ]; then
+  TG_REACHABLE=0
+  echo "  ОТВЕЧАЕТ НЕ TELEGRAM: на запрос к Bot API пришёл HTTP $PROBE_HTTP вместо 401."
+  echo "  Так выглядит заглушка провайдера или прозрачный прокси поверх блокировки."
+  echo
+  echo "  Токен ни при чём. С твоего компьютера он работает, потому что"
+  echo "  проверка идёт из другой сети."
+  echo
+  echo "  Обход — реле через сервер вне РФ (переменная TELEGRAM_API_BASE)."
 else
   TG_REACHABLE=0
   echo "  СВЯЗИ НЕТ: $(curl_reason "$PROBE_RC")"
@@ -143,11 +160,11 @@ if [ -z "$TG_TOKEN" ]; then
   echo "  TELEGRAM_BOT_TOKEN пуст внутри контейнера."
   echo "  Проверь, что он есть в $ROOT_DIR/.env, и перезапусти: $COMPOSE_CMD up -d $SERVICE"
 elif [ "$TG_REACHABLE" -eq 0 ]; then
-  echo "  Пропущено: нет связи с api.telegram.org (см. пункт 2)."
+  echo "  Пропущено: нет связи с Bot API (см. пункт 2)."
 else
   GETME_BODY=$(mktemp)
   GETME_HTTP=$(curl -s -o "$GETME_BODY" -w '%{http_code}' --max-time 20 \
-    "https://api.telegram.org/bot${TG_TOKEN}/getMe" 2>/dev/null)
+    "${TG_BASE}/bot${TG_TOKEN}/getMe" 2>/dev/null)
   GETME_RC=$?
   GETME=$(cat "$GETME_BODY"); rm -f "$GETME_BODY"
 
@@ -179,7 +196,7 @@ elif [ -z "$TG_CHAT" ]; then
   echo "  Пропущено: TELEGRAM_CHAT_ID пуст."
 else
   SEND=$(curl -s --max-time 20 -X POST \
-    "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+    "${TG_BASE}/bot${TG_TOKEN}/sendMessage" \
     -H 'Content-Type: application/json' \
     -d "{\"chat_id\":\"${TG_CHAT}\",\"text\":\"Проверка доставки заявок с сайта. Это тестовое сообщение.\"}" 2>/dev/null)
 

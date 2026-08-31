@@ -5,10 +5,27 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/integrations/resend/client'
+import { isSmtpConfigured, sendSmtpMail } from '@/lib/integrations/smtp/client'
 import { logger } from '@/lib/utils/logger'
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
+
+/**
+ * Базовый адрес Bot API. Переопределяется на реле, когда прямой доступ
+ * к api.telegram.org закрыт (типично для российского хостинга).
+ */
+const TELEGRAM_API_BASE = (process.env.TELEGRAM_API_BASE || 'https://api.telegram.org').replace(
+  /\/$/,
+  ''
+)
+
+/**
+ * Жёсткий таймаут на Telegram. Без него недоступный Bot API держит запрос
+ * до системного таймаута соединения (~10 с), и человек столько ждёт кнопку,
+ * хотя письмо уже ушло.
+ */
+const TELEGRAM_TIMEOUT_MS = 5000
 
 /** Почта, на которую падают все заявки с сайта */
 const DEFAULT_CONTACT_EMAIL = 'hello@savagemovie.ru'
@@ -159,7 +176,7 @@ function buildTelegramMessage(data: ContactSubmission): string {
 }
 
 async function sendTelegramMessage(text: string): Promise<void> {
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`
+  const url = `${TELEGRAM_API_BASE}/bot${TELEGRAM_BOT_TOKEN}/sendMessage`
 
   const response = await fetch(url, {
     method: 'POST',
@@ -169,6 +186,7 @@ async function sendTelegramMessage(text: string): Promise<void> {
       text,
       parse_mode: 'HTML',
     }),
+    signal: AbortSignal.timeout(TELEGRAM_TIMEOUT_MS),
   })
 
   if (!response.ok) {
@@ -231,6 +249,18 @@ export async function POST(request: NextRequest) {
 
     const deliveries: Array<{ channel: string; promise: Promise<unknown> }> = []
 
+    if (isSmtpConfigured()) {
+      deliveries.push({
+        channel: 'smtp',
+        promise: sendSmtpMail({
+          to: CONTACT_EMAIL,
+          subject: buildSubject(submission),
+          html: buildEmailHtml(submission),
+          ...(submission.email ? { replyTo: submission.email } : {}),
+        }),
+      })
+    }
+
     if (process.env.RESEND_API_KEY) {
       deliveries.push({
         channel: 'email',
@@ -253,7 +283,7 @@ export async function POST(request: NextRequest) {
     if (deliveries.length === 0) {
       logger.error('Нет настроенных каналов доставки заявок', null, {
         route: '/api/contact',
-        hint: 'Задайте RESEND_API_KEY (и опционально TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID)',
+        hint: 'Задайте SMTP_HOST/SMTP_USER/SMTP_PASSWORD или TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID',
       })
       return NextResponse.json({ error: 'Сервис временно недоступен' }, { status: 500 })
     }
