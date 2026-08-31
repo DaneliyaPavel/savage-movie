@@ -27,8 +27,10 @@
 # только по HTTPS. Открытое реле = отданный наружу токен.
 
 server {
+    # Без http2: директива http2 on; появилась только в nginx 1.25.1, а на
+    # Ubuntu 24.04 приезжает 1.24. Для редких мелких запросов к Bot API
+    # HTTP/2 всё равно ничего не даёт.
     listen 443 ssl;
-    http2 on;
     server_name tg.savagemovie.ru;
 
     ssl_certificate     /etc/letsencrypt/live/tg.savagemovie.ru/fullchain.pem;
