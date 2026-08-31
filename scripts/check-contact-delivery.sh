@@ -36,6 +36,21 @@ fi
 
 compose() { $COMPOSE_CMD -f "$COMPOSE_FILE" "$@"; }
 
+# Расшифровка кодов возврата curl — нужна, чтобы отличить
+# «Telegram отказал» от «до Telegram вообще не достучались».
+curl_reason() {
+  case "$1" in
+    0)  echo "успех" ;;
+    5)  echo "не разрешается адрес прокси" ;;
+    6)  echo "DNS не резолвит api.telegram.org" ;;
+    7)  echo "соединение отклонено или отфильтровано" ;;
+    28) echo "таймаут — пакеты уходят в никуда" ;;
+    35) echo "TLS-рукопожатие не удалось (типично для блокировки по SNI)" ;;
+    56) echo "соединение разорвано во время приёма данных" ;;
+    *)  echo "код curl $1" ;;
+  esac
+}
+
 echo "=============================================="
 echo " 1. Переменные внутри контейнера $SERVICE"
 echo "=============================================="
@@ -78,46 +93,101 @@ done <<< "$ENV_DUMP"
 TG_TOKEN=$(get_var TELEGRAM_BOT_TOKEN)
 TG_CHAT=$(get_var TELEGRAM_CHAT_ID)
 
-echo
-echo "=============================================="
-echo " 2. Проверка бота в Telegram API"
-echo "=============================================="
-
-if [ -z "$TG_TOKEN" ]; then
-  echo "  TELEGRAM_BOT_TOKEN пуст внутри контейнера."
-  echo "  Проверь, что он есть в $ROOT_DIR/.env, и перезапусти: $COMPOSE_CMD up -d $SERVICE"
-else
-  GETME=$(curl -s --max-time 15 "https://api.telegram.org/bot${TG_TOKEN}/getMe")
-  if echo "$GETME" | grep -q '"ok":true'; then
-    BOT_NAME=$(echo "$GETME" | sed -n 's/.*"username":"\([^"]*\)".*/\1/p')
-    echo "  Токен рабочий. Бот: @${BOT_NAME:-?}"
-  else
-    echo "  Токен НЕ принят Telegram. Ответ API:"
-    echo "$GETME" | sed 's/^/    /'
-    echo "  Скорее всего токен отозван или перевыпущен в @BotFather."
+# Частая причина «правильный токен не работает»: кавычки или пробелы
+# из .env уезжают в значение как есть.
+if [ -n "$TG_TOKEN" ]; then
+  case "$TG_TOKEN" in
+    \"*|\'*|*\"|*\')
+      echo "  !! Токен обёрнут в кавычки — в .env их писать не нужно, они попадают в значение." ;;
+  esac
+  case "$TG_TOKEN" in
+    *" "*) echo "  !! В токене есть пробел — вероятно, лишний символ при вставке." ;;
+  esac
+  if ! echo "$TG_TOKEN" | grep -qE '^[0-9]{6,}:[A-Za-z0-9_-]{30,}$'; then
+    echo "  !! Токен не похож на формат Telegram (цифры, двоеточие, ~35 символов)."
   fi
 fi
 
 echo
 echo "=============================================="
-echo " 3. Отправка тестового сообщения в чат"
+echo " 2. Есть ли связь с api.telegram.org"
+echo "=============================================="
+echo "  (проверяется БЕЗ токена — только сетевая доступность)"
+
+PROBE_HTTP=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://api.telegram.org/" 2>/dev/null)
+PROBE_RC=$?
+
+if [ "$PROBE_RC" -eq 0 ]; then
+  echo "  Связь есть (HTTP $PROBE_HTTP). Сеть не при чём."
+  TG_REACHABLE=1
+else
+  TG_REACHABLE=0
+  echo "  СВЯЗИ НЕТ: $(curl_reason "$PROBE_RC")"
+  echo
+  echo "  Это и есть причина. Токен ни при чём — до Telegram не доходят запросы"
+  echo "  с этого сервера. С твоего компьютера тот же токен работает, потому что"
+  echo "  проверка идёт из другой сети."
+  echo
+  echo "  Telegram заблокирован у большинства российских хостеров."
+  echo "  Проверь отдельно, резолвится ли адрес:"
+  echo "    getent hosts api.telegram.org"
+fi
+
+echo
+echo "=============================================="
+echo " 3. Проверка токена (getMe)"
+echo "=============================================="
+
+TOKEN_OK=0
+if [ -z "$TG_TOKEN" ]; then
+  echo "  TELEGRAM_BOT_TOKEN пуст внутри контейнера."
+  echo "  Проверь, что он есть в $ROOT_DIR/.env, и перезапусти: $COMPOSE_CMD up -d $SERVICE"
+elif [ "$TG_REACHABLE" -eq 0 ]; then
+  echo "  Пропущено: нет связи с api.telegram.org (см. пункт 2)."
+else
+  GETME_BODY=$(mktemp)
+  GETME_HTTP=$(curl -s -o "$GETME_BODY" -w '%{http_code}' --max-time 20 \
+    "https://api.telegram.org/bot${TG_TOKEN}/getMe" 2>/dev/null)
+  GETME_RC=$?
+  GETME=$(cat "$GETME_BODY"); rm -f "$GETME_BODY"
+
+  if [ "$GETME_RC" -ne 0 ]; then
+    echo "  Запрос не дошёл: $(curl_reason "$GETME_RC")"
+  elif [ -z "$GETME" ]; then
+    echo "  Пустой ответ при HTTP $GETME_HTTP — похоже на фильтрацию трафика."
+  elif echo "$GETME" | grep -q '"ok":true'; then
+    BOT_NAME=$(echo "$GETME" | sed -n 's/.*"username":"\([^"]*\)".*/\1/p')
+    echo "  Токен рабочий. Бот: @${BOT_NAME:-?}"
+    TOKEN_OK=1
+  else
+    DESC=$(echo "$GETME" | sed -n 's/.*"description":"\([^"]*\)".*/\1/p')
+    echo "  Telegram отклонил токен (HTTP $GETME_HTTP): ${DESC:-$GETME}"
+    echo "  → Токен отозван или перевыпущен в @BotFather. Возьми актуальный."
+  fi
+fi
+
+echo
+echo "=============================================="
+echo " 4. Отправка тестового сообщения в чат"
 echo "=============================================="
 
 if [ "$SEND_TEST" -eq 0 ]; then
   echo "  Пропущено (--no-send)."
-elif [ -z "$TG_TOKEN" ] || [ -z "$TG_CHAT" ]; then
-  echo "  Пропущено: нет токена или chat_id."
+elif [ "$TOKEN_OK" -eq 0 ]; then
+  echo "  Пропущено: токен не подтверждён на шаге 3."
+elif [ -z "$TG_CHAT" ]; then
+  echo "  Пропущено: TELEGRAM_CHAT_ID пуст."
 else
-  SEND=$(curl -s --max-time 15 -X POST \
+  SEND=$(curl -s --max-time 20 -X POST \
     "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
     -H 'Content-Type: application/json' \
-    -d "{\"chat_id\":\"${TG_CHAT}\",\"text\":\"Проверка доставки заявок с сайта. Это тестовое сообщение.\"}")
+    -d "{\"chat_id\":\"${TG_CHAT}\",\"text\":\"Проверка доставки заявок с сайта. Это тестовое сообщение.\"}" 2>/dev/null)
 
   if echo "$SEND" | grep -q '"ok":true'; then
     echo "  Сообщение доставлено в чат $TG_CHAT — канал полностью рабочий."
   else
     DESC=$(echo "$SEND" | sed -n 's/.*"description":"\([^"]*\)".*/\1/p')
-    echo "  Telegram отказал: ${DESC:-$SEND}"
+    echo "  Telegram отказал: ${DESC:-${SEND:-пустой ответ}}"
     case "$DESC" in
       *"chat not found"*)
         echo "  → chat_id неверен. Напиши боту любое сообщение и возьми id из:"
@@ -130,15 +200,13 @@ else
         echo "  → Бот заблокирован пользователем. Разблокируй его в чате." ;;
       *"not a member"*|*"kicked"*)
         echo "  → Бота удалили из группы. Добавь обратно." ;;
-      *"Unauthorized"*)
-        echo "  → Токен недействителен, перевыпусти в @BotFather." ;;
     esac
   fi
 fi
 
 echo
 echo "=============================================="
-echo " 4. Последние ошибки доставки в логах"
+echo " 5. Последние ошибки доставки в логах"
 echo "=============================================="
 
 LOGS=$(compose logs --tail=500 "$SERVICE" 2>/dev/null | grep -F "Не удалось доставить" | tail -5)
@@ -150,4 +218,7 @@ fi
 
 echo
 echo "Итог: заявка считается принятой, если сработал ХОТЯ БЫ ОДИН канал."
-echo "Если Telegram выше зелёный, форма на сайте уже работает."
+if [ "$TG_REACHABLE" -eq 0 ]; then
+  echo "Telegram с этого сервера недоступен — как канал он здесь работать не будет,"
+  echo "пока не появится прокси. Надёжнее переключиться на почту."
+fi
