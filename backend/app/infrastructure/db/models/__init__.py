@@ -11,6 +11,7 @@ from app.infrastructure.db.models.client import Client
 from app.infrastructure.db.models.testimonial import Testimonial
 from app.infrastructure.db.models.setting import Setting
 from app.infrastructure.db.models.blog_post import BlogPost
+from app.infrastructure.db.models.newsletter import NewsletterSubscriber
 
 __all__ = [
     "User",
@@ -28,4 +29,5 @@ __all__ = [
     "Testimonial",
     "Setting",
     "BlogPost",
+    "NewsletterSubscriber",
 ]

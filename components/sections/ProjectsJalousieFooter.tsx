@@ -7,17 +7,25 @@
 'use client'
 
 import { useState, type FormEvent } from 'react'
-import { ArrowRight } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowRight, Loader2 } from 'lucide-react'
 import { useI18n } from '@/lib/i18n-context'
+
+/** already — адрес уже в списке: это не ошибка, но и не повод благодарить дважды */
+type SubscribeStatus = 'idle' | 'loading' | 'success' | 'already'
 
 export function ProjectsJalousieFooter() {
   const { language } = useI18n()
   const [email, setEmail] = useState('')
+  const [consent, setConsent] = useState(false)
+  const [status, setStatus] = useState<SubscribeStatus>('idle')
   const [error, setError] = useState('')
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (status === 'loading') return
     setError('')
+
     const trimmed = email.trim()
     if (!trimmed) {
       setError(language === 'ru' ? 'Введите email' : 'Please enter an email')
@@ -28,10 +36,46 @@ export function ProjectsJalousieFooter() {
       setError(language === 'ru' ? 'Некорректный email' : 'Invalid email address')
       return
     }
-    // TODO: подключить реальный API рассылки
-    console.log('Subscribe:', trimmed)
-    setEmail('')
+    if (!consent) {
+      setError(
+        language === 'ru'
+          ? 'Нужно согласие на обработку персональных данных'
+          : 'Please accept the personal data processing consent'
+      )
+      return
+    }
+
+    setStatus('loading')
+
+    try {
+      const response = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmed, source: 'projects-footer', language }),
+      })
+
+      const data: { alreadySubscribed?: boolean; error?: string } = await response
+        .json()
+        .catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP ${response.status}`)
+      }
+
+      setStatus(data.alreadySubscribed ? 'already' : 'success')
+      setEmail('')
+      setConsent(false)
+    } catch {
+      setStatus('idle')
+      setError(
+        language === 'ru'
+          ? 'Не удалось оформить подписку. Попробуйте позже'
+          : 'Subscription failed. Please try again later'
+      )
+    }
   }
+
+  const isSubscribed = status === 'success' || status === 'already'
 
   return (
     <footer className="fixed inset-x-0 bottom-0 z-10 min-h-screen bg-[#ff2936] flex flex-col overflow-hidden">
@@ -69,27 +113,79 @@ export function ProjectsJalousieFooter() {
           </p>
 
           {/* Email input - handwritten style */}
-          <form
-            onSubmit={handleSubmit}
-            className="flex items-center gap-4 border-b border-background/40 pb-2 w-full max-w-xs"
-          >
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder={language === 'ru' ? 'ваш email' : 'your email'}
-              className="bg-transparent text-background placeholder:text-background/50 outline-none flex-1 text-base"
-              style={{ fontFamily: 'var(--font-handwritten), cursive' }}
-            />
-            <button
-              type="submit"
-              className="text-background hover:translate-x-1 transition-transform"
-              aria-label="Submit email"
+          {isSubscribed ? (
+            <p
+              className="text-background text-base sm:text-lg text-center max-w-sm font-secondary"
+              role="status"
             >
-              <ArrowRight className="w-5 h-5" />
-            </button>
-          </form>
-          {error && <p className="mt-3 text-sm text-background/80 font-secondary">{error}</p>}
+              {status === 'already'
+                ? language === 'ru'
+                  ? 'Вы уже подписаны — спасибо, что вы с нами.'
+                  : "You're already subscribed — thanks for staying with us."
+                : language === 'ru'
+                  ? 'Готово! Проверьте почту — новости будут приходить туда.'
+                  : "You're in! We'll send the news to your inbox."}
+            </p>
+          ) : (
+            <>
+              <form
+                onSubmit={handleSubmit}
+                className="flex items-center gap-4 border-b border-background/40 pb-2 w-full max-w-xs"
+              >
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  disabled={status === 'loading'}
+                  placeholder={language === 'ru' ? 'ваш email' : 'your email'}
+                  className="bg-transparent text-background placeholder:text-background/50 outline-none flex-1 text-base disabled:opacity-60"
+                  style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+                />
+                <button
+                  type="submit"
+                  disabled={status === 'loading'}
+                  className="text-background hover:translate-x-1 transition-transform disabled:hover:translate-x-0 disabled:opacity-60"
+                  aria-label={language === 'ru' ? 'Подписаться' : 'Subscribe'}
+                >
+                  {status === 'loading' ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <ArrowRight className="w-5 h-5" />
+                  )}
+                </button>
+              </form>
+
+              {/* Согласие на обработку ПД — обязательно для сбора email (152-ФЗ) */}
+              <label className="mt-3 flex max-w-sm cursor-pointer items-start gap-2 text-left text-[11px] leading-relaxed text-background/80 font-secondary sm:text-xs">
+                <input
+                  type="checkbox"
+                  checked={consent}
+                  onChange={e => {
+                    setConsent(e.target.checked)
+                    if (e.target.checked) setError('')
+                  }}
+                  className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-background"
+                />
+                <span>
+                  {language === 'ru' ? 'Даю ' : 'I give my '}
+                  <Link href="/consent" className="underline hover:text-background">
+                    {language === 'ru'
+                      ? 'согласие на обработку персональных данных'
+                      : 'consent to personal data processing'}
+                  </Link>
+                  {language === 'ru' ? ' в соответствии с ' : ' in accordance with the '}
+                  <Link href="/privacy" className="underline hover:text-background">
+                    {language === 'ru' ? 'Политикой обработки ПД' : 'Privacy Policy'}
+                  </Link>
+                </span>
+              </label>
+            </>
+          )}
+          {error && (
+            <p className="mt-3 text-sm text-background/80 font-secondary" role="alert">
+              {error}
+            </p>
+          )}
         </div>
 
         <div className="px-4 sm:px-6 md:px-10 pb-4 sm:pb-6 pt-4 text-background shrink-0">

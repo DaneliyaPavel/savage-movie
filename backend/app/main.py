@@ -19,6 +19,7 @@ from app.delivery.api import (
     courses,
     enrollments,
     contact,
+    newsletter,
     sitemap,
     upload,
     clients,
@@ -74,6 +75,7 @@ app.include_router(project_videos.router)
 app.include_router(courses.router)
 app.include_router(enrollments.router)
 app.include_router(contact.router)
+app.include_router(newsletter.router)
 app.include_router(sitemap.router)
 app.include_router(upload.router)
 app.include_router(clients.router)
