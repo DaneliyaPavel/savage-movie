@@ -33,6 +33,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { useI18n } from '@/lib/i18n-context'
+import { trackMetrikaGoal } from '@/lib/analytics/metrika'
 import { cn } from '@/lib/utils'
 
 const TELEGRAM_HANDLE = 'mariseven'
@@ -140,6 +141,9 @@ export default function BookingPage() {
   })
 
   const onSubmit = async (values: FormValues) => {
+    // Двойной клик / повторный submit не должны создать вторую заявку и вторую конверсию
+    if (isSubmitting) return
+
     const contact = detectContact(values.contact)
     if (!contact) return
 
@@ -165,20 +169,30 @@ export default function BookingPage() {
       })
 
       if (!response.ok) {
-        const data = await response.json().catch(() => null)
-        throw new Error(data?.error || (isRu ? 'Не удалось отправить заявку' : 'Could not send'))
+        // Сообщение сервера показываем только на 400 — там это понятная подсказка
+        // по полям. Всё остальное (500, недоступный сервис) заменяем общим текстом.
+        const data: { error?: string } | null = await response.json().catch(() => null)
+        setSubmitError(
+          (response.status === 400 && data?.error) ||
+            (isRu
+              ? 'Не удалось отправить заявку. Попробуйте ещё раз или напишите нам в Telegram.'
+              : 'Could not send the request. Please try again or message us on Telegram.')
+        )
+        return
       }
+
+      // Заявка принята и доставлена сервером — только теперь это конверсия
+      trackMetrikaGoal('production_lead_success')
 
       setIsSuccess(true)
       form.reset()
     } catch (error) {
+      // Сетевой сбой: текст исключения человеку ничего не говорит, показываем общий
       console.error('Ошибка отправки заявки:', error)
       setSubmitError(
-        error instanceof Error
-          ? error.message
-          : isRu
-            ? 'Не удалось отправить заявку'
-            : 'Could not send the request'
+        isRu
+          ? 'Не удалось отправить заявку. Попробуйте ещё раз или напишите нам в Telegram.'
+          : 'Could not send the request. Please try again or message us on Telegram.'
       )
     } finally {
       setIsSubmitting(false)

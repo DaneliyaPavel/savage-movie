@@ -9,6 +9,7 @@ import { JalousieMenu } from '@/components/ui/jalousie-menu'
 import { SvgMark } from '@/components/ui/svg-mark'
 import { HoverNote } from '@/components/ui/hover-note'
 import { useI18n } from '@/lib/i18n-context'
+import { trackMetrikaGoal } from '@/lib/analytics/metrika'
 import Link from 'next/link'
 
 export default function ContactPage() {
@@ -82,6 +83,8 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    // Двойной клик / повторный Enter не должны создать вторую заявку и вторую конверсию
+    if (isSubmitting) return
     if (!consent) {
       setConsentError(true)
       return
@@ -105,6 +108,8 @@ export default function ContactPage() {
       })
 
       if (response.ok) {
+        // Заявка принята и доставлена сервером — только теперь это конверсия
+        trackMetrikaGoal('production_lead_success')
         setSubmitStatus('success')
         setFormData({ name: '', phone: '', company: '', message: '' })
         setSelectedType(null)
@@ -385,7 +390,9 @@ export default function ContactPage() {
               animate={{ opacity: 1, y: 0 }}
               className="mb-6 text-red-500 text-lg"
             >
-              {language === 'ru' ? 'Ошибка отправки. Попробуйте ещё раз.' : 'Failed to send. Please try again.'}
+              {language === 'ru'
+                ? 'Не удалось отправить заявку. Попробуйте ещё раз или свяжитесь с нами другим способом.'
+                : 'Could not send the request. Please try again or reach us another way.'}
             </motion.p>
           )}
 
