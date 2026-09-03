@@ -50,13 +50,18 @@ export function PricingBands({ content, onEstimateClick, onArticleClick }: Prici
               tier.highlight ? 'bg-[#0D0D0D] ring-1 ring-inset ring-accent/40' : 'bg-[#050505]'
             )}
           >
-            <p className="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-white/35">
+            <p className="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-white/55">
               {tier.name}
             </p>
+            {/* Основной сегмент крупнее двух остальных цифрой, не плашкой —
+                это единственное усиление акцента, которое просили: типографика,
+                а не бейдж/градиент/свечение */}
             <p
               className={cn(
-                'mt-4 text-2xl font-light tracking-tight md:text-3xl',
-                tier.highlight ? 'text-accent' : 'text-white'
+                'mt-4 font-light tracking-tight',
+                tier.highlight
+                  ? 'text-3xl text-accent md:text-4xl'
+                  : 'text-2xl text-white md:text-3xl'
               )}
             >
               {tier.range}
@@ -90,9 +95,17 @@ export function PricingBands({ content, onEstimateClick, onArticleClick }: Prici
         <button
           type="button"
           onClick={onEstimateClick}
-          className="group relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-sm bg-white px-8 py-4 text-base font-medium text-black transition-transform hover:scale-[1.02] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          aria-label={content.ctaLabel}
+          className="group relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-sm bg-white px-8 py-4 text-base font-medium text-black transition-transform hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
         >
-          <span className="relative z-10">{content.ctaLabel}</span>
+          {/* Тот же перенос на 360px, что и у hero — короткий эквивалент
+              до 640px, aria-label хранит полную формулировку */}
+          <span aria-hidden="true" className="relative z-10 sm:hidden">
+            Получить смету
+          </span>
+          <span aria-hidden="true" className="relative z-10 hidden sm:inline">
+            {content.ctaLabel}
+          </span>
           <ArrowRight className="relative z-10 h-4 w-4 transition-transform group-hover:translate-x-1" />
           <span className="absolute inset-0 -translate-x-full bg-accent transition-transform duration-500 group-hover:translate-x-0" />
         </button>

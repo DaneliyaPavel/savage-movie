@@ -62,9 +62,17 @@ export function FinalCta({
         <button
           type="button"
           onClick={onEstimateClick}
-          className="group relative mt-10 inline-flex items-center justify-center gap-3 overflow-hidden rounded-sm bg-white px-8 py-4 text-base font-medium text-black transition-transform hover:scale-[1.02] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          aria-label={content.ctaLabel}
+          className="group relative mt-10 inline-flex items-center justify-center gap-3 overflow-hidden rounded-sm bg-white px-8 py-4 text-base font-medium text-black transition-transform hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
         >
-          <span className="relative z-10">{content.ctaLabel}</span>
+          {/* Тот же перенос на 360px, что и у hero — короткий эквивалент
+              до 640px, aria-label хранит полную формулировку */}
+          <span aria-hidden="true" className="relative z-10 sm:hidden">
+            Получить смету
+          </span>
+          <span aria-hidden="true" className="relative z-10 hidden sm:inline">
+            {content.ctaLabel}
+          </span>
           <ArrowRight className="relative z-10 h-4 w-4 transition-transform group-hover:translate-x-1" />
           <span className="absolute inset-0 -translate-x-full bg-accent transition-transform duration-500 group-hover:translate-x-0" />
         </button>

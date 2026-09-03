@@ -10,13 +10,20 @@
  */
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ArrowRight, ArrowUpRight } from 'lucide-react'
 
 import type { CasesContent } from '@/lib/commercial-landing/content'
 import { LazyHlsVideo } from './lazy-hls-video'
+
+/**
+ * Наведение подтверждается только спустя короткую паузу: курсор, идущий
+ * к форме или следующей секции, часто задевает карточку по пути — без порога
+ * каждый такой проход запускал бы HLS-поток, который никто не досмотрит.
+ */
+const HOVER_INTENT_MS = 130
 
 export interface CommercialCase {
   slug: string
@@ -43,6 +50,30 @@ export function CommercialCases({
   onVideoMilestone,
 }: CommercialCasesProps) {
   const [hovered, setHovered] = useState<string | null>(null)
+  const hoverTimeoutRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current !== null) window.clearTimeout(hoverTimeoutRef.current)
+    }
+  }, [])
+
+  const handleMouseEnter = (slug: string) => {
+    if (hoverTimeoutRef.current !== null) window.clearTimeout(hoverTimeoutRef.current)
+    hoverTimeoutRef.current = window.setTimeout(() => {
+      hoverTimeoutRef.current = null
+      setHovered(slug)
+    }, HOVER_INTENT_MS)
+  }
+
+  const handleMouseLeave = (slug: string) => {
+    // Курсор ушёл раньше порога — отменяем ещё не выстреливший запуск потока
+    if (hoverTimeoutRef.current !== null) {
+      window.clearTimeout(hoverTimeoutRef.current)
+      hoverTimeoutRef.current = null
+    }
+    setHovered(current => (current === slug ? null : current))
+  }
 
   if (cases.length === 0) return null
 
@@ -56,7 +87,7 @@ export function CommercialCases({
           {content.title}
         </h2>
         <p className="mt-4 text-base text-white/50 md:text-lg">{content.subtitle}</p>
-        <p className="mt-6 max-w-2xl text-sm leading-relaxed text-white/45 md:text-base">
+        <p className="mt-6 max-w-2xl text-sm leading-relaxed text-white/50 md:text-base">
           {content.intro}
         </p>
       </div>
@@ -73,8 +104,8 @@ export function CommercialCases({
             <Link
               href={`/projects/${item.slug}`}
               onClick={() => onCaseOpen(item.slug)}
-              onMouseEnter={() => setHovered(item.slug)}
-              onMouseLeave={() => setHovered(current => (current === item.slug ? null : current))}
+              onMouseEnter={() => handleMouseEnter(item.slug)}
+              onMouseLeave={() => handleMouseLeave(item.slug)}
               className="group block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
               {/* Медиа занимает основную площадь карточки */}
@@ -88,14 +119,16 @@ export function CommercialCases({
                     aspect="16 / 9"
                     title={`${item.client} — ${item.title}`}
                     onProgressMilestone={milestone => onVideoMilestone(milestone, item.slug)}
+                    sizes="(min-width: 768px) 50vw, 100vw"
                   />
                 ) : (
                   <div className="aspect-video w-full bg-[#0A0A0A]" />
                 )}
 
-                {/* Подпись поверх кадра появляется на десктопе при наведении;
-                    на тач-устройствах она всегда видна ниже, под карточкой */}
-                <div className="pointer-events-none absolute inset-0 hidden items-end bg-gradient-to-t from-black/85 via-black/10 to-transparent p-6 opacity-0 transition-opacity duration-300 group-hover:opacity-100 md:flex">
+                {/* Подпись поверх кадра — только на десктопе, по наведению:
+                    здесь есть hover, чтобы проверить намерение, и кадр не
+                    накрыт затемнением постоянно. */}
+                <div className="pointer-events-none absolute inset-0 hidden items-end bg-gradient-to-t from-black/85 via-black/10 to-transparent p-6 opacity-0 transition-opacity duration-300 md:flex md:group-hover:opacity-100">
                   <span className="inline-flex items-center gap-2 text-sm text-white">
                     {content.ctaLabel}
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -105,16 +138,26 @@ export function CommercialCases({
 
               <div className="mt-5">
                 <div className="flex items-baseline justify-between gap-4">
-                  <h3 className="text-xl font-light tracking-tight text-white md:text-2xl">
+                  <h3 className="min-w-0 text-xl font-light tracking-tight text-white md:text-2xl">
                     {item.client}
                     <span className="text-white/40"> — {item.title}</span>
                   </h3>
-                  <span className="shrink-0 font-mono text-xs text-white/30">{item.year}</span>
+                  <span className="shrink-0 font-mono text-xs text-white/55">{item.year}</span>
                 </div>
                 <p className="mt-2 text-sm text-white/60">{item.kind}</p>
-                <p className="mt-1 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-white/35">
-                  {item.meta}
-                </p>
+                <div className="mt-1 flex items-baseline justify-between gap-4">
+                  <p className="min-w-0 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-white/55">
+                    {item.meta}
+                  </p>
+                  {/* На тач-устройствах, где нет hover, кликабельность нужно
+                      показать где-то ещё — не постоянным затемнением поверх
+                      кадра (обесценивает картинку), а строкой рядом с
+                      метаданными, тем же языком, что и остальной текст карточки. */}
+                  <span className="inline-flex shrink-0 items-center gap-1.5 text-sm text-white/60 md:hidden">
+                    {content.ctaLabel}
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
+                </div>
               </div>
             </Link>
           </motion.article>

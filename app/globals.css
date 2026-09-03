@@ -179,6 +179,39 @@
   }
 }
 
+/*
+ * Декоративное появление hero-контента — чистый CSS, а не Framer Motion.
+ * Framer Motion применяет initial={{opacity:0}} как инлайн-стиль уже на SSR,
+ * поэтому базовая видимость контента зависела бы от гидратации JS-бандла.
+ *
+ * Здесь намеренно анимируется только transform, без opacity: даже с
+ * animation-fill-mode:both первый кадр keyframe-анимации — это её 0%-состояние,
+ * и если бы оно включало opacity:0, мы воспроизвели бы ровно тот же баг, который
+ * чинили (контент, невидимый на первом painted frame — для краулера, скриншота
+ * до первого тика rAF или заторможенного рендерера). translateY(12px) на 0%
+ * держит текст полностью непрозрачным всегда — эффект декоративный, не
+ * блокирующий. Дистанция и длительность намеренно небольшие: это первый экран
+ * платного трафика, отклик должен читаться как «прибытие», а не интро-ролик.
+ */
+@keyframes hero-reveal {
+  from {
+    transform: translateY(12px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.hero-reveal {
+  animation: hero-reveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-reveal {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* Grain overlay effect */
 .grain-overlay {
   position: fixed;

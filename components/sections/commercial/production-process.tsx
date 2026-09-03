@@ -42,7 +42,7 @@ export function ProductionProcess({ content }: ProductionProcessProps) {
             />
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-[7rem_1fr] md:gap-10">
-              <span className="font-mono text-xs tracking-[0.2em] text-white/30 md:text-sm">
+              <span className="font-mono text-xs tracking-[0.2em] text-white/55 md:text-sm">
                 {step.number}
               </span>
 

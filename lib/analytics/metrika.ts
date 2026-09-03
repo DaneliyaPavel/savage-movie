@@ -30,7 +30,7 @@ export type MetrikaGoal =
   | 'newsletter_subscription_success'
   // Просмотр коммерческого лендинга
   | 'commercial_landing_view'
-  // Клик по CTA сметы; параметр location: hero | price | middle | final | sticky
+  // Клик по CTA сметы; параметр location: hero | price | middle | final | sticky | project_detail
   | 'estimate_cta_click'
   // Открытие коммерческого кейса; параметр case_slug
   | 'commercial_case_open'

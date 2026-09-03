@@ -16,18 +16,21 @@ vi.mock('@/lib/utils/logger', () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
 }))
 
-const { content: estimateContent, success } = {
+const { content: estimateContent, success, sla } = {
   content: DEFAULT_COMMERCIAL_LANDING.estimate,
   success: DEFAULT_COMMERCIAL_LANDING.success,
+  sla: DEFAULT_COMMERCIAL_LANDING.sla,
 }
 
-function renderForm() {
+function renderForm(onSubmitted: () => void = () => undefined) {
   return render(
     <EstimateForm
       content={estimateContent}
       success={success}
+      sla={sla}
       presetProjectType={null}
       onBookingClick={() => undefined}
+      onSubmitted={onSubmitted}
     />
   )
 }
@@ -92,6 +95,50 @@ describe('Форма предварительной сметы', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(fetchMock.mock.calls[0]![0]).toBe('/api/estimate')
     expect(goals().filter(goal => goal === 'production_lead_success')).toHaveLength(1)
+  })
+
+  it('сервер тихо отфильтровал заявку (honeypot): экран успеха есть, конверсии нет', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, filtered: true }),
+    })
+
+    renderForm()
+    await fillValidLead()
+    fireEvent.click(submitButton())
+
+    // Пользователь (или бот) видит тот же нейтральный экран — antispam не палится
+    await screen.findByText(success.title)
+    expect(goals()).not.toContain('production_lead_success')
+  })
+
+  it('onSubmitted вызывается при реальном успехе — по нему client.tsx гасит sticky CTA', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ success: true }) })
+    const onSubmitted = vi.fn()
+
+    renderForm(onSubmitted)
+    await fillValidLead()
+    fireEvent.click(submitButton())
+
+    await screen.findByText(success.title)
+    expect(onSubmitted).toHaveBeenCalledTimes(1)
+  })
+
+  it('onSubmitted не вызывается при ошибке сервера', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: 'Ошибка отправки заявки' }),
+    })
+    const onSubmitted = vi.fn()
+
+    renderForm(onSubmitted)
+    await fillValidLead()
+    fireEvent.click(submitButton())
+
+    await screen.findByRole('alert')
+    expect(onSubmitted).not.toHaveBeenCalled()
   })
 
   it('сервер ответил ошибкой: показываем ошибку, конверсии нет', async () => {
@@ -224,5 +271,27 @@ describe('Форма предварительной сметы', () => {
     expect(payload.attribution).toMatchObject({ utm_source: 'yandex', yclid: '42' })
     expect(payload.clientId).toBe('client-1')
     expect(payload.landingPath).toBe('/reklamny-rolik')
+  })
+
+  it('SLA подтверждён: у кнопки отправки появляется срок ответа', async () => {
+    render(
+      <EstimateForm
+        content={estimateContent}
+        success={success}
+        sla={{ enabled: true, text: 'Предварительная оценка — в течение 24 часов.' }}
+        presetProjectType={null}
+        onBookingClick={() => undefined}
+      />
+    )
+    await fillValidLead()
+
+    expect(screen.getByText('Предварительная оценка — в течение 24 часов.')).toBeInTheDocument()
+  })
+
+  it('SLA не подтверждён: reassurance у кнопки не выдумываем', async () => {
+    renderForm()
+    await fillValidLead()
+
+    expect(screen.queryByText(/в течение 24 часов/)).not.toBeInTheDocument()
   })
 })

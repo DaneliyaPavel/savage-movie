@@ -9,10 +9,11 @@
  */
 'use client'
 
-import { motion } from 'framer-motion'
+import { useMemo, useState } from 'react'
 import { ArrowDown, ArrowRight } from 'lucide-react'
 
 import type { HeroContent, SlaContent } from '@/lib/commercial-landing/content'
+import { getThumbnailUrl } from '@/lib/integrations/bunny/client'
 import { LazyHlsVideo } from './lazy-hls-video'
 
 interface CommercialHeroProps {
@@ -20,6 +21,11 @@ interface CommercialHeroProps {
   sla: SlaContent
   onEstimateClick: () => void
   onProjectsClick: () => void
+  /**
+   * Постер первого featured-кейса — фолбэк, когда для hero своего медиа ещё
+   * нет: он честно показывает уровень продакшна, а не чёрный экран.
+   */
+  fallbackPosterUrl?: string | null
 }
 
 export function CommercialHero({
@@ -27,20 +33,38 @@ export function CommercialHero({
   sla,
   onEstimateClick,
   onProjectsClick,
+  fallbackPosterUrl = null,
 }: CommercialHeroProps) {
   const note = sla.enabled ? sla.text : hero.ctaNote
+
+  // Приоритет: постер из CMS → автопостер Bunny для заданного видео → постер
+  // кейса → ничего (остаётся чёрный градиентный фон). Если верхний кандидат
+  // не догрузится (например, автопостер ещё не сгенерирован Bunny и отвечает
+  // 404), <img onError> сдвигает список на следующий без правки кода.
+  const posterCandidates = useMemo(() => {
+    const videoThumbnail = hero.videoPlaybackId ? getThumbnailUrl(hero.videoPlaybackId) : null
+    return Array.from(
+      new Set([hero.posterUrl, videoThumbnail, fallbackPosterUrl].filter(Boolean))
+    ) as string[]
+  }, [hero.posterUrl, hero.videoPlaybackId, fallbackPosterUrl])
+
+  const [posterIndex, setPosterIndex] = useState(0)
+  const posterUrl = posterCandidates[posterIndex] ?? null
+  const handlePosterError = () => setPosterIndex(index => index + 1)
 
   return (
     <section className="relative flex min-h-[100svh] w-full items-end overflow-hidden bg-[#000000] pb-16 pt-28 md:pb-20 md:items-center">
       {/* Фон: видео на десктопе, на мобильных остаётся постером —
-          мобильный трафик Директа не должен платить за фоновый луп */}
+          мобильный трафик Директа не должен платить за фоновый луп.
+          Без dedicated видео, но с постером (свой или кейса) — статичный
+          кадр на обеих платформах. */}
       <div className="absolute inset-0 z-0">
         {hero.videoPlaybackId ? (
           <>
             <div className="hidden h-full w-full md:block">
               <LazyHlsVideo
                 playbackId={hero.videoPlaybackId}
-                poster={hero.posterUrl}
+                poster={posterUrl}
                 autoPlay
                 loop
                 eager
@@ -49,16 +73,31 @@ export function CommercialHero({
               />
             </div>
             <div className="h-full w-full md:hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={hero.posterUrl || ''}
-                alt=""
-                aria-hidden="true"
-                fetchPriority="high"
-                className="h-full w-full object-cover"
-              />
+              {posterUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={posterUrl}
+                  alt=""
+                  aria-hidden="true"
+                  fetchPriority="high"
+                  onError={handlePosterError}
+                  className="h-full w-full object-cover"
+                />
+              ) : null}
             </div>
           </>
+        ) : posterUrl ? (
+          <div className="h-full w-full">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={posterUrl}
+              alt=""
+              aria-hidden="true"
+              fetchPriority="high"
+              onError={handlePosterError}
+              className="h-full w-full object-cover"
+            />
+          </div>
         ) : null}
 
         {/* Затемнение под текст: без него светлый коммерческий кадр съедает контраст */}
@@ -66,16 +105,18 @@ export function CommercialHero({
       </div>
 
       <div className="relative z-10 w-full px-6 md:px-10 lg:px-20">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-5xl"
-        >
-          <p className="font-mono text-[0.65rem] uppercase tracking-[0.28em] text-white/50 md:text-xs">
+        {/*
+          Появление — чистый CSS (см. .hero-reveal в globals.css), не Framer
+          Motion: контент физически присутствует и виден с первого кадра,
+          независимо от того, догрузился ли и выполнился ли JS-бандл.
+          Декоративная анимация входа поверх уже видимого контента —
+          progressive enhancement, а не условие его видимости.
+        */}
+        <div className="hero-reveal max-w-5xl">
+          <p className="font-mono text-[0.65rem] uppercase tracking-[0.28em] text-white/55 md:text-xs">
             {hero.eyebrow}
           </p>
-          <p className="mt-2 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-white/40 md:text-xs">
+          <p className="mt-2 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-white/55 md:text-xs">
             {hero.geo}
           </p>
 
@@ -97,9 +138,18 @@ export function CommercialHero({
             <button
               type="button"
               onClick={onEstimateClick}
-              className="group relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-sm bg-white px-8 py-4 text-base font-medium text-black transition-transform hover:scale-[1.02] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+              aria-label={hero.ctaPrimary}
+              className="group relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-sm bg-white px-8 py-4 text-base font-medium text-black transition-transform hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
-              <span className="relative z-10">{hero.ctaPrimary}</span>
+              {/* На 360px полная формулировка переносится на две строки —
+                  до 640px показываем короткий эквивалент того же действия,
+                  aria-label выше сохраняет полную формулировку для скринридера */}
+              <span aria-hidden="true" className="relative z-10 sm:hidden">
+                Получить смету
+              </span>
+              <span aria-hidden="true" className="relative z-10 hidden sm:inline">
+                {hero.ctaPrimary}
+              </span>
               <ArrowRight className="relative z-10 h-4 w-4 transition-transform group-hover:translate-x-1" />
               <span className="absolute inset-0 -translate-x-full bg-accent transition-transform duration-500 group-hover:translate-x-0" />
             </button>
@@ -107,15 +157,15 @@ export function CommercialHero({
             <button
               type="button"
               onClick={onProjectsClick}
-              className="inline-flex items-center justify-center gap-2 px-2 py-4 text-base text-white/70 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+              className="inline-flex items-center justify-center gap-2 px-2 py-4 text-base text-white/70 transition-[color,scale] duration-200 hover:text-white active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
               <span className="border-b border-white/30 pb-0.5">{hero.ctaSecondary}</span>
               <ArrowDown className="h-4 w-4" />
             </button>
           </div>
 
-          <p className="mt-6 max-w-md text-sm leading-relaxed text-white/45">{note}</p>
-        </motion.div>
+          <p className="mt-6 max-w-md text-sm leading-relaxed text-white/50">{note}</p>
+        </div>
       </div>
     </section>
   )

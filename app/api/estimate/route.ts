@@ -6,7 +6,9 @@
  * нельзя терять — по ней Директ сводит расход с заявками.
  *
  * Ответ success:true означает, что заявка реально доставлена хотя бы в один
- * канал. Только на этом ответе фронтенд засчитывает production_lead_success.
+ * канал, кроме единственного случая — honeypot (success:true, filtered:true):
+ * бот получает нейтральный экран, но фронтенд не должен засчитывать это как
+ * production_lead_success.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { createHash, randomUUID } from 'crypto'
@@ -35,7 +37,13 @@ const LEAD_WEBHOOK_TOKEN = process.env.LEAD_WEBHOOK_TOKEN || ''
 const RATE_LIMIT_MAX = 5
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
 
-/** Человек не заполняет два шага формы быстрее нескольких секунд */
+/**
+ * Порог для телеметрии, а не отсева: реальный человек с автозаполнением
+ * браузера или предзаполненным типом проекта из блока задач может пройти
+ * обе формы меньше чем за секунду. Отклонять по одной этой метрике — терять
+ * настоящие заявки, поэтому ниже она только логируется как подозрительный
+ * сигнал и не влияет на решение принять заявку.
+ */
 const MIN_FILL_TIME_MS = 4000
 
 /** Повтор той же заявки в этом окне считаем случайным дублем */
@@ -370,19 +378,25 @@ export async function POST(request: NextRequest) {
   try {
     const body: EstimateBody = await request.json()
 
-    // Honeypot: молча отвечаем успехом, чтобы бот не подбирал обход
+    // Honeypot: молча отвечаем успехом (без filtered), чтобы бот не подбирал
+    // обход — но флаг filtered:true отдельно говорит фронтенду не считать это
+    // конверсией. Экран для отправителя при этом остаётся тем же самым.
     if (sanitize(body.website, 100)) {
       logger.warn('Заявка отсеяна honeypot', { route: '/api/estimate' })
-      return NextResponse.json({ success: true })
+      return NextResponse.json({ success: true, filtered: true })
     }
 
+    // elapsedMs — только сигнал для мониторинга. Реальный человек с
+    // автозаполнением браузера или предзаполненным типом проекта из блока
+    // задач может пройти обе формы меньше чем за секунду — отклонять по
+    // одной этой метрике значит терять настоящие заявки. Заявка обрабатывается
+    // как обычно; ниже только фиксируем подозрительно быстрое заполнение.
     const elapsedMs = typeof body.elapsedMs === 'number' ? body.elapsedMs : 0
-    if (elapsedMs < MIN_FILL_TIME_MS) {
-      logger.warn('Заявка отсеяна по времени заполнения', {
+    if (elapsedMs > 0 && elapsedMs < MIN_FILL_TIME_MS) {
+      logger.warn('Заявка заполнена подозрительно быстро', {
         route: '/api/estimate',
         elapsedMs,
       })
-      return NextResponse.json({ success: true })
     }
 
     if (body.consent !== true) {

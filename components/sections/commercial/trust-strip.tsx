@@ -31,7 +31,7 @@ export function TrustStrip({ trust, clients }: TrustStripProps) {
 
   return (
     <section className="border-t border-[#1A1A1A] bg-[#000000] px-6 py-12 md:px-10 md:py-16 lg:px-20">
-      <p className="font-mono text-[0.65rem] uppercase tracking-[0.28em] text-white/40 md:text-xs">
+      <p className="font-mono text-[0.65rem] uppercase tracking-[0.28em] text-white/55 md:text-xs">
         {trust.title}
       </p>
 

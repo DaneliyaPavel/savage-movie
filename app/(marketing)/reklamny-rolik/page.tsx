@@ -21,6 +21,7 @@ import {
   type CommercialLandingContent,
 } from '@/lib/commercial-landing/content'
 import { getThumbnailUrl } from '@/lib/integrations/bunny/client'
+import { normalizePosterUrl } from '@/lib/commercial-landing/poster-url'
 import { logger } from '@/lib/utils/logger'
 import type { CommercialCase } from '@/components/sections/commercial/commercial-cases'
 import { CommercialLandingClient } from './client'
@@ -86,9 +87,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 function posterFor(project: Project): string | null {
-  if (project.thumbnail_url) return project.thumbnail_url
-  if (project.cover_image_url) return project.cover_image_url
-  if (project.images?.[0]) return project.images[0]
+  if (project.thumbnail_url) return normalizePosterUrl(project.thumbnail_url)
+  if (project.cover_image_url) return normalizePosterUrl(project.cover_image_url)
+  if (project.images?.[0]) return normalizePosterUrl(project.images[0])
   if (project.mux_playback_id) return getThumbnailUrl(project.mux_playback_id)
   return null
 }
@@ -238,11 +239,19 @@ export default async function CommercialLandingPage() {
   ])
 
   const cases = buildCases(content, projects)
+  // Все реально опубликованные проекты, а не только 4 карточки на лендинге —
+  // WhySavage сверяет с этим список, доказывающий кейс может не входить в грид
+  const allCaseSlugs = projects.map(project => project.slug)
 
   return (
     <>
       <JsonLdScripts scripts={buildJsonLd(content, projects, cases)} />
-      <CommercialLandingClient content={content} cases={cases} clients={clients} />
+      <CommercialLandingClient
+        content={content}
+        cases={cases}
+        clients={clients}
+        allCaseSlugs={allCaseSlugs}
+      />
     </>
   )
 }

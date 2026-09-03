@@ -15,6 +15,7 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { ProjectsJalousieFooter } from '@/components/sections/ProjectsJalousieFooter'
+import { trackMetrikaGoal } from '@/lib/analytics/metrika'
 import type { Project, ProjectVideo } from '@/features/projects/api'
 
 type Orientation = 'landscape' | 'portrait' | 'unknown'
@@ -323,6 +324,36 @@ export function ProjectDetailClient({ project, nextProject, projectVideos = [] }
                   </div>
                 )}
               </motion.div>
+            )}
+
+            {/*
+              Возврат к смете для коммерческих кейсов: посетитель, пришедший
+              с /reklamny-rolik (или из поиска на конкретный кейс), досмотрел
+              работу — до этой правки страница проекта не предлагала никакого
+              пути обратно к заявке и была тупиком для платного трафика.
+              Тот же визуальный паттерн, что у навигации «Следующий проект»
+              ниже — новый компонент не вводим.
+            */}
+            {project.category === 'commercial' && (
+              <div className="border-t border-[#1A1A1A] pt-12 mb-12 md:mb-16">
+                <Link
+                  href="/reklamny-rolik#estimate"
+                  onClick={() =>
+                    trackMetrikaGoal('estimate_cta_click', { location: 'project_detail' })
+                  }
+                  className="flex items-center justify-between group"
+                >
+                  <div>
+                    <div className="text-sm md:text-base text-[#FFFFFF]/40 uppercase tracking-wider mb-2 font-secondary">
+                      Похожая задача?
+                    </div>
+                    <div className="text-2xl md:text-3xl font-oranienbaum text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">
+                      Получить предварительную смету
+                    </div>
+                  </div>
+                  <ArrowRight className="w-6 h-6 text-[#FFFFFF]/40 group-hover:text-[#FFFFFF] transition-colors" />
+                </Link>
+              </div>
             )}
 
             {/* Next Project Navigation */}

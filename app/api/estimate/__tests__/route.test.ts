@@ -104,21 +104,58 @@ describe('POST /api/estimate', () => {
     expect(html).toContain('1700000000000000')
   })
 
-  it('honeypot: заполненное скрытое поле не создаёт заявку', async () => {
+  it('honeypot: заполненное скрытое поле не создаёт заявку, но отвечает нейтральным success', async () => {
     const { POST } = await loadRoute()
     const response = await POST(makeRequest({ ...validLead, website: 'http://spam.example' }))
 
-    // Боту отвечаем успехом, чтобы он не подбирал обход
-    await expect(response.json()).resolves.toMatchObject({ success: true })
+    // Боту отвечаем success:true (чтобы он не подбирал обход), но с
+    // filtered:true — фронтенд по этому флагу не шлёт production_lead_success
+    await expect(response.json()).resolves.toMatchObject({ success: true, filtered: true })
     expect(sendSmtpMail).not.toHaveBeenCalled()
   })
 
-  it('слишком быстрое заполнение не создаёт заявку', async () => {
+  it('валидная заявка быстрее секунды всё равно доставляется (автозаполнение браузера)', async () => {
     const { POST } = await loadRoute()
     const response = await POST(makeRequest({ ...validLead, elapsedMs: 300 }))
 
-    await expect(response.json()).resolves.toMatchObject({ success: true })
-    expect(sendSmtpMail).not.toHaveBeenCalled()
+    expect(response.status).toBe(200)
+    const data = await response.json()
+    expect(data).toMatchObject({ success: true })
+    expect(data.filtered).not.toBe(true)
+    expect(sendSmtpMail).toHaveBeenCalledTimes(1)
+  })
+
+  it('валидная заявка за ~2 секунды доставляется (ниже старого порога в 4с)', async () => {
+    const { POST } = await loadRoute()
+    const response = await POST(makeRequest({ ...validLead, elapsedMs: 2000 }))
+
+    expect(response.status).toBe(200)
+    const data = await response.json()
+    expect(data).toMatchObject({ success: true })
+    expect(data.filtered).not.toBe(true)
+    expect(sendSmtpMail).toHaveBeenCalledTimes(1)
+  })
+
+  it('подозрительно быстрое заполнение логируется, но не блокирует доставку', async () => {
+    const { logger } = await import('@/lib/utils/logger')
+    const { POST } = await loadRoute()
+    await POST(makeRequest({ ...validLead, elapsedMs: 300 }))
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      'Заявка заполнена подозрительно быстро',
+      expect.objectContaining({ elapsedMs: 300 })
+    )
+  })
+
+  it('обычная заявка (elapsedMs не ниже порога) не логируется как подозрительная', async () => {
+    const { logger } = await import('@/lib/utils/logger')
+    const { POST } = await loadRoute()
+    await POST(makeRequest(validLead))
+
+    expect(logger.warn).not.toHaveBeenCalledWith(
+      'Заявка заполнена подозрительно быстро',
+      expect.anything()
+    )
   })
 
   it('без согласия на обработку ПД заявка отклоняется', async () => {

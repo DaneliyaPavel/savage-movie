@@ -22,6 +22,7 @@ import {
   BOOKING_PATH,
   TELEGRAM_URL,
   type EstimateContent,
+  type SlaContent,
   type SuccessContent,
 } from '@/lib/commercial-landing/content'
 import { buildAttributionFields } from '@/lib/analytics/attribution'
@@ -33,9 +34,13 @@ import { cn } from '@/lib/utils'
 interface EstimateFormProps {
   content: EstimateContent
   success: SuccessContent
+  /** Срок ответа: reassurance у кнопки отправки, только когда SLA подтверждён */
+  sla: SlaContent
   /** Тип проекта, выбранный в блоке задач: форма открывается уже заполненной */
   presetProjectType: string | null
   onBookingClick: () => void
+  /** Заявка принята сервером (включая тихо отфильтрованную) — для sticky CTA */
+  onSubmitted?: () => void
 }
 
 /** Что бэкенд принимает как бриф — держим синхронно с ALLOWED_BRIEF_TYPES */
@@ -43,19 +48,21 @@ const ACCEPTED_BRIEF = '.pdf,.doc,.docx,.pptx,.zip,.png,.jpg,.jpeg,.webp'
 const MAX_BRIEF_BYTES = 10 * 1024 * 1024
 
 const chipClassName =
-  'rounded-sm border px-4 py-2.5 text-sm transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
+  'rounded-sm border px-4 py-2.5 text-sm transition-[color,background-color,border-color,scale] duration-200 active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
 const fieldClassName =
-  'w-full border-b border-white/20 bg-transparent py-3 text-base text-white transition-colors placeholder:text-white/25 focus:border-accent focus:outline-none'
+  'w-full border-b border-white/20 bg-transparent py-3 text-base text-white transition-colors placeholder:text-white/50 focus:border-accent focus:outline-none'
 
 const labelClassName =
-  'mb-4 block font-mono text-[0.65rem] uppercase tracking-[0.2em] text-white/40 md:text-xs'
+  'mb-4 block font-mono text-[0.65rem] uppercase tracking-[0.2em] text-white/55 md:text-xs'
 
 export function EstimateForm({
   content,
   success,
+  sla,
   presetProjectType,
   onBookingClick,
+  onSubmitted,
 }: EstimateFormProps) {
   const [step, setStep] = useState<1 | 2>(1)
   const [projectType, setProjectType] = useState<string | null>(presetProjectType)
@@ -243,8 +250,15 @@ export function EstimateForm({
         return
       }
 
-      // Сервер подтвердил доставку — только теперь это конверсия
-      trackMetrikaGoal('production_lead_success')
+      const data: { filtered?: boolean } = await response.json().catch(() => ({}))
+
+      // Сервер подтвердил доставку — только теперь это конверсия. Ответ
+      // filtered:true (антиспам-гейт) показывает тот же нейтральный экран,
+      // но не должен попадать в отчёт по лидам.
+      if (!data.filtered) {
+        trackMetrikaGoal('production_lead_success')
+      }
+      onSubmitted?.()
       setIsSubmitted(true)
     } catch (submitFailure) {
       logger.error('Не удалось отправить заявку на смету', submitFailure)
@@ -282,7 +296,7 @@ export function EstimateForm({
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackMetrikaGoal('telegram_click', { location: 'estimate_success' })}
-              className="inline-flex items-center justify-center gap-2 rounded-sm bg-white px-7 py-3.5 text-base font-medium text-black transition-transform hover:scale-[1.02] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+              className="inline-flex items-center justify-center gap-2 rounded-sm bg-white px-7 py-3.5 text-base font-medium text-black transition-transform hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
               {success.telegramLabel}
             </a>
@@ -325,7 +339,7 @@ export function EstimateForm({
           />
         </div>
 
-        <p className="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-white/30">
+        <p className="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-white/55">
           {step === 1 ? `01 / ${content.step1Title}` : `02 / ${content.step2Title}`}
         </p>
 
@@ -438,7 +452,7 @@ export function EstimateForm({
               <button
                 type="button"
                 onClick={goToStep2}
-                className="group inline-flex items-center gap-3 rounded-sm bg-white px-8 py-4 text-base font-medium text-black transition-transform hover:scale-[1.02] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                className="group inline-flex items-center gap-3 rounded-sm bg-white px-8 py-4 text-base font-medium text-black transition-transform hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
               >
                 {content.nextLabel}
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -461,21 +475,11 @@ export function EstimateForm({
               </h3>
 
               <div className="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2">
-                <div>
-                  <label htmlFor="estimate-company" className={labelClassName}>
-                    Компания
-                  </label>
-                  <input
-                    id="estimate-company"
-                    type="text"
-                    autoComplete="organization"
-                    value={company}
-                    onChange={event => setCompany(event.target.value)}
-                    placeholder="Необязательно"
-                    className={fieldClassName}
-                  />
-                </div>
-
+                {/*
+                  Имя — обязательное поле — идёт первым: на мобильном
+                  (grid-cols-1) это первое, что видит человек, дошедший до
+                  контактных данных, и это не должно быть необязательное поле.
+                */}
                 <div>
                   <label htmlFor="estimate-name" className={labelClassName}>
                     Имя
@@ -488,6 +492,21 @@ export function EstimateForm({
                     value={name}
                     onChange={event => setName(event.target.value)}
                     placeholder="Как к вам обращаться"
+                    className={fieldClassName}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="estimate-company" className={labelClassName}>
+                    Компания
+                  </label>
+                  <input
+                    id="estimate-company"
+                    type="text"
+                    autoComplete="organization"
+                    value={company}
+                    onChange={event => setCompany(event.target.value)}
+                    placeholder="Необязательно"
                     className={fieldClassName}
                   />
                 </div>
@@ -561,7 +580,7 @@ export function EstimateForm({
                       </button>
                     </span>
                   ) : (
-                    <span className="text-sm text-white/30">PDF, DOC, PPTX, ZIP или картинка, до 10 МБ</span>
+                    <span className="text-sm text-white/50">PDF, DOC, PPTX, ZIP или картинка, до 10 МБ</span>
                   )}
                 </div>
 
@@ -611,7 +630,7 @@ export function EstimateForm({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="group relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-sm bg-white px-8 py-4 text-base font-medium text-black transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                  className="group relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-sm bg-white px-8 py-4 text-base font-medium text-black transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
                 >
                   <span className="relative z-10 inline-flex items-center gap-3">
                     {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
@@ -625,18 +644,28 @@ export function EstimateForm({
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="inline-flex items-center gap-2 text-sm text-white/45 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                  className="inline-flex items-center gap-2 text-sm text-white/50 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   {content.backLabel}
                 </button>
               </div>
+
+              {/*
+                Тот же SLA-текст, что уже показан в hero-note — тут появляется
+                снова прямо у кнопки отправки, в момент принятия решения, а не
+                только на первом экране, который к этому моменту давно
+                проскроллен. Новый контент не придумываем — переиспользуем sla.
+              */}
+              {sla.enabled ? (
+                <p className="mt-6 text-sm text-white/50">{sla.text}</p>
+              ) : null}
             </motion.div>
           )}
         </div>
       </form>
 
-      <p className="mt-12 max-w-3xl text-sm text-white/40">
+      <p className="mt-12 max-w-3xl text-sm text-white/50">
         {content.bookingHint}{' '}
         <Link
           href={BOOKING_PATH}

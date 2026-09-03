@@ -7,7 +7,7 @@
  * иначе появление видео двигает вёрстку и портит CLS.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 
 import { DEFAULT_COMMERCIAL_LANDING } from '@/lib/commercial-landing/content'
 import { CommercialCases, type CommercialCase } from '../commercial-cases'
@@ -83,12 +83,39 @@ describe('Блок коммерческих кейсов', () => {
     expect(container.querySelectorAll('img')).toHaveLength(cases.length)
   })
 
-  it('наведение на карточку поднимает видео только у неё', () => {
+  it('наведение на карточку поднимает видео только у неё — после hover-intent паузы', () => {
+    vi.useFakeTimers()
     const { container } = renderCases()
 
     fireEvent.mouseEnter(screen.getByRole('link', { name: /WELLERY/ }))
+    // До истечения intent-паузы поток ещё не должен запускаться
+    expect(container.querySelectorAll('video')).toHaveLength(0)
 
+    act(() => {
+      vi.advanceTimersByTime(130)
+    })
     expect(container.querySelectorAll('video')).toHaveLength(1)
+
+    vi.useRealTimers()
+  })
+
+  it('быстрый проход курсором короче hover-intent паузы не запускает поток', () => {
+    vi.useFakeTimers()
+    const { container } = renderCases()
+
+    const link = screen.getByRole('link', { name: /WELLERY/ })
+    fireEvent.mouseEnter(link)
+    act(() => {
+      vi.advanceTimersByTime(60)
+    })
+    fireEvent.mouseLeave(link)
+    act(() => {
+      vi.advanceTimersByTime(200)
+    })
+
+    expect(container.querySelectorAll('video')).toHaveLength(0)
+
+    vi.useRealTimers()
   })
 
   it('медиаконтейнер имеет фиксированное соотношение сторон — без сдвига вёрстки', () => {
@@ -114,5 +141,24 @@ describe('Блок коммерческих кейсов', () => {
 
     expect(screen.getByText('HoReCa / рекламный ролик')).toBeInTheDocument()
     expect(screen.getByText('Digital · выставки · AI + live action')).toBeInTheDocument()
+  })
+
+  it('подпись «Смотреть кейс» доступна без hover — рядом с метаданными, а не поверх кадра', () => {
+    renderCases()
+
+    // Раньше на мобильном у карточки не было вообще никакой подсказки
+    // о кликабельности (overlay был display:none ниже md). Теперь подпись
+    // всегда доступна рядом с метаданными (md:hidden — только мобильный
+    // вариант), а затемнение поверх кадра остаётся десктопным hover-эффектом
+    // (hidden ниже md, чтобы не накрывать картинку постоянной дымкой).
+    const labels = screen.getAllByText(DEFAULT_COMMERCIAL_LANDING.cases.ctaLabel)
+    const mobileLabel = labels.find(node => node.className.includes('md:hidden'))!
+    const overlayLabel = labels.find(node => node !== mobileLabel)!
+
+    expect(mobileLabel.className).not.toMatch(/(?:^|\s)hidden(?:\s|$)/)
+
+    const overlay = overlayLabel.closest('div')!
+    expect(overlay.className).toMatch(/(?:^|\s)hidden(?:\s|$)/)
+    expect(overlay.className).toMatch(/md:flex/)
   })
 })

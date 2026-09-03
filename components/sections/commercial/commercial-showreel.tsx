@@ -34,7 +34,7 @@ export function CommercialShowreel({ content, onVideoMilestone }: CommercialShow
         onProgressMilestone={onVideoMilestone}
       />
       <div className="px-6 py-6 md:px-10 lg:px-20">
-        <p className="font-mono text-[0.65rem] uppercase tracking-[0.28em] text-white/40 md:text-xs">
+        <p className="font-mono text-[0.65rem] uppercase tracking-[0.28em] text-white/55 md:text-xs">
           {content.title}
         </p>
         <p className="mt-2 text-sm text-white/50">{content.caption}</p>

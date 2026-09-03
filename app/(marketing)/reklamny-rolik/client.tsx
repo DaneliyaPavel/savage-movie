@@ -14,6 +14,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { MotionConfig } from 'framer-motion'
 
 import { TopBar } from '@/components/ui/top-bar'
 import { JalousieMenu } from '@/components/ui/jalousie-menu'
@@ -42,6 +43,8 @@ interface CommercialLandingClientProps {
   content: CommercialLandingContent
   cases: CommercialCase[]
   clients: Client[]
+  /** Слаги всех опубликованных проектов — для проверки proof-ссылок в WhySavage */
+  allCaseSlugs: string[]
 }
 
 /** Откуда нажали CTA — параметр цели estimate_cta_click */
@@ -51,9 +54,13 @@ export function CommercialLandingClient({
   content,
   cases,
   clients,
+  allCaseSlugs,
 }: CommercialLandingClientProps) {
   const [presetProjectType, setPresetProjectType] = useState<string | null>(null)
   const [isFormInView, setIsFormInView] = useState(false)
+  const [isFooterInView, setIsFooterInView] = useState(false)
+  const [isFormSubmitted, setIsFormSubmitted] = useState(false)
+  const footerRef = useRef<HTMLElement>(null)
   const viewTrackedRef = useRef(false)
 
   // Метки рекламного клика снимаем один раз при входе: до отправки формы
@@ -83,10 +90,29 @@ export function CommercialLandingClient({
     return () => observer.disconnect()
   }, [])
 
+  /**
+   * Тот же плавающий CTA не должен наезжать на футер: без этого условия он
+   * появляется снова, как только форма уходит из вьюпорта, независимо от
+   * того, что физически показано в правом нижнем углу экрана в этот момент.
+   */
+  useEffect(() => {
+    const footer = footerRef.current
+    if (!footer || typeof IntersectionObserver === 'undefined') return
+
+    const observer = new IntersectionObserver(
+      entries => setIsFooterInView(entries.some(entry => entry.isIntersecting)),
+      { rootMargin: '0px' }
+    )
+    observer.observe(footer)
+    return () => observer.disconnect()
+  }, [])
+
   const scrollTo = useCallback((id: string) => {
     const node = document.getElementById(id)
     if (!node) return
-    node.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const reducedMotion =
+      typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    node.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' })
   }, [])
 
   const openEstimate = useCallback(
@@ -126,92 +152,97 @@ export function CommercialLandingClient({
     []
   )
 
-  const availableCaseSlugs = cases.map(item => item.slug)
-
   return (
-    <main className="min-h-screen bg-[#000000] pb-20 md:pb-0">
-      <TopBar />
-      <JalousieMenu />
+    <MotionConfig reducedMotion="user">
+      <main className="min-h-screen bg-[#000000] pb-20 md:pb-0">
+        <TopBar />
+        <JalousieMenu />
 
-      <CommercialHero
-        hero={content.hero}
-        sla={content.sla}
-        onEstimateClick={() => openEstimate('hero')}
-        onProjectsClick={() => scrollTo('commercial-cases')}
-      />
+        <CommercialHero
+          hero={content.hero}
+          sla={content.sla}
+          onEstimateClick={() => openEstimate('hero')}
+          onProjectsClick={() => scrollTo('commercial-cases')}
+          fallbackPosterUrl={cases[0]?.posterUrl ?? null}
+        />
 
-      <TrustStrip trust={content.trust} clients={clients} />
+        <TrustStrip trust={content.trust} clients={clients} />
 
-      <CommercialCases
-        content={content.cases}
-        cases={cases}
-        onCaseOpen={handleCaseOpen}
-        onVideoMilestone={handleVideoMilestone}
-      />
+        <CommercialCases
+          content={content.cases}
+          cases={cases}
+          onCaseOpen={handleCaseOpen}
+          onVideoMilestone={handleVideoMilestone}
+        />
 
-      <TaskGrid content={content.tasks} onTaskSelect={handleTaskSelect} />
+        <TaskGrid content={content.tasks} onTaskSelect={handleTaskSelect} />
 
-      <CommercialShowreel
-        content={content.showreel}
-        onVideoMilestone={milestone => handleVideoMilestone(milestone, 'showreel')}
-      />
+        <CommercialShowreel
+          content={content.showreel}
+          onVideoMilestone={milestone => handleVideoMilestone(milestone, 'showreel')}
+        />
 
-      <ProductionProcess content={content.process} />
+        <ProductionProcess content={content.process} />
 
-      <PricingBands
-        content={content.pricing}
-        onEstimateClick={() => openEstimate('price')}
-        onArticleClick={() => trackMetrikaGoal('estimate_cta_click', { location: 'price_article' })}
-      />
+        <PricingBands
+          content={content.pricing}
+          onEstimateClick={() => openEstimate('price')}
+          onArticleClick={() =>
+            trackMetrikaGoal('estimate_cta_click', { location: 'price_article' })
+          }
+        />
 
-      <WhySavage
-        content={content.why}
-        availableCaseSlugs={availableCaseSlugs}
-        onCaseOpen={handleCaseOpen}
-      />
+        <WhySavage
+          content={content.why}
+          availableCaseSlugs={allCaseSlugs}
+          onCaseOpen={handleCaseOpen}
+        />
 
-      <EstimateForm
-        content={content.estimate}
-        success={content.success}
-        presetProjectType={presetProjectType}
-        onBookingClick={() => trackMetrikaGoal('booking_click', { location: 'estimate' })}
-      />
+        <EstimateForm
+          content={content.estimate}
+          success={content.success}
+          sla={content.sla}
+          presetProjectType={presetProjectType}
+          onBookingClick={() => trackMetrikaGoal('booking_click', { location: 'estimate' })}
+          onSubmitted={() => setIsFormSubmitted(true)}
+        />
 
-      <CommercialFaq content={content.faq} />
+        <CommercialFaq content={content.faq} />
 
-      <FinalCta
-        content={content.finalCta}
-        onEstimateClick={() => openEstimate('final')}
-        onEmailClick={() => trackMetrikaGoal('email_click', { location: 'final' })}
-        onTelegramClick={() => trackMetrikaGoal('telegram_click', { location: 'final' })}
-      />
+        <FinalCta
+          content={content.finalCta}
+          onEstimateClick={() => openEstimate('final')}
+          onEmailClick={() => trackMetrikaGoal('email_click', { location: 'final' })}
+          onTelegramClick={() => trackMetrikaGoal('telegram_click', { location: 'final' })}
+        />
 
-      <StickyEstimateCta
-        label={content.pricing.ctaLabel}
-        onClick={() => openEstimate('sticky')}
-        hidden={isFormInView}
-      />
+        <StickyEstimateCta
+          label={content.pricing.ctaLabel}
+          onClick={() => openEstimate('sticky')}
+          hidden={isFormInView || isFooterInView || isFormSubmitted}
+        />
 
-      <footer className="border-t border-[#1A1A1A] px-6 py-10 md:px-10 lg:px-20">
-        <div className="flex flex-col items-start justify-between gap-4 text-sm text-white/40 md:flex-row md:items-center">
-          <span>© {new Date().getFullYear()} Savage Movie. Все права защищены.</span>
-          <div className="flex flex-wrap gap-x-6 gap-y-2">
-            <Link href="/projects" className="transition-colors hover:text-white">
-              Проекты
-            </Link>
-            <Link href="/services" className="transition-colors hover:text-white">
-              Услуги
-            </Link>
-            <Link href="/blog" className="transition-colors hover:text-white">
-              Блог
-            </Link>
-            <Link href="/privacy" className="transition-colors hover:text-white">
-              Конфиденциальность
-            </Link>
+        <footer ref={footerRef} className="border-t border-[#1A1A1A] px-6 py-10 md:px-10 lg:px-20">
+          <div className="flex flex-col items-start justify-between gap-4 text-sm text-white/40 md:flex-row md:items-center">
+            <span>© {new Date().getFullYear()} Savage Movie. Все права защищены.</span>
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              <Link href="/projects" className="transition-colors hover:text-white">
+                Проекты
+              </Link>
+              <Link href="/services" className="transition-colors hover:text-white">
+                Услуги
+              </Link>
+              <Link href="/blog" className="transition-colors hover:text-white">
+                Блог
+              </Link>
+              <Link href="/privacy" className="transition-colors hover:text-white">
+                Конфиденциальность
+              </Link>
+            </div>
+            <span className="font-mono">Санкт-Петербург / Москва / Россия</span>
           </div>
-          <span className="font-mono">Санкт-Петербург / Москва / Россия</span>
-        </div>
-      </footer>
-    </main>
+        </footer>
+      </main>
+    </MotionConfig>
   )
 }

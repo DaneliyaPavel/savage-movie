@@ -51,12 +51,15 @@ export function WhySavage({ content, availableCaseSlugs, onCaseOpen }: WhySavage
               </p>
 
               {hasProof ? (
+                // Проверка → доказательство: ссылка на кейс — не ещё одна
+                // строка текста, а конкретное свидетельство тезиса, поэтому
+                // держим её заметно ярче описания (white/80 против white/55)
                 <Link
                   href={`/projects/${item.caseSlug}`}
                   onClick={() => onCaseOpen(item.caseSlug as string)}
-                  className="mt-4 inline-flex items-center gap-2 text-sm text-white/60 transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                  className="mt-4 inline-flex items-center gap-2 text-sm text-white/80 transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
                 >
-                  <span className="border-b border-white/20 pb-0.5">{item.caseLabel}</span>
+                  <span className="border-b border-white/30 pb-0.5">{item.caseLabel}</span>
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
               ) : null}

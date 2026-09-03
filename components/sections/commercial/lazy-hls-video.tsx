@@ -16,10 +16,29 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import type Hls from 'hls.js'
 
 import { getStreamUrl, getThumbnailUrl } from '@/lib/integrations/bunny/client'
 import { cn } from '@/lib/utils'
+
+/**
+ * Постер кейса (или hero) — самый тяжёлый объект на странице, если это
+ * несжатый оригинал из CMS: next/image сжимает и отдаёт под реальный размер
+ * карточки. Next.js оптимизирует так только для своего хоста и хостов из
+ * remotePatterns (next.config.ts) — для произвольного внешнего URL, вписанного
+ * в CMS вручную, он бы упал с ошибкой конфигурации. Поэтому проверяем: свой
+ * же путь (начинается с "/") или уже разрешённый Bunny CDN — иначе остаёмся
+ * на обычном <img>, ничего не ломая.
+ */
+function canOptimizePoster(url: string): boolean {
+  if (url.startsWith('/')) return true
+  try {
+    return /(^|\.)b-cdn\.net$/i.test(new URL(url).hostname)
+  } catch {
+    return false
+  }
+}
 
 export interface LazyHlsVideoProps {
   playbackId: string
@@ -38,6 +57,8 @@ export interface LazyHlsVideoProps {
   onProgressMilestone?: (milestone: 'start' | 'half' | 'complete') => void
   /** Постер грузится с priority: только для медиа первого экрана */
   eager?: boolean
+  /** sizes для next/image; по умолчанию — полноширинный блок (hero, showreel) */
+  sizes?: string
 }
 
 function prefersReducedMotion(): boolean {
@@ -56,6 +77,7 @@ export function LazyHlsVideo({
   title,
   onProgressMilestone,
   eager = false,
+  sizes = '100vw',
 }: LazyHlsVideoProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -196,19 +218,34 @@ export function LazyHlsVideo({
       {/* Постер остаётся под видео: он же первый кадр и он же фолбэк,
           если автозапуск отклонён или поток не поднялся */}
       {posterUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={posterUrl}
-          alt=""
-          aria-hidden="true"
-          loading={eager ? 'eager' : 'lazy'}
-          fetchPriority={eager ? 'high' : 'auto'}
-          decoding="async"
-          className={cn(
-            'absolute inset-0 h-full w-full object-cover transition-opacity duration-700',
-            isPlaying ? 'opacity-0' : 'opacity-100'
-          )}
-        />
+        canOptimizePoster(posterUrl) ? (
+          <Image
+            src={posterUrl}
+            alt=""
+            aria-hidden="true"
+            fill
+            sizes={sizes}
+            priority={eager}
+            className={cn(
+              'object-cover transition-opacity duration-700',
+              isPlaying ? 'opacity-0' : 'opacity-100'
+            )}
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={posterUrl}
+            alt=""
+            aria-hidden="true"
+            loading={eager ? 'eager' : 'lazy'}
+            fetchPriority={eager ? 'high' : 'auto'}
+            decoding="async"
+            className={cn(
+              'absolute inset-0 h-full w-full object-cover transition-opacity duration-700',
+              isPlaying ? 'opacity-0' : 'opacity-100'
+            )}
+          />
+        )
       ) : null}
 
       {shouldLoad ? (

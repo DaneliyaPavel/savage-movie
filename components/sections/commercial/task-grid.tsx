@@ -39,7 +39,7 @@ function CardBody({ task, index }: { task: TaskItem; index: number }) {
         </h3>
         <p className="mt-3 text-sm leading-relaxed text-white/55">{task.description}</p>
       </div>
-      <ArrowRight className="h-4 w-4 text-white/30 transition-all duration-300 group-hover:translate-x-1 group-hover:text-accent" />
+      <ArrowRight className="h-4 w-4 text-white/30 transition-[color,translate] duration-200 group-hover:translate-x-1 group-hover:text-accent" />
     </>
   )
 }
