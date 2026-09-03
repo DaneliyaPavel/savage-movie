@@ -40,8 +40,21 @@ export function mergeCommercialLandingContent<T>(defaults: T, override: unknown)
       continue
     }
 
-    // Nullable-поля (видео, постеры, ссылки) в CMS законно приходят как null
-    if (value === null || typeof value === typeof defaultValue) {
+    // Nullable-поля (Bunny ID видео, постеры, og:image) типизированы как
+    // `string | null`, и в дефолтах это всегда null. typeof null === 'object',
+    // поэтому старая проверка `typeof value === typeof defaultValue` не
+    // пропускала обычную строку — сохранённый videoPlaybackId молча
+    // откатывался на null при каждом чтении, хотя в базе лежал верно.
+    // Раз default сам null, для override годится любой примитив или null —
+    // объекты и массивы сюда не долетают, у них typeof value === 'object'.
+    if (defaultValue === null) {
+      if (value === null || typeof value !== 'object') {
+        result[key] = value
+      }
+      continue
+    }
+
+    if (typeof value === typeof defaultValue) {
       result[key] = value
     }
   }
