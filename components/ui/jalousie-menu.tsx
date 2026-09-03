@@ -7,7 +7,6 @@ import { useMenu } from './menu-context'
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '@/lib/i18n-context'
 import { getProjects } from '@/features/projects/api'
-import { getCourses } from '@/features/courses/api'
 import { getBlogPosts } from '@/lib/api/blog'
 import { cn } from '@/lib/utils'
 
@@ -57,7 +56,6 @@ export function JalousieMenu() {
   const { language, setLanguage, t } = useI18n()
 
   const [projectsCount, setProjectsCount] = useState<number | null>(null)
-  const [coursesCount, setCoursesCount] = useState<number | null>(null)
   const [blogCount, setBlogCount] = useState<number | null>(null)
 
   useEffect(() => {
@@ -66,20 +64,14 @@ export function JalousieMenu() {
     let cancelled = false
     async function loadCounts() {
       try {
-        const [projects, courses, blogPosts] = await Promise.allSettled([
-          getProjects(),
-          getCourses(),
-          getBlogPosts(true),
-        ])
+        const [projects, blogPosts] = await Promise.allSettled([getProjects(), getBlogPosts(true)])
         if (cancelled) return
         setProjectsCount(projects.status === 'fulfilled' ? projects.value.length : null)
-        setCoursesCount(courses.status === 'fulfilled' ? courses.value.length : null)
         setBlogCount(blogPosts.status === 'fulfilled' ? blogPosts.value.length : null)
       } catch {
         if (cancelled) return
         // keep nulls; counts are optional UI sugar
         setProjectsCount(null)
-        setCoursesCount(null)
         setBlogCount(null)
       }
     }
@@ -90,7 +82,7 @@ export function JalousieMenu() {
     }
   }, [isOpen])
 
-  type CountKey = 'projects' | 'courses' | 'blog' | null
+  type CountKey = 'projects' | 'blog' | null
 
   /* Menu items - Asymmetric layout matching freshman reference */
   const NAV_ITEMS = useMemo(
@@ -116,16 +108,11 @@ export function JalousieMenu() {
         },
         {
           // Коммерческая посадочная: внутренняя ссылка с каждой страницы,
-          // включая главную, — меню единственное место, где это не ломает вёрстку
+          // включая главную, — меню единственное место, где это не ломает вёрстку.
+          // Занимает позицию, ранее принадлежавшую «Обучению» (пункт убран из меню)
           labelKey: 'nav.commercial',
           href: '/reklamny-rolik',
           countKey: null as CountKey,
-          position: 'right' as const,
-        },
-        {
-          labelKey: 'nav.courses',
-          href: '/courses',
-          countKey: 'courses' as CountKey,
           position: 'left' as const,
         },
         {
@@ -160,7 +147,6 @@ export function JalousieMenu() {
     if (!key) return null
     if (key === 'blog') return blogCount
     if (key === 'projects') return projectsCount
-    if (key === 'courses') return coursesCount
     return null
   }
 
