@@ -42,3 +42,22 @@ export async function uploadImages(files: File[]): Promise<MultipleUploadRespons
   })
   return apiPostForm<MultipleUploadResponse>('/api/upload/images', formData)
 }
+
+/** Ответ публичной загрузки брифа: имя файла клиента наружу не возвращается */
+export interface BriefUploadResponse {
+  url: string
+  size: number
+  content_type: string
+}
+
+/**
+ * Загрузить бриф или референс с формы предварительной сметы.
+ *
+ * Единственная публичная загрузка на сайте: авторизация не нужна, ограничения
+ * (типы, 10MB, частота) держит бэкенд — см. app/delivery/api/upload.py.
+ */
+export async function uploadBrief(file: File): Promise<BriefUploadResponse> {
+  const formData = new FormData()
+  formData.append('file', file)
+  return apiPostForm<BriefUploadResponse>('/api/upload/brief', formData)
+}

@@ -35,6 +35,24 @@ ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/x-msvideo"]
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 (UPLOAD_DIR / "images").mkdir(parents=True, exist_ok=True)
 (UPLOAD_DIR / "videos").mkdir(parents=True, exist_ok=True)
+(UPLOAD_DIR / "briefs").mkdir(parents=True, exist_ok=True)
+
+# Бриф с коммерческого лендинга: единственная публичная загрузка на сайте.
+# Поэтому список типов узкий, размер меньше, а лимит частоты жёстче, чем
+# у админских роутов. Ничего исполняемого и ничего, что браузер отрендерит
+# как разметку (html, svg), сюда попасть не должно.
+MAX_BRIEF_SIZE = 10 * 1024 * 1024  # 10MB
+ALLOWED_BRIEF_TYPES = {
+    "application/pdf": ".pdf",
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "application/msword": ".doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+    "application/zip": ".zip",
+}
+
 
 
 def get_file_extension(content_type: str) -> str:
@@ -58,6 +76,13 @@ _MAGIC_SIGNATURES: dict[str, list[bytes]] = {
     "video/mp4": [b"\x00\x00\x00\x18ftyp", b"\x00\x00\x00\x1cftyp", b"\x00\x00\x00\x20ftyp", b"ftyp"],
     "video/quicktime": [b"\x00\x00\x00\x14ftypqt"],
     "video/x-msvideo": [b"RIFF"],  # RIFF....AVI
+    "application/pdf": [b"%PDF-"],
+    # doc — составной документ OLE2
+    "application/msword": [b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"],
+    # docx/pptx/zip — все три являются ZIP-контейнером
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [b"PK\x03\x04"],
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": [b"PK\x03\x04"],
+    "application/zip": [b"PK\x03\x04", b"PK\x05\x06"],
 }
 
 
@@ -229,3 +254,55 @@ async def upload_images(
         })
     
     return JSONResponse({"files": uploaded_files})
+
+
+@router.post("/brief")
+@limiter.limit("5/hour")
+async def upload_brief(
+    request: Request,
+    file: UploadFile = File(...),
+):
+    """
+    Загрузить бриф или референс с коммерческого лендинга.
+
+    Единственный публичный роут загрузки: форма сметы должна принимать ТЗ
+    и презентации от людей, у которых нет аккаунта на сайте. Защита —
+    узкий список типов, проверка magic bytes, лимит 10MB и 5 файлов в час
+    с адреса. Имя файла всегда генерируем сами: имя от клиента не участвует
+    ни в пути, ни в ответе.
+    """
+    if file.content_type not in ALLOWED_BRIEF_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Формат не поддерживается. Подойдут PDF, DOC/DOCX, PPTX, ZIP или картинка.",
+        )
+
+    contents = await file.read()
+    if len(contents) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Файл пустой",
+        )
+    if len(contents) > MAX_BRIEF_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Файл больше {MAX_BRIEF_SIZE // 1024 // 1024}MB — пришлите ссылку на облако",
+        )
+
+    if not _validate_magic_bytes(contents, file.content_type):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Содержимое файла не соответствует заявленному типу",
+        )
+
+    file_name = f"{uuid.uuid4()}{ALLOWED_BRIEF_TYPES[file.content_type]}"
+    file_path = UPLOAD_DIR / "briefs" / file_name
+
+    with open(file_path, "wb") as f:
+        f.write(contents)
+
+    return JSONResponse({
+        "url": f"/uploads/briefs/{file_name}",
+        "size": len(contents),
+        "content_type": file.content_type,
+    })

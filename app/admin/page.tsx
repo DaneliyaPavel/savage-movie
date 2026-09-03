@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Film, GraduationCap, Settings, Info, PlusCircle, FileText, Users, BarChart3 } from 'lucide-react'
+import { Film, GraduationCap, Settings, Info, PlusCircle, FileText, Users, BarChart3, Megaphone } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
@@ -113,6 +113,12 @@ export default function AdminPage() {
           value: counts.blog,
           href: '/admin/blog',
           icon: FileText,
+        },
+        {
+          title: 'Коммерческий лендинг',
+          description: 'Тексты, кейсы, цены и SEO страницы «Рекламные ролики».',
+          href: '/admin/landing',
+          icon: Megaphone,
         },
       ],
     },

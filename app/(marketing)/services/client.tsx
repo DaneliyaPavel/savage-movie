@@ -47,6 +47,10 @@ const SERVICES = [
       'We create commercials that sell and stick. Full cycle: from creative concept and script to shooting, post-production, and platform adaptation. Working with federal brands and startups.',
     ctaRu: 'Обсудить ролик',
     ctaEn: 'Discuss a commercial',
+    // У рекламных роликов есть своя коммерческая страница с кейсами,
+    // бюджетом и формой сметы — вести отсюда в общий /contact значит
+    // терять самый горячий сегмент
+    href: '/reklamny-rolik',
   },
   {
     id: 'clips',
@@ -180,7 +184,7 @@ export default function ServicesPageClient() {
                     note={language === 'ru' ? 'обсудить' : 'discuss'}
                   >
                     <Link
-                      href="/contact"
+                      href={service.href ?? '/contact'}
                       className="inline-flex items-center gap-3 group"
                     >
                       <span className="text-sm uppercase tracking-widest border-b border-foreground/30 pb-1 group-hover:border-accent group-hover:text-accent transition-colors">

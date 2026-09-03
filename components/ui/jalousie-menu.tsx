@@ -115,6 +115,14 @@ export function JalousieMenu() {
           position: 'full' as const,
         },
         {
+          // Коммерческая посадочная: внутренняя ссылка с каждой страницы,
+          // включая главную, — меню единственное место, где это не ломает вёрстку
+          labelKey: 'nav.commercial',
+          href: '/reklamny-rolik',
+          countKey: null as CountKey,
+          position: 'right' as const,
+        },
+        {
           labelKey: 'nav.courses',
           href: '/courses',
           countKey: 'courses' as CountKey,

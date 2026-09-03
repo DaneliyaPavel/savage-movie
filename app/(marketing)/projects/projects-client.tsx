@@ -642,6 +642,14 @@ export default function ProjectsPageClient({
           <h1 className="text-base uppercase tracking-widest font-oranienbaum">
             {t('projects.title')}
           </h1>
+          {/* Из портфолио — на коммерческую страницу: человек, который смотрит
+              работы, чаще всего пришёл за роликом, а не за списком */}
+          <Link
+            href="/reklamny-rolik"
+            className="mt-4 inline-block text-[10px] md:text-xs uppercase tracking-[0.25em] text-muted-foreground border-b border-white/15 pb-1 transition-colors hover:text-white hover:border-white/40"
+          >
+            {language === 'ru' ? 'Рекламные ролики для бизнеса' : 'Commercial production'}
+          </Link>
         </div>
       </header>
 
