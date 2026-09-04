@@ -106,6 +106,8 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-}
+      LEAD_WEBHOOK_URL: ${LEAD_WEBHOOK_URL:-}
+      LEAD_WEBHOOK_TOKEN: ${LEAD_WEBHOOK_TOKEN:-}
     volumes:
       - ./backend/uploads:/app/backend/uploads:ro
     expose:

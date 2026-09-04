@@ -320,7 +320,7 @@ async function forwardToWebhook(lead: EstimateLead): Promise<void> {
   const timeout = setTimeout(() => controller.abort(), 5000)
 
   try {
-    await fetch(LEAD_WEBHOOK_URL, {
+    const response = await fetch(LEAD_WEBHOOK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -329,6 +329,18 @@ async function forwardToWebhook(lead: EstimateLead): Promise<void> {
       body: JSON.stringify(lead),
       signal: controller.signal,
     })
+
+    // Просроченный токен или снятый в n8n workflow отвечают 401/404, а не
+    // ошибкой сети: без этой ветки отказ приёмника выглядел бы как успех.
+    // В лог идут только статус и id лида — тело ответа может содержать эхо
+    // заявки, а заголовки — токен.
+    if (!response.ok) {
+      logger.error('Внешний приёмник отклонил лид', null, {
+        route: '/api/estimate',
+        lead_id: lead.lead_id,
+        status: response.status,
+      })
+    }
   } catch (error) {
     logger.error('Не удалось передать лид во внешний приёмник', error, {
       route: '/api/estimate',

@@ -28,8 +28,14 @@ vi.mock('@/lib/integrations/telegram/client', () => ({
   escapeTelegram: (value: string) => value,
 }))
 
+const loggerError = vi.fn()
+
 vi.mock('@/lib/utils/logger', () => ({
-  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
+  logger: {
+    error: (...args: unknown[]) => loggerError(...args),
+    warn: vi.fn(),
+    info: vi.fn(),
+  },
 }))
 
 /** Заявка приходит через nginx, поэтому адрес читается из x-forwarded-for */
@@ -79,6 +85,7 @@ describe('POST /api/estimate', () => {
     delete process.env.TELEGRAM_BOT_TOKEN
     delete process.env.TELEGRAM_CHAT_ID
     delete process.env.LEAD_WEBHOOK_URL
+    delete process.env.LEAD_WEBHOOK_TOKEN
     sendSmtpMail.mockResolvedValue({ messageId: 'smtp_1' })
     sendEmail.mockResolvedValue({ id: 'email_1' })
     sendTelegramMessage.mockResolvedValue({ ok: true })
@@ -269,6 +276,89 @@ describe('POST /api/estimate', () => {
       landing_path: '/reklamny-rolik',
     })
     expect(payload.lead_id).toBeTruthy()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('подписывает вызов приёмника токеном из окружения', async () => {
+    process.env.LEAD_WEBHOOK_URL = 'https://n8n.example/webhook/lead'
+    // В .env лежит сырой токен: префикс Bearer добавляет само приложение
+    process.env.LEAD_WEBHOOK_TOKEN = 'raw-token-without-bearer'
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { POST } = await loadRoute()
+    await POST(makeRequest(validLead))
+
+    const headers = fetchMock.mock.calls[0]![1].headers as Record<string, string>
+    expect(headers.Authorization).toBe('Bearer raw-token-without-bearer')
+
+    vi.unstubAllGlobals()
+  })
+
+  it('без токена уходит только Content-Type', async () => {
+    process.env.LEAD_WEBHOOK_URL = 'https://n8n.example/webhook/lead'
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { POST } = await loadRoute()
+    await POST(makeRequest(validLead))
+
+    const headers = fetchMock.mock.calls[0]![1].headers as Record<string, string>
+    expect(headers).not.toHaveProperty('Authorization')
+
+    vi.unstubAllGlobals()
+  })
+
+  it('успешный ответ приёмника не пишет ошибку в лог', async () => {
+    process.env.LEAD_WEBHOOK_URL = 'https://n8n.example/webhook/lead'
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200 }))
+
+    const { POST } = await loadRoute()
+    const response = await POST(makeRequest(validLead))
+
+    expect(response.status).toBe(200)
+    expect(loggerError).not.toHaveBeenCalled()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('отказ приёмника по HTTP логируется, но заявка остаётся принятой', async () => {
+    process.env.LEAD_WEBHOOK_URL = 'https://n8n.example/webhook/lead'
+    process.env.LEAD_WEBHOOK_TOKEN = 'raw-token-without-bearer'
+    // Просроченный токен: n8n отвечает 401, а не ошибкой сети
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401 }))
+
+    const { POST } = await loadRoute()
+    const response = await POST(makeRequest(validLead))
+
+    // Основной канал сработал — для клиента заявка принята
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({ success: true })
+    expect(sendSmtpMail).toHaveBeenCalledTimes(1)
+
+    expect(loggerError).toHaveBeenCalledTimes(1)
+    expect(loggerError.mock.calls[0]![2]).toMatchObject({
+      route: '/api/estimate',
+      status: 401,
+    })
+    expect(loggerError.mock.calls[0]![2].lead_id).toBeTruthy()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('токен приёмника не попадает в логи при отказе', async () => {
+    process.env.LEAD_WEBHOOK_URL = 'https://n8n.example/webhook/lead'
+    process.env.LEAD_WEBHOOK_TOKEN = 'raw-token-without-bearer'
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }))
+
+    const { POST } = await loadRoute()
+    await POST(makeRequest(validLead))
+
+    const logged = JSON.stringify(loggerError.mock.calls)
+    expect(logged).not.toContain('raw-token-without-bearer')
+    expect(logged).not.toContain('Bearer')
+    expect(logged).not.toContain('Authorization')
 
     vi.unstubAllGlobals()
   })
