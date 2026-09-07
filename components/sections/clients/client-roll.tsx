@@ -24,8 +24,11 @@ import Link from 'next/link'
 import { trackMetrikaGoal } from '@/lib/analytics/metrika'
 import { pluralRu, type ClientRollEntry } from '@/features/clients/mappers'
 
-/* Окно кадра на десктопе не шире 290px, на мобильном кадр во всю строку */
-const STILL_SIZES = '(min-width: 768px) 290px, 100vw'
+/*
+ * Кадр намеренно запрашивается уже, чем строка: полоса высотой около 130px,
+ * обрезанная по object-cover, от растянутой не отличается, а байтов вдвое меньше.
+ */
+const STILL_SIZES = '(min-width: 768px) 70vw, 100vw'
 
 /** Строка ролла, которая сейчас в центре экрана, зажигает свой кадр */
 function useScrollFocus(count: number) {
@@ -59,7 +62,28 @@ function RowBody({ entry, index }: { entry: ClientRollEntry; index: number }) {
   const extraProjects = entry.projects.length - 1
 
   return (
-    <div className="relative flex items-center gap-5 px-5 py-9 sm:px-8 md:gap-8 md:px-10 md:py-5 lg:px-16">
+    <div className="relative flex items-center gap-5 px-5 py-9 sm:px-8 md:gap-8 md:px-10 md:py-9 lg:px-16">
+      {primary?.still && (
+        <div className="client-roll-still absolute inset-0 overflow-hidden" aria-hidden="true">
+          <Image
+            src={primary.still}
+            alt=""
+            fill
+            sizes={STILL_SIZES}
+            quality={65}
+            /*
+             * На узком экране строка — вытянутая полоса, и кадр, обрезанный по
+             * центру, режет лица: сюжет у стилла обычно в верхней трети.
+             * В окне на десктопе пропорция правильная, центр работает.
+             */
+            className="object-cover object-[center_38%]"
+          />
+          {/* Затемнение защищает имя слева и метаданные справа, но отпускает
+              середину кадра: прежняя плотная вуаль давила картинку в серую муть */}
+          <div className="client-roll-scrim" />
+        </div>
+      )}
+
       <span
         className="client-roll-index relative z-[1] w-9 shrink-0 text-base text-white/40 md:w-12 md:text-xl"
         style={{ fontFamily: 'var(--font-handwritten), cursive' }}
@@ -85,7 +109,7 @@ function RowBody({ entry, index }: { entry: ClientRollEntry; index: number }) {
             <span className="sr-only">{entry.name}</span>
           </h3>
         ) : (
-          <h3 className="client-roll-name font-brand-hero text-[clamp(1.6rem,7vw,2.4rem)] uppercase leading-[0.95] tracking-tighter text-white/75 md:text-[clamp(2rem,4.2vw,3.6rem)]">
+          <h3 className="client-roll-name font-brand-hero text-[clamp(1.6rem,7vw,2.4rem)] uppercase leading-[0.95] tracking-tighter text-white/75 md:text-[clamp(2rem,4.4vw,4rem)]">
             {entry.name}
           </h3>
         )}
@@ -102,33 +126,6 @@ function RowBody({ entry, index }: { entry: ClientRollEntry; index: number }) {
         Один <Image> на оба сценария: на мобильном контейнер разворачивается в
         подложку строки, на десктопе становится окном кадра в потоке.
       */}
-      {primary?.still && (
-        /* Окно кадра видно всегда, проявляется только картинка внутри:
-           колонка пустых окон с одним горящим и делает из списка плёнку */
-        <div
-          className="client-roll-frame absolute inset-0 md:relative md:inset-auto md:aspect-video md:w-[clamp(190px,17vw,290px)] md:shrink-0 md:border md:border-white/[0.09]"
-          aria-hidden="true"
-        >
-          <div className="client-roll-still absolute inset-0 overflow-hidden">
-            <Image
-              src={primary.still}
-              alt=""
-              fill
-              sizes={STILL_SIZES}
-              quality={65}
-              /*
-               * На узком экране строка — вытянутая полоса, и кадр, обрезанный по
-               * центру, режет лица: сюжет у стилла обычно в верхней трети.
-               * В окне на десктопе пропорция правильная, центр работает.
-               */
-              className="object-cover object-[center_38%] md:object-center"
-            />
-            {/* Затемнение нужно только там, где на кадре лежит текст */}
-            <div className="client-roll-scrim md:hidden" />
-          </div>
-        </div>
-      )}
-
       <div className="relative z-[1] flex shrink-0 flex-col items-end gap-1 text-[10px] uppercase tracking-[0.22em] text-white/70 md:w-[clamp(96px,9vw,132px)] md:items-start md:text-[11px]">
         {primary?.categoryLabel && <span>{primary.categoryLabel}</span>}
         {primary?.year && <span className="text-white/55">{primary.year}</span>}

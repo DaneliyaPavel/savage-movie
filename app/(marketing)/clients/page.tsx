@@ -89,18 +89,7 @@ export default async function ClientsPage() {
           дерева React не выполняет и ломает гидрацию */}
       <JsonLdScripts scripts={[breadcrumbJsonLd]} />
       <ClientsPageShell>
-        <ClientsHero
-          brandCount={brandCount}
-          projectCount={projectCount}
-          leader={entries
-            .filter(entry => entry.primary?.still)
-            .slice(0, 4)
-            .map(entry => ({
-              id: entry.id,
-              still: entry.primary?.still ?? '',
-              name: entry.name,
-            }))}
-        />
+        <ClientsHero brandCount={brandCount} projectCount={projectCount} />
         <ClientRoll entries={entries} yearRange={yearRange} />
         <SelectedCollaborations items={collaborationItems} />
         <CapabilityIndex entries={capabilityEntries} />

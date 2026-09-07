@@ -620,16 +620,24 @@
 }
 
 /*
- * Затемнение только для мобильной раскладки: там кадр лежит подложкой под
- * именем бренда. На десктопе кадр живёт в отдельном окне, текста на нём нет,
- * и вуаль там означала бы только одно — задавленную картинку.
+ * Затемнение кадра-полосы.
+ *
+ * Держим тёмными только края: слева имя бренда, справа категория и год.
+ * Середина отпущена, иначе кадр превращается в серую муть — прежняя плотная
+ * вуаль (0.45 плюс градиент 0.82/0.72) убивала именно её.
  */
 .client-roll-scrim {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(to right, rgb(0 0 0 / 0.82), rgb(0 0 0 / 0.4) 60%, rgb(0 0 0 / 0.3)),
-    linear-gradient(rgb(0 0 0 / 0.5), rgb(0 0 0 / 0.5));
+    linear-gradient(
+      to right,
+      rgb(0 0 0 / 0.8),
+      rgb(0 0 0 / 0.34) 46%,
+      rgb(0 0 0 / 0.3) 62%,
+      rgb(0 0 0 / 0.74)
+    ),
+    linear-gradient(rgb(0 0 0 / 0.22), rgb(0 0 0 / 0.22));
 }
 
 .client-roll-still {
@@ -662,16 +670,6 @@
 .client-roll-row:focus-visible .client-roll-still img {
   transform: scale(1);
   transition: transform 640ms var(--client-roll-ease);
-}
-
-.client-roll-frame {
-  transition: border-color 260ms ease;
-}
-
-.client-roll-row[data-focus='true'] .client-roll-frame,
-.client-roll-row:hover .client-roll-frame,
-.client-roll-row:focus-visible .client-roll-frame {
-  border-color: rgb(255 255 255 / 0.22);
 }
 
 .client-roll-name,
@@ -827,20 +825,57 @@
   animation: client-title-reveal 0.55s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
+/* Лесенка в блоке точек входа: только с md, на телефоне колонки идут стопкой */
+@media (min-width: 768px) {
+  .client-entry-points {
+    --entry-step: 2.5rem;
+  }
+}
+
 /*
- * Лидер плёнки в титре: кадры приходят лесенкой сверху вниз, как протяжка.
- * Двигается только transform — кадры видны на первом же отрисованном фрейме.
+ * Появление блоков при скролле.
+ *
+ * Анимируется только transform. Прозрачность не трогаем сознательно: любой
+ * initial={{opacity:0}} попадает в SSR инлайн-стилем, и содержимое оказывается
+ * невидимым на первом отрисованном кадре — для краулера, для скриншота до
+ * первого тика rAF, для заторможенного рендерера и для всех, у кого JS не
+ * доехал. Страница, которую открывают ради доказательства, обязана
+ * показывать это доказательство сразу.
  */
-.client-leader-frame {
-  animation: client-title-reveal 0.6s cubic-bezier(0.23, 1, 0.32, 1) both;
-  animation-delay: calc(var(--leader-index, 0) * 90ms + 120ms);
+[data-reveal] {
+  transform: translateY(18px);
+  transition: transform 700ms var(--reveal-ease, cubic-bezier(0.23, 1, 0.32, 1));
+}
+
+[data-reveal='shown'] {
+  transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .client-leader-frame {
-    animation: none;
+  [data-reveal],
+  [data-reveal='shown'] {
     transform: none;
+    transition: none;
   }
+}
+
+/*
+ * Титульная карточка /clients.
+ *
+ * Анимируется только transform — по той же причине, что и .hero-reveal.
+ */
+@keyframes client-title-reveal {
+  from {
+    transform: translateY(16px);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+.client-title-reveal {
+  animation: client-title-reveal 0.55s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
