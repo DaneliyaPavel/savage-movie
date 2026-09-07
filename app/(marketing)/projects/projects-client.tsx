@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import { TopBar } from '@/components/ui/top-bar'
@@ -23,10 +23,19 @@ import {
   type ProjectOrientationFilter,
 } from '@/features/projects/utils'
 import { logger } from '@/lib/utils/logger'
+import { useReveal } from '@/components/sections/clients/use-reveal'
 
 const THUMBNAIL_SIZES = '(min-width: 1024px) 10vw, (min-width: 768px) 12vw, 20vw'
 const MAIN_IMAGE_SIZES = '(min-width: 1024px) 40vw, (min-width: 768px) 35vw, 60vw'
 const SCRIBBLE_VARIANTS = 14
+
+/*
+ * Две ступени внутри строки поверх нулевой. Шаг 60 мс: меньше — ступени
+ * сливаются в одно движение, больше — описание начинает ощутимо опаздывать
+ * за кадром, который человек уже прочитал.
+ */
+const STEP_IDENTITY = '60ms'
+const STEP_SECONDARY = '120ms'
 
 const getPlaybackId = (url?: string | null): string | null => {
   if (!url) return null
@@ -363,26 +372,30 @@ function ProjectRow({
   )
 
   return (
-    <motion.div
+    /*
+     * Строка приходит с сервера видимой. Прежде это был motion.div с
+     * initial={{opacity:0}}, и весь список работ существовал в первом
+     * отрисованном кадре как пустое место: портфолио — единственное
+     * содержимое этой страницы, оно не может ждать гидратацию.
+     *
+     * Сама строка не двигается — она только триггер (data-reveal-group).
+     * Едут её части, каждая со своей ступенью: сначала номер и кадр, следом
+     * имя работы, последним — миниатюры и описание. Внешней лесенки по
+     * индексу нет: строки высокие и в экран входят по очереди сами, а
+     * index-задержка на длинном списке означала лишь ожидание.
+     */
+    <div
       ref={rowRef}
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-100px' }}
-      /*
-       * Лесенка ограничена первым экраном. index сквозной по всему списку, и
-       * после «показать больше» девятнадцатая строка ждала 1.8 с уже после
-       * того, как вошла во вьюпорт: быстрый читатель упирался в пустое место
-       * там, где работа уже загружена.
-       */
-      transition={{ duration: 0.6, delay: Math.min(index, 3) * 0.08 }}
+      data-reveal=""
+      data-reveal-group=""
       className="border-t-2 border-dashed border-muted-foreground/20 py-6 md:py-8"
       data-orientation={orientation}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       <div className="flex flex-col gap-3 md:grid md:grid-cols-12 md:gap-3 md:items-start">
-        {/* Number */}
-        <div className="md:col-span-1">
+        {/* Number — ступень 1: приходит вместе с кадром */}
+        <div className="md:col-span-1" data-reveal-part="">
           <span
             className="text-xl md:text-2xl lg:text-3xl text-muted-foreground"
             style={{ fontFamily: 'var(--font-handwritten), cursive' }}
@@ -395,6 +408,8 @@ function ProjectRow({
         <div
           ref={thumbnailsContainerRef}
           className="hidden md:flex md:flex-col md:gap-3 md:items-center md:col-span-2"
+          data-reveal-part=""
+          style={{ ['--reveal-delay' as string]: STEP_SECONDARY }}
         >
           {visibleThumbs.map((thumb, thumbIndex) => (
             <motion.div
@@ -420,8 +435,12 @@ function ProjectRow({
           ))}
         </div>
 
-        {/* Mobile info header - mobile only */}
-        <div className="md:hidden flex items-start justify-between gap-4">
+        {/* Mobile info header - mobile only — ступень 2: имя работы */}
+        <div
+          className="md:hidden flex items-start justify-between gap-4"
+          data-reveal-part=""
+          style={{ ['--reveal-delay' as string]: STEP_IDENTITY }}
+        >
           <div>
             <h3
               className="text-xs uppercase tracking-[0.28em] mb-0.5 opacity-80"
@@ -445,10 +464,7 @@ function ProjectRow({
         </div>
 
         {/* Video */}
-        <div
-          ref={videoContainerRef}
-          className="md:col-span-5 relative"
-        >
+        <div ref={videoContainerRef} className="md:col-span-5 relative" data-reveal-part="">
           <MediaCard
             innerRef={videoAspectRef}
             className={mediaCardClassName}
@@ -487,10 +503,15 @@ function ProjectRow({
           </MediaCard>
         </div>
 
-        {/* Mobile description - mobile only */}
+        {/* Mobile description - mobile only — ступень 3 */}
         <p
           className="md:hidden text-[15px] text-foreground/90 leading-[1.65] line-clamp-4"
-          style={{ fontFamily: 'var(--font-sans)', fontWeight: 300 }}
+          data-reveal-part=""
+          style={{
+            fontFamily: 'var(--font-sans)',
+            fontWeight: 300,
+            ['--reveal-delay' as string]: STEP_SECONDARY,
+          }}
         >
           {getDescription()}
         </p>
@@ -505,8 +526,12 @@ function ProjectRow({
             className="flex flex-col justify-between h-full overflow-hidden transition-opacity hover:opacity-90"
             style={{ maxHeight: mediaHeight ? `${mediaHeight}px` : undefined }}
           >
-            {/* Title + Category aligned at the top */}
-            <div className="flex items-start justify-between gap-4">
+            {/* Title + Category aligned at the top — ступень 2 */}
+            <div
+              className="flex items-start justify-between gap-4"
+              data-reveal-part=""
+              style={{ ['--reveal-delay' as string]: STEP_IDENTITY }}
+            >
               <div className="relative inline-block">
                 <ScribbleStrike
                   active={isHovered}
@@ -545,8 +570,12 @@ function ProjectRow({
               {language === 'ru' ? 'иЗУЧиТь' : 'eXPLoRe'}
             </motion.span>
 
-            {/* Description - at the bottom */}
-            <div className="mt-auto">
+            {/* Description - at the bottom — ступень 3 */}
+            <div
+              className="mt-auto"
+              data-reveal-part=""
+              style={{ ['--reveal-delay' as string]: STEP_SECONDARY }}
+            >
               <p
                 className="text-[15px] md:text-[16px] lg:text-[17px] xl:text-[19px] 2xl:text-[21px] text-foreground/90 leading-[1.65] line-clamp-4"
                 style={{ fontFamily: 'var(--font-sans)', fontWeight: 300 }}
@@ -557,7 +586,7 @@ function ProjectRow({
           </div>
         </Link>
       </div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -573,17 +602,28 @@ export default function ProjectsPageClient({
   const [orientationFilter, setOrientationFilter] = useState<ProjectOrientationFilter>('all')
   const curtainRef = useRef<HTMLDivElement>(null)
 
-  // Switch header to dark when red footer is revealed
+  /*
+   * Когда из-под контента открывается красный подвал, белый логотип на нём не
+   * читается. Раньше это считалось обработчиком scroll: getBoundingClientRect
+   * и setState на каждый кадр прокрутки — на странице с девятнадцатью видео
+   * самая дорогая точка. IntersectionObserver даёт то же самое событием, тем
+   * же приёмом, что уже работает на /clients.
+   */
   useEffect(() => {
-    const handleScroll = () => {
-      const curtain = curtainRef.current
-      if (!curtain) return
-      const rect = curtain.getBoundingClientRect()
-      setHeaderDark(rect.bottom < 80)
-    }
-    window.addEventListener('scroll', handleScroll, { passive: true })
+    const curtain = curtainRef.current
+    if (!curtain || typeof IntersectionObserver === 'undefined') return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry) return
+        setHeaderDark(!entry.isIntersecting && entry.boundingClientRect.bottom < 80)
+      },
+      { rootMargin: '-80px 0px 0px 0px', threshold: 0 }
+    )
+
+    observer.observe(curtain)
     return () => {
-      window.removeEventListener('scroll', handleScroll)
+      observer.disconnect()
       setHeaderDark(false)
     }
   }, [setHeaderDark])
@@ -618,6 +658,13 @@ export default function ProjectsPageClient({
     [projects, orientationFilter]
   )
   const visibleProjects = showAll ? filteredProjects : filteredProjects.slice(0, 4)
+
+  /*
+   * Наблюдатель пересобирается, когда список меняет длину: «показать больше»
+   * досыпает пятнадцать строк уже после монтажа, и без пересканирования они
+   * остались бы сдвинутыми навсегда. Смена фильтра ориентации — тот же случай.
+   */
+  const revealRootRef = useReveal<HTMLElement>(visibleProjects.length)
   const orientationLabel = language === 'ru' ? 'Ориентация' : 'Orientation'
   const emptyStateLabel =
     language === 'ru'
@@ -670,7 +717,7 @@ export default function ProjectsPageClient({
       </header>
 
       {/* Projects List */}
-      <section className="px-4 md:px-8 lg:px-12 pb-12">
+      <section ref={revealRootRef} className="px-4 md:px-8 lg:px-12 pb-12">
         <div className="mb-10 md:mb-12 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="text-xs md:text-sm uppercase tracking-[0.35em] text-muted-foreground">
             {orientationLabel}
@@ -722,23 +769,20 @@ export default function ProjectsPageClient({
             <p className="text-muted-foreground">{emptyStateLabel}</p>
           </div>
         ) : (
-          <AnimatePresence>
-            {visibleProjects.map((project, index) => (
-              <ProjectRow key={project.id} project={project} index={index} language={language} />
-            ))}
-          </AnimatePresence>
+          /* AnimatePresence убран: у ProjectRow никогда не было exit, а сама
+             строка больше не motion-компонент — обёртка не делала ничего */
+          visibleProjects.map((project, index) => (
+            <ProjectRow key={project.id} project={project} index={index} language={language} />
+          ))
         )}
 
         {/* Bottom border */}
         <div className="mt-10 border-t border-dashed border-muted-foreground/20" />
 
+        {/* Кнопка была motion.div с opacity:0 и задержкой 0.5с — единственный
+            путь к остальным работам приезжал позже всей страницы */}
         {!showAll && filteredProjects.length > 4 && (
-          <motion.div
-            className="flex justify-center py-12"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
+          <div className="flex justify-center py-12">
             <button
               onClick={() => setShowAll(true)}
               className="group flex items-center gap-3 text-white hover:text-white transition-colors"
@@ -756,7 +800,7 @@ export default function ProjectsPageClient({
                 {language === 'ru' ? 'показать больше' : 'show more'}
               </span>
             </button>
-          </motion.div>
+          </div>
         )}
       </section>
       </div>

@@ -12,16 +12,25 @@ import { useEffect, useRef } from 'react'
  * кадре, пока не доедет JS. Стиль лежит в globals.css ([data-reveal]).
  *
  * Без IntersectionObserver всё сразу переводится в конечное состояние.
+ *
+ * rescanKey нужен спискам, которые досыпают элементы после первого рендера
+ * («показать больше» на /projects): наблюдатель заводится один раз на монтаж,
+ * и без пересканирования дописанные строки не получили бы reveal вовсе.
+ * Вызов без аргумента — прежнее поведение, эффект отрабатывает единожды.
  */
-export function useReveal<T extends HTMLElement>() {
+export function useReveal<T extends HTMLElement>(rescanKey?: unknown) {
   const rootRef = useRef<T>(null)
 
   useEffect(() => {
     const root = rootRef.current
     if (!root) return
 
-    const targets = Array.from(root.querySelectorAll<HTMLElement>('[data-reveal]'))
-    if (root.hasAttribute('data-reveal')) targets.push(root)
+    // Уже раскрытые пропускаем: на пересканировании их незачем наблюдать снова
+    const isPending = (node: HTMLElement) => node.dataset.reveal !== 'shown'
+    const targets = Array.from(root.querySelectorAll<HTMLElement>('[data-reveal]')).filter(
+      isPending
+    )
+    if (root.hasAttribute('data-reveal') && isPending(root)) targets.push(root)
     if (targets.length === 0) return
 
     if (typeof IntersectionObserver === 'undefined') {
@@ -45,7 +54,7 @@ export function useReveal<T extends HTMLElement>() {
 
     targets.forEach(target => observer.observe(target))
     return () => observer.disconnect()
-  }, [])
+  }, [rescanKey])
 
   return rootRef
 }
