@@ -22,7 +22,9 @@ const ENTRY_POINTS = [
 
 export function EntryPoints() {
   return (
-    <section className="client-entry-points border-t border-white/10 px-5 py-20 sm:px-8 md:px-10 md:py-28 lg:px-16">
+    <section /* Самый тихий блок страницы: перед финалом плотность сознательно падает */
+      className="client-entry-points border-t border-white/10 px-5 py-16 sm:px-8 md:px-10 md:pt-24 md:pb-20 lg:px-16"
+    >
       <h2 className="max-w-[16ch] font-brand-hero text-[clamp(1.9rem,6vw,4rem)] uppercase leading-[0.95] tracking-tighter text-white">
         Сценарий не обязателен
       </h2>

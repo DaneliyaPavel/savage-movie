@@ -135,9 +135,17 @@ function RowBody({ entry, index }: { entry: ClientRollEntry; index: number }) {
           </span>
         )}
         {primary && (
-          <span className="client-roll-cue hidden whitespace-nowrap pt-1 text-white md:block">
-            Смотреть →
-          </span>
+          <>
+            <span className="client-roll-cue hidden whitespace-nowrap pt-1 text-white md:block">
+              Смотреть →
+            </span>
+            {/* Тач-устройства: ховера нет, и без этого строка не читается как
+                ссылка. Стрелка вместо подписи — шестнадцать «смотреть проект»
+                подряд превратились бы в шум */}
+            <span aria-hidden="true" className="pt-0.5 text-base text-white/45 md:hidden">
+              →
+            </span>
+          </>
         )}
       </div>
     </div>

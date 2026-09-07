@@ -24,7 +24,15 @@ export function ClientsHero({ brandCount, projectCount }: ClientsHeroProps) {
         Clients / Selected collaborations
       </p>
 
-      <h1 className="client-title-reveal mt-6 max-w-[16ch] pb-2 font-brand-hero text-[clamp(2.75rem,9vw,9rem)] uppercase leading-[0.92] tracking-tighter text-white md:mt-8">
+      <h1 /*
+          Ширину не ограничиваем: max-w-[16ch] рвал фразу по случайному месту и
+          оставлял висячую строку на каждом брейкпоинте. Каждое предложение —
+          свой блок, перенос происходит только когда строка правда не влезает.
+          Нижняя граница clamp занижена под 360px: там 44px давали четыре
+          строки, и заголовок съедал экран целиком.
+        */
+        className="client-title-reveal mt-6 max-w-[22ch] pb-2 font-brand-hero text-[clamp(2.05rem,8.4vw,8.5rem)] uppercase leading-[0.92] tracking-tighter text-white md:mt-8"
+      >
         Бренды в кадре.
         <span className="block text-white/45">Savage за камерой.</span>
       </h1>
@@ -32,8 +40,7 @@ export function ClientsHero({ brandCount, projectCount }: ClientsHeroProps) {
       <div className="client-title-reveal mt-10 flex flex-col gap-6 border-t border-white/10 pt-6 sm:flex-row sm:items-end sm:justify-between md:mt-14">
         <p className="max-w-md text-[15px] font-light leading-relaxed text-white/65 md:text-base">
           {brandCount} {pluralRu(brandCount, 'бренд', 'бренда', 'брендов')} и {projectCount}{' '}
-          {pluralRu(projectCount, 'проект', 'проекта', 'проектов')} в открытом портфолио. Все ниже,
-          с кадром из работы.
+          {pluralRu(projectCount, 'проект', 'проекта', 'проектов')} в открытом портфолио.
         </p>
 
         <Link

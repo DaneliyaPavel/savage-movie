@@ -220,7 +220,8 @@ export function SelectedCollaborations({ items }: { items: CollaborationItem[] }
     <section
       id="cases"
       ref={rootRef}
-      className="scroll-mt-24 border-t border-white/10 px-5 py-20 sm:px-8 md:px-10 md:py-28 lg:px-16"
+      /* Кейсы — самый тяжёлый блок страницы, ему нужен самый большой воздух перед началом */
+      className="scroll-mt-24 border-t border-white/10 px-5 pt-20 pb-24 sm:px-8 md:px-10 md:pt-40 md:pb-32 lg:px-16"
     >
       <h2
         data-reveal=""
