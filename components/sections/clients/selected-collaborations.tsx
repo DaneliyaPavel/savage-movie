@@ -118,12 +118,10 @@ function CaseFrame({
   item,
   sizes,
   aspect,
-  priority = false,
 }: {
   item: CollaborationItem
   sizes: string
   aspect: string
-  priority?: boolean
 }) {
   /* Кадр — ведущий слой кейса: приходит первым, без задержки */
   if (!item.still) {
@@ -138,7 +136,6 @@ function CaseFrame({
         fill
         sizes={sizes}
         quality={75}
-        priority={priority}
         className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] motion-safe:group-hover/frame:scale-[1.02]"
       />
     </div>
@@ -153,7 +150,7 @@ function CaseBlock({ item }: { item: CollaborationItem }) {
     return (
       <article>
         <div data-reveal="">
-          <CaseFrame item={item} sizes="100vw" aspect="aspect-[16/10] md:aspect-[21/9]" priority />
+          <CaseFrame item={item} sizes="100vw" aspect="aspect-[16/10] md:aspect-[21/9]" />
         </div>
         <div
           data-reveal=""
