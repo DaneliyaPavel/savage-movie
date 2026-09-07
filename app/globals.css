@@ -603,40 +603,33 @@
 /*
  * /clients — «живые титры».
  *
- * Строка ролла раскрывается кадром из проекта. Раскрытие привязано не к ховеру,
- * а к положению в прокрутке: строка, проходящая через центр экрана, получает
- * data-focus="true" от IntersectionObserver в client-roll.tsx. Иначе тот, кто
- * скроллит колесом, не двигая курсор, — и вообще любой пользователь тача —
- * увидел бы вместо портфолио шестнадцать серых строк текста.
- *
- * Ховер и фокус с клавиатуры дают то же раскрытие плюс сдвиг типографики и
- * подпись «смотреть проект»: это уже не состояние, а affordance указателя,
- * поэтому оно живёт отдельно, внутри (hover: hover).
+ * У каждой строки ролла есть своё окно кадра. Кадр зажигается у той строки,
+ * которая проходит через центр экрана: data-focus="true" ставит
+ * IntersectionObserver в client-roll.tsx. Ховер и фокус с клавиатуры дают то
+ * же состояние — это уже affordance указателя, поэтому живёт отдельно.
  *
  * Состояние строки в React не поднимается: шестнадцать строк с обработчиками
- * и ре-рендером на скролле — лишняя работа ради того, что целиком описывается
+ * и ре-рендером на скролле — лишняя работа ради того, что описывается
  * селектором. Кадр раскрывается clip-path'ом: композитно, без layout и paint.
  *
- * Вход намеренно длиннее выхода — раскрытие читается как проявление кадра,
- * а уход должен быть мгновенным, иначе список «залипает» при быстром проходе.
+ * Вход намеренно длиннее выхода: раскрытие читается как проявление кадра,
+ * а уход должен быть мгновенным, иначе список залипает при быстром проходе.
  */
 .client-roll {
   --client-roll-ease: cubic-bezier(0.23, 1, 0.32, 1);
-  /* Плотность вуали над кадром: под ней всегда лежит имя бренда */
-  --client-roll-veil: 0.45;
 }
 
+/*
+ * Затемнение только для мобильной раскладки: там кадр лежит подложкой под
+ * именем бренда. На десктопе кадр живёт в отдельном окне, текста на нём нет,
+ * и вуаль там означала бы только одно — задавленную картинку.
+ */
 .client-roll-scrim {
   position: absolute;
   inset: 0;
-  /*
-   * Затемнение неравномерное: слева имя бренда, справа категория, год и
-   * подпись «смотреть проект». Обе зоны держим тёмными, кадр открывается
-   * в середине строки.
-   */
   background-image:
-    linear-gradient(to right, rgb(0 0 0 / 0.82), rgb(0 0 0 / 0.3) 45%, rgb(0 0 0 / 0.72) 78%),
-    linear-gradient(rgb(0 0 0 / var(--client-roll-veil)), rgb(0 0 0 / var(--client-roll-veil)));
+    linear-gradient(to right, rgb(0 0 0 / 0.82), rgb(0 0 0 / 0.4) 60%, rgb(0 0 0 / 0.3)),
+    linear-gradient(rgb(0 0 0 / 0.5), rgb(0 0 0 / 0.5));
 }
 
 .client-roll-still {
@@ -644,7 +637,8 @@
   clip-path: inset(0 0 100% 0);
   transition:
     clip-path 220ms var(--client-roll-ease),
-    opacity 180ms ease;
+    opacity 180ms ease,
+    border-color 220ms ease;
 }
 
 .client-roll-still img {
@@ -652,17 +646,32 @@
   transition: transform 240ms var(--client-roll-ease);
 }
 
-.client-roll-row[data-focus='true'] .client-roll-still {
+.client-roll-row[data-focus='true'] .client-roll-still,
+.client-roll-row:hover .client-roll-still,
+.client-roll-row:focus-visible .client-roll-still {
   opacity: 1;
   clip-path: inset(0 0 0 0);
   transition:
     clip-path 420ms var(--client-roll-ease),
-    opacity 260ms ease;
+    opacity 260ms ease,
+    border-color 260ms ease;
 }
 
-.client-roll-row[data-focus='true'] .client-roll-still img {
+.client-roll-row[data-focus='true'] .client-roll-still img,
+.client-roll-row:hover .client-roll-still img,
+.client-roll-row:focus-visible .client-roll-still img {
   transform: scale(1);
   transition: transform 640ms var(--client-roll-ease);
+}
+
+.client-roll-frame {
+  transition: border-color 260ms ease;
+}
+
+.client-roll-row[data-focus='true'] .client-roll-frame,
+.client-roll-row:hover .client-roll-frame,
+.client-roll-row:focus-visible .client-roll-frame {
+  border-color: rgb(255 255 255 / 0.22);
 }
 
 .client-roll-name,
@@ -672,11 +681,15 @@
     transform 240ms var(--client-roll-ease);
 }
 
-.client-roll-row[data-focus='true'] .client-roll-name {
+.client-roll-row[data-focus='true'] .client-roll-name,
+.client-roll-row:hover .client-roll-name,
+.client-roll-row:focus-visible .client-roll-name {
   color: #ffffff;
 }
 
-.client-roll-row[data-focus='true'] .client-roll-index {
+.client-roll-row[data-focus='true'] .client-roll-index,
+.client-roll-row:hover .client-roll-index,
+.client-roll-row:focus-visible .client-roll-index {
   color: #ff2936;
 }
 
@@ -685,66 +698,39 @@
   transition: opacity 200ms ease;
 }
 
-.client-roll-row[data-focus='true'] .client-roll-logo {
+.client-roll-row[data-focus='true'] .client-roll-logo,
+.client-roll-row:hover .client-roll-logo,
+.client-roll-row:focus-visible .client-roll-logo {
   opacity: 1;
 }
 
-/*
- * Указательные состояния. Только для настоящего курсора: на тач-устройствах
- * :hover залипает после тапа, и строка, с которой пользователь уже ушёл,
- * осталась бы подсвеченной.
- */
-@media (hover: hover) and (pointer: fine) {
-  .client-roll-row:hover .client-roll-still,
-  .client-roll-row:focus-visible .client-roll-still {
-    opacity: 1;
-    clip-path: inset(0 0 0 0);
-    transition:
-      clip-path 420ms var(--client-roll-ease),
-      opacity 260ms ease;
-  }
+/* Подпись перехода — affordance указателя, поэтому только там, где он есть */
+.client-roll-cue {
+  opacity: 0;
+  transform: translateX(-6px);
+  transition:
+    opacity 180ms ease,
+    transform 240ms var(--client-roll-ease);
+}
 
-  .client-roll-row:hover .client-roll-still img,
-  .client-roll-row:focus-visible .client-roll-still img {
-    transform: scale(1);
-    transition: transform 640ms var(--client-roll-ease);
+@media (hover: hover) and (pointer: fine) {
+  .client-roll-row:hover .client-roll-cue,
+  .client-roll-row:focus-visible .client-roll-cue {
+    opacity: 1;
+    transform: translateX(0);
   }
 
   .client-roll-row:hover .client-roll-name,
-  .client-roll-row:focus-visible .client-roll-name {
-    color: #ffffff;
-    transform: translateX(10px);
-  }
-
+  .client-roll-row:focus-visible .client-roll-name,
   .client-roll-row:hover .client-roll-index,
   .client-roll-row:focus-visible .client-roll-index {
-    color: #ff2936;
     transform: translateX(10px);
-  }
-
-  .client-roll-row:hover .client-roll-logo,
-  .client-roll-row:focus-visible .client-roll-logo {
-    opacity: 1;
   }
 
   .client-roll-row:active .client-roll-name,
   .client-roll-row:active .client-roll-index {
     transform: translateX(14px);
     transition-duration: 120ms;
-  }
-
-  .client-roll-cue {
-    opacity: 0;
-    transform: translateX(-8px);
-    transition:
-      opacity 180ms ease,
-      transform 240ms var(--client-roll-ease);
-  }
-
-  .client-roll-row:hover .client-roll-cue,
-  .client-roll-row:focus-visible .client-roll-cue {
-    opacity: 1;
-    transform: translateX(0);
   }
 }
 
@@ -788,12 +774,44 @@
   }
 }
 
+/* Лесенка в блоке точек входа: только с md, на телефоне колонки идут стопкой */
+@media (min-width: 768px) {
+  .client-entry-points {
+    --entry-step: 2.5rem;
+  }
+}
+
+/*
+ * Появление блоков при скролле.
+ *
+ * Анимируется только transform. Прозрачность не трогаем сознательно: любой
+ * initial={{opacity:0}} попадает в SSR инлайн-стилем, и содержимое оказывается
+ * невидимым на первом отрисованном кадре — для краулера, для скриншота до
+ * первого тика rAF, для заторможенного рендерера и для всех, у кого JS не
+ * доехал. Страница, которую открывают ради доказательства, обязана
+ * показывать это доказательство сразу.
+ */
+[data-reveal] {
+  transform: translateY(18px);
+  transition: transform 700ms var(--reveal-ease, cubic-bezier(0.23, 1, 0.32, 1));
+}
+
+[data-reveal='shown'] {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal],
+  [data-reveal='shown'] {
+    transform: none;
+    transition: none;
+  }
+}
+
 /*
  * Титульная карточка /clients.
  *
- * Анимируется только transform — по той же причине, что и .hero-reveal:
- * с opacity:0 в 0%-кадре первый отрисованный фрейм был бы пустым, а это первый
- * экран страницы, которую открывают перед обращением.
+ * Анимируется только transform — по той же причине, что и .hero-reveal.
  */
 @keyframes client-title-reveal {
   from {
@@ -807,6 +825,22 @@
 
 .client-title-reveal {
   animation: client-title-reveal 0.55s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+/*
+ * Лидер плёнки в титре: кадры приходят лесенкой сверху вниз, как протяжка.
+ * Двигается только transform — кадры видны на первом же отрисованном фрейме.
+ */
+.client-leader-frame {
+  animation: client-title-reveal 0.6s cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation-delay: calc(var(--leader-index, 0) * 90ms + 120ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .client-leader-frame {
+    animation: none;
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

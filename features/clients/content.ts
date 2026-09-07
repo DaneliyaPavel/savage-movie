@@ -41,15 +41,20 @@ export interface Collaboration {
   /** Как называем сферу клиента. Берётся из описания проекта */
   field: string
   facts: CollaborationFact[]
-  /** Варианты композиции: четыре одинаковые карточки подряд — не кейсы, а каталог */
-  layout: 'image-left' | 'image-right-offset' | 'band' | 'portrait'
+  /**
+   * Композиция кейса. Ритм задают сами кадры, а не чередование сторон:
+   * широкий → вертикальный → широкий со сдвигом → тихий на большом воздухе.
+   * Зеркальный зигзаг image-left / image-right читается как лендинг, а не
+   * как разбор работы.
+   */
+  layout: 'band' | 'tall' | 'offset' | 'quiet'
 }
 
 export const COLLABORATIONS: Collaboration[] = [
   {
     slug: 'wellery',
     field: 'HoReCa',
-    layout: 'image-left',
+    layout: 'band',
     facts: [
       {
         label: 'Задача',
@@ -69,7 +74,7 @@ export const COLLABORATIONS: Collaboration[] = [
   {
     slug: 'zarina',
     field: 'Ритейл',
-    layout: 'image-right-offset',
+    layout: 'tall',
     facts: [
       {
         label: 'Задача',
@@ -88,7 +93,7 @@ export const COLLABORATIONS: Collaboration[] = [
   {
     slug: 'sensual-car-service',
     field: 'Fashion',
-    layout: 'band',
+    layout: 'offset',
     facts: [
       {
         label: 'Задача',
@@ -104,7 +109,7 @@ export const COLLABORATIONS: Collaboration[] = [
   {
     slug: 'mavin',
     field: 'Fashion',
-    layout: 'portrait',
+    layout: 'quiet',
     facts: [
       {
         label: 'Задача',

@@ -1,32 +1,33 @@
 /**
- * Живые титры: список брендов, где каждая строка раскрывается кадром из работы.
+ * Живые титры: каждая строка — кредит бренда со своим окном кадра.
  *
- * Раскрытие привязано к прокрутке, а не к ховеру: IntersectionObserver ставит
- * data-focus="true" строке, которая проходит через центр экрана. Ховер и фокус
- * с клавиатуры дают то же состояние поверх. Так страница показывает портфолио
- * и тому, кто скроллит колесом не двигая курсор, и на тач-устройствах, где
- * ховера нет вовсе. Сама анимация живёт в globals.css (.client-roll-*).
+ * Строка, проходящая через центр экрана, получает data-focus="true" от
+ * IntersectionObserver и зажигает свой кадр. На десктопе кадр живёт в
+ * отдельном окне справа, поэтому под ним не лежит текст — и затемнение,
+ * которое раньше давило картинку до серой мути, больше не нужно. Колонка
+ * пустых окон с одним горящим читается как плёнка, идущая через проектор.
  *
- * Видео на странице нет сознательно: шестнадцать одновременных превью — это
- * мегабайты трафика и просадка FPS ради эффекта, который стилл передаёт не хуже.
+ * На узком экране окна нет: там кадр становится подложкой всей строки, и
+ * затемнение возвращается, потому что имя бренда лежит прямо на нём.
+ *
+ * Появление строки при скролле намеренно не анимируется прозрачностью:
+ * framer-motion выставляет initial={{opacity:0}} инлайном ещё на SSR, и вся
+ * стена клиентов оказывалась невидимой на первом отрисованном кадре, до
+ * гидратации. Для страницы, которую открывают ради доказательства, это
+ * недопустимо (тот же довод, что в комментарии к .hero-reveal в globals.css).
  */
 'use client'
 
 import { useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { motion, useReducedMotion } from 'framer-motion'
 import { trackMetrikaGoal } from '@/lib/analytics/metrika'
 import { pluralRu, type ClientRollEntry } from '@/features/clients/mappers'
 
-/*
- * Кадр намеренно запрашивается уже, чем строка, в которой лежит. Полоса высотой
- * около 110 px, обрезанная по object-cover и накрытая затемнением, не отличима
- * от растянутой: 60vw вместо 100vw экономит примерно половину байтов ролла.
- */
-const STILL_SIZES = '(min-width: 768px) 60vw, 100vw'
+/* Окно кадра на десктопе не шире 290px, на мобильном кадр во всю строку */
+const STILL_SIZES = '(min-width: 768px) 290px, 100vw'
 
-/** Строка ролла, которая сейчас в центре экрана, раскрывает свой кадр */
+/** Строка ролла, которая сейчас в центре экрана, зажигает свой кадр */
 function useScrollFocus(count: number) {
   const listRef = useRef<HTMLUListElement>(null)
 
@@ -55,92 +56,94 @@ function useScrollFocus(count: number) {
 
 function RowBody({ entry, index }: { entry: ClientRollEntry; index: number }) {
   const primary = entry.primary
-  const meta = [primary?.categoryLabel, primary?.year ? String(primary.year) : null].filter(Boolean)
   const extraProjects = entry.projects.length - 1
 
   return (
-    <>
+    <div className="relative flex items-center gap-5 px-5 py-9 sm:px-8 md:gap-8 md:px-10 md:py-5 lg:px-16">
+      <span
+        className="client-roll-index relative z-[1] w-9 shrink-0 text-base text-white/40 md:w-12 md:text-xl"
+        style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+        aria-hidden="true"
+      >
+        # {String(index + 1).padStart(2, '0')}
+      </span>
+
+      <div className="relative z-[1] min-w-0 flex-1 md:order-none">
+        {/* Логотип показываем, только если он заведён в CMS. Своих версий чужих
+            логотипов мы не рисуем: вордмарк набором честнее подделки.
+            Приводим к белому, иначе разнобой фирменных цветов рассыпает ролл. */}
+        {entry.logoUrl ? (
+          <h3 className="client-roll-name relative h-8 w-40 md:h-12 md:w-56">
+            {/* Доступное имя даёт sr-only ниже: alt на картинке продублировал бы его */}
+            <Image
+              src={entry.logoUrl}
+              alt=""
+              fill
+              sizes="224px"
+              className="client-roll-logo object-contain object-left brightness-0 invert"
+            />
+            <span className="sr-only">{entry.name}</span>
+          </h3>
+        ) : (
+          <h3 className="client-roll-name font-brand-hero text-[clamp(1.6rem,7vw,2.4rem)] uppercase leading-[0.95] tracking-tighter text-white/75 md:text-[clamp(2rem,4.2vw,3.6rem)]">
+            {entry.name}
+          </h3>
+        )}
+        {/* Описание из CMS показываем только у брендов без проекта: у остальных
+            его работу делают категория, год и сам кадр */}
+        {!primary && entry.note && (
+          <p className="mt-1.5 max-w-prose text-[13px] font-light leading-snug text-white/60">
+            {entry.note}
+          </p>
+        )}
+      </div>
+
+      {/*
+        Один <Image> на оба сценария: на мобильном контейнер разворачивается в
+        подложку строки, на десктопе становится окном кадра в потоке.
+      */}
       {primary?.still && (
-        <div className="client-roll-still absolute inset-0 overflow-hidden" aria-hidden="true">
-          <Image
-            src={primary.still}
-            alt=""
-            fill
-            sizes={STILL_SIZES}
-            quality={50}
-            /*
-             * На узком экране строка — сильно вытянутая полоса, и кадр,
-             * обрезанный по центру, режет лица пополам: сюжет у стилла обычно
-             * в верхней трети. Сдвигаем точку кадрирования вверх; на десктопе
-             * полоса шире и центр работает нормально.
-             */
-            className="object-cover object-[center_38%] md:object-center"
-          />
-          <div className="client-roll-scrim" />
+        /* Окно кадра видно всегда, проявляется только картинка внутри:
+           колонка пустых окон с одним горящим и делает из списка плёнку */
+        <div
+          className="client-roll-frame absolute inset-0 md:relative md:inset-auto md:aspect-video md:w-[clamp(190px,17vw,290px)] md:shrink-0 md:border md:border-white/[0.09]"
+          aria-hidden="true"
+        >
+          <div className="client-roll-still absolute inset-0 overflow-hidden">
+            <Image
+              src={primary.still}
+              alt=""
+              fill
+              sizes={STILL_SIZES}
+              quality={65}
+              /*
+               * На узком экране строка — вытянутая полоса, и кадр, обрезанный по
+               * центру, режет лица: сюжет у стилла обычно в верхней трети.
+               * В окне на десктопе пропорция правильная, центр работает.
+               */
+              className="object-cover object-[center_38%] md:object-center"
+            />
+            {/* Затемнение нужно только там, где на кадре лежит текст */}
+            <div className="client-roll-scrim md:hidden" />
+          </div>
         </div>
       )}
 
-      <div className="relative flex items-baseline gap-4 px-5 py-8 sm:px-8 md:grid md:grid-cols-12 md:items-center md:gap-6 md:px-10 md:py-9 lg:px-16">
-        <span
-          className="client-roll-index shrink-0 text-base text-white/40 md:col-span-1 md:text-xl"
-          style={{ fontFamily: 'var(--font-handwritten), cursive' }}
-          aria-hidden="true"
-        >
-          # {String(index + 1).padStart(2, '0')}
-        </span>
-
-        <div className="min-w-0 flex-1 md:col-span-7">
-          {/* Логотип показываем, только если он заведён в CMS. Своих версий чужих
-              логотипов мы не рисуем: вордмарк набором честнее подделки.
-              Приводим к белому, иначе разнобой фирменных цветов рассыпает ролл. */}
-          {entry.logoUrl ? (
-            <h3 className="client-roll-name relative h-8 w-40 md:h-12 md:w-56">
-              {/* Доступное имя даёт sr-only ниже: alt на картинке продублировал бы его */}
-              <Image
-                src={entry.logoUrl}
-                alt=""
-                fill
-                sizes="224px"
-                className="client-roll-logo object-contain object-left brightness-0 invert"
-              />
-              <span className="sr-only">{entry.name}</span>
-            </h3>
-          ) : (
-            <h3 className="client-roll-name font-brand-hero text-[clamp(1.6rem,7vw,2.4rem)] uppercase leading-[0.95] tracking-tighter text-white/75 md:text-[clamp(2rem,4.4vw,4rem)]">
-              {entry.name}
-            </h3>
-          )}
-          {/* Описание из CMS показываем только у брендов без проекта: у остальных
-              его работу делают категория, год и сам кадр */}
-          {!primary && entry.note && (
-            <p className="mt-1.5 max-w-prose text-[13px] font-light leading-snug text-white/60">
-              {entry.note}
-            </p>
-          )}
-        </div>
-
-        {/* Метаданные в одну строку: у двух проектов в CMS не проставлен год,
-            и в две строки ролл получал рваный ритм на ровном месте */}
-        <div className="flex shrink-0 flex-wrap justify-end gap-x-3 text-[10px] uppercase tracking-[0.22em] text-white/70 md:col-span-2 md:justify-start md:text-[11px]">
-          {meta.map(item => (
-            <span key={item}>{item}</span>
-          ))}
-          {extraProjects > 0 && (
-            <span className="text-white/55">
-              +{extraProjects} {pluralRu(extraProjects, 'проект', 'проекта', 'проектов')}
-            </span>
-          )}
-        </div>
-
-        <span
-          className="client-roll-cue hidden items-center gap-2 justify-self-end whitespace-nowrap text-[11px] uppercase tracking-[0.22em] text-white md:col-span-2 md:inline-flex"
-          aria-hidden="true"
-        >
-          Смотреть проект
-          <span>→</span>
-        </span>
+      <div className="relative z-[1] flex shrink-0 flex-col items-end gap-1 text-[10px] uppercase tracking-[0.22em] text-white/70 md:w-[clamp(96px,9vw,132px)] md:items-start md:text-[11px]">
+        {primary?.categoryLabel && <span>{primary.categoryLabel}</span>}
+        {primary?.year && <span className="text-white/55">{primary.year}</span>}
+        {extraProjects > 0 && (
+          <span className="text-white/55">
+            +{extraProjects} {pluralRu(extraProjects, 'проект', 'проекта', 'проектов')}
+          </span>
+        )}
+        {primary && (
+          <span className="client-roll-cue hidden whitespace-nowrap pt-1 text-white md:block">
+            Смотреть →
+          </span>
+        )}
       </div>
-    </>
+    </div>
   )
 }
 
@@ -151,7 +154,6 @@ export function ClientRoll({
   entries: ClientRollEntry[]
   yearRange: string | null
 }) {
-  const reduceMotion = useReducedMotion() ?? false
   const listRef = useScrollFocus(entries.length)
 
   if (entries.length === 0) {
@@ -171,7 +173,7 @@ export function ClientRoll({
 
   return (
     <section className="client-roll border-t border-white/10">
-      <div className="flex items-baseline justify-between gap-4 px-5 pt-10 pb-4 sm:px-8 md:px-10 md:pt-14 lg:px-16">
+      <div className="flex items-baseline justify-between gap-4 px-5 pt-8 pb-4 sm:px-8 md:px-10 md:pt-10 lg:px-16">
         <h2 className="text-[11px] uppercase tracking-[0.35em] text-white/55">В кадре</h2>
         {yearRange && (
           <span className="text-[11px] uppercase tracking-[0.35em] text-white/55">{yearRange}</span>
@@ -188,14 +190,7 @@ export function ClientRoll({
 
       <ul ref={listRef} className="border-t border-white/10">
         {entries.map((entry, index) => (
-          <motion.li
-            key={entry.id}
-            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.4 }}
-            transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-            className="border-b border-white/10"
-          >
+          <li key={entry.id} className="border-b border-white/10">
             {entry.primary ? (
               <Link
                 href={`/projects/${entry.primary.slug}`}
@@ -219,7 +214,7 @@ export function ClientRoll({
                 <RowBody entry={entry} index={index} />
               </div>
             )}
-          </motion.li>
+          </li>
         ))}
       </ul>
     </section>

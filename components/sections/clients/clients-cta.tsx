@@ -8,20 +8,19 @@
 'use client'
 
 import Link from 'next/link'
-import { motion, useReducedMotion } from 'framer-motion'
 import { trackMetrikaGoal } from '@/lib/analytics/metrika'
+import { useReveal } from './use-reveal'
 
 export function ClientsCta({ nextIndex }: { nextIndex: number }) {
-  const reduceMotion = useReducedMotion() ?? false
+  const rootRef = useReveal<HTMLElement>()
 
   return (
-    <section className="border-t border-white/10 px-5 py-24 sm:px-8 md:px-10 md:py-36 lg:px-16">
-      <motion.div
-        initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.4 }}
-        transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-      >
+    <section
+      ref={rootRef}
+      /* Финал держит целый экран: это end frame, а не подвал с кнопкой */
+      className="flex min-h-[92svh] flex-col justify-center border-t border-white/10 px-5 py-24 sm:px-8 md:px-10 md:py-32 lg:px-16"
+    >
+      <div data-reveal="">
         <span
           className="block text-xl text-[#ff2936] md:text-2xl"
           style={{ fontFamily: 'var(--font-handwritten), cursive' }}
@@ -54,7 +53,7 @@ export function ClientsCta({ nextIndex }: { nextIndex: number }) {
             </span>
           </Link>
         </div>
-      </motion.div>
+      </div>
     </section>
   )
 }
