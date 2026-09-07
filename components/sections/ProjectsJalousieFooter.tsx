@@ -138,13 +138,13 @@ export function ProjectsJalousieFooter() {
                   onChange={e => setEmail(e.target.value)}
                   disabled={status === 'loading'}
                   placeholder={language === 'ru' ? 'ваш email' : 'your email'}
-                  className="bg-transparent text-background placeholder:text-background/50 outline-none flex-1 text-base disabled:opacity-60"
+                  className="bg-transparent text-background placeholder:text-background/50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-background flex-1 text-base disabled:opacity-60"
                   style={{ fontFamily: 'var(--font-handwritten), cursive' }}
                 />
                 <button
                   type="submit"
                   disabled={status === 'loading'}
-                  className="text-background hover:translate-x-1 transition-transform disabled:hover:translate-x-0 disabled:opacity-60"
+                  className="text-background hover:translate-x-1 active:scale-90 motion-reduce:active:scale-100 motion-reduce:active:opacity-70 transition-transform duration-150 ease-out disabled:hover:translate-x-0 disabled:active:scale-100 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-background [-webkit-tap-highlight-color:transparent]"
                   aria-label={language === 'ru' ? 'Подписаться' : 'Subscribe'}
                 >
                   {status === 'loading' ? (

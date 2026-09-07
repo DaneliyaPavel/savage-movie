@@ -131,8 +131,28 @@
     @apply border-border outline-ring/50;
   }
 
+  /*
+   * Тема прибита к тёмной в layout.tsx. color-scheme сообщает об этом самому
+   * браузеру: нативный скроллбар и — главное — полотно за границей документа
+   * перестают быть белыми, поэтому резиновый отскок на телефоне больше не
+   * показывает случайный белый холст под чёрной страницей.
+   */
+  html {
+    color-scheme: dark;
+    background-color: var(--background);
+    /* Паритет с webkit-скроллбаром ниже: в Firefox он задаётся только так */
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.3 0 0) transparent;
+  }
+
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Выделение — фирменный красный, а не системный синий на чёрном фоне */
+  ::selection {
+    background-color: #ff2936;
+    color: #ffffff;
   }
 }
 
@@ -213,6 +233,33 @@
   .hero-reveal {
     animation: none;
     opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * Появление шапки. Как и .hero-reveal — только transform, без opacity.
+ * Прежняя версия была motion.header с initial={{opacity:0}}: Framer пишет
+ * это инлайновым стилем ещё на SSR, и навигация всего сайта оказывалась
+ * невидимой в первом отрисованном кадре — до загрузки и гидратации бандла.
+ * Шапка обязана существовать раньше JS: это единственный выход со страницы.
+ *
+ * Задержки нет сознательно. Навигация не «прибывает» — она просто есть.
+ */
+@keyframes topbar-reveal {
+  from {
+    transform: translateY(-8px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.topbar-reveal {
+  animation: topbar-reveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .topbar-reveal {
+    animation: none;
     transform: none;
   }
 }

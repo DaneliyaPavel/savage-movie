@@ -262,6 +262,7 @@ const FilmstripItem = memo(function FilmstripItem({
               fetchPriority={isLCP ? 'high' : 'auto'}
               width={180}
               height={101}
+              draggable={false}
               className="absolute inset-0 w-full h-full object-cover"
             />
           ) : (
@@ -280,6 +281,7 @@ const FilmstripItem = memo(function FilmstripItem({
             alt={project.title}
             fill
             sizes="180px"
+            draggable={false}
             className="object-cover"
           />
         )}
@@ -324,11 +326,11 @@ const FilmstripItem = memo(function FilmstripItem({
   return (
     <div className="flex-shrink-0 group cursor-pointer">
       {project.slug ? (
-        <Link href={`/projects/${project.slug}`} onClick={onSelect} className="block outline-none">
+        <Link href={`/projects/${project.slug}`} onClick={onSelect} className="block rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ff2936]">
           {content}
         </Link>
       ) : (
-        <button type="button" onClick={onSelect} className="block outline-none text-left">
+        <button type="button" onClick={onSelect} className="block rounded-sm text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ff2936]">
           {content}
         </button>
       )}

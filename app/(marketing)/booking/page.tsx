@@ -206,7 +206,11 @@ export default function BookingPage() {
 
   const chipClass = (isActive: boolean, accent?: boolean) =>
     cn(
-      'h-12 px-5 border text-base transition-colors',
+      'h-12 px-5 border text-base transition-[background-color,border-color,color,transform] duration-150 ease-out',
+      // Чипы — единственный «выбор» в форме, нажатие должно подтверждаться
+      'active:scale-[0.97] motion-reduce:active:scale-100 motion-reduce:active:opacity-80',
+      'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
+      '[-webkit-tap-highlight-color:transparent]',
       isActive
         ? accent
           ? 'border-accent text-accent'
@@ -269,7 +273,7 @@ export default function BookingPage() {
                   href={`https://t.me/${TELEGRAM_HANDLE}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-3 h-14 px-8 bg-foreground text-background font-medium hover:bg-foreground/90 transition-colors"
+                  className="inline-flex items-center justify-center gap-3 h-14 px-8 bg-foreground text-background font-medium hover:bg-foreground/90 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:active:scale-100 motion-reduce:active:opacity-80 [-webkit-tap-highlight-color:transparent]"
                 >
                   <MessageCircle className="w-5 h-5" />
                   {isRu ? 'Написать в Telegram' : 'Message on Telegram'}
@@ -277,7 +281,7 @@ export default function BookingPage() {
                 <button
                   type="button"
                   onClick={() => setIsSuccess(false)}
-                  className="inline-flex items-center justify-center h-14 px-8 border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
+                  className="inline-flex items-center justify-center h-14 px-8 border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-[color,border-color,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:active:scale-100 motion-reduce:active:opacity-80 [-webkit-tap-highlight-color:transparent]"
                 >
                   {isRu ? 'Отправить ещё одну' : 'Send another'}
                 </button>

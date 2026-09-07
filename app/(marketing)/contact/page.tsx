@@ -177,7 +177,7 @@ export default function ContactPage() {
                 type="text"
                 value={formData.name}
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
-                className="w-full bg-transparent border-b border-border py-3 text-lg focus:outline-none focus:border-accent transition-colors"
+                className="w-full bg-transparent border-b border-border py-3 text-lg outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/50 transition-[border-color,box-shadow] duration-150 ease-out"
                 placeholder={t('contact.namePlaceholder')}
                 required
               />
@@ -200,7 +200,7 @@ export default function ContactPage() {
                 type="tel"
                 value={formData.phone}
                 onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full bg-transparent border-b border-border py-3 text-lg focus:outline-none focus:border-accent transition-colors"
+                className="w-full bg-transparent border-b border-border py-3 text-lg outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/50 transition-[border-color,box-shadow] duration-150 ease-out"
                 placeholder={t('contact.phonePlaceholder')}
                 required
               />
@@ -224,7 +224,7 @@ export default function ContactPage() {
                 type="text"
                 value={formData.company}
                 onChange={e => setFormData({ ...formData, company: e.target.value })}
-                className="w-full bg-transparent border-b border-border py-3 text-lg focus:outline-none focus:border-accent transition-colors"
+                className="w-full bg-transparent border-b border-border py-3 text-lg outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/50 transition-[border-color,box-shadow] duration-150 ease-out"
                 placeholder={t('contact.companyPlaceholder')}
               />
             </motion.div>

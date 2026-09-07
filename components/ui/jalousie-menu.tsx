@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useMenu } from './menu-context'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '@/lib/i18n-context'
 import { getProjects } from '@/features/projects/api'
 import { getBlogPosts } from '@/lib/api/blog'
@@ -54,6 +54,52 @@ export function JalousieMenu() {
   const { isOpen, setIsOpen } = useMenu()
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const { language, setLanguage, t } = useI18n()
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  /*
+   * Меню закрывает собой всю страницу, поэтому обязано вести себя как модальный
+   * слой: иначе Tab уходит по невидимому контенту позади, а человек с
+   * клавиатуры оказывается «внутри» страницы, которой не видит.
+   *
+   * Escape, блокировка прокрутки и возврат фокуса на кнопку живут в
+   * MenuProvider — они нужны на уровне состояния, а не разметки. Здесь только
+   * то, что требует доступа к самой панели: перевод фокуса внутрь и его
+   * удержание.
+   */
+  useEffect(() => {
+    if (!isOpen) return
+    const panel = panelRef.current
+    if (!panel) return
+
+    // Первым получает фокус первый пункт навигации, а не кнопка закрытия:
+    // человек открыл меню, чтобы выбрать раздел
+    const firstLink = panel.querySelector<HTMLElement>('nav a[href]')
+    ;(firstLink ?? panel).focus({ preventScroll: true })
+  }, [isOpen])
+
+  const handlePanelKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Tab') return
+    const panel = panelRef.current
+    if (!panel) return
+
+    const focusable = Array.from(
+      panel.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')
+    ).filter(node => node.offsetParent !== null)
+    if (focusable.length === 0) return
+
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (!first || !last) return
+
+    // Кольцо: с последнего элемента Tab возвращает на первый, и наоборот
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }, [])
 
   const [projectsCount, setProjectsCount] = useState<number | null>(null)
   const [blogCount, setBlogCount] = useState<number | null>(null)
@@ -168,11 +214,29 @@ export function JalousieMenu() {
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('nav.menu')}
+          tabIndex={-1}
+          onKeyDown={handlePanelKeyDown}
           initial={{ clipPath: 'inset(0% 0% 100% 0%)' }}
-          animate={{ clipPath: 'inset(0% 0% 0% 0%)' }}
-          exit={{ clipPath: 'inset(0% 0% 100% 0%)' }}
-          transition={{ duration: 0.7, ease: [0.83, 0, 0.17, 1] }}
-          className="fixed inset-0 z-50 h-dvh max-h-dvh w-full bg-[#a4a49c] overflow-hidden flex flex-col"
+          animate={{
+            clipPath: 'inset(0% 0% 0% 0%)',
+            transition: { duration: 0.42, ease: [0.83, 0, 0.17, 1] },
+          }}
+          /*
+           * Уход вдвое быстрее прихода. Это не только общий принцип «система
+           * отвечает быстро» — переход по пункту меню запускает ещё и красную
+           * штору перехода. Пока жалюзи закрывались 700 мс, две полноэкранные
+           * анимации шли подряд; на 240 мс они перекрываются и читаются как
+           * один жест.
+           */
+          exit={{
+            clipPath: 'inset(0% 0% 100% 0%)',
+            transition: { duration: 0.24, ease: [0.65, 0, 0.35, 1] },
+          }}
+          className="fixed inset-0 z-50 h-dvh max-h-dvh w-full bg-[#a4a49c] overflow-hidden flex flex-col focus:outline-none"
         >
           {/* Top bar: logo, language, close */}
           <div className="flex-shrink-0 relative flex items-center justify-between px-6 md:px-10 py-4 md:py-5">
@@ -180,9 +244,9 @@ export function JalousieMenu() {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ delay: 0.3 }}
+              transition={{ delay: 0.08 }}
               onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')}
-              className="w-12 h-12 rounded-full border border-black/20 flex items-center justify-center text-sm font-medium hover:bg-black/5 transition-colors uppercase text-black/80"
+              className="w-12 h-12 rounded-full border border-black/20 flex items-center justify-center text-sm font-medium hover:bg-black/5 transition-[background-color,transform] duration-150 ease-out active:scale-[0.94] motion-reduce:active:scale-100 motion-reduce:active:opacity-70 uppercase text-black/80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ff2936] [-webkit-tap-highlight-color:transparent]"
               aria-label={language === 'ru' ? 'Switch to English' : 'Переключить на русский'}
             >
               {language}
@@ -192,7 +256,7 @@ export function JalousieMenu() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
+              transition={{ delay: 0.08, duration: 0.3 }}
             >
               <Link href="/" onClick={() => setIsOpen(false)} className="block">
                 <Image
@@ -209,16 +273,27 @@ export function JalousieMenu() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.04 }}
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 text-black/80 group"
+              className="flex items-center gap-3 text-black/80 group transition-transform duration-150 ease-out active:scale-[0.97] motion-reduce:active:scale-100 motion-reduce:active:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ff2936] [-webkit-tap-highlight-color:transparent]"
               aria-label="Close menu"
             >
               <span className="text-sm font-medium tracking-wide uppercase opacity-60 group-hover:opacity-100 transition-opacity">
                 {t('nav.close')}
               </span>
-              <motion.div className="w-8 h-8 flex items-center justify-center" whileHover={{ rotate: 90 }} transition={{ duration: 0.3 }}>
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <motion.div
+                className="w-8 h-8 flex items-center justify-center"
+                whileHover={{ rotate: 90 }}
+                transition={{ duration: 0.3 }}
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                >
                   <line x1="4" y1="4" x2="16" y2="16" />
                   <line x1="16" y1="4" x2="4" y2="16" />
                 </svg>
@@ -240,7 +315,7 @@ export function JalousieMenu() {
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  transition={{ delay: 0.2 + index * 0.08, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+                  transition={{ delay: index * 0.035, duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
                   className="relative flex-1 min-h-0 flex flex-col justify-center"
                   onMouseEnter={() => setHoveredIndex(index)}
                   onMouseLeave={() => setHoveredIndex(null)}
@@ -271,7 +346,13 @@ export function JalousieMenu() {
                     <div
                       className={cn(
                         'relative flex items-center gap-3 md:gap-4 w-full px-6 md:px-10',
-                        isLeft ? 'justify-start' : isRight ? 'justify-end' : isCenter || isFull ? 'justify-center' : 'justify-start'
+                        isLeft
+                          ? 'justify-start'
+                          : isRight
+                            ? 'justify-end'
+                            : isCenter || isFull
+                              ? 'justify-center'
+                              : 'justify-start'
                       )}
                     >
                       <div className="relative inline-block">
@@ -345,7 +426,7 @@ export function JalousieMenu() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
+              transition={{ delay: 0.18 }}
               className="absolute left-1/2 -translate-x-1/2 bottom-3 md:bottom-4 text-sm text-black/50 font-mono text-center pointer-events-none"
             >
               2026© {t('home.heroTagline')}

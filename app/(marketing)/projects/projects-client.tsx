@@ -368,7 +368,13 @@ function ProjectRow({
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-100px' }}
-      transition={{ duration: 0.6, delay: index * 0.1 }}
+      /*
+       * Лесенка ограничена первым экраном. index сквозной по всему списку, и
+       * после «показать больше» девятнадцатая строка ждала 1.8 с уже после
+       * того, как вошла во вьюпорт: быстрый читатель упирался в пустое место
+       * там, где работа уже загружена.
+       */
+      transition={{ duration: 0.6, delay: Math.min(index, 3) * 0.08 }}
       className="border-t-2 border-dashed border-muted-foreground/20 py-6 md:py-8"
       data-orientation={orientation}
       onMouseEnter={handleMouseEnter}
