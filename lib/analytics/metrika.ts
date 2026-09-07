@@ -44,6 +44,12 @@ export type MetrikaGoal =
   | 'estimate_budget_select'
   | 'estimate_step1_complete'
   | 'estimate_brief_attach'
+  // Страница клиентов /clients. Ни одно из этих событий не конверсия:
+  // конверсия по-прежнему только production_lead_success.
+  // Параметр client — имя бренда, project_slug — открытый проект,
+  // source — блок страницы: wall | collaboration | capability
+  | 'clients_project_click'
+  | 'clients_collaboration_click'
   // Вторичные действия
   | 'booking_click'
   | 'telegram_click'

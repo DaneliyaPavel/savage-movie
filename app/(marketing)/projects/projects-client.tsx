@@ -644,12 +644,22 @@ export default function ProjectsPageClient({
           </h1>
           {/* Из портфолио — на коммерческую страницу: человек, который смотрит
               работы, чаще всего пришёл за роликом, а не за списком */}
-          <Link
-            href="/reklamny-rolik"
-            className="mt-4 inline-block text-[10px] md:text-xs uppercase tracking-[0.25em] text-muted-foreground border-b border-white/15 pb-1 transition-colors hover:text-white hover:border-white/40"
-          >
-            {language === 'ru' ? 'Рекламные ролики для бизнеса' : 'Commercial production'}
-          </Link>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            <Link
+              href="/reklamny-rolik"
+              className="inline-block text-[10px] md:text-xs uppercase tracking-[0.25em] text-muted-foreground border-b border-white/15 pb-1 transition-colors hover:text-white hover:border-white/40"
+            >
+              {language === 'ru' ? 'Рекламные ролики для бизнеса' : 'Commercial production'}
+            </Link>
+            {/* Портфолио отвечает «что мы снимали», /clients — «для кого».
+                Без этой ссылки страница клиентов достижима только из меню */}
+            <Link
+              href="/clients"
+              className="inline-block text-[10px] md:text-xs uppercase tracking-[0.25em] text-muted-foreground border-b border-white/15 pb-1 transition-colors hover:text-white hover:border-white/40"
+            >
+              {language === 'ru' ? 'Бренды в кадре' : 'Brands we filmed'}
+            </Link>
+          </div>
         </div>
       </header>
 

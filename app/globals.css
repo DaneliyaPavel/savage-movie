@@ -75,8 +75,8 @@
 }
 
 @theme inline {
-  --font-secondary: 'Inter 28pt ExtraLight', 'Inter', system-ui, -apple-system, 'Segoe UI',
-    sans-serif;
+  --font-secondary:
+    'Inter 28pt ExtraLight', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-sans: var(--font-secondary);
   --font-heading: var(--font-sans);
   --font-brand: 'Epilogue Black', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -166,8 +166,13 @@
 
 /* Badge indicator dot (pulse), respects reduced motion */
 @keyframes badge-dot-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 .badge-dot-pulse {
   animation: badge-dot-pulse 2s ease-in-out infinite;
@@ -350,7 +355,6 @@
   }
 
   @keyframes gradient-shift {
-
     0%,
     100% {
       background-position: 0% center;
@@ -534,12 +538,12 @@
   }
 
   .menu-bg-light {
-    background-color: #D9D9D9;
+    background-color: #d9d9d9;
   }
 
   /* Premium menu backgrounds - Freshman.tv inspired */
   .menu-bg-warm {
-    background-color: #B8B1A8;
+    background-color: #b8b1a8;
   }
 
   .menu-text-elegant {
@@ -593,5 +597,221 @@
 
   .menu-item-hover-subtle:hover {
     transform: scale(1.01);
+  }
+}
+
+/*
+ * /clients — «живые титры».
+ *
+ * Строка ролла раскрывается кадром из проекта. Раскрытие привязано не к ховеру,
+ * а к положению в прокрутке: строка, проходящая через центр экрана, получает
+ * data-focus="true" от IntersectionObserver в client-roll.tsx. Иначе тот, кто
+ * скроллит колесом, не двигая курсор, — и вообще любой пользователь тача —
+ * увидел бы вместо портфолио шестнадцать серых строк текста.
+ *
+ * Ховер и фокус с клавиатуры дают то же раскрытие плюс сдвиг типографики и
+ * подпись «смотреть проект»: это уже не состояние, а affordance указателя,
+ * поэтому оно живёт отдельно, внутри (hover: hover).
+ *
+ * Состояние строки в React не поднимается: шестнадцать строк с обработчиками
+ * и ре-рендером на скролле — лишняя работа ради того, что целиком описывается
+ * селектором. Кадр раскрывается clip-path'ом: композитно, без layout и paint.
+ *
+ * Вход намеренно длиннее выхода — раскрытие читается как проявление кадра,
+ * а уход должен быть мгновенным, иначе список «залипает» при быстром проходе.
+ */
+.client-roll {
+  --client-roll-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  /* Плотность вуали над кадром: под ней всегда лежит имя бренда */
+  --client-roll-veil: 0.45;
+}
+
+.client-roll-scrim {
+  position: absolute;
+  inset: 0;
+  /*
+   * Затемнение неравномерное: слева имя бренда, справа категория, год и
+   * подпись «смотреть проект». Обе зоны держим тёмными, кадр открывается
+   * в середине строки.
+   */
+  background-image:
+    linear-gradient(to right, rgb(0 0 0 / 0.82), rgb(0 0 0 / 0.3) 45%, rgb(0 0 0 / 0.72) 78%),
+    linear-gradient(rgb(0 0 0 / var(--client-roll-veil)), rgb(0 0 0 / var(--client-roll-veil)));
+}
+
+.client-roll-still {
+  opacity: 0;
+  clip-path: inset(0 0 100% 0);
+  transition:
+    clip-path 220ms var(--client-roll-ease),
+    opacity 180ms ease;
+}
+
+.client-roll-still img {
+  transform: scale(1.06);
+  transition: transform 240ms var(--client-roll-ease);
+}
+
+.client-roll-row[data-focus='true'] .client-roll-still {
+  opacity: 1;
+  clip-path: inset(0 0 0 0);
+  transition:
+    clip-path 420ms var(--client-roll-ease),
+    opacity 260ms ease;
+}
+
+.client-roll-row[data-focus='true'] .client-roll-still img {
+  transform: scale(1);
+  transition: transform 640ms var(--client-roll-ease);
+}
+
+.client-roll-name,
+.client-roll-index {
+  transition:
+    color 200ms ease,
+    transform 240ms var(--client-roll-ease);
+}
+
+.client-roll-row[data-focus='true'] .client-roll-name {
+  color: #ffffff;
+}
+
+.client-roll-row[data-focus='true'] .client-roll-index {
+  color: #ff2936;
+}
+
+.client-roll-logo {
+  opacity: 0.7;
+  transition: opacity 200ms ease;
+}
+
+.client-roll-row[data-focus='true'] .client-roll-logo {
+  opacity: 1;
+}
+
+/*
+ * Указательные состояния. Только для настоящего курсора: на тач-устройствах
+ * :hover залипает после тапа, и строка, с которой пользователь уже ушёл,
+ * осталась бы подсвеченной.
+ */
+@media (hover: hover) and (pointer: fine) {
+  .client-roll-row:hover .client-roll-still,
+  .client-roll-row:focus-visible .client-roll-still {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transition:
+      clip-path 420ms var(--client-roll-ease),
+      opacity 260ms ease;
+  }
+
+  .client-roll-row:hover .client-roll-still img,
+  .client-roll-row:focus-visible .client-roll-still img {
+    transform: scale(1);
+    transition: transform 640ms var(--client-roll-ease);
+  }
+
+  .client-roll-row:hover .client-roll-name,
+  .client-roll-row:focus-visible .client-roll-name {
+    color: #ffffff;
+    transform: translateX(10px);
+  }
+
+  .client-roll-row:hover .client-roll-index,
+  .client-roll-row:focus-visible .client-roll-index {
+    color: #ff2936;
+    transform: translateX(10px);
+  }
+
+  .client-roll-row:hover .client-roll-logo,
+  .client-roll-row:focus-visible .client-roll-logo {
+    opacity: 1;
+  }
+
+  .client-roll-row:active .client-roll-name,
+  .client-roll-row:active .client-roll-index {
+    transform: translateX(14px);
+    transition-duration: 120ms;
+  }
+
+  .client-roll-cue {
+    opacity: 0;
+    transform: translateX(-8px);
+    transition:
+      opacity 180ms ease,
+      transform 240ms var(--client-roll-ease);
+  }
+
+  .client-roll-row:hover .client-roll-cue,
+  .client-roll-row:focus-visible .client-roll-cue {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .client-roll-still,
+  .client-roll-row[data-focus='true'] .client-roll-still,
+  .client-roll-row:hover .client-roll-still,
+  .client-roll-row:focus-visible .client-roll-still {
+    clip-path: none;
+    transition: opacity 150ms ease;
+  }
+
+  .client-roll-still img,
+  .client-roll-row[data-focus='true'] .client-roll-still img,
+  .client-roll-row:hover .client-roll-still img,
+  .client-roll-row:focus-visible .client-roll-still img {
+    transform: none;
+    transition: none;
+  }
+
+  /*
+   * Сброс сдвига перечисляет и :focus-visible: без него правило из блока
+   * (hover: hover) выигрывало по специфичности, и пользователь с клавиатуры
+   * получал сдвиг строки даже при выключенной анимации.
+   */
+  .client-roll-name,
+  .client-roll-index,
+  .client-roll-cue,
+  .client-roll-row[data-focus='true'] .client-roll-name,
+  .client-roll-row[data-focus='true'] .client-roll-index,
+  .client-roll-row:hover .client-roll-name,
+  .client-roll-row:hover .client-roll-index,
+  .client-roll-row:focus-visible .client-roll-name,
+  .client-roll-row:focus-visible .client-roll-index,
+  .client-roll-row:active .client-roll-name,
+  .client-roll-row:active .client-roll-index {
+    transform: none;
+    transition:
+      color 150ms ease,
+      opacity 150ms ease;
+  }
+}
+
+/*
+ * Титульная карточка /clients.
+ *
+ * Анимируется только transform — по той же причине, что и .hero-reveal:
+ * с opacity:0 в 0%-кадре первый отрисованный фрейм был бы пустым, а это первый
+ * экран страницы, которую открывают перед обращением.
+ */
+@keyframes client-title-reveal {
+  from {
+    transform: translateY(16px);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+.client-title-reveal {
+  animation: client-title-reveal 0.55s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .client-title-reveal {
+    animation: none;
+    transform: none;
   }
 }

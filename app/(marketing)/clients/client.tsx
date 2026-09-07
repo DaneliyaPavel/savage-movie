@@ -1,44 +1,60 @@
 /**
- * Клиентский компонент страницы Clients с анимациями
+ * Оболочка /clients: шапка, меню и «жалюзи»-подвал — та же механика, что на
+ * /projects, чтобы страница ощущалась частью сайта, а не отдельным лендингом.
+ *
+ * Контент приходит через children и остаётся серверным: клиентским здесь должен
+ * быть только хром страницы.
  */
 'use client'
 
-import { ClientsList } from '@/components/sections/ClientsList'
-import { motion } from 'framer-motion'
-import type { Client } from '@/lib/api/clients'
+import { useEffect, useRef, type ReactNode } from 'react'
+import { TopBar } from '@/components/ui/top-bar'
+import { JalousieMenu } from '@/components/ui/jalousie-menu'
+import { ProjectsJalousieFooter } from '@/components/sections/ProjectsJalousieFooter'
+import { useMenu } from '@/components/ui/menu-context'
 
-interface ClientsPageClientProps {
-  clients: Client[]
-}
+export function ClientsPageShell({ children }: { children: ReactNode }) {
+  const { setHeaderDark } = useMenu()
+  const curtainRef = useRef<HTMLDivElement>(null)
 
-export function ClientsPageClient({ clients }: ClientsPageClientProps) {
+  /*
+   * Когда красный подвал открывается из-под контента, белый логотип на нём
+   * не читается. Отслеживаем это IntersectionObserver'ом, а не слушателем
+   * scroll: обработчик на каждый кадр прокрутки — лишняя работа на странице,
+   * которую целиком проходят скроллом.
+   */
+  useEffect(() => {
+    const curtain = curtainRef.current
+    if (!curtain) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry) return
+        setHeaderDark(!entry.isIntersecting && entry.boundingClientRect.bottom < 80)
+      },
+      { rootMargin: '-80px 0px 0px 0px', threshold: 0 }
+    )
+
+    observer.observe(curtain)
+    return () => {
+      observer.disconnect()
+      setHeaderDark(false)
+    }
+  }, [setHeaderDark])
+
   return (
-    <div className="min-h-screen pt-20 pb-20">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Заголовок секции */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="mb-16 md:mb-24"
-        >
-          <h1 className="font-heading font-bold text-6xl md:text-7xl lg:text-8xl mb-6 text-foreground">
-            Клиенты
-          </h1>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-xl md:text-2xl text-muted-foreground font-light max-w-3xl"
-          >
-            Мы работаем с амбициозными брендами, организациями и проектами, помогая им достигать
-            своих целей через креативный видеоконтент.
-          </motion.p>
-        </motion.div>
+    <main className="min-h-screen bg-[#000000]">
+      <TopBar />
+      <JalousieMenu />
 
-        {/* Список Clients */}
-        <ClientsList clients={clients} />
+      {/* Шторка: лежит выше зафиксированного подвала и открывает его при прокрутке */}
+      <div ref={curtainRef} className="relative z-20 bg-[#000000]">
+        {children}
       </div>
-    </div>
+
+      <div className="min-h-screen" aria-hidden="true" />
+
+      <ProjectsJalousieFooter />
+    </main>
   )
 }

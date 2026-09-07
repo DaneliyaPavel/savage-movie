@@ -116,6 +116,15 @@ export function JalousieMenu() {
           position: 'left' as const,
         },
         {
+          // Доказательство перед обращением: посетитель, который уже посмотрел
+          // работы, приходит проверить, с кем студия действительно работала.
+          // До этого /clients жила только в sitemap и была недостижима из сайта
+          labelKey: 'nav.clients',
+          href: '/clients',
+          countKey: null as CountKey,
+          position: 'center' as const,
+        },
+        {
           labelKey: 'nav.studio',
           href: '/about',
           countKey: null as CountKey,
