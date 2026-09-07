@@ -603,28 +603,31 @@
 /*
  * /clients — «живые титры».
  *
- * У каждой строки ролла есть своё окно кадра. Кадр зажигается у той строки,
- * которая проходит через центр экрана: data-focus="true" ставит
- * IntersectionObserver в client-roll.tsx. Ховер и фокус с клавиатуры дают то
- * же состояние — это уже affordance указателя, поэтому живёт отдельно.
+ * Кадр зажигается у строки, которая проходит через центр экрана: data-focus
+ * ставит IntersectionObserver в client-roll.tsx. Ховер и фокус с клавиатуры
+ * дают то же состояние поверх — это уже affordance указателя.
  *
  * Состояние строки в React не поднимается: шестнадцать строк с обработчиками
  * и ре-рендером на скролле — лишняя работа ради того, что описывается
  * селектором. Кадр раскрывается clip-path'ом: композитно, без layout и paint.
  *
- * Вход намеренно длиннее выхода: раскрытие читается как проявление кадра,
- * а уход должен быть мгновенным, иначе список залипает при быстром проходе.
+ * Кривая — общая для сайта (--ease-out-expo, та же, что в 100+ переходов на
+ * остальных страницах). Своей кривой у этой страницы быть не должно.
  */
 .client-roll {
-  --client-roll-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --client-roll-ease: var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+  /*
+   * Пауза перед тяжёлым раскрытием кадра. Курсор, который просто проходит
+   * вниз по списку, не должен запускать шестнадцать проявлений подряд:
+   * задержка меньше времени пересечения строки на быстром движении, поэтому
+   * реагирует только осознанная остановка. На уход задержки нет.
+   */
+  --client-roll-intent: 90ms;
 }
 
 /*
- * Затемнение кадра-полосы.
- *
- * Держим тёмными только края: слева имя бренда, справа категория и год.
- * Середина отпущена, иначе кадр превращается в серую муть — прежняя плотная
- * вуаль (0.45 плюс градиент 0.82/0.72) убивала именно её.
+ * Затемнение кадра-полосы: тёмные только края, где лежат имя слева и
+ * категория с годом справа. Середина отпущена, иначе кадр становится мутью.
  */
 .client-roll-scrim {
   position: absolute;
@@ -640,18 +643,18 @@
     linear-gradient(rgb(0 0 0 / 0.22), rgb(0 0 0 / 0.22));
 }
 
+/* Уход быстрее прихода: иначе список залипает при быстром проходе мышью */
 .client-roll-still {
   opacity: 0;
   clip-path: inset(0 0 100% 0);
   transition:
-    clip-path 220ms var(--client-roll-ease),
-    opacity 180ms ease,
-    border-color 220ms ease;
+    clip-path 200ms var(--client-roll-ease),
+    opacity 150ms ease;
 }
 
 .client-roll-still img {
   transform: scale(1.06);
-  transition: transform 240ms var(--client-roll-ease);
+  transition: transform 220ms var(--client-roll-ease);
 }
 
 .client-roll-row[data-focus='true'] .client-roll-still,
@@ -661,22 +664,22 @@
   clip-path: inset(0 0 0 0);
   transition:
     clip-path 420ms var(--client-roll-ease),
-    opacity 260ms ease,
-    border-color 260ms ease;
+    opacity 260ms ease;
 }
 
 .client-roll-row[data-focus='true'] .client-roll-still img,
 .client-roll-row:hover .client-roll-still img,
 .client-roll-row:focus-visible .client-roll-still img {
   transform: scale(1);
-  transition: transform 640ms var(--client-roll-ease);
+  transition: transform 620ms var(--client-roll-ease);
 }
 
+/* Имя и номер — прямая обратная связь, задержки на них нет никогда */
 .client-roll-name,
 .client-roll-index {
   transition:
-    color 200ms ease,
-    transform 240ms var(--client-roll-ease);
+    color 180ms ease,
+    transform 220ms var(--client-roll-ease);
 }
 
 .client-roll-row[data-focus='true'] .client-roll-name,
@@ -693,7 +696,7 @@
 
 .client-roll-logo {
   opacity: 0.7;
-  transition: opacity 200ms ease;
+  transition: opacity 180ms ease;
 }
 
 .client-roll-row[data-focus='true'] .client-roll-logo,
@@ -707,15 +710,27 @@
   opacity: 0;
   transform: translateX(-6px);
   transition:
-    opacity 180ms ease,
-    transform 240ms var(--client-roll-ease);
+    opacity 130ms ease,
+    transform 150ms var(--client-roll-ease);
 }
 
 @media (hover: hover) and (pointer: fine) {
+  /*
+   * Пауза только на приходе и только у кадра: подсветка имени, номера и
+   * подписи остаётся мгновенной, иначе строка перестаёт отвечать на курсор.
+   */
+  .client-roll-row:hover .client-roll-still,
+  .client-roll-row:hover .client-roll-still img {
+    transition-delay: var(--client-roll-intent);
+  }
+
   .client-roll-row:hover .client-roll-cue,
   .client-roll-row:focus-visible .client-roll-cue {
     opacity: 1;
     transform: translateX(0);
+    transition:
+      opacity 200ms ease,
+      transform 240ms var(--client-roll-ease);
   }
 
   .client-roll-row:hover .client-roll-name,
@@ -728,17 +743,22 @@
   .client-roll-row:active .client-roll-name,
   .client-roll-row:active .client-roll-index {
     transform: translateX(14px);
-    transition-duration: 120ms;
+    transition-duration: 110ms;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /*
+   * Кадр продолжает раскрываться — это состояние, а не украшение. Убираем
+   * только движение: развёртку clip-path и наезд картинки.
+   */
   .client-roll-still,
   .client-roll-row[data-focus='true'] .client-roll-still,
   .client-roll-row:hover .client-roll-still,
   .client-roll-row:focus-visible .client-roll-still {
     clip-path: none;
     transition: opacity 150ms ease;
+    transition-delay: 0ms;
   }
 
   .client-roll-still img,
@@ -788,10 +808,14 @@
  * первого тика rAF, для заторможенного рендерера и для всех, у кого JS не
  * доехал. Страница, которую открывают ради доказательства, обязана
  * показывать это доказательство сразу.
+ *
+ * --reveal-delay задаёт иерархию внутри блока: кадр приходит первым, текст
+ * следом. Без неё заголовок и содержимое ехали одной массой.
  */
 [data-reveal] {
-  transform: translateY(18px);
-  transition: transform 700ms var(--reveal-ease, cubic-bezier(0.23, 1, 0.32, 1));
+  transform: translateY(16px);
+  transition: transform 520ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+  transition-delay: var(--reveal-delay, 0ms);
 }
 
 [data-reveal='shown'] {
@@ -809,7 +833,10 @@
 /*
  * Титульная карточка /clients.
  *
- * Анимируется только transform — по той же причине, что и .hero-reveal.
+ * Три слоя приходят лесенкой, а не одновременно: надпись, заголовок, строка
+ * с числами. Анимируется только transform — по той же причине, что у
+ * .hero-reveal: с opacity:0 в нулевом кадре первый отрисованный фрейм был бы
+ * пустым.
  */
 @keyframes client-title-reveal {
   from {
@@ -822,60 +849,8 @@
 }
 
 .client-title-reveal {
-  animation: client-title-reveal 0.55s cubic-bezier(0.23, 1, 0.32, 1) both;
-}
-
-/* Лесенка в блоке точек входа: только с md, на телефоне колонки идут стопкой */
-@media (min-width: 768px) {
-  .client-entry-points {
-    --entry-step: 2.5rem;
-  }
-}
-
-/*
- * Появление блоков при скролле.
- *
- * Анимируется только transform. Прозрачность не трогаем сознательно: любой
- * initial={{opacity:0}} попадает в SSR инлайн-стилем, и содержимое оказывается
- * невидимым на первом отрисованном кадре — для краулера, для скриншота до
- * первого тика rAF, для заторможенного рендерера и для всех, у кого JS не
- * доехал. Страница, которую открывают ради доказательства, обязана
- * показывать это доказательство сразу.
- */
-[data-reveal] {
-  transform: translateY(18px);
-  transition: transform 700ms var(--reveal-ease, cubic-bezier(0.23, 1, 0.32, 1));
-}
-
-[data-reveal='shown'] {
-  transform: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  [data-reveal],
-  [data-reveal='shown'] {
-    transform: none;
-    transition: none;
-  }
-}
-
-/*
- * Титульная карточка /clients.
- *
- * Анимируется только transform — по той же причине, что и .hero-reveal.
- */
-@keyframes client-title-reveal {
-  from {
-    transform: translateY(16px);
-  }
-
-  to {
-    transform: translateY(0);
-  }
-}
-
-.client-title-reveal {
-  animation: client-title-reveal 0.55s cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: client-title-reveal 0.5s var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
+  animation-delay: calc(var(--title-step, 0) * 70ms);
 }
 
 @media (prefers-reduced-motion: reduce) {

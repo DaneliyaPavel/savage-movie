@@ -20,11 +20,17 @@ interface ClientsHeroProps {
 export function ClientsHero({ brandCount, projectCount }: ClientsHeroProps) {
   return (
     <section className="relative flex min-h-[100svh] flex-col justify-end px-5 pt-28 pb-10 sm:px-8 md:px-10 md:pt-32 md:pb-14 lg:px-16">
-      <p className="client-title-reveal text-[10px] uppercase tracking-[0.4em] text-white/55 md:text-xs">
+      {/* Три слоя титра приходят лесенкой: --title-step задаёт очередь */}
+      <p
+        style={{ ['--title-step' as string]: '0' }}
+        className="client-title-reveal text-[10px] uppercase tracking-[0.4em] text-white/55 md:text-xs"
+      >
         Clients / Selected collaborations
       </p>
 
-      <h1 /*
+      <h1
+        style={{ ['--title-step' as string]: '1' }}
+        /*
           Ширину не ограничиваем: max-w-[16ch] рвал фразу по случайному месту и
           оставлял висячую строку на каждом брейкпоинте. Каждое предложение —
           свой блок, перенос происходит только когда строка правда не влезает.
@@ -37,7 +43,10 @@ export function ClientsHero({ brandCount, projectCount }: ClientsHeroProps) {
         <span className="block text-white/45">Savage за камерой.</span>
       </h1>
 
-      <div className="client-title-reveal mt-10 flex flex-col gap-6 border-t border-white/10 pt-6 sm:flex-row sm:items-end sm:justify-between md:mt-14">
+      <div
+        style={{ ['--title-step' as string]: '2' }}
+        className="client-title-reveal mt-10 flex flex-col gap-6 border-t border-white/10 pt-6 sm:flex-row sm:items-end sm:justify-between md:mt-14"
+      >
         <p className="max-w-md text-[15px] font-light leading-relaxed text-white/65 md:text-base">
           {brandCount} {pluralRu(brandCount, 'бренд', 'бренда', 'брендов')} и {projectCount}{' '}
           {pluralRu(projectCount, 'проект', 'проекта', 'проектов')} в открытом портфолио.

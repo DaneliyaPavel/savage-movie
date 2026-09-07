@@ -125,6 +125,7 @@ function CaseFrame({
   aspect: string
   priority?: boolean
 }) {
+  /* Кадр — ведущий слой кейса: приходит первым, без задержки */
   if (!item.still) {
     /* Кадра нет — оставляем поле пустым, а не заглушку с иконкой */
     return <div className={`${aspect} w-full border border-white/10 bg-white/[0.02]`} />
@@ -138,7 +139,7 @@ function CaseFrame({
         sizes={sizes}
         quality={75}
         priority={priority}
-        className="object-cover transition-transform duration-[1200ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:group-hover/frame:scale-[1.02]"
+        className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] motion-safe:group-hover/frame:scale-[1.02]"
       />
     </div>
   )
@@ -150,9 +151,15 @@ function CaseBlock({ item }: { item: CollaborationItem }) {
   /* Открывающий кейс: кадр во всю ширину секции задаёт масштаб остальным */
   if (layout === 'band') {
     return (
-      <article data-reveal="">
-        <CaseFrame item={item} sizes="100vw" aspect="aspect-[16/10] md:aspect-[21/9]" priority />
-        <div className="mt-10 grid gap-8 md:grid-cols-12 md:gap-10">
+      <article>
+        <div data-reveal="">
+          <CaseFrame item={item} sizes="100vw" aspect="aspect-[16/10] md:aspect-[21/9]" priority />
+        </div>
+        <div
+          data-reveal=""
+          style={{ ['--reveal-delay' as string]: '90ms' }}
+          className="mt-10 grid gap-8 md:grid-cols-12 md:gap-10"
+        >
           <div className="md:col-span-5">
             <CaseHeading item={item} size="lead" />
           </div>
@@ -168,13 +175,17 @@ function CaseBlock({ item }: { item: CollaborationItem }) {
   /* Вертикальный кадр после широкого: смена пропорции, а не стороны */
   if (layout === 'tall') {
     return (
-      <article data-reveal="" className="grid gap-8 md:grid-cols-12 md:gap-12">
-        <div className="md:col-span-6 md:pt-16">
+      <article className="grid gap-8 md:grid-cols-12 md:gap-12">
+        <div
+          data-reveal=""
+          style={{ ['--reveal-delay' as string]: '90ms' }}
+          className="md:col-span-6 md:pt-16"
+        >
           <CaseHeading item={item} />
           <CaseText item={item} />
           <CaseLink item={item} />
         </div>
-        <div className="md:col-span-5 md:col-start-8">
+        <div data-reveal="" className="md:col-span-5 md:col-start-8">
           <CaseFrame item={item} sizes="(min-width: 768px) 42vw, 100vw" aspect="aspect-[4/5]" />
         </div>
       </article>
@@ -184,11 +195,15 @@ function CaseBlock({ item }: { item: CollaborationItem }) {
   /* Широкий кадр со сдвигом влево за поле набора: текст уходит под него вправо */
   if (layout === 'offset') {
     return (
-      <article data-reveal="" className="grid gap-8 md:grid-cols-12 md:gap-10">
-        <div className="md:col-span-10">
+      <article className="grid gap-8 md:grid-cols-12 md:gap-10">
+        <div data-reveal="" className="md:col-span-10">
           <CaseFrame item={item} sizes="(min-width: 768px) 82vw, 100vw" aspect="aspect-[16/9]" />
         </div>
-        <div className="md:col-span-5 md:col-start-6">
+        <div
+          data-reveal=""
+          style={{ ['--reveal-delay' as string]: '90ms' }}
+          className="md:col-span-5 md:col-start-6"
+        >
           <CaseHeading item={item} />
           <CaseText item={item} />
           <CaseLink item={item} />
@@ -199,13 +214,17 @@ function CaseBlock({ item }: { item: CollaborationItem }) {
 
   /* Тихое закрытие: маленький кадр и много воздуха */
   return (
-    <article data-reveal="" className="grid gap-8 md:grid-cols-12 md:gap-12">
-      <div className="md:col-span-6 md:col-start-2">
+    <article className="grid gap-8 md:grid-cols-12 md:gap-12">
+      <div
+        data-reveal=""
+        style={{ ['--reveal-delay' as string]: '90ms' }}
+        className="md:col-span-6 md:col-start-2"
+      >
         <CaseHeading item={item} />
         <CaseText item={item} />
         <CaseLink item={item} />
       </div>
-      <div className="md:col-span-3 md:col-start-9 md:pt-24">
+      <div data-reveal="" className="md:col-span-3 md:col-start-9 md:pt-24">
         <CaseFrame item={item} sizes="(min-width: 768px) 26vw, 100vw" aspect="aspect-[3/4]" />
       </div>
     </article>
