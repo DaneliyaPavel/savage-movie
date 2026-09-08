@@ -147,6 +147,15 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.select': 'выбрать',
 
     // Footer
+    // Site footer главной: единственная краулимая навигация до открытия меню
+    'siteFooter.lead': 'Продакшн-студия полного цикла из Санкт-Петербурга. Снимаем',
+    'siteFooter.leadLink': 'рекламные ролики для бизнеса и брендов',
+    'siteFooter.leadTail': 'в Петербурге, Москве и по России.',
+    'siteFooter.work': 'Работы',
+    'siteFooter.services': 'Услуги',
+    'siteFooter.studio': 'Студия',
+    'siteFooter.privacy': 'Конфиденциальность',
+    'siteFooter.terms': 'Условия',
     'footer.rights': 'Все права защищены.',
     'footer.location': 'Санкт-Петербург / Москва / Весь мир',
     'footer.instagram': 'Instagram',
@@ -294,6 +303,15 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.select': 'select',
 
     // Footer
+    // Site footer главной: единственная краулимая навигация до открытия меню
+    'siteFooter.lead': 'A full-cycle production studio based in St. Petersburg. We make',
+    'siteFooter.leadLink': 'commercials for business and brands',
+    'siteFooter.leadTail': 'in St. Petersburg, Moscow and across Russia.',
+    'siteFooter.work': 'Work',
+    'siteFooter.services': 'Services',
+    'siteFooter.studio': 'Studio',
+    'siteFooter.privacy': 'Privacy',
+    'siteFooter.terms': 'Terms',
     'footer.rights': 'All rights reserved.',
     'footer.location': 'St. Petersburg / Moscow / Worldwide',
     'footer.instagram': 'Instagram',

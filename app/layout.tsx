@@ -31,9 +31,13 @@ export const viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
-  alternates: {
-    canonical: '/',
-  },
+  /*
+   * Здесь НЕТ alternates.canonical. Относительный canonical в корневом layout
+   * наследуется всеми маршрутами, которые его не переопределили, и динамические
+   * /projects/[slug], /blog/[slug], /courses/[slug] годами объявляли себя
+   * дублями главной. Canonical задаётся только на самом маршруте — см.
+   * app/__tests__/canonical-architecture.test.ts, который это стережёт.
+   */
   title: 'Видеопродакшн в СПб и Москве — Savage Movie | Реклама, клипы, AI-видео',
   description: metaDescription,
   keywords: [
@@ -74,29 +78,42 @@ export const metadata: Metadata = {
 
 const organizationJsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'VideoProductionCompany',
+  /*
+   * Organization, а не VideoProductionCompany: последнего нет в словаре
+   * schema.org — это категория карточки Google Business Profile, которую
+   * приняли за тип разметки. И не ProfessionalService: schema.org помечает его
+   * как deprecated из-за путаницы с Service.
+   *
+   * Полей address/telephone/openingHours/foundingDate здесь намеренно не
+   * больше, чем подтверждено сайтом: телефона на сайте нет вообще, улицы и
+   * индекса тоже. Их место — этап NAP, а не выдуманные значения в разметке.
+   */
+  '@type': 'Organization',
   name: 'Savage Movie',
   url: baseUrl,
   logo: `${baseUrl}/sm-logo.svg`,
   description: 'Продакшн-студия полного цикла в Санкт-Петербурге',
   address: {
+    // Единственное, что подтверждено страницей /contact: город и страна.
     '@type': 'PostalAddress',
     addressLocality: 'Санкт-Петербург',
     addressCountry: 'RU',
   },
   areaServed: ['Санкт-Петербург', 'Москва', 'Россия'],
-  serviceType: [
+  // knowsAbout, а не serviceType: у serviceType domainIncludes только Service.
+  knowsAbout: [
     'Видеопродакшн',
     'Рекламные ролики',
     'Музыкальные клипы',
     'AI-генерация видео',
     'Обучение видеопроизводству',
   ],
-  sameAs: [
-    'https://vk.ru/mari_seven',
-    'https://t.me/mariseven',
-    'https://www.instagram.com/mari.seven/',
-  ],
+  /*
+   * sameAs отсутствует сознательно. Раньше здесь стояли личные профили
+   * mari_seven — разметка связывала домен не с той сущностью. Брендовые
+   * аккаунты Savage Movie существуют, но пока не подтверждены владельцем,
+   * поэтому не утверждаем ничего вместо того, чтобы утверждать неверное.
+   */
 }
 
 const websiteJsonLd = {

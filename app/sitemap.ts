@@ -27,28 +27,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.warn('Ошибка загрузки данных для sitemap:', error)
   }
 
+  /*
+   * У статических страниц нет lastModified. Раньше здесь стоял new Date(), и
+   * sitemap на каждой генерации заявлял, что «Политика», «О студии» и
+   * «Контакты» изменились только что. Достоверной даты правки у этих
+   * маршрутов нет, а выдуманная — это шум для планировщика обхода, поэтому
+   * поле просто отсутствует. У проектов, курсов и блога ниже дата настоящая,
+   * из updated_at, и остаётся на месте.
+   */
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
-      lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 1,
     },
     {
       url: `${baseUrl}/projects`,
-      lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
       url: `${baseUrl}/courses`,
-      lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
       url: `${baseUrl}/services`,
-      lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.8,
     },
@@ -56,37 +60,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Коммерческая посадочная под кластер рекламного видеопроизводства.
       // Приоритет выше раздела услуг: это точка приземления платного трафика.
       url: `${baseUrl}/reklamny-rolik`,
-      lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: `${baseUrl}/about`,
-      lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.7,
     },
     {
       url: `${baseUrl}/clients`,
-      lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.6,
     },
     {
       url: `${baseUrl}/blog`,
-      lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
       url: `${baseUrl}/contact`,
-      lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.6,
     },
     {
       url: `${baseUrl}/booking`,
-      lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.7,
     },

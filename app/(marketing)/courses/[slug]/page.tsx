@@ -54,10 +54,15 @@ export async function generateMetadata({
   return {
     title,
     description,
+    // Self-canonical обязателен: без него маршрут наследует canonical родителя.
+    alternates: {
+      canonical: `/courses/${slug}`,
+    },
     openGraph: {
       title,
       description,
       type: 'website',
+      url: `/courses/${slug}`,
       images: course.cover_image
         ? [{ url: course.cover_image, width: 1200, height: 630, alt: course.title }]
         : undefined,

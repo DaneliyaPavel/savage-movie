@@ -4,6 +4,7 @@
  */
 import type { Metadata } from 'next'
 import { ShowreelHero } from '@/components/sections/showreel-hero'
+import { SiteFooter } from '@/components/sections/site-footer'
 import { getProjectsServer } from '@/features/projects/api'
 import { publicEnv } from '@/lib/env'
 
@@ -12,13 +13,16 @@ export const revalidate = 3600 // ISR: revalidate every hour
 const metaDescription =
   'Продакшн-студия полного цикла в Санкт-Петербурге и Москве. Рекламные ролики, музыкальные клипы, имиджевые видео, AI-генерация контента. Обсудить проект →'
 
+/*
+ * openGraph здесь НЕ переопределяется. В Next.js этот объект заменяется целиком,
+ * а не сливается по полям: частичный override с одними title и description
+ * выбрасывал image, url, type, locale и siteName из корневого layout — ссылка на
+ * главную уходила в мессенджеры без превью. Заголовок и описание у главной и так
+ * совпадают с корневыми, поэтому наследуем весь набор.
+ */
 export const metadata: Metadata = {
   title: 'Видеопродакшн в СПб и Москве — Savage Movie | Реклама, клипы, AI-видео',
   description: metaDescription,
-  openGraph: {
-    title: 'Видеопродакшн в СПб и Москве — Savage Movie | Реклама, клипы, AI-видео',
-    description: metaDescription,
-  },
   alternates: {
     canonical: '/',
   },
@@ -108,6 +112,12 @@ export default async function HomePage() {
       )}
       <main className="relative">
         <ShowreelHero showreelPlaybackId={showreelVideoId} projects={projects} />
+        {/*
+          Футер после полноэкранного hero — единственная краулимая навигация
+          главной. Hero остаётся h-svh и первым экраном; футер открывается
+          скроллом. Подробности — в components/sections/site-footer.tsx.
+        */}
+        <SiteFooter />
       </main>
     </>
   )

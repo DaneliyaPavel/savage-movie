@@ -10,7 +10,21 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/dashboard/', '/admin/', '/api/'],
+      /*
+       * /login, /register, /callback и /payment/ раньше «прятались» за
+       * унаследованным из корневого layout canonical на главную. Canonical
+       * оттуда убран, поэтому служебные маршруты закрываются явно — они не
+       * должны попадать в индекс сами по себе.
+       */
+      disallow: [
+        '/dashboard/',
+        '/admin/',
+        '/api/',
+        '/login',
+        '/register',
+        '/callback',
+        '/payment/',
+      ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,
   }
