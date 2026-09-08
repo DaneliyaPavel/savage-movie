@@ -14,6 +14,36 @@ import { getThumbnailUrl } from '@/lib/integrations/bunny/client'
  * Две ступени поверх нулевой. Шаг 60 мс: имя студии, следом чем она
  * занимается, последним — подпись. Лента поднимается почти сразу за ними.
  */
+/*
+ * Заставка — вступление к сайту, а не к маршруту. Она имеет право играть
+ * только когда документ реально загружен на главной.
+ *
+ * Одного pathname недостаточно: после клиентского перехода /projects → /
+ * он уже '/', хотя документ грузился на другом маршруте. Настоящий признак —
+ * PerformanceNavigationTiming.name: это URL документа, и pushState его не
+ * меняет.
+ *
+ * Второе условие — модульный флаг: он живёт до следующей полной загрузки
+ * документа и гасит повтор на back/forward, на возврате из bfcache и на любом
+ * повторном заходе на / внутри сессии.
+ */
+let openingPlayed = false
+
+function shouldPlayOpening(): boolean {
+  // На сервере главная рендерится только при настоящей загрузке документа
+  if (typeof window === 'undefined') return true
+  if (openingPlayed) return false
+  try {
+    const nav = performance.getEntriesByType('navigation')[0] as
+      | PerformanceNavigationTiming
+      | undefined
+    const documentPath = nav?.name ? new URL(nav.name).pathname : window.location.pathname
+    return documentPath === '/'
+  } catch {
+    return window.location.pathname === '/'
+  }
+}
+
 const HERO_STEP_COPY = '60ms'
 const HERO_STEP_SIGNATURE = '120ms'
 
@@ -38,7 +68,14 @@ interface ShowreelHeroProps {
 export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHeroProps) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  /*
+   * Два отдельных сигнала, а не один: заставка снимается в конце ухода, а
+   * первый экран начинает подниматься в его начале. Раньше они были связаны
+   * одним флагом, и hero стартовал только после полностью ушедшей заставки —
+   * получалось две очереди подряд вместо одного перекрытого движения.
+   */
+  const [isLoading, setIsLoading] = useState(shouldPlayOpening)
+  const [hasEntered, setHasEntered] = useState(() => !shouldPlayOpening())
   const { language, t } = useI18n()
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -67,10 +104,20 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
     }
   }, [])
 
-  // Preloader timer
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1200)
-    return () => clearTimeout(timer)
+    // Со следующего монтирования вступление больше не играет
+    openingPlayed = true
+
+    /*
+     * Страховка на случай, если заставка почему-то не отчиталась: первый экран
+     * обязан прийти в конечное состояние сам. Повторная установка тех же
+     * значений идемпотентна, гонки с колбэками заставки нет.
+     */
+    const safety = setTimeout(() => {
+      setHasEntered(true)
+      setIsLoading(false)
+    }, 900)
+    return () => clearTimeout(safety)
   }, [])
 
   const getTitle = (p: Project) => (language === 'ru' ? p.titleRu : p.titleEn)
@@ -89,7 +136,12 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
   return (
     <>
       <AnimatePresence>
-        {isLoading && <Preloader onComplete={() => setIsLoading(false)} />}
+        {isLoading && (
+          <Preloader
+            onExitStart={() => setHasEntered(true)}
+            onComplete={() => setIsLoading(false)}
+          />
+        )}
       </AnimatePresence>
 
       {/*
@@ -107,14 +159,14 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
       </noscript>
 
       {/*
-        data-entered поднимает вход первого экрана после ухода заставки.
-        Флаг снимается и по onComplete заставки, и по собственному таймеру
-        ниже — то есть даже если её анимация не отработает, hero всё равно
-        придёт в конечное состояние.
+        data-entered поднимается в момент, когда заставка НАЧАЛА уходить, —
+        первый экран идёт под ней, а не после неё. При клиентском возврате на
+        главную заставки нет и флаг поднят с самого монтирования: после ухода
+        шторы перехода главная уже собрана.
       */}
       <section
         className="relative h-svh w-full overflow-hidden bg-background"
-        data-entered={!isLoading}
+        data-entered={hasEntered}
       >
         {/* Main Video Player - Fullscreen */}
         <div className="absolute inset-0">
@@ -171,11 +223,18 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
                 style={{ ['--reveal-delay' as string]: HERO_STEP_COPY }}
                 className="text-sm md:text-base text-white/75 font-light tracking-wide leading-relaxed max-w-xl mx-auto"
               >
-                {t('home.heroSubtitle').split('\n').map((line, i) => (
-                  <p key={i} className={i > 0 ? 'mt-1 text-white/55 text-xs md:text-sm tracking-widest' : ''}>
-                    {line}
-                  </p>
-                ))}
+                {t('home.heroSubtitle')
+                  .split('\n')
+                  .map((line, i) => (
+                    <p
+                      key={i}
+                      className={
+                        i > 0 ? 'mt-1 text-white/55 text-xs md:text-sm tracking-widest' : ''
+                      }
+                    >
+                      {line}
+                    </p>
+                  ))}
               </div>
               {/* Tagline - handwritten style — ступень 3 */}
               <p

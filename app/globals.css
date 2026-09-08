@@ -312,6 +312,48 @@
   }
 }
 
+/*
+ * Предохранитель заставки.
+ *
+ * Заставка приходит с сервера полноэкранным оверлеем. Сценарий «JS формально
+ * включён, но бандл или гидратация сломались» <noscript> не покрывает: некому
+ * снять оверлей, и декоративное вступление закрывает сайт навсегда.
+ *
+ * Поэтому у него есть независимый от JS предельный срок жизни. Анимации в
+ * каскаде стоят выше инлайновых стилей, которыми Framer держит opacity, так
+ * что правило срабатывает даже без гидратации. На здоровой странице заставка
+ * снимается на 560 мс и до этой отметки просто не доживает.
+ */
+@keyframes preloader-failsafe {
+  to {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+.preloader-overlay {
+  /* Уход ident'а. Длительность совпадает с EXIT_MS в preloader.tsx */
+  transition: opacity 260ms ease-out;
+  animation: preloader-failsafe 160ms linear 820ms forwards;
+}
+
+.preloader-overlay[data-exiting='true'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /*
+   * Вступление декоративное, а не состояние: при выключенном движении его
+   * просто нет. Скрываем стилем, а не условием в разметке, — тогда серверный
+   * и клиентский вывод совпадают и нет кадра-вспышки до гидратации.
+   */
+  .preloader-overlay {
+    display: none;
+  }
+}
+
 /* Grain overlay effect */
 .grain-overlay {
   position: fixed;
