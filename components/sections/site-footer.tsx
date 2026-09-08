@@ -19,6 +19,7 @@
 
 import Link from 'next/link'
 import { useI18n } from '@/lib/i18n-context'
+import { EMAIL, EMAIL_HREF, PHONE_DISPLAY, PHONE_HREF } from '@/lib/contacts'
 
 /** Колонки футера. Анкоры — из nav.*, теми же словами, что и в меню. */
 const COLUMNS: ReadonlyArray<{
@@ -99,12 +100,20 @@ export function SiteFooter() {
         </div>
 
         <div className="flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between">
-          <a
-            href="mailto:hello@savagemovie.ru"
-            className="tracking-[0.15em] uppercase transition-colors hover:text-white/70"
-          >
-            hello@savagemovie.ru
-          </a>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-5">
+            <a
+              href={PHONE_HREF}
+              className="tracking-[0.15em] uppercase transition-colors hover:text-white/70"
+            >
+              {PHONE_DISPLAY}
+            </a>
+            <a
+              href={EMAIL_HREF}
+              className="tracking-[0.15em] uppercase transition-colors hover:text-white/70"
+            >
+              {EMAIL}
+            </a>
+          </div>
           <p className="tracking-[0.15em] uppercase">{t('footer.location')}</p>
           <div className="flex items-center gap-5">
             <Link href="/privacy" className="transition-colors hover:text-white/70">

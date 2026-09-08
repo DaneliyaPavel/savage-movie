@@ -11,6 +11,7 @@ import { HoverNote } from '@/components/ui/hover-note'
 import { useI18n } from '@/lib/i18n-context'
 import { trackMetrikaGoal } from '@/lib/analytics/metrika'
 import Link from 'next/link'
+import { EMAIL, EMAIL_HREF, PHONE_DISPLAY, PHONE_HREF } from '@/lib/contacts'
 
 export default function ContactPage() {
   const [budget, setBudget] = useState(50000)
@@ -427,17 +428,22 @@ export default function ContactPage() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
-          className="mt-20 pt-20 border-t border-border grid grid-cols-1 md:grid-cols-3 gap-12"
+          className="mt-20 pt-20 border-t border-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12"
         >
+          <div>
+            <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-4">
+              {t('contact.phone')}
+            </h3>
+            <a href={PHONE_HREF} className="text-lg hover:text-accent transition-colors">
+              {PHONE_DISPLAY}
+            </a>
+          </div>
           <div>
             <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-4">
               {t('contact.emailLabel')}
             </h3>
-            <a
-              href="mailto:hello@savagemovie.ru"
-              className="text-lg hover:text-accent transition-colors"
-            >
-              hello@savagemovie.ru
+            <a href={EMAIL_HREF} className="text-lg hover:text-accent transition-colors">
+              {EMAIL}
             </a>
           </div>
           <div>

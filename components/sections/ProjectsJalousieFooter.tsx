@@ -10,6 +10,7 @@ import { useState, type FormEvent } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { useI18n } from '@/lib/i18n-context'
+import { EMAIL, EMAIL_HREF, PHONE_DISPLAY, PHONE_HREF } from '@/lib/contacts'
 
 /** already — адрес уже в списке: это не ошибка, но и не повод благодарить дважды */
 type SubscribeStatus = 'idle' | 'loading' | 'success' | 'already'
@@ -220,10 +221,16 @@ export function ProjectsJalousieFooter() {
                 {language === 'ru' ? '(контакт)' : '(contact)'}
               </span>
               <a
-                href="mailto:hello@savagemovie.ru"
+                href={PHONE_HREF}
                 className="uppercase tracking-[0.15em] sm:tracking-[0.25em] text-xs sm:text-sm md:text-base hover:opacity-70 transition-opacity"
               >
-                hello@savagemovie.ru
+                {PHONE_DISPLAY}
+              </a>
+              <a
+                href={EMAIL_HREF}
+                className="uppercase tracking-[0.15em] sm:tracking-[0.25em] text-xs sm:text-sm md:text-base hover:opacity-70 transition-opacity"
+              >
+                {EMAIL}
               </a>
             </div>
 

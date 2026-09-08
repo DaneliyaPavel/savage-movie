@@ -70,6 +70,15 @@ describe('SiteFooter', () => {
     expect(anchors.some(a => a.split(/\s+/).length >= 3)).toBe(true)
   })
 
+  it('показывает кликабельный телефон в отрендеренном DOM', () => {
+    renderFooter()
+    const tel = document.querySelector('a[href^="tel:"]')
+    expect(tel).not.toBeNull()
+    expect(tel?.getAttribute('href')).toBe('tel:+79214021839')
+    expect(tel?.textContent?.trim()).toBe('+7 921 402-18-39')
+    expect(document.querySelector('a[href^="mailto:"]')).not.toBeNull()
+  })
+
   it('рендерится как <footer> и содержит навигационные группы', () => {
     const { container } = renderFooter()
     expect(container.querySelector('footer')).not.toBeNull()

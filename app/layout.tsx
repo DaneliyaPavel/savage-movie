@@ -4,6 +4,7 @@ import './globals.css'
 import { JsonLdScripts } from '@/components/seo/json-ld-scripts'
 import { YandexMetrika } from '@/components/analytics/yandex-metrika'
 import { TokenBootstrap } from '@/components/providers/token-bootstrap'
+import { EMAIL, PHONE_DISPLAY, PHONE_E164 } from '@/lib/contacts'
 
 // Handwritten font "Sa No Rules Regular" - next/font/local fails build if files are missing; fallback is runtime only.
 const saNoRules = localFont({
@@ -82,24 +83,62 @@ const organizationJsonLd = {
    * Organization, а не VideoProductionCompany: последнего нет в словаре
    * schema.org — это категория карточки Google Business Profile, которую
    * приняли за тип разметки. И не ProfessionalService: schema.org помечает его
-   * как deprecated из-за путаницы с Service.
+   * deprecated из-за путаницы с Service.
    *
-   * Полей address/telephone/openingHours/foundingDate здесь намеренно не
-   * больше, чем подтверждено сайтом: телефона на сайте нет вообще, улицы и
-   * индекса тоже. Их место — этап NAP, а не выдуманные значения в разметке.
+   * PostalAddress здесь сознательно отсутствует. Публичного офиса у студии нет,
+   * а адрес регистрации ИП из «Политики обработки ПД» — не адрес бизнеса и в
+   * разметке ему не место. География выражена через areaServed.
    */
   '@type': 'Organization',
   name: 'Savage Movie',
+  legalName: 'ИП Плешивцева Мария Михайловна',
   url: baseUrl,
   logo: `${baseUrl}/sm-logo.svg`,
   description: 'Продакшн-студия полного цикла в Санкт-Петербурге',
-  address: {
-    // Единственное, что подтверждено страницей /contact: город и страна.
-    '@type': 'PostalAddress',
-    addressLocality: 'Санкт-Петербург',
-    addressCountry: 'RU',
+  telephone: PHONE_DISPLAY,
+  email: EMAIL,
+  // ИНН. Отдельного свойства под российские реквизиты у schema.org нет,
+  // taxID — штатное место для налогового идентификатора организации.
+  taxID: '780526847456',
+  // ОГРНИП в taxID не помещается: это другой идентификатор. Валидный способ
+  // отдать произвольный реквизит — identifier с PropertyValue.
+  identifier: {
+    '@type': 'PropertyValue',
+    propertyID: 'ОГРНИП',
+    value: '321784700027149',
   },
-  areaServed: ['Санкт-Петербург', 'Москва', 'Россия'],
+  areaServed: [
+    { '@type': 'City', name: 'Санкт-Петербург' },
+    { '@type': 'AdministrativeArea', name: 'Ленинградская область' },
+    { '@type': 'City', name: 'Москва' },
+    { '@type': 'Country', name: 'Россия' },
+  ],
+  /*
+   * Часы работы идут через contactPoint, а не через openingHours: у
+   * openingHours domainIncludes только CivicStructure и LocalBusiness, у
+   * openingHoursSpecification — только Place. На Organization оба невалидны.
+   * hoursAvailable на ContactPoint — единственный корректный путь.
+   */
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'customer service',
+    telephone: PHONE_E164,
+    email: EMAIL,
+    hoursAvailable: {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: [
+        'https://schema.org/Monday',
+        'https://schema.org/Tuesday',
+        'https://schema.org/Wednesday',
+        'https://schema.org/Thursday',
+        'https://schema.org/Friday',
+        'https://schema.org/Saturday',
+        'https://schema.org/Sunday',
+      ],
+      opens: '08:00',
+      closes: '22:00',
+    },
+  },
   // knowsAbout, а не serviceType: у serviceType domainIncludes только Service.
   knowsAbout: [
     'Видеопродакшн',
@@ -109,11 +148,16 @@ const organizationJsonLd = {
     'Обучение видеопроизводству',
   ],
   /*
-   * sameAs отсутствует сознательно. Раньше здесь стояли личные профили
-   * mari_seven — разметка связывала домен не с той сущностью. Брендовые
-   * аккаунты Savage Movie существуют, но пока не подтверждены владельцем,
-   * поэтому не утверждаем ничего вместо того, чтобы утверждать неверное.
+   * Аккаунты подтверждены владельцем. YouTube указан как @savage-movie:
+   * вариант без дефиса отдаёт 404, а мёртвая ссылка в sameAs мешает склейке
+   * сущности сильнее, чем её отсутствие.
    */
+  sameAs: [
+    'https://www.instagram.com/mari.seven/',
+    'https://t.me/mariseven',
+    'https://vk.ru/mari_seven',
+    'https://www.youtube.com/@savage-movie',
+  ],
 }
 
 const websiteJsonLd = {
