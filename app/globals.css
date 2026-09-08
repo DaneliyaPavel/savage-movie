@@ -229,6 +229,54 @@
 .hero-reveal {
   animation: hero-reveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+/*
+ * Вход первого экрана главной.
+ *
+ * Прежде hero и лента проектов были motion.div с initial={{opacity:0}}: без
+ * JS главная оставалась постером без названия студии, а вместе с заставкой,
+ * которая тоже приходит с сервера, — просто красным экраном. Контент теперь
+ * приходит видимым, движение только в transform.
+ *
+ * Триггер — не загрузка страницы, а уход заставки (data-entered на секции).
+ * Если запускать вход от нулевой отметки, он целиком отыграет под красным
+ * оверлеем и появления никто не увидит: заставка держит экран 1.3 с. Механика
+ * та же, что у [data-reveal] — атрибут состояния и CSS-переход, без своего
+ * наблюдателя и без второй системы.
+ *
+ * Ступени задаются общим --reveal-delay: имя переменной по всему проекту одно.
+ */
+[data-hero-entry] {
+  transform: translateY(var(--hero-entry-shift, 12px));
+  transition: transform 460ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+[data-entered='true'] [data-hero-entry] {
+  transform: none;
+}
+
+/*
+ * Лента — крупный объект у нижней кромки, её жест — подъём, а не тот же
+ * сдвиг, что у текста. Дистанция больше, длительность короче прежней
+ * секунды; кривая общая для сайта.
+ */
+[data-hero-entry='filmstrip'] {
+  --hero-entry-shift: 28px;
+  transition-duration: 440ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /*
+   * Движение снято, контент на месте: заголовок, позиционирование, слоган и
+   * лента сразу видимы, читаемы и кликабельны.
+   */
+  [data-hero-entry],
+  [data-entered='true'] [data-hero-entry] {
+    transform: none;
+    transition: none;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .hero-reveal {
     animation: none;

@@ -3,7 +3,6 @@
 import { useCallback, useRef, useEffect, memo } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import AutoScroll from 'embla-carousel-auto-scroll'
-import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import Hls from 'hls.js'
@@ -108,10 +107,15 @@ export function FilmstripCarousel({
   }, [])
 
   return (
-    <motion.div
-      initial={{ y: 50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 1.0, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+    /*
+     * Лента приходила initial={{opacity:0}} и поднималась целую секунду: без
+     * JS главная оставалась без единого проекта, а с JS работы появлялись
+     * последними. Теперь она есть в server HTML, а подъём — transform от
+     * состояния секции (data-entered), кривая и переменные общие для сайта.
+     */
+    <div
+      data-hero-entry="filmstrip"
+      style={{ ['--reveal-delay' as string]: '80ms' }}
       className="absolute bottom-0 left-0 right-0 z-30 pb-10 pointer-events-none"
     >
       {/* Track wrapper */}
@@ -149,7 +153,7 @@ export function FilmstripCarousel({
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
 

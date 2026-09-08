@@ -10,6 +10,13 @@ import { Preloader } from '@/components/ui/preloader'
 import { useI18n } from '@/lib/i18n-context'
 import { getThumbnailUrl } from '@/lib/integrations/bunny/client'
 
+/*
+ * Две ступени поверх нулевой. Шаг 60 мс: имя студии, следом чем она
+ * занимается, последним — подпись. Лента поднимается почти сразу за ними.
+ */
+const HERO_STEP_COPY = '60ms'
+const HERO_STEP_SIGNATURE = '120ms'
+
 interface Project {
   id: string
   titleRu: string
@@ -85,7 +92,30 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
         {isLoading && <Preloader onComplete={() => setIsLoading(false)} />}
       </AnimatePresence>
 
-      <section className="relative h-svh w-full overflow-hidden bg-background">
+      {/*
+        Заставка приходит с сервера как полноэкранный оверлей и снимается
+        только гидратацией: без JS она навсегда закрывала главную сплошным
+        красным экраном. Правило ниже — единственный корректный no-JS
+        фолбэк: саму заставку, её тайминги и графику не трогаем, а без
+        скрипта её просто нет, и первый экран сразу в конечном состоянии.
+      */}
+      <noscript>
+        <style>{`
+          .preloader-overlay { display: none !important; }
+          [data-hero-entry] { transform: none !important; }
+        `}</style>
+      </noscript>
+
+      {/*
+        data-entered поднимает вход первого экрана после ухода заставки.
+        Флаг снимается и по onComplete заставки, и по собственному таймеру
+        ниже — то есть даже если её анимация не отработает, hero всё равно
+        придёт в конечное состояние.
+      */}
+      <section
+        className="relative h-svh w-full overflow-hidden bg-background"
+        data-entered={!isLoading}
+      >
         {/* Main Video Player - Fullscreen */}
         <div className="absolute inset-0">
           <AnimatePresence mode="wait" initial={false}>
@@ -123,37 +153,44 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
         {/* Menu Overlay */}
         <JalousieMenu />
 
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
-        >
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
           <div className="text-center px-6">
-            {/* Brand name - modern italic bold styling */}
-            <h1 className="text-hero font-brand-hero uppercase text-white tracking-tight leading-[0.82] drop-shadow-[0_20px_60px_rgba(0,0,0,0.65)] font-black">
+            {/* Brand name - modern italic bold styling — ступень 1 */}
+            <h1
+              data-hero-entry=""
+              className="text-hero font-brand-hero uppercase text-white tracking-tight leading-[0.82] drop-shadow-[0_20px_60px_rgba(0,0,0,0.65)] font-black"
+            >
               SAVAGE MOVIE
             </h1>
 
             {/* Subtitle - much closer to brand */}
             <div className="mt-2 md:mt-3 space-y-2">
-              <div className="text-sm md:text-base text-white/75 font-light tracking-wide leading-relaxed max-w-xl mx-auto">
+              {/* Позиционирование и капабилити — ступень 2 */}
+              <div
+                data-hero-entry=""
+                style={{ ['--reveal-delay' as string]: HERO_STEP_COPY }}
+                className="text-sm md:text-base text-white/75 font-light tracking-wide leading-relaxed max-w-xl mx-auto"
+              >
                 {t('home.heroSubtitle').split('\n').map((line, i) => (
                   <p key={i} className={i > 0 ? 'mt-1 text-white/55 text-xs md:text-sm tracking-widest' : ''}>
                     {line}
                   </p>
                 ))}
               </div>
-              {/* Tagline - handwritten style */}
+              {/* Tagline - handwritten style — ступень 3 */}
               <p
+                data-hero-entry=""
                 className="text-lg md:text-xl text-white/70 tracking-wide"
-                style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+                style={{
+                  fontFamily: 'var(--font-handwritten), cursive',
+                  ['--reveal-delay' as string]: HERO_STEP_SIGNATURE,
+                }}
               >
                 [ {t('home.heroTagline')} ]
               </p>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Selected Project Info */}
         <AnimatePresence>

@@ -85,7 +85,8 @@ export function Preloader({ onComplete }: PreloaderProps) {
           onComplete?.()
         }
       }}
-      className="fixed inset-0 z-[9999] bg-[#FF322E] flex items-center justify-center overflow-hidden"
+      /* preloader-overlay — зацепка для no-JS фолбэка, см. <noscript> в showreel-hero */
+      className="preloader-overlay fixed inset-0 z-[9999] bg-[#FF322E] flex items-center justify-center overflow-hidden"
     >
       {/* Central Chaos Container */}
       <div className="relative w-64 h-64 md:w-96 md:h-96 flex items-center justify-center">
