@@ -25,6 +25,7 @@ const LIVE_SURFACES: ReadonlyArray<[string, string]> = [
   ['главная (SiteFooter)', 'components/sections/site-footer.tsx'],
   ['/contact', 'app/(marketing)/contact/page.tsx'],
   ['/projects, /clients, кейсы', 'components/sections/ProjectsJalousieFooter.tsx'],
+  ['/reklamny-rolik', 'app/(marketing)/reklamny-rolik/client.tsx'],
 ]
 
 describe('константы контактов согласованы между собой', () => {

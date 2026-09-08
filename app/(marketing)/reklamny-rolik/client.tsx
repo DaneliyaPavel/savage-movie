@@ -38,6 +38,7 @@ import type { Client } from '@/lib/api/clients'
 import type { CommercialLandingContent, TaskItem } from '@/lib/commercial-landing/content'
 import { captureAttribution } from '@/lib/analytics/attribution'
 import { trackMetrikaGoal } from '@/lib/analytics/metrika'
+import { EMAIL, EMAIL_HREF, PHONE_DISPLAY, PHONE_HREF } from '@/lib/contacts'
 
 interface CommercialLandingClientProps {
   content: CommercialLandingContent
@@ -238,6 +239,16 @@ export function CommercialLandingClient({
               <Link href="/privacy" className="transition-colors hover:text-white">
                 Конфиденциальность
               </Link>
+            </div>
+            {/* Телефон на коммерческой посадочной: человеку, дочитавшему до сметы,
+                нужно видеть, куда звонить, а не только форму. */}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              <a href={PHONE_HREF} className="text-white/70 transition-colors hover:text-white">
+                {PHONE_DISPLAY}
+              </a>
+              <a href={EMAIL_HREF} className="transition-colors hover:text-white">
+                {EMAIL}
+              </a>
             </div>
             <span className="font-mono">Санкт-Петербург / Москва / Россия</span>
           </div>
