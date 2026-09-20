@@ -1,0 +1,183 @@
+'use client'
+
+import { StageRail, StageShell, StageTitle } from './stage-shell'
+import { SceneMedia } from './scene-media'
+import { DirectionCta } from './direction-cta'
+import { useStage, useStageStep } from './use-stage'
+import { cn } from '@/lib/utils'
+import type { SceneProps } from './scene-props'
+
+/**
+ * 04 — регулярный production. Метафора: РАЗМНОЖЕНИЕ КАДРА.
+ *
+ * Здесь продукт не объясняется, а показывается. Сцена начинается одним
+ * мастер-кадром 16:9. По ходу прокрутки он делится: на два, на четыре, на
+ * восемь — и каждая доля подписана тем, чем она станет на выдаче. К концу
+ * экран превращается в контрольный лист смены, и только тогда приходит
+ * «одна смена — не один ролик». Человек понимает предложение раньше, чем
+ * дочитывает его.
+ *
+ * Все восемь долей — один и тот же материал, обрезанный по-разному. Это и
+ * точнее по смыслу (одна смена, не восемь съёмок), и дешевле: одна картинка
+ * на восемь кадров вместо восьми загрузок.
+ */
+
+/**
+ * Во что превращается смена. Порядок производственный: сначала главный ролик.
+ *
+ * У каждой доли своя точка и своя крупность — иначе восемь ячеек выглядели бы
+ * восемью копиями одного плана, и лист перестал бы доказывать, что из смены
+ * получаются РАЗНЫЕ выдачи. Продуктовый план самый крупный, ретейл — самый
+ * общий, вертикали сдвинуты по горизонтали.
+ */
+const CELLS = [
+  { label: 'HERO', position: '50% 38%', zoom: 1 },
+  { label: '9:16', position: '34% 50%', zoom: 1.35 },
+  { label: '9:16', position: '68% 45%', zoom: 1.35 },
+  { label: 'LOOP', position: '50% 70%', zoom: 1.15 },
+  { label: 'PRODUCT', position: '44% 26%', zoom: 1.95 },
+  { label: 'STORY', position: '60% 78%', zoom: 1.5 },
+  { label: 'WEBSITE', position: '50% 50%', zoom: 1.05 },
+  { label: 'RETAIL', position: '24% 42%', zoom: 1.2 },
+] as const
+
+/** Сколько долей видно на каждом шаге деления */
+const VISIBLE_BY_STEP = [1, 2, 4, 8] as const
+
+/**
+ * Как доля занимает сетку 4×2 на каждом шаге. Видимые доли всегда делят лист
+ * поровну, поэтому размер у них общий.
+ */
+const SPAN_BY_STEP: ReadonlyArray<string> = [
+  'col-span-4 row-span-2',
+  'col-span-2 row-span-2',
+  'col-span-2 row-span-1',
+  'col-span-1 row-span-1',
+]
+
+export function StageContent({
+  id,
+  direction,
+  active,
+  onBrief,
+  onNavigate,
+  onCaseOpen,
+}: SceneProps) {
+  const { containerRef, progress, reduced } = useStage()
+  const step = useStageStep(progress, VISIBLE_BY_STEP.length, reduced)
+  const master = direction.works[0]
+
+  const visible = VISIBLE_BY_STEP[step] ?? 8
+  const span = SPAN_BY_STEP[step] ?? SPAN_BY_STEP[3]!
+  const complete = step >= VISIBLE_BY_STEP.length - 1
+
+  return (
+    <StageShell id={id} direction={direction} containerRef={containerRef} depth={380}>
+      <StageRail direction={direction} />
+
+      <div className="absolute inset-0 flex items-center justify-center px-4 pb-40 pt-28 md:px-10 md:pb-44 lg:px-20">
+        {/* Рамка монтажного листа: линии сетки — это зазор фона, поэтому в
+            стыках не удваивается толщина */}
+        {/* На телефоне лист выше пропорцией: при 16:9 на узком экране восемь
+            долей ужимаются в полоску и перестают быть доказательством */}
+        <div className="grid aspect-[5/4] max-h-[58svh] w-full max-w-[min(94vw,1480px)] grid-cols-4 grid-rows-2 gap-[2px] bg-white/15 md:aspect-[16/9]">
+          {CELLS.map((cell, index) => {
+            const shown = index < visible
+
+            return (
+              <div
+                key={`${cell.label}-${index}`}
+                /*
+                  Невидимая доля убирается из раскладки, а не гасится
+                  прозрачностью: в сетке с двумя явными рядами погашенная
+                  ячейка всё равно занимает место и выдавливает лист за
+                  пределы кадра. Перечень выдачи при этом не теряется для
+                  поиска — он есть текстом в спецификации ниже по странице.
+                */
+                className={cn(
+                  'relative min-h-0 min-w-0 overflow-hidden bg-[#0A0A0A]',
+                  'transition-opacity duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]',
+                  shown ? span : 'hidden'
+                )}
+              >
+                {index === 0 ? (
+                  master ? (
+                    <SceneMedia
+                      work={master}
+                      active={active}
+                      aspect="auto"
+                      sizes="92vw"
+                      className="h-full w-full"
+                    />
+                  ) : null
+                ) : master?.posterUrl ? (
+                  /* Доли — один и тот же кадр под разной обрезкой. Обычный img,
+                     потому что постер может прийти из CMS внешним адресом.
+                     eslint-disable-next-line @next/next/no-img-element */
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={master.posterUrl}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute inset-0 h-full w-full object-cover"
+                    style={{
+                      objectPosition: cell.position,
+                      transform: `scale(${cell.zoom})`,
+                    }}
+                  />
+                ) : null}
+
+                <span className="absolute bottom-2 left-2 font-mono text-[0.52rem] uppercase tracking-[0.2em] text-white/75 md:text-[0.6rem]">
+                  <span className="text-white/40">{String(index + 1).padStart(2, '0')}</span>
+                  <span className="pl-2">{cell.label}</span>
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Лист уходит под заявление: без затемнения белый набор ложится на
+          светлый кадр и перестаёт читаться ровно в момент вывода */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-[38%] bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/85 to-transparent"
+      />
+
+      <div className="relative z-10 flex h-full flex-col justify-end px-6 pb-12 md:px-10 md:pb-14 lg:px-20">
+        <StageTitle
+          id={id}
+          className={cn(
+            'text-[clamp(2rem,5vw,4.2rem)] transition-opacity duration-500',
+            complete ? 'opacity-100' : 'opacity-25'
+          )}
+        >
+          Одна смена.
+          {/*
+            Единственный красный удар всей страницы. Он стоит здесь, а не в
+            beauty: это момент, когда экран уже доказал самое дорогое
+            предложение студии, и слово просто совпадает с доказательством.
+          */}
+          <span className={cn('block transition-colors duration-500', complete && 'text-accent')}>
+            Не один ролик.
+          </span>
+        </StageTitle>
+
+        <div className="mt-7 flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
+          <DirectionCta direction={direction} onBrief={onBrief} onNavigate={onNavigate} />
+
+          {master ? (
+            <a
+              href={`/projects/${master.slug}`}
+              onClick={() => onCaseOpen(direction, master.slug)}
+              className="font-mono text-[0.6rem] uppercase tracking-[0.22em] text-white/50 transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent md:text-[0.68rem]"
+            >
+              Мастер-материал — {master.client}
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </StageShell>
+  )
+}

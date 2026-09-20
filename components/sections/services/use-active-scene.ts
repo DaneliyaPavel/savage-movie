@@ -13,8 +13,13 @@ import { useEffect, useState } from 'react'
  * Активной считается сцена, попавшая в среднюю полосу экрана: rootMargin
  * срезает по 38% сверху и снизу, поэтому в зоне наблюдения почти всегда
  * оказывается один элемент, а на стыке двух сцен выигрывает та, что покрывает
- * полосу сильнее. Пороговая сетка нужна именно для сравнения: без неё браузер
- * сообщает только факт пересечения и «сильнее» не из чего вычислить.
+ * полосу сильнее.
+ *
+ * Сравниваем по высоте пересечения в пикселях, а не по intersectionRatio.
+ * Территории занимают разное экранное время — от двух с половиной экранов до
+ * почти четырёх, — и доля от собственной высоты у длинной сцены всегда меньше,
+ * чем у короткой, даже когда на экране именно длинная. Пороговая сетка нужна
+ * для того, чтобы браузер вообще пересчитывал пересечение по ходу прокрутки.
  *
  * null означает «монтаж ещё не начался»: так первый экран остаётся чистым,
  * а индекс не заявляет о направлении, до которого человек не доскроллил.
@@ -40,15 +45,15 @@ export function useActiveScene(sceneIds: readonly string[]): string | null {
     const observer = new IntersectionObserver(
       entries => {
         for (const entry of entries) {
-          ratios.set(entry.target.id, entry.isIntersecting ? entry.intersectionRatio : 0)
+          ratios.set(entry.target.id, entry.isIntersecting ? entry.intersectionRect.height : 0)
         }
 
         let bestId: string | null = null
-        let bestRatio = 0
-        for (const [id, ratio] of ratios) {
-          if (ratio > bestRatio) {
+        let bestCoverage = 0
+        for (const [id, coverage] of ratios) {
+          if (coverage > bestCoverage) {
             bestId = id
-            bestRatio = ratio
+            bestCoverage = coverage
           }
         }
 

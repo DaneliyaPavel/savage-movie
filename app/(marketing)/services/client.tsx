@@ -1,13 +1,17 @@
 /**
  * Клиентская сборка раздела направлений.
  *
- * Страница — не каталог услуг, а монтаж: семь коммерческих территорий идут
- * подряд полноэкранными сценами, и в каждый момент главная ровно одна. Здесь
- * живёт то, что требует браузера: какая сцена сейчас активна, какое медиа
- * играет, что уходит в Метрику и с каким направлением открывается бриф.
+ * Раздел устроен не как страница из секций, а как одна сцена, которая меняет
+ * состояние. Каждая территория — высокий контейнер с залипающим в нём экраном;
+ * положение внутри контейнера задаёт геометрию: раскрытие колонок в fashion,
+ * приближение кадра в beauty, деление мастер-кадра на восемь в регулярном
+ * продакшне, движение шва в AI. Поэтому здесь нет ни одной общей композиции —
+ * общим остался только контракт сцены.
  *
- * Сам контент сцен приходит с сервера готовым — заголовки, копия, кадры и
- * ссылки на работы попадают в HTML первого ответа, без ожидания гидратации.
+ * Тут живёт только то, что требует браузера: какая территория сейчас на
+ * экране, какое видео имеет право играть, что уходит в Метрику и с каким
+ * направлением открывается бриф. Заголовки, копия, названия брендов и ссылки
+ * на работы приходят с сервера готовыми.
  */
 'use client'
 
@@ -20,47 +24,54 @@ import { SiteFooter } from '@/components/sections/site-footer'
 import { EstimateForm } from '@/components/sections/commercial/estimate-form'
 
 import { ServicesHero } from '@/components/sections/services/services-hero'
-import { SceneIndex } from '@/components/sections/services/scene-index'
-import { SceneCommercial } from '@/components/sections/services/scene-commercial'
-import { SceneFashion } from '@/components/sections/services/scene-fashion'
-import { SceneBeauty } from '@/components/sections/services/scene-beauty'
-import { SceneContent } from '@/components/sections/services/scene-content'
-import { SceneCorporate } from '@/components/sections/services/scene-corporate'
-import { SceneAi } from '@/components/sections/services/scene-ai'
-import { SceneMusic } from '@/components/sections/services/scene-music'
-import { ServicesFinal, SERVICES_OUTRO_ID } from '@/components/sections/services/services-final'
+import { ProductionIndex } from '@/components/sections/services/production-index'
+import { StageCommercial } from '@/components/sections/services/stage-commercial'
+import { StageFashion } from '@/components/sections/services/stage-fashion'
+import { StageBeauty } from '@/components/sections/services/stage-beauty'
+import { StageContent } from '@/components/sections/services/stage-content'
+import { StageCorporate } from '@/components/sections/services/stage-corporate'
+import { StageAi } from '@/components/sections/services/stage-ai'
+import { StageMusic } from '@/components/sections/services/stage-music'
+import {
+  ServicesEndFrame,
+  SERVICES_OUTRO_ID,
+} from '@/components/sections/services/services-endframe'
+import { ServicesSpec } from '@/components/sections/services/services-spec'
 import { useActiveScene } from '@/components/sections/services/use-active-scene'
-import { useReveal } from '@/components/sections/clients/use-reveal'
 import type { SceneProps } from '@/components/sections/services/scene-props'
 
 import { captureAttribution } from '@/lib/analytics/attribution'
 import { trackMetrikaGoal } from '@/lib/analytics/metrika'
 import { SERVICES_BRIEF, SERVICES_BRIEF_SUCCESS } from '@/lib/services/brief'
 import { DEFAULT_COMMERCIAL_LANDING } from '@/lib/commercial-landing/content'
-import type { ResolvedDirection } from '@/lib/services/proof'
-import type { DirectionWork } from '@/lib/services/proof'
+import type { DirectionWork, ResolvedDirection } from '@/lib/services/proof'
 import type { ServiceDirectionId } from '@/lib/services/directions'
 
-/** Сцена каждого направления. Композиции разные — общий здесь только контракт */
-const SCENES: Record<ServiceDirectionId, (props: SceneProps) => React.ReactElement> = {
-  commercial: SceneCommercial,
-  fashion: SceneFashion,
-  beauty: SceneBeauty,
-  'content-production': SceneContent,
-  corporate: SceneCorporate,
-  ai: SceneAi,
-  music: SceneMusic,
+/**
+ * Сцена территории. У каждой своя метафора взаимодействия — удар, индекс,
+ * приближение, размножение, сборка пространства, шов, доля. Общий здесь
+ * только контракт: это и есть разница с прежней версией, где семь территорий
+ * были семью настройками одного компонента.
+ */
+const STAGES: Record<ServiceDirectionId, (props: SceneProps) => React.ReactElement> = {
+  commercial: StageCommercial,
+  fashion: StageFashion,
+  beauty: StageBeauty,
+  'content-production': StageContent,
+  corporate: StageCorporate,
+  ai: StageAi,
+  music: StageMusic,
 }
 
-/** Белая инверсия ритма. Два экрана из семи — больше перестало бы быть сломом */
-const LIGHT_SCENES = new Set<ServiceDirectionId>(['fashion', 'corporate'])
+/** Белая инверсия ритма. Две из семи — больше перестало бы быть сломом */
+const LIGHT_STAGES = new Set<ServiceDirectionId>(['fashion', 'corporate'])
 
 /**
- * Направления, у которых в технической строке стоит ориентир бюджета.
- * Только для них имеет смысл цель service_price_view: в остальных сценах
- * справа стоят доказательства, а не деньги.
+ * Территории, у которых в технической строке стоит ориентир бюджета. Только
+ * для них имеет смысл цель service_price_view: в остальных справа стоят
+ * доказательства, а не деньги.
  */
-const PRICED_SCENES = new Set<ServiceDirectionId>(['commercial', 'content-production'])
+const PRICED_STAGES = new Set<ServiceDirectionId>(['commercial', 'content-production'])
 
 const sceneId = (direction: { id: string }) => `scene-${direction.id}`
 
@@ -71,9 +82,9 @@ export interface ServicesPageClientProps {
 
 export function ServicesPageClient({ directions, montage }: ServicesPageClientProps) {
   /*
-   * Выход из монтажа наблюдается наравне со сценами. Без него индекс,
-   * удерживающий последнюю активную сцену, продолжал бы висеть над финальным
-   * экраном и над брифом и уверять, что человек всё ещё в музыкальном клипе.
+   * Выход наблюдается наравне с территориями. Без него головка таймлайна,
+   * удерживающая последнюю активную сцену, продолжала бы висеть над брифом и
+   * уверять, что человек всё ещё в музыкальном клипе.
    */
   const sceneIds = useMemo(() => [...directions.map(sceneId), SERVICES_OUTRO_ID], [directions])
   const activeId = useActiveScene(sceneIds)
@@ -82,7 +93,7 @@ export function ServicesPageClient({ directions, montage }: ServicesPageClientPr
   const [briefDirection, setBriefDirection] = useState<string | null>(null)
 
   const viewTrackedRef = useRef(false)
-  /** Направления, просмотр которых уже засчитан: цель шлётся один раз за визит */
+  /** Территории, просмотр которых уже засчитан: цель шлётся один раз за визит */
   const seenRef = useRef(new Set<string>())
 
   useEffect(() => {
@@ -97,16 +108,16 @@ export function ServicesPageClient({ directions, montage }: ServicesPageClientPr
     [directions, activeId]
   )
 
-  // Просмотр направления засчитываем по факту того, что сцена стала главной
-  // на экране, а не по факту пересечения нижней кромки: иначе быстрый скролл
-  // насчитал бы все семь направлений за две секунды.
+  // Просмотр засчитываем по факту того, что территория стала главной на
+  // экране, а не по пересечению нижней кромки: иначе быстрая прокрутка
+  // насчитала бы все семь направлений за две секунды.
   useEffect(() => {
     if (!activeDirection) return
     if (seenRef.current.has(activeDirection.id)) return
     seenRef.current.add(activeDirection.id)
 
     trackMetrikaGoal('service_direction_view', { service: activeDirection.id })
-    if (PRICED_SCENES.has(activeDirection.id)) {
+    if (PRICED_STAGES.has(activeDirection.id)) {
       trackMetrikaGoal('service_price_view', { service: activeDirection.id })
     }
   }, [activeDirection])
@@ -121,10 +132,7 @@ export function ServicesPageClient({ directions, montage }: ServicesPageClientPr
 
   const handleBrief = useCallback(
     (direction: ResolvedDirection) => {
-      trackMetrikaGoal('service_direction_click', {
-        service: direction.id,
-        destination: 'brief',
-      })
+      trackMetrikaGoal('service_direction_click', { service: direction.id, destination: 'brief' })
       trackMetrikaGoal('service_brief_open', { service: direction.id })
       setBriefDirection(direction.id)
       scrollToBrief()
@@ -133,43 +141,36 @@ export function ServicesPageClient({ directions, montage }: ServicesPageClientPr
   )
 
   const handleNavigate = useCallback((direction: ResolvedDirection) => {
-    trackMetrikaGoal('service_direction_click', {
-      service: direction.id,
-      destination: 'landing',
-    })
+    trackMetrikaGoal('service_direction_click', { service: direction.id, destination: 'landing' })
   }, [])
 
   const handleCaseOpen = useCallback((direction: ResolvedDirection, slug: string) => {
     trackMetrikaGoal('service_case_open', { service: direction.id, case_slug: slug })
   }, [])
 
-  /**
-   * Появление заголовков сцен. Механика общая с /clients и /projects: атрибут
-   * состояния и CSS-переход вместо второй системы анимации, только transform,
-   * контент всегда в DOM и всегда видим.
-   */
-  const revealRef = useReveal<HTMLElement>()
-
   const indexTheme =
-    activeDirection && LIGHT_SCENES.has(activeDirection.id)
+    activeDirection && LIGHT_STAGES.has(activeDirection.id)
       ? ('white' as const)
       : ('black' as const)
 
+  /** Кадр, которым закрывается монтаж — последний из увиденных */
+  const closing = montage[montage.length - 1] ?? null
+
   return (
     <MotionConfig reducedMotion="user">
-      <main ref={revealRef} className="min-h-screen bg-[#0D0D0D]">
+      <main className="min-h-screen bg-[#0D0D0D]">
         <TopBar />
         <JalousieMenu />
 
         <ServicesHero
           eyebrow="SAVAGE MOVIE / PRODUCTION DIRECTIONS / SPB + MOSCOW"
           title="Какую задачу нужно снять?"
-          lead="Реклама, fashion, beauty, corporate, AI и регулярный контент. Сначала задача. Камера потом."
+          lead="Сначала задача. Камера потом."
           montage={montage}
-          scrollHint="Листайте — семь направлений подряд"
+          scrollHint="Семь направлений подряд"
         />
 
-        <SceneIndex
+        <ProductionIndex
           directions={directions}
           activeId={activeDirection ? activeId : null}
           sceneId={sceneId}
@@ -177,11 +178,11 @@ export function ServicesPageClient({ directions, montage }: ServicesPageClientPr
         />
 
         {directions.map(direction => {
-          const Scene = SCENES[direction.id]
+          const Stage = STAGES[direction.id]
           const id = sceneId(direction)
 
           return (
-            <Scene
+            <Stage
               key={direction.id}
               id={id}
               direction={direction}
@@ -193,7 +194,8 @@ export function ServicesPageClient({ directions, montage }: ServicesPageClientPr
           )
         })}
 
-        <ServicesFinal
+        <ServicesEndFrame
+          closing={closing}
           onBriefClick={() => {
             trackMetrikaGoal('service_brief_open', { service: 'none' })
             scrollToBrief()
@@ -204,9 +206,9 @@ export function ServicesPageClient({ directions, montage }: ServicesPageClientPr
 
         {/*
           Бриф — та же форма, что собирает заявки на коммерческой посадочной,
-          со своим набором первых вопросов. Своя копия формы здесь означала бы
-          вторую реализацию антиспама, атрибуции, вложения брифа и конверсии —
-          и неизбежное расхождение между ними.
+          со своим набором первых вопросов. Своя копия формы означала бы вторую
+          реализацию антиспама, атрибуции, вложения брифа и конверсии — и
+          неизбежное расхождение между ними.
         */}
         <EstimateForm
           content={SERVICES_BRIEF}
@@ -215,6 +217,13 @@ export function ServicesPageClient({ directions, montage }: ServicesPageClientPr
           presetProjectType={briefDirection}
           serviceDirection={briefDirection}
           onBookingClick={() => trackMetrikaGoal('booking_click', { location: 'services_brief' })}
+        />
+
+        {/* Рациональный слой: то, что кадр не обязан объяснять словами */}
+        <ServicesSpec
+          directions={directions}
+          onCaseOpen={handleCaseOpen}
+          onNavigate={handleNavigate}
         />
 
         <SiteFooter />
