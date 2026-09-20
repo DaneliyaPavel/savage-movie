@@ -59,6 +59,19 @@ export interface LazyHlsVideoProps {
   eager?: boolean
   /** sizes для next/image; по умолчанию — полноширинный блок (hero, showreel) */
   sizes?: string
+  /**
+   * Играет ли этот блок прямо сейчас.
+   *
+   * Нужно страницам, где подряд идут несколько полноэкранных сцен со своим
+   * видео: одного приближения к вьюпорту мало, потому что при быстром скролле
+   * в зоне наблюдения оказываются сразу две-три сцены и браузер начинает
+   * качать столько же потоков, хотя виден один. Пока active=false, поток не
+   * поднимается вовсе, а уже поднятый ставится на паузу — но не уничтожается,
+   * иначе возврат к сцене моргал бы постером.
+   *
+   * По умолчанию true: одиночное видео на странице ведёт себя как раньше.
+   */
+  active?: boolean
 }
 
 function prefersReducedMotion(): boolean {
@@ -78,6 +91,7 @@ export function LazyHlsVideo({
   onProgressMilestone,
   eager = false,
   sizes = '100vw',
+  active = true,
 }: LazyHlsVideoProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -125,8 +139,8 @@ export function LazyHlsVideo({
    */
   useEffect(() => {
     if (shouldLoad) return
-    if (isNear && (autoPlay || controls)) setShouldLoad(true)
-  }, [isNear, autoPlay, controls, shouldLoad])
+    if (isNear && active && (autoPlay || controls)) setShouldLoad(true)
+  }, [isNear, active, autoPlay, controls, shouldLoad])
 
   useEffect(() => {
     if (!shouldLoad) return
@@ -170,11 +184,17 @@ export function LazyHlsVideo({
     }
   }, [shouldLoad, playbackId])
 
-  // Автозапуск фонового лупа — только если пользователь не просил уменьшить движение
+  // Автозапуск фонового лупа — только если пользователь не просил уменьшить
+  // движение и только пока сцена действительно на экране
   useEffect(() => {
     if (!shouldLoad || !autoPlay) return
     const video = videoRef.current
     if (!video || prefersReducedMotion()) return
+
+    if (!active) {
+      video.pause()
+      return
+    }
 
     const play = () => {
       // Браузер вправе отклонить автозапуск — это не ошибка, остаётся постер
@@ -185,7 +205,7 @@ export function LazyHlsVideo({
     else video.addEventListener('canplay', play, { once: true })
 
     return () => video.removeEventListener('canplay', play)
-  }, [shouldLoad, autoPlay])
+  }, [shouldLoad, autoPlay, active])
 
   const handleTimeUpdate = useCallback(() => {
     const video = videoRef.current

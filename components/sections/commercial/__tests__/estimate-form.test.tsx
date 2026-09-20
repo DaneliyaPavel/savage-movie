@@ -16,11 +16,23 @@ vi.mock('@/lib/utils/logger', () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
 }))
 
-const { content: estimateContent, success, sla } = {
+const {
+  content: estimateContent,
+  success,
+  sla,
+} = {
   content: DEFAULT_COMMERCIAL_LANDING.estimate,
   success: DEFAULT_COMMERCIAL_LANDING.success,
   sla: DEFAULT_COMMERCIAL_LANDING.sla,
 }
+
+/**
+ * Диапазон бюджета для прохода формы берём из контента, а не строкой в тесте.
+ * Границы диапазонов — часть коммерческой позиции студии и меняются вместе с
+ * ней; захардкоженный ярлык ронял бы весь файл при каждой такой правке и
+ * ничего при этом не проверял.
+ */
+const budgetChoice = estimateContent.budgetOptions[2]!
 
 function renderForm(onSubmitted: () => void = () => undefined) {
   return render(
@@ -42,7 +54,7 @@ function renderForm(onSubmitted: () => void = () => undefined) {
  */
 async function fillValidLead({ consent = true }: { consent?: boolean } = {}) {
   fireEvent.click(screen.getByRole('button', { name: 'Рекламный ролик' }))
-  fireEvent.click(screen.getByRole('button', { name: '400–700 тыс.' }))
+  fireEvent.click(screen.getByRole('button', { name: budgetChoice.label }))
   fireEvent.click(screen.getByRole('button', { name: /Дальше/ }))
 
   fireEvent.change(await screen.findByLabelText('Имя'), { target: { value: 'Иван Тестовый' } })
@@ -240,7 +252,7 @@ describe('Форма предварительной сметы', () => {
     await fillValidLead()
 
     const step1 = ym.mock.calls.find(call => call[2] === 'estimate_step1_complete')
-    expect(step1?.[3]).toEqual({ project_type: 'ad', budget_range: '400-700' })
+    expect(step1?.[3]).toEqual({ project_type: 'ad', budget_range: budgetChoice.value })
   })
 
   it('возврат на первый шаг не удваивает estimate_step1_complete', async () => {

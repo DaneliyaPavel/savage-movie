@@ -204,6 +204,8 @@ export function CommercialLandingClient({
           success={content.success}
           sla={content.sla}
           presetProjectType={presetProjectType}
+          // Заявка с коммерческой посадочной — всегда рекламный production
+          serviceDirection="commercial"
           onBookingClick={() => trackMetrikaGoal('booking_click', { location: 'estimate' })}
           onSubmitted={() => setIsFormSubmitted(true)}
         />
@@ -215,6 +217,12 @@ export function CommercialLandingClient({
           onEstimateClick={() => openEstimate('final')}
           onEmailClick={() => trackMetrikaGoal('email_click', { location: 'final' })}
           onTelegramClick={() => trackMetrikaGoal('telegram_click', { location: 'final' })}
+          onDirectionsClick={() =>
+            trackMetrikaGoal('service_direction_click', {
+              service: 'other',
+              destination: 'services',
+            })
+          }
         />
 
         <StickyEstimateCta

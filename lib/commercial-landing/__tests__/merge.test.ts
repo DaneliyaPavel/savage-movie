@@ -131,7 +131,10 @@ describe('mergeCommercialLandingContent — nullable top-level поля', () => 
 
 describe('mergeCommercialLandingContent — уже работавшее поведение не сломано', () => {
   it('строки без вложенности мерджатся как раньше', () => {
-    const saved = { ...DEFAULT_COMMERCIAL_LANDING, hero: { ...DEFAULT_COMMERCIAL_LANDING.hero, h1: 'Новый заголовок' } }
+    const saved = {
+      ...DEFAULT_COMMERCIAL_LANDING,
+      hero: { ...DEFAULT_COMMERCIAL_LANDING.hero, h1: 'Новый заголовок' },
+    }
 
     const merged = mergeCommercialLandingContent(DEFAULT_COMMERCIAL_LANDING, saved)
 
@@ -139,7 +142,10 @@ describe('mergeCommercialLandingContent — уже работавшее пове
   })
 
   it('булевы поля мерджатся как раньше', () => {
-    const saved = { ...DEFAULT_COMMERCIAL_LANDING, sla: { ...DEFAULT_COMMERCIAL_LANDING.sla, enabled: true } }
+    const saved = {
+      ...DEFAULT_COMMERCIAL_LANDING,
+      sla: { ...DEFAULT_COMMERCIAL_LANDING.sla, enabled: true },
+    }
 
     const merged = mergeCommercialLandingContent(DEFAULT_COMMERCIAL_LANDING, saved)
 
@@ -170,5 +176,59 @@ describe('mergeCommercialLandingContent — уже работавшее пове
     const merged = mergeCommercialLandingContent(DEFAULT_COMMERCIAL_LANDING, null)
 
     expect(merged).toEqual(DEFAULT_COMMERCIAL_LANDING)
+  })
+})
+
+/**
+ * Списки вариантов формы редактор в админке не показывает, но сохраняет
+ * вместе со всем объектом. Из-за этого в настройках оседает снимок значений
+ * на момент первого сохранения и с тех пор живёт своей жизнью, хотя сервер
+ * продолжает проверять заявку по коду. Так форма однажды начала предлагать
+ * диапазоны бюджета, которых сервер уже не принимал.
+ */
+describe('mergeCommercialLandingContent — поля, которыми владеет код', () => {
+  it('устаревшие диапазоны бюджета из настроек не подменяют текущие', () => {
+    const stale = {
+      ...DEFAULT_COMMERCIAL_LANDING,
+      estimate: {
+        ...DEFAULT_COMMERCIAL_LANDING.estimate,
+        budgetOptions: [{ value: 'under-200', label: 'До 200 тыс.' }],
+      },
+    }
+
+    const merged = mergeCommercialLandingContent(DEFAULT_COMMERCIAL_LANDING, stale)
+
+    expect(merged.estimate.budgetOptions).toEqual(DEFAULT_COMMERCIAL_LANDING.estimate.budgetOptions)
+  })
+
+  it('типы проекта, площадки и сроки тоже берутся из кода', () => {
+    const stale = {
+      ...DEFAULT_COMMERCIAL_LANDING,
+      estimate: {
+        ...DEFAULT_COMMERCIAL_LANDING.estimate,
+        projectTypes: [{ value: 'legacy', label: 'Устаревший' }],
+        usageOptions: [{ value: 'legacy', label: 'Устаревший' }],
+        deadlineOptions: [{ value: 'legacy', label: 'Устаревший' }],
+      },
+    }
+
+    const merged = mergeCommercialLandingContent(DEFAULT_COMMERCIAL_LANDING, stale)
+
+    expect(merged.estimate.projectTypes).toEqual(DEFAULT_COMMERCIAL_LANDING.estimate.projectTypes)
+    expect(merged.estimate.usageOptions).toEqual(DEFAULT_COMMERCIAL_LANDING.estimate.usageOptions)
+    expect(merged.estimate.deadlineOptions).toEqual(
+      DEFAULT_COMMERCIAL_LANDING.estimate.deadlineOptions
+    )
+  })
+
+  it('редакторский текст формы при этом по-прежнему правится в админке', () => {
+    const edited = {
+      ...DEFAULT_COMMERCIAL_LANDING,
+      estimate: { ...DEFAULT_COMMERCIAL_LANDING.estimate, title: 'Свой заголовок' },
+    }
+
+    const merged = mergeCommercialLandingContent(DEFAULT_COMMERCIAL_LANDING, edited)
+
+    expect(merged.estimate.title).toBe('Свой заголовок')
   })
 })

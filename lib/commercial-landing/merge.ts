@@ -7,6 +7,8 @@
  * иначе админ правит одно, а на странице видит другое.
  */
 
+import type { CommercialLandingContent } from './content'
+
 type Plain = Record<string, unknown>
 
 function isPlainObject(value: unknown): value is Plain {
@@ -21,7 +23,7 @@ function isPlainObject(value: unknown): value is Plain {
  * Такая строгость нужна, чтобы устаревшая или повреждённая запись в CMS
  * не могла уронить рендер коммерческой страницы.
  */
-export function mergeCommercialLandingContent<T>(defaults: T, override: unknown): T {
+function mergeByShape<T>(defaults: T, override: unknown): T {
   if (!isPlainObject(defaults) || !isPlainObject(override)) return defaults
 
   const result: Plain = { ...(defaults as Plain) }
@@ -31,7 +33,7 @@ export function mergeCommercialLandingContent<T>(defaults: T, override: unknown)
     const value = override[key]
 
     if (isPlainObject(defaultValue)) {
-      result[key] = mergeCommercialLandingContent(defaultValue, value)
+      result[key] = mergeByShape(defaultValue, value)
       continue
     }
 
@@ -60,4 +62,39 @@ export function mergeCommercialLandingContent<T>(defaults: T, override: unknown)
   }
 
   return result as T
+}
+
+/**
+ * Мерж контента лендинга с дефолтами и восстановлением кодовых полей.
+ *
+ * Списки вариантов формы (тип проекта, площадки, сроки, диапазоны бюджета)
+ * после мержа принудительно возвращаются к дефолтам, и вот почему.
+ *
+ * Редактор в админке не умеет их править — таких полей на форме просто нет.
+ * Но сохраняет он весь объект целиком, поэтому в настройках оседает снимок
+ * значений, актуальных на момент первого сохранения, и с этого момента он
+ * живёт своей жизнью. Значения при этом проверяются на сервере по коду
+ * (app/api/estimate/route.ts): стоит поменять диапазоны бюджета в коде — и
+ * форма начинает показывать старые варианты, которые сервер уже не принимает,
+ * молча теряя самое важное для квалификации поле заявки.
+ *
+ * Это не редакторский текст, а перечисление, связанное с валидацией и с
+ * коммерческой позицией студии. У него один источник — код.
+ */
+export function mergeCommercialLandingContent(
+  defaults: CommercialLandingContent,
+  override: unknown
+): CommercialLandingContent {
+  const merged = mergeByShape(defaults, override)
+
+  return {
+    ...merged,
+    estimate: {
+      ...merged.estimate,
+      projectTypes: defaults.estimate.projectTypes,
+      usageOptions: defaults.estimate.usageOptions,
+      deadlineOptions: defaults.estimate.deadlineOptions,
+      budgetOptions: defaults.estimate.budgetOptions,
+    },
+  }
 }

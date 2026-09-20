@@ -3,17 +3,19 @@
  *
  * Здесь остаются только прямые контакты — почта и Telegram: человеку, который
  * дошёл до конца и всё ещё не заполнил форму, обычно проще написать.
+ *
+ * Рядом с ними — выход в раздел направлений. Страница заточена под рекламный
+ * ролик, но поисковый трафик приводит сюда и тех, кому нужен fashion, beauty
+ * или регулярный контент: такому человеку нужен не ещё один призыв к смете,
+ * а возможность найти свою территорию, не возвращаясь в поиск.
  */
 'use client'
 
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 
-import {
-  CONTACT_EMAIL,
-  TELEGRAM_URL,
-  type FinalCtaContent,
-} from '@/lib/commercial-landing/content'
+import { CONTACT_EMAIL, TELEGRAM_URL, type FinalCtaContent } from '@/lib/commercial-landing/content'
 import { LazyHlsVideo } from './lazy-hls-video'
 
 interface FinalCtaProps {
@@ -21,6 +23,8 @@ interface FinalCtaProps {
   onEstimateClick: () => void
   onEmailClick: () => void
   onTelegramClick: () => void
+  /** Переход в раздел направлений — для отчёта о том, куда уходит трафик */
+  onDirectionsClick: () => void
 }
 
 export function FinalCta({
@@ -28,6 +32,7 @@ export function FinalCta({
   onEstimateClick,
   onEmailClick,
   onTelegramClick,
+  onDirectionsClick,
 }: FinalCtaProps) {
   return (
     <section className="relative flex min-h-[70svh] items-center overflow-hidden border-t border-[#1A1A1A] bg-[#000000] px-6 py-24 md:px-10 md:py-32 lg:px-20">
@@ -95,6 +100,17 @@ export function FinalCta({
             Telegram
           </a>
         </div>
+
+        <p className="mt-8 text-sm leading-relaxed text-white/45">
+          Задача не про рекламный ролик?{' '}
+          <Link
+            href="/services"
+            onClick={onDirectionsClick}
+            className="border-b border-white/25 pb-0.5 text-white/70 transition-colors hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          >
+            Посмотрите остальные направления
+          </Link>
+        </p>
       </motion.div>
     </section>
   )
