@@ -24,6 +24,12 @@ export const METRIKA_ID = 108213944
  * Группа commercial_* / estimate_* — воронка коммерческого лендинга
  *   /reklamny-rolik. Все шаги до отправки заявки НЕ являются конверсией:
  *   единственная конверсия воронки — production_lead_success.
+ *
+ * Группа service_* — воронка раздела направлений /services. Отдельного
+ *   события отправки у неё нет сознательно: бриф направлений — та же форма,
+ *   что на лендинге, и она уже шлёт estimate_form_start и единственную
+ *   конверсию production_lead_success. Второе событие отправки удвоило бы
+ *   лиды в отчётах.
  */
 export type MetrikaGoal =
   | 'production_lead_success'
@@ -50,6 +56,18 @@ export type MetrikaGoal =
   // source — блок страницы: wall | collaboration | capability
   | 'clients_project_click'
   | 'clients_collaboration_click'
+  // Просмотр раздела направлений
+  | 'service_page_view'
+  // Направление доскроллено до экрана; параметр service — ServiceDirectionId
+  | 'service_direction_view'
+  // Клик по CTA направления; параметры service и destination (landing | brief)
+  | 'service_direction_click'
+  // Открыта работа-доказательство из сцены; параметры service и case_slug
+  | 'service_case_open'
+  // Человек увидел ориентир бюджета направления; параметр service
+  | 'service_price_view'
+  // Бриф открыт с предвыбранным направлением; параметр service
+  | 'service_brief_open'
   // Вторичные действия
   | 'booking_click'
   | 'telegram_click'

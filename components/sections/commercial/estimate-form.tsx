@@ -38,6 +38,13 @@ interface EstimateFormProps {
   sla: SlaContent
   /** Тип проекта, выбранный в блоке задач: форма открывается уже заполненной */
   presetProjectType: string | null
+  /**
+   * Направление production, в контексте которого открыт бриф. Уходит в заявку
+   * как service_direction и нужен продажам, чтобы понять, из какой сцены или
+   * с какого лендинга пришёл человек, даже если он не менял первый ответ.
+   * Сервер всё равно перепроверяет значение и умеет вывести его сам.
+   */
+  serviceDirection?: string | null
   onBookingClick: () => void
   /** Заявка принята сервером (включая тихо отфильтрованную) — для sticky CTA */
   onSubmitted?: () => void
@@ -61,6 +68,7 @@ export function EstimateForm({
   success,
   sla,
   presetProjectType,
+  serviceDirection = null,
   onBookingClick,
   onSubmitted,
 }: EstimateFormProps) {
@@ -230,6 +238,7 @@ export function EstimateForm({
           usage,
           deadline,
           budgetRange,
+          serviceDirection,
           comment: comment.trim() || null,
           briefUrl: uploadedBriefUrl
             ? new URL(uploadedBriefUrl, window.location.origin).toString()
@@ -326,7 +335,10 @@ export function EstimateForm({
 
       <form onSubmit={handleSubmit} className="mt-12 max-w-3xl md:mt-16" noValidate>
         {/* Honeypot: скрыт от людей и от скринридеров, доступен ботам */}
-        <div aria-hidden="true" className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden"
+        >
           <label htmlFor="estimate-website">Не заполняйте это поле</label>
           <input
             id="estimate-website"
@@ -580,7 +592,9 @@ export function EstimateForm({
                       </button>
                     </span>
                   ) : (
-                    <span className="text-sm text-white/50">PDF, DOC, PPTX, ZIP или картинка, до 10 МБ</span>
+                    <span className="text-sm text-white/50">
+                      PDF, DOC, PPTX, ZIP или картинка, до 10 МБ
+                    </span>
                   )}
                 </div>
 
@@ -657,9 +671,7 @@ export function EstimateForm({
                 только на первом экране, который к этому моменту давно
                 проскроллен. Новый контент не придумываем — переиспользуем sla.
               */}
-              {sla.enabled ? (
-                <p className="mt-6 text-sm text-white/50">{sla.text}</p>
-              ) : null}
+              {sla.enabled ? <p className="mt-6 text-sm text-white/50">{sla.text}</p> : null}
             </motion.div>
           )}
         </div>

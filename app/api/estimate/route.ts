@@ -24,7 +24,11 @@ import { logger } from '@/lib/utils/logger'
 import {
   DEFAULT_COMMERCIAL_LANDING,
   COMMERCIAL_LANDING_PATH,
+  BUDGET_OPTIONS,
+  LEGACY_BUDGET_OPTIONS,
 } from '@/lib/commercial-landing/content'
+import { SERVICES_BRIEF } from '@/lib/services/brief'
+import { SERVICE_DIRECTION_IDS, getServiceDirection } from '@/lib/services/directions'
 
 const DEFAULT_CONTACT_EMAIL = 'hello@savagemovie.ru'
 const CONTACT_EMAIL = process.env.ADMIN_EMAIL || DEFAULT_CONTACT_EMAIL
@@ -142,19 +146,61 @@ function sanitizeUrl(value: unknown): string {
   }
 }
 
+/**
+ * Допустимые значения полей заявки.
+ *
+ * Наборы объединены, а не выбраны по странице: один маршрут принимает и бриф
+ * рекламного лендинга, и бриф направлений с /services, где первым вопросом
+ * идёт направление производства. Значение, которого нет в карте, обнуляется —
+ * поэтому карта обязана знать про оба набора.
+ *
+ * В бюджете к текущим диапазонам добавлены прежние: запись лендинга в CMS
+ * обновляется отдельно от деплоя, и в этом окне форма ещё может прислать
+ * старое значение. Принять его и сохранить честнее, чем потерять бюджет.
+ */
 const OPTION_LABELS = {
-  projectType: new Map(
-    DEFAULT_COMMERCIAL_LANDING.estimate.projectTypes.map(item => [item.value, item.label])
+  projectType: new Map<string, string>([
+    ...DEFAULT_COMMERCIAL_LANDING.estimate.projectTypes.map(
+      item => [item.value, item.label] as [string, string]
+    ),
+    ...SERVICES_BRIEF.projectTypes.map(item => [item.value, item.label] as [string, string]),
+  ]),
+  usage: new Map<string, string>(
+    DEFAULT_COMMERCIAL_LANDING.estimate.usageOptions.map(
+      item => [item.value, item.label] as [string, string]
+    )
   ),
-  usage: new Map(
-    DEFAULT_COMMERCIAL_LANDING.estimate.usageOptions.map(item => [item.value, item.label])
+  deadline: new Map<string, string>(
+    DEFAULT_COMMERCIAL_LANDING.estimate.deadlineOptions.map(
+      item => [item.value, item.label] as [string, string]
+    )
   ),
-  deadline: new Map(
-    DEFAULT_COMMERCIAL_LANDING.estimate.deadlineOptions.map(item => [item.value, item.label])
-  ),
-  budget: new Map(
-    DEFAULT_COMMERCIAL_LANDING.estimate.budgetOptions.map(item => [item.value, item.label])
-  ),
+  budget: new Map<string, string>([
+    ...BUDGET_OPTIONS.map(item => [item.value, item.label] as [string, string]),
+    ...LEGACY_BUDGET_OPTIONS.map(item => [item.value, item.label] as [string, string]),
+  ]),
+}
+
+/**
+ * Направление производства, к которому относится заявка.
+ *
+ * Порядок источников: явное поле формы (его выставляет страница, на которой
+ * открыт бриф) → ответ на первый вопрос брифа направлений, где значение и есть
+ * идентификатор направления → сам лендинг. Коммерческая посадочная — это
+ * commercial по определению, даже когда человек не дошёл до вопросов.
+ *
+ * null допустим: заявка с /contact или из будущей точки входа не обязана
+ * знать направление, и выдумывать его за клиента не нужно.
+ */
+export function resolveServiceDirection(
+  explicit: string,
+  projectType: string | null,
+  landingPath: string
+): string | null {
+  if (SERVICE_DIRECTION_IDS.includes(explicit)) return explicit
+  if (projectType && SERVICE_DIRECTION_IDS.includes(projectType)) return projectType
+  if (landingPath === COMMERCIAL_LANDING_PATH) return 'commercial'
+  return null
 }
 
 function labelFor(map: Map<string, string>, value: string): string {
@@ -172,6 +218,8 @@ interface EstimateLead {
   usage: string[]
   deadline: string | null
   budget_range: string | null
+  /** Направление production: commercial | fashion | beauty | … | null */
+  service_direction: string | null
   comment: string | null
   brief_url: string | null
   yclid: string | null
@@ -215,7 +263,15 @@ function buildEmailHtml(lead: EstimateLead): string {
   ]
 
   if (lead.company) rows.push(`<p><strong>Компания:</strong> ${escapeHtml(lead.company)}</p>`)
-  if (lead.project_type) {
+  if (lead.service_direction) {
+    const direction = getServiceDirection(lead.service_direction)
+    rows.push(
+      `<p><strong>Направление:</strong> ${escapeHtml(direction?.title ?? lead.service_direction)}</p>`
+    )
+  }
+  // На брифе направлений ответ на первый вопрос и есть направление —
+  // печатать одно и то же двумя строками незачем
+  if (lead.project_type && lead.project_type !== lead.service_direction) {
     rows.push(
       `<p><strong>Задача:</strong> ${escapeHtml(labelFor(OPTION_LABELS.projectType, lead.project_type))}</p>`
     )
@@ -271,7 +327,13 @@ function buildTelegramMessage(lead: EstimateLead): string {
   ]
 
   if (lead.company) lines.push(`🏢 <b>Компания:</b> ${escapeTelegram(lead.company)}`)
-  if (lead.project_type) {
+  if (lead.service_direction) {
+    const direction = getServiceDirection(lead.service_direction)
+    lines.push(
+      `🧭 <b>Направление:</b> ${escapeTelegram(direction?.title ?? lead.service_direction)}`
+    )
+  }
+  if (lead.project_type && lead.project_type !== lead.service_direction) {
     lines.push(
       `🎯 <b>Задача:</b> ${escapeTelegram(labelFor(OPTION_LABELS.projectType, lead.project_type))}`
     )
@@ -284,7 +346,9 @@ function buildTelegramMessage(lead: EstimateLead): string {
     )
   }
   if (lead.deadline) {
-    lines.push(`🗓 <b>Сроки:</b> ${escapeTelegram(labelFor(OPTION_LABELS.deadline, lead.deadline))}`)
+    lines.push(
+      `🗓 <b>Сроки:</b> ${escapeTelegram(labelFor(OPTION_LABELS.deadline, lead.deadline))}`
+    )
   }
   if (lead.budget_range) {
     lines.push(
@@ -304,7 +368,10 @@ function buildTelegramMessage(lead: EstimateLead): string {
     }
   }
 
-  lines.push('', `🕐 ${escapeTelegram(new Date(lead.created_at).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }))}`)
+  lines.push(
+    '',
+    `🕐 ${escapeTelegram(new Date(lead.created_at).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }))}`
+  )
 
   return lines.join('\n')
 }
@@ -359,6 +426,8 @@ interface EstimateBody {
   usage?: unknown
   deadline?: unknown
   budgetRange?: unknown
+  /** Направление, в контексте которого открыт бриф */
+  serviceDirection?: unknown
   comment?: unknown
   briefUrl?: unknown
   consent?: unknown
@@ -443,9 +512,7 @@ export async function POST(request: NextRequest) {
     const usage = Array.isArray(body.usage)
       ? Array.from(
           new Set(
-            body.usage
-              .map(item => sanitize(item, 40))
-              .filter(item => OPTION_LABELS.usage.has(item))
+            body.usage.map(item => sanitize(item, 40)).filter(item => OPTION_LABELS.usage.has(item))
           )
         )
       : []
@@ -467,6 +534,11 @@ export async function POST(request: NextRequest) {
       usage,
       deadline: OPTION_LABELS.deadline.has(deadlineRaw) ? deadlineRaw : null,
       budget_range: OPTION_LABELS.budget.has(budgetRaw) ? budgetRaw : null,
+      service_direction: resolveServiceDirection(
+        sanitize(body.serviceDirection, 40),
+        OPTION_LABELS.projectType.has(projectTypeRaw) ? projectTypeRaw : null,
+        sanitize(body.landingPath, 500) || COMMERCIAL_LANDING_PATH
+      ),
       comment: sanitize(body.comment, 2000) || null,
       brief_url: sanitizeUrl(body.briefUrl) || null,
       client_id: sanitize(body.clientId, 100) || null,
