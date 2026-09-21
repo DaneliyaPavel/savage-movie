@@ -232,9 +232,9 @@ export function StageFashion({
 
         <div className={cn('shrink-0 px-6 pt-9 md:px-10 lg:px-20', STAGE_BOTTOM)}>
           <StageTitle id={id} className="text-[clamp(2.4rem,7.4vw,6.4rem)] text-[#0D0D0D]">
-            Одежда
+            Вещи, которые
             <br />
-            должна двигаться.
+            хочется надеть.
           </StageTitle>
 
           <SceneFoot

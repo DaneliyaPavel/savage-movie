@@ -154,15 +154,15 @@ export function StageCorporate({
             id={id}
             className="max-w-[14ch] text-[clamp(2.1rem,4.2vw,3.8rem)] text-[#0D0D0D]"
           >
-            Бизнес
+            Покажем
             <br />
-            не обязан
+            компанию
             <br />
-            выглядеть скучно.
+            изнутри.
           </StageTitle>
 
           <p className="mt-7 max-w-sm text-sm leading-relaxed text-black/65 md:text-base">
-            Brand films, employer video, производство, люди и события — без постановочных
+            Корпоративные фильмы о производстве, технологиях и людях — без постановочных
             рукопожатий.
           </p>
 

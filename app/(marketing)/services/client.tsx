@@ -169,8 +169,8 @@ export function ServicesPageClient({ directions, montage, closing }: ServicesPag
         */}
         <ServicesHero
           eyebrow="СЕМЬ НАПРАВЛЕНИЙ / САНКТ-ПЕТЕРБУРГ + МОСКВА"
-          title="Какую задачу нужно снять?"
-          lead="Сначала задача. Камера потом."
+          title="Что будем снимать?"
+          lead="Рекламу, коллекцию, продукт или клип. Ниже — работы по каждому направлению."
           montage={montage}
         />
 

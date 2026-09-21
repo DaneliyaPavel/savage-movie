@@ -19,7 +19,7 @@ import type { SceneProps } from './scene-props'
  * видны все три строки сразу, просто без монтажа.
  */
 
-const BEATS = ['Запустить.', 'Показать.', 'Запомнить.'] as const
+const BEATS = ['Ролик', 'досмотрят', 'до конца.'] as const
 
 export function StageCommercial({
   id,
@@ -109,7 +109,7 @@ export function StageCommercial({
         </StageTitle>
 
         <p className="mt-7 max-w-md text-sm leading-relaxed text-white/60 md:text-base">
-          Рекламные ролики для запуска продукта, кампании, retail, digital и экранов.
+          Реклама для запуска продукта и кампаний: от сценария до версий под ТВ и digital.
         </p>
 
         <SceneFoot

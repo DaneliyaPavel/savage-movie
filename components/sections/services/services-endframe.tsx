@@ -92,13 +92,13 @@ export function ServicesEndFrame({
           id="services-endframe-title"
           className="max-w-[13ch] pb-2 font-brand-hero text-[clamp(2.8rem,8vw,7rem)] uppercase italic leading-[0.88] tracking-[-0.03em]"
         >
-          Не нашли
+          Формат
           <br />
-          свою строку?
+          не ясен?
         </h2>
 
         <p className="mt-8 max-w-md text-base leading-relaxed text-white/70 md:text-lg">
-          Расскажите задачу. За первый разговор определим формат, ориентир бюджета и следующий шаг.
+          Расскажите задачу. За первый разговор подберём формат и сориентируем по бюджету.
         </p>
 
         <div className="mt-10 flex flex-col items-start gap-7 sm:flex-row sm:items-center sm:gap-12">

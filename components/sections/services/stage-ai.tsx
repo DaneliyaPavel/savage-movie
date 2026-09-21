@@ -156,14 +156,15 @@ export function StageAi({ id, direction, active, onBrief, onNavigate, onCaseOpen
             id={id}
             className="text-[clamp(2.2rem,5.6vw,5rem)] [text-shadow:0_2px_40px_rgba(0,0,0,0.55)]"
           >
-            AI video
+            AI-видео
             <br />
-            без AI-эстетики.
+            без следов нейросети.
           </StageTitle>
         </motion.div>
 
         <p className="mt-7 max-w-md text-sm leading-relaxed text-white/60 md:text-base">
-          Генерация, live action и постпродакшн в одном pipeline.
+          Живая съёмка, генерация и постпродакшн в одной работе. Нейросеть — там, где без неё идею
+          не снять.
         </p>
 
         <SceneFoot
