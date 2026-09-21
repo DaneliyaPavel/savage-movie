@@ -11,34 +11,24 @@ import type { SceneProps } from './scene-props'
 /**
  * 05 — корпоративный production. Метафора: ПРОСТРАНСТВО СОБИРАЕТСЯ.
  *
- * Сцена открывается почти пустым белым экраном: только заявление. Дальше в
- * этот белый лист с трёх сторон въезжают плоскости материала и режут его на
- * архитектуру. Бизнес здесь буквально становится физическим — и это делает
- * композиция, а не эпитет в копии.
+ * Сцена открывается почти пустым белым листом: только заявление. Дальше в этот
+ * лист с трёх сторон въезжают плоскости материала и режут его на архитектуру.
+ * Бизнес здесь буквально становится физическим — и это делает композиция, а не
+ * эпитет в копии.
  *
  * Плоскости въезжают с разным опозданием и с разной скоростью: одновременное
  * прибытие читалось бы как раскрывающаяся галерея, а не как собирающееся
  * пространство.
  *
- * Собираются они вокруг текста, а не поверх него: заявление остаётся на белом
- * поле в нижней левой четверти, а материал занимает верхнюю полосу и правый
- * нижний угол. Это не две колонки «текст слева, кадр справа» — белое поле
- * здесь тоже часть архитектуры, и к концу сцены оно оказывается вырезанным
- * с трёх сторон.
+ * Верхние две плоскости делят ширину листа без зазора и встают на разной
+ * высоте: вместе это одна полоса со ступенчатой нижней кромкой. Раньше между
+ * ними оставалось белое поле в четырнадцать процентов, и на экране стояли не
+ * архитектура, а три прямоугольника, разложенные по углам. Пространство
+ * собирается там, где плоскости смыкаются.
  *
  * Ни одного стокового кабинета и ни одного рукопожатия: доказательства —
  * реальные работы для банка, отеля и HoReCa.
  */
-
-/** Что снимаем для бизнеса. Это форматы, а не обещания */
-const FORMATS = [
-  'BRAND FILM',
-  'EMPLOYER VIDEO',
-  'ПРОИЗВОДСТВО',
-  'ЛЮДИ И КОМАНДА',
-  'ТЕХНОЛОГИИ',
-  'СОБЫТИЯ',
-] as const
 
 export function StageCorporate({
   id,
@@ -49,7 +39,17 @@ export function StageCorporate({
   onCaseOpen,
 }: SceneProps) {
   const { containerRef, progress, reduced } = useStage()
+  /*
+   * Кадры разложены по слотам, а не по порядку списка. Второй работой
+   * направления идёт WELLERY — та же съёмка, которой уже построены сцены 01,
+   * 04 и 06; отдав ей самую большую плоскость разворота, страница показала бы
+   * один и тот же кадр в четвёртый раз подряд. Большую плоскость занимает
+   * следующая работа, WELLERY уходит в малую. Состав направления при этом не
+   * меняется: это композиция, а не список.
+   */
   const [first, second, third] = direction.works
+  const wide = third ?? second
+  const inset = third ? second : undefined
 
   // При выключенном движении плоскости уже на местах: смысл сцены не должен
   // зависеть от того, доехала ли прокрутка до нужной отметки
@@ -62,33 +62,21 @@ export function StageCorporate({
     <StageShell id={id} direction={direction} containerRef={containerRef} depth={300} theme="white">
       <StageRail direction={direction} theme="white" />
 
-      {/* Плоскости режут белое поле. Сдвиг — только transform, без перерисовки */}
-      <div className="absolute inset-0">
-        <motion.div
-          style={{ x: fromLeft }}
-          className="absolute left-0 top-0 h-[34%] w-[56%] overflow-hidden will-change-transform md:h-[46%] md:w-[40%]"
-        >
-          {first ? (
-            <SceneMedia
-              work={first}
-              active={active}
-              aspect="auto"
-              sizes="46vw"
-              className="h-full w-full"
-            />
-          ) : null}
-        </motion.div>
-
+      {/*
+        Правая колонна — одна непрерывная полоса от технической строки до
+        нижней кромки, разрезанная надвое.
+      */}
+      <div className="absolute inset-y-0 right-0 top-[8.5rem] hidden w-[54%] md:block">
         <motion.div
           style={{ x: fromRight }}
-          className="absolute right-0 top-0 h-[44%] w-[44%] overflow-hidden will-change-transform md:h-[62%] md:w-[46%]"
+          className="absolute inset-x-0 top-0 h-[64%] overflow-hidden will-change-transform"
         >
-          {second ? (
+          {wide ? (
             <SceneMedia
-              work={{ ...second, playbackId: null }}
+              work={{ ...wide, playbackId: null }}
               active={active}
               aspect="auto"
-              sizes="40vw"
+              sizes="54vw"
               className="h-full w-full"
             />
           ) : null}
@@ -96,62 +84,94 @@ export function StageCorporate({
 
         <motion.div
           style={{ y: fromBottom }}
-          className="absolute bottom-0 right-0 hidden h-[34%] w-[32%] overflow-hidden will-change-transform md:block"
+          className="absolute inset-x-0 bottom-0 h-[36%] overflow-hidden will-change-transform"
         >
-          {third ? (
+          {inset ? (
             <SceneMedia
-              work={{ ...third, playbackId: null }}
+              work={{ ...inset, playbackId: null }}
               active={active}
               aspect="auto"
-              sizes="26vw"
+              sizes="54vw"
               className="h-full w-full"
             />
           ) : null}
         </motion.div>
       </div>
 
-      {/* Заявление живёт в нижней левой четверти — на белом, которое плоскости
-          не трогают. Ширина ограничена, чтобы строка не заходила под правый
-          нижний кадр */}
-      <div className="relative z-10 flex h-full max-w-[56%] flex-col justify-end px-6 pb-14 md:max-w-[52%] md:px-10 md:pb-16 lg:px-20">
-        <StageTitle
-          id={id}
-          className="max-w-[16ch] text-[clamp(1.7rem,3.6vw,3.4rem)] text-[#0D0D0D]"
+      {/*
+        Левая колонна — плоскость и заявление в одном потоке.
+
+        Высота плоскости не задана долей экрана, а берётся из остатка: набор
+        занимает столько, сколько ему нужно, кадр — всё, что осталось сверху.
+        На долях это работало ровно до первого короткого ноутбука: на 1440×720
+        блок заявления оказывался выше расчётной отметки, и «БИЗНЕС» уезжал
+        чёрным по тёмному кадру. Ступенчатая кромка при этом никуда не делась —
+        правая колонна идёт во всю высоту, левая обрывается над текстом.
+      */}
+      <div /* Поле начинается ниже технической строки: на короткой высоте она
+             иначе ложится ровно на верхнюю кромку кадра */
+        className="absolute inset-y-0 left-0 z-10 flex w-full flex-col pt-[7rem] md:w-[46%] md:pt-[8.5rem]"
+      >
+        <motion.div
+          style={{ x: fromLeft }}
+          className="min-h-0 w-full flex-1 overflow-hidden will-change-transform max-md:max-h-[34svh]"
         >
-          Бизнес
-          <br />
-          не обязан
-          <br />
-          выглядеть скучно.
-        </StageTitle>
-
-        <p className="mt-6 max-w-sm text-sm leading-relaxed text-black/65 md:text-base">
-          Brand films, employer video, производство, люди и события — без постановочных рукопожатий.
-        </p>
-
-        <ul className="mt-6 flex max-w-md flex-wrap gap-x-6 gap-y-1 font-mono text-[0.58rem] uppercase tracking-[0.2em] text-black/45 md:text-[0.66rem]">
-          {FORMATS.map(format => (
-            <li key={format}>{format}</li>
-          ))}
-        </ul>
-
-        <div className="mt-8 flex flex-wrap items-end gap-x-10 gap-y-4">
-          <DirectionCta
-            direction={direction}
-            onBrief={onBrief}
-            onNavigate={onNavigate}
-            theme="white"
-          />
-
           {first ? (
-            <a
-              href={`/projects/${first.slug}`}
-              onClick={() => onCaseOpen(direction, first.slug)}
-              className="font-mono text-[0.6rem] uppercase tracking-[0.22em] text-black/50 transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent md:text-[0.68rem]"
-            >
-              {first.client} — {first.title}
-            </a>
+            <SceneMedia
+              work={first}
+              active={active}
+              aspect="auto"
+              sizes="(min-width: 768px) 46vw, 100vw"
+              className="h-full w-full"
+            />
           ) : null}
+        </motion.div>
+
+        <div className="shrink-0 px-6 pb-14 pt-8 md:px-10 md:pb-16 lg:px-20">
+          <StageTitle
+            id={id}
+            className="max-w-[14ch] text-[clamp(2.1rem,4.2vw,3.8rem)] text-[#0D0D0D]"
+          >
+            Бизнес
+            <br />
+            не обязан
+            <br />
+            выглядеть скучно.
+          </StageTitle>
+
+          <p className="mt-6 max-w-sm text-sm leading-relaxed text-black/65 md:text-base">
+            Brand films, employer video, производство, люди и события — без постановочных
+            рукопожатий.
+          </p>
+
+          {/*
+            Перечня форматов под этой строкой больше нет. Он повторял её слово
+            в слово: «Brand films, employer video, производство, люди и события»
+            выше и BRAND FILM / EMPLOYER VIDEO / ПРОИЗВОДСТВО / ЛЮДИ И СОБЫТИЯ
+            ниже — одно и то же, набранное дважды подряд. Осталась та строка, в
+            которой есть ещё и интонация. Полный перечень — в спецификации внизу
+            страницы.
+          */}
+
+          <div className="mt-8 flex flex-wrap items-end gap-x-10 gap-y-4">
+            <DirectionCta
+              direction={direction}
+              onBrief={onBrief}
+              onNavigate={onNavigate}
+              theme="white"
+              className="whitespace-nowrap"
+            />
+
+            {first ? (
+              <a
+                href={`/projects/${first.slug}`}
+                onClick={() => onCaseOpen(direction, first.slug)}
+                className="font-mono text-[0.6rem] uppercase tracking-[0.22em] text-black/50 transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent md:text-[0.68rem]"
+              >
+                {first.client} — {first.title}
+              </a>
+            ) : null}
+          </div>
         </div>
       </div>
     </StageShell>

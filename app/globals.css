@@ -80,6 +80,8 @@
   --font-sans: var(--font-secondary);
   --font-heading: var(--font-sans);
   --font-brand: 'Epilogue Black', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Дисплейный набор, который умеет кириллицу. См. @font-face ниже */
+  --font-stage: 'Montserrat Black', 'Epilogue Black', system-ui, -apple-system, sans-serif;
   --font-brand-hero:
     'Montserrat Black Italic', 'Epilogue Black', 'Inter', system-ui, -apple-system, 'Segoe UI',
     sans-serif;
@@ -433,6 +435,41 @@
   font-display: swap;
 }
 
+/*
+ * Прямое начертание того же Montserrat Black.
+ *
+ * Epilogue Black — латиница и только латиница: кириллицы в гарнитуре нет
+ * вовсе, поэтому каждый русский заголовок, набранный font-brand, молча
+ * доставался системному шрифту — SF Pro на маке, Segoe UI на Windows. Весь
+ * дисплейный набор раздела направлений был не арт-дирекшном, а настройкой
+ * операционной системы гостя.
+ *
+ * Берём ту самую гарнитуру, которой набран логотип и заголовки /clients, но
+ * прямую: курсив остаётся ударением — первый экран и выход, — а семь
+ * территорий говорят тем же голосом без наклона. Две подрезки вместо одной
+ * общей: латиница и кириллица нужны в одном заголовке («AI VIDEO / БЕЗ
+ * AI-ЭСТЕТИКИ»), и разъехаться на две гарнитуры внутри строки они не должны.
+ */
+@font-face {
+  font-family: 'Montserrat Black';
+  src: url('/fonts/Montserrat-Black-latin.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Montserrat Black';
+  src: url('/fonts/Montserrat-Black-cyrillic.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
 /* SVG stroke draw animation */
 @keyframes draw-stroke {
   from {
@@ -477,6 +514,12 @@
     font-family: var(--font-brand-hero);
     font-weight: 900;
     font-style: italic;
+  }
+
+  .font-stage {
+    font-family: var(--font-stage);
+    font-weight: 900;
+    font-style: normal;
   }
 
   .glass {

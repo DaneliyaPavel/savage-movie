@@ -45,7 +45,7 @@ export function ServicesSpec({ directions, onCaseOpen, onNavigate }: ServicesSpe
 
       <h2
         id="services-spec-title"
-        className="mt-10 max-w-3xl font-brand text-[clamp(1.6rem,3.4vw,2.8rem)] uppercase leading-[0.9] tracking-[-0.02em]"
+        className="mt-10 max-w-3xl font-stage text-[clamp(1.6rem,3.4vw,2.8rem)] uppercase leading-[0.9] tracking-[-0.02em]"
       >
         Что именно снимает Savage Movie
       </h2>

@@ -45,28 +45,36 @@ export function StageCommercial({
           />
         ) : null}
         {/* Кадр рекламы бывает светлым: без затемнения снизу заявление
-            перестаёт читаться ровно в тот момент, когда оно и произносится */}
+            перестаёт читаться ровно в тот момент, когда оно и произносится.
+            Плотность держится в нижней половине — верх кадра остаётся кадром */}
         <span
           aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/45 to-transparent"
+          className="absolute inset-x-0 bottom-0 h-[58%] bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/70 to-transparent"
         />
       </div>
 
       <StageRail direction={direction} />
 
       <div className="relative z-10 flex h-full flex-col justify-end px-6 pb-14 md:px-10 md:pb-16 lg:px-20">
-        <StageTitle
-          id={id}
-          className="text-[clamp(2.6rem,7.5vw,6.5rem)] [text-shadow:0_2px_40px_rgba(0,0,0,0.5)]"
-        >
+        <StageTitle id={id} className="text-[clamp(2.6rem,7.5vw,6.5rem)]">
           {BEATS.map((beat, index) => (
             <span
               key={beat}
               /* Удар, а не проявление: цвет меняется мгновенно, без transition
                  по длительности — гаснет только уже сказанное */
+              /*
+                Тень лежит только под произнесённым словом. Общая на все три
+                строки давала несказанным чёрный ореол, и они читались не как
+                погашенные, а как вытисненные: на кадре стояли три заголовка
+                одинаковой громкости вместо одного.
+              */
               className={cn(
                 'block transition-colors duration-200',
-                index === step ? 'text-white' : index < step ? 'text-white/30' : 'text-white/10'
+                index === step
+                  ? 'text-white [text-shadow:0_2px_40px_rgba(0,0,0,0.5)]'
+                  : index < step
+                    ? 'text-white/22'
+                    : 'text-white/[0.07]'
               )}
             >
               {beat}
@@ -83,7 +91,8 @@ export function StageCommercial({
           <ProofRail
             direction={direction}
             onCaseOpen={onCaseOpen}
-            className="opacity-70 transition-opacity hover:opacity-100"
+            brandsOnly
+            className="opacity-60 transition-opacity hover:opacity-100"
           />
         </div>
       </div>

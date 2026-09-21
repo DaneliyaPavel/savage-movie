@@ -28,17 +28,22 @@ import type { SceneProps } from './scene-props'
  * У каждой доли своя точка и своя крупность — иначе восемь ячеек выглядели бы
  * восемью копиями одного плана, и лист перестал бы доказывать, что из смены
  * получаются РАЗНЫЕ выдачи. Продуктовый план самый крупный, ретейл — самый
- * общий, вертикали сдвинуты по горизонтали.
+ * общий, вертикали разведены к противоположным кромкам.
+ *
+ * Разброс крупности здесь нарочно грубый. На прежних значениях (1,05–1,95)
+ * восемь долей отличались друг от друга меньше, чем мягкость исходного кадра,
+ * и монтажный лист честно показывал восемь почти одинаковых картинок — то
+ * есть доказывал ровно обратное тому, ради чего он нарисован.
  */
 const CELLS = [
   { label: 'HERO', position: '50% 38%', zoom: 1 },
-  { label: '9:16', position: '34% 50%', zoom: 1.35 },
-  { label: '9:16', position: '68% 45%', zoom: 1.35 },
-  { label: 'LOOP', position: '50% 70%', zoom: 1.15 },
-  { label: 'PRODUCT', position: '44% 26%', zoom: 1.95 },
-  { label: 'STORY', position: '60% 78%', zoom: 1.5 },
-  { label: 'WEBSITE', position: '50% 50%', zoom: 1.05 },
-  { label: 'RETAIL', position: '24% 42%', zoom: 1.2 },
+  { label: '9:16', position: '26% 55%', zoom: 1.8 },
+  { label: '9:16', position: '76% 40%', zoom: 1.8 },
+  { label: 'LOOP', position: '50% 82%', zoom: 1.3 },
+  { label: 'PRODUCT', position: '40% 20%', zoom: 2.8 },
+  { label: 'STORY', position: '66% 86%', zoom: 2.1 },
+  { label: 'WEBSITE', position: '50% 46%', zoom: 1.05 },
+  { label: 'RETAIL', position: '16% 34%', zoom: 1.45 },
 ] as const
 
 /** Сколько долей видно на каждом шаге деления */
@@ -75,12 +80,12 @@ export function StageContent({
     <StageShell id={id} direction={direction} containerRef={containerRef} depth={380}>
       <StageRail direction={direction} />
 
-      <div className="absolute inset-0 flex items-center justify-center px-4 pb-40 pt-28 md:px-10 md:pb-44 lg:px-20">
+      <div className="absolute inset-0 flex items-center justify-center px-4 pb-56 pt-28 md:px-10 md:pb-60 lg:px-20">
         {/* Рамка монтажного листа: линии сетки — это зазор фона, поэтому в
             стыках не удваивается толщина */}
         {/* На телефоне лист выше пропорцией: при 16:9 на узком экране восемь
             долей ужимаются в полоску и перестают быть доказательством */}
-        <div className="grid aspect-[5/4] max-h-[58svh] w-full max-w-[min(94vw,1480px)] grid-cols-4 grid-rows-2 gap-[2px] bg-white/15 md:aspect-[16/9]">
+        <div className="grid aspect-[5/4] max-h-[50svh] w-full max-w-[min(94vw,1480px)] grid-cols-4 grid-rows-2 gap-[2px] bg-white/15 md:aspect-[16/9]">
           {CELLS.map((cell, index) => {
             const shown = index < visible
 
@@ -100,7 +105,15 @@ export function StageContent({
                   shown ? span : 'hidden'
                 )}
               >
-                {index === 0 ? (
+                {index === 0 && step === 0 ? (
+                  /*
+                    Движение живёт ровно столько, сколько лист остаётся одним
+                    мастер-кадром. Дальше это контрольный лист смены, и все
+                    доли — один и тот же кадр под разной обрезкой. Раньше
+                    первая доля продолжала играть видео, пока остальные семь
+                    показывали постер: два разных изображения на листе,
+                    который весь построен на том, что съёмка была одна.
+                  */
                   master ? (
                     <SceneMedia
                       work={master}
@@ -128,9 +141,18 @@ export function StageContent({
                   />
                 ) : null}
 
-                <span className="absolute bottom-2 left-2 font-mono text-[0.52rem] uppercase tracking-[0.2em] text-white/75 md:text-[0.6rem]">
-                  <span className="text-white/40">{String(index + 1).padStart(2, '0')}</span>
-                  <span className="pl-2">{cell.label}</span>
+                {/*
+                  Подписи приходят вместе с последним делением. Пока лист ещё
+                  делится, они только мешают увидеть само деление; нумерация
+                  убрана совсем — долю, которую видно, человек считает глазами.
+                */}
+                <span
+                  className={cn(
+                    'absolute bottom-2 left-2 font-mono text-[0.52rem] uppercase tracking-[0.2em] text-white/80 transition-opacity duration-500 md:text-[0.6rem]',
+                    complete ? 'opacity-100' : 'opacity-0'
+                  )}
+                >
+                  {cell.label}
                 </span>
               </div>
             )
@@ -138,18 +160,47 @@ export function StageContent({
         </div>
       </div>
 
+      {/*
+        Единственная рукописная пометка страницы.
+        
+        Контрольный лист смены — производственный документ, и на настоящем
+        документе всегда есть отметка от руки. Это не декорация и не второй
+        акцент: она приходит вместе с последним делением, стоит белым (красный
+        на этой странице занят одним словом) и говорит ровно тот факт, которого
+        нет ни в заголовке, ни в подписях долей.
+      */}
+      <span
+        aria-hidden="true"
+        className={cn(
+          'pointer-events-none absolute right-6 z-[6] -rotate-[7deg] text-lg text-white/70 transition-opacity duration-700 md:right-12 md:text-2xl lg:right-24',
+          /* На поле рядом с заявлением, а не поверх листа: пометка на полях
+             читается, пометка поверх кадра — нет */
+          'bottom-[30%] md:bottom-[15%]',
+          complete ? 'opacity-100' : 'opacity-0'
+        )}
+        style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+      >
+        одна площадка, один день
+      </span>
+
       {/* Лист уходит под заявление: без затемнения белый набор ложится на
           светлый кадр и перестаёт читаться ровно в момент вывода */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-[38%] bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/85 to-transparent"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-[28%] bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/80 to-transparent"
       />
 
       <div className="relative z-10 flex h-full flex-col justify-end px-6 pb-12 md:px-10 md:pb-14 lg:px-20">
         <StageTitle
           id={id}
           className={cn(
-            'text-[clamp(2rem,5vw,4.2rem)] transition-opacity duration-500',
+            /*
+              Кегль подтянут к общему кеглю территорий. Единственный красный
+              удар страницы стоял в самом мелком заголовке из восьми — то есть
+              самое дорогое предложение студии было набрано тише всего
+              остального.
+            */
+            'text-[clamp(2rem,6.6vw,5.8rem)] transition-opacity duration-500',
             complete ? 'opacity-100' : 'opacity-25'
           )}
         >

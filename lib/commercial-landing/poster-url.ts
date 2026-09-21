@@ -28,3 +28,25 @@ export function normalizePosterUrl(url: string): string {
   if (!isBunnyStreamHost(hostname)) return url
   return url.replace(/\/preview\.webp(?:\?.*)?$/i, '/thumbnail.jpg')
 }
+
+/**
+ * Можно ли отдать постер через next/image.
+ *
+ * Next.js оптимизирует только свой хост и хосты из remotePatterns
+ * (next.config.ts): на произвольном внешнем адресе, вписанном в CMS руками,
+ * оптимизатор падает с ошибкой конфигурации. Поэтому пропускаем свой же путь
+ * (начинается с "/") и уже разрешённый Bunny CDN, а на всём остальном
+ * остаёмся на обычном <img>.
+ *
+ * Разница не косметическая: кадры галерей лежат в CMS исходниками на три,
+ * пять и восемь мегабайт. Тот же кадр через оптимизатор приезжает в AVIF под
+ * реальный размер блока.
+ */
+export function canOptimizePoster(url: string): boolean {
+  if (url.startsWith('/')) return true
+  try {
+    return /(^|\.)b-cdn\.net$/i.test(new URL(url).hostname)
+  } catch {
+    return false
+  }
+}

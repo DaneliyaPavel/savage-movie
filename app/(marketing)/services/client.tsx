@@ -78,9 +78,11 @@ const sceneId = (direction: { id: string }) => `scene-${direction.id}`
 export interface ServicesPageClientProps {
   directions: ResolvedDirection[]
   montage: DirectionWork[]
+  /** Кадр выхода: выбран раскадровкой, а не взят из монтажа */
+  closing: DirectionWork | null
 }
 
-export function ServicesPageClient({ directions, montage }: ServicesPageClientProps) {
+export function ServicesPageClient({ directions, montage, closing }: ServicesPageClientProps) {
   /*
    * Выход наблюдается наравне с территориями. Без него головка таймлайна,
    * удерживающая последнюю активную сцену, продолжала бы висеть над брифом и
@@ -153,21 +155,23 @@ export function ServicesPageClient({ directions, montage }: ServicesPageClientPr
       ? ('white' as const)
       : ('black' as const)
 
-  /** Кадр, которым закрывается монтаж — последний из увиденных */
-  const closing = montage[montage.length - 1] ?? null
-
   return (
     <MotionConfig reducedMotion="user">
       <main className="min-h-screen bg-[#0D0D0D]">
         <TopBar />
         <JalousieMenu />
 
+        {/*
+          В надзаголовке осталось то, чего нет в самом заголовке: сколько
+          территорий и где мы их снимаем. Имя студии оттуда убрано — оно стоит
+          в шапке двумя сантиметрами выше, и повторять его строкой ниже значит
+          представляться дважды.
+        */}
         <ServicesHero
-          eyebrow="SAVAGE MOVIE / PRODUCTION DIRECTIONS / SPB + MOSCOW"
+          eyebrow="СЕМЬ НАПРАВЛЕНИЙ / САНКТ-ПЕТЕРБУРГ + МОСКВА"
           title="Какую задачу нужно снять?"
           lead="Сначала задача. Камера потом."
           montage={montage}
-          scrollHint="Семь направлений подряд"
         />
 
         <ProductionIndex

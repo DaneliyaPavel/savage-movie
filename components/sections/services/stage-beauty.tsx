@@ -18,16 +18,40 @@ import type { SceneProps } from './scene-props'
  * размеру — «ближе» отступает, «ещё ближе» занимает экран. Обещание фактуры
  * выполняется самим экраном, а не прилагательным в копии.
  *
- * Материал переключается индексом у правой кромки. Подписи не выдуманы: они
- * описывают то, что действительно снято в этих работах.
+ * Кадр, а не поток. Территория, которая обещает «почти физически», держалась
+ * на роликах, у которых половина хронометража уходит в тёмные планы: на
+ * экране стояла чёрная плоскость с белым набором, и всю тактильность
+ * приходилось доигрывать заголовку. В галереях тех же работ лежат капли
+ * сыворотки на скуле в жёстком свете, макро блеска на губах, рука в вязке и
+ * лицо в воде — четыре материала, которые читаются пальцами. Наезд остаётся
+ * движением сцены, и на неподвижном кадре он честнее: это ход камеры, а не
+ * монтаж чужого ролика.
+ *
+ * Набор стоит по центру высоты, а не у нижней кромки. Шесть территорий подряд
+ * прижимали заявление к низу; beauty — тихое состояние страницы, и тишина
+ * начинается с того, что здесь композиция горизонтальная: заявление слева,
+ * материалы справа, между ними фактура во весь экран.
  */
 
 /** Материал кадра по работе. Ключ — слаг, чтобы подпись не разъехалась с портфолио */
 const MATERIAL_BY_SLUG: Record<string, string> = {
   unna: 'SKIN',
-  yadah: 'LIGHT',
+  yadah: 'GLOSS',
   vernel: 'FABRIC',
   biotherm: 'WATER',
+}
+
+/**
+ * Что держим в рамке.
+ *
+ * SKIN и WATER сняты горизонтально, и на телефоне полноэкранный слот режет их
+ * до центральной трети: капли на скуле и лицо в воде стоят левее центра и
+ * уезжали за кадр — оставались ухо и шея. GLOSS и FABRIC сняты вертикально и
+ * в центровке не нуждаются.
+ */
+const FOCUS_BY_SLUG: Record<string, string> = {
+  unna: '32% 50%',
+  biotherm: '42% 50%',
 }
 
 export function StageBeauty({
@@ -61,18 +85,34 @@ export function StageBeauty({
       <motion.div style={{ scale }} className="absolute inset-0 will-change-transform">
         {current ? (
           <SceneMedia
-            work={current}
+            /* Поток не поднимаем: у этих работ фактура живёт в кадре, а не в
+               хронометраже, и выбранный план сильнее любой своей секунды */
+            work={{ ...current, playbackId: null }}
             active={active}
             aspect="auto"
             sizes="100vw"
+            objectPosition={FOCUS_BY_SLUG[current.slug]}
             className="h-full w-full"
           />
         ) : null}
       </motion.div>
 
+      {/*
+        Плотность ушла влево вслед за набором. Заливка снизу накрывала ровно ту
+        часть кадра, ради которой территория и существует; слева она ложится на
+        поле, где фактуры и так нет.
+      */}
       <span
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-t from-[#070707] via-[#070707]/30 to-[#070707]/45"
+        className="absolute inset-0 bg-gradient-to-r from-[#070707] via-[#070707]/70 to-transparent md:via-[#070707]/45"
+      />
+      <span
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#070707] to-transparent"
+      />
+      <span
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#070707]/70 to-transparent"
       />
 
       <StageRail direction={direction} />
@@ -104,18 +144,18 @@ export function StageBeauty({
         })}
       </ul>
 
-      <div className="relative z-10 flex h-full flex-col justify-end px-6 pb-14 md:px-10 md:pb-16 lg:px-20">
-        {/* Интерлиньяж чуть свободнее общего: в этой сцене соседние строки
-            сильно разного кегля, и на плотном наборе уменьшившаяся строка
-            заезжает под выносные элементы выросшей */}
-        <StageTitle id={id} leading={0.95} className="[text-shadow:0_2px_40px_rgba(0,0,0,0.55)]">
+      <div className="relative z-10 flex h-full max-w-[72%] flex-col justify-center px-6 md:max-w-[60%] md:px-10 lg:px-20">
+        {/* Интерлиньяж свободнее общего: в этой сцене соседние строки сильно
+            разного кегля, и на плотном наборе точки над Ё выросшей строки
+            выходят за свой строчный бокс и упираются в уменьшившуюся */}
+        <StageTitle id={id} leading={1.12} className="[text-shadow:0_2px_40px_rgba(0,0,0,0.55)]">
           {/* Обе строки всегда в разметке: меняется вес присутствия, а не факт */}
           <span
             className={cn(
               'block origin-left transition-[font-size,color] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
               closer
                 ? 'text-[clamp(1.1rem,2.4vw,2rem)] text-white/45'
-                : 'text-[clamp(2.8rem,8vw,7rem)] text-white'
+                : 'text-[clamp(2.8rem,7vw,6rem)] text-white'
             )}
           >
             Ближе.
@@ -124,27 +164,29 @@ export function StageBeauty({
             className={cn(
               'block origin-left transition-[font-size,color] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
               closer
-                ? 'text-[clamp(2.8rem,8vw,7rem)] text-white'
+                ? 'text-[clamp(2.8rem,7vw,6rem)] text-white'
                 : 'text-[clamp(1.1rem,2.4vw,2rem)] text-white/35'
             )}
           >
             Ещё ближе.
           </span>
         </StageTitle>
+      </div>
 
-        <div className="mt-8 flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
-          <DirectionCta direction={direction} onBrief={onBrief} onNavigate={onNavigate} />
+      {/* CTA остаётся у нижней кромки: по центру он спорил бы с заявлением за
+          одну и ту же оптическую строку */}
+      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-wrap items-end justify-between gap-x-10 gap-y-4 px-6 pb-14 md:px-10 md:pb-16 lg:px-20">
+        <DirectionCta direction={direction} onBrief={onBrief} onNavigate={onNavigate} />
 
-          {current ? (
-            <a
-              href={`/projects/${current.slug}`}
-              onClick={() => onCaseOpen(direction, current.slug)}
-              className="font-mono text-[0.6rem] uppercase tracking-[0.22em] text-white/50 transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent md:text-[0.68rem]"
-            >
-              {current.client} — {current.title}
-            </a>
-          ) : null}
-        </div>
+        {current ? (
+          <a
+            href={`/projects/${current.slug}`}
+            onClick={() => onCaseOpen(direction, current.slug)}
+            className="font-mono text-[0.6rem] uppercase tracking-[0.22em] text-white/50 transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent md:text-[0.68rem]"
+          >
+            {current.client} — {current.title}
+          </a>
+        ) : null}
       </div>
     </StageShell>
   )
