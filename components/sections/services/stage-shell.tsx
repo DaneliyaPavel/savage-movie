@@ -231,7 +231,8 @@ export function SceneCredit({
          десять: зона касания растянута псевдоэлементом, сама строка не
          сдвигается */
       className={cn(
-        'type-meta relative font-mono uppercase transition-colors hover:text-accent',
+        'type-meta relative font-mono uppercase hover:text-accent',
+        'transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)]',
         "before:absolute before:inset-x-0 before:-inset-y-2.5 before:content-['']",
         'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
         theme === 'white' ? 'text-black/50' : 'text-white/50'

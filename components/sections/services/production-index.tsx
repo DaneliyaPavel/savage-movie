@@ -37,7 +37,8 @@ export function ProductionIndex({ directions, activeId, sceneId, theme }: Produc
       aria-label="Направления производства"
       aria-hidden={active ? undefined : true}
       className={cn(
-        'fixed inset-x-0 bottom-0 z-40 flex items-center gap-4 px-6 pb-5 transition-opacity duration-500 md:px-10 lg:px-20',
+        'fixed inset-x-0 bottom-0 z-40 flex items-center gap-4 px-6 pb-5 md:px-10 lg:px-20',
+        'transition-opacity duration-[var(--motion-move)] ease-[var(--ease-out-expo)]',
         active ? 'opacity-100' : 'pointer-events-none opacity-0'
       )}
     >
@@ -49,7 +50,8 @@ export function ProductionIndex({ directions, activeId, sceneId, theme }: Produc
       */}
       <span
         className={cn(
-          'type-meta w-[9.5rem] shrink-0 font-mono uppercase transition-colors',
+          'type-meta w-[9.5rem] shrink-0 font-mono uppercase',
+          'transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)]',
           isLight
             ? 'text-black/60 [text-shadow:0_1px_14px_rgba(255,255,255,0.75)]'
             : 'text-white/70 [text-shadow:0_1px_14px_rgba(0,0,0,0.75)]'
@@ -89,7 +91,16 @@ export function ProductionIndex({ directions, activeId, sceneId, theme }: Produc
                 */}
                 <span
                   className={cn(
-                    'block w-full transition-all duration-300',
+                    /*
+                      Переход на два конкретных свойства, а не на all. Под all
+                      попадали и ширина, и цвет, и всё, что когда-либо
+                      добавится: браузер каждый раз ищет, что именно
+                      изменилось. Деление меняет только толщину и плотность —
+                      и делает это за смену состояния, а не за треть секунды,
+                      потому что подсветка деления и смена кадра должны
+                      читаться одним событием.
+                    */
+                    'block w-full transition-[height,background-color] duration-[var(--motion-state)] ease-[var(--ease-out-expo)]',
                     isLight
                       ? 'drop-shadow-[0_0_3px_rgba(255,255,255,0.9)]'
                       : 'drop-shadow-[0_0_3px_rgba(0,0,0,0.9)]',

@@ -82,7 +82,10 @@ export function StageCommercial({
                 одинаковой громкости вместо одного.
               */
               className={cn(
-                'block transition-colors duration-200',
+                /* Удар держится на смене состояния, а не на своей длительности:
+                   180 мс — ровно столько, чтобы это не было ни миганием, ни
+                   проявлением */
+                'block transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)]',
                 index === step
                   ? 'text-white [text-shadow:0_2px_40px_rgba(0,0,0,0.5)]'
                   : index < step
@@ -107,7 +110,7 @@ export function StageCommercial({
               direction={direction}
               onCaseOpen={onCaseOpen}
               brandsOnly
-              className="opacity-60 transition-opacity hover:opacity-100"
+              className="opacity-60 transition-opacity duration-[var(--motion-state)] ease-[var(--ease-out-expo)] hover:opacity-100"
             />
           }
         />

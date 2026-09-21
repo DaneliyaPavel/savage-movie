@@ -57,6 +57,23 @@ export function useStage(): Stage {
  *
  * При выключенном движении шаг сразу последний — сцена показывает свой итог.
  */
+
+/**
+ * Мёртвая зона у границы шага, в долях шага.
+ *
+ * Без неё шаг считался через Math.floor от голого прогресса, то есть
+ * переключался ровно на целом значении. Прокрутка не бывает ровной: инерция
+ * тачпада и дрожание колеса дают полпикселя туда-обратно, и остановка ровно
+ * на границе заставляла склейку срабатывать несколько раз подряд. На экране
+ * это читалось как мигание слова, а не как монтаж — цвет даже не успевал
+ * дойти до конца перехода и разворачивался обратно.
+ *
+ * Шесть процентов шага — это около тридцати пикселей прокрутки в рекламной
+ * сцене: дрожание съедается целиком, а намеренное движение пальца проходит
+ * границу и не замечает её.
+ */
+const STEP_DEADBAND = 0.06
+
 export function useStageStep(
   progress: MotionValue<number>,
   steps: number,
@@ -68,8 +85,14 @@ export function useStageStep(
     if (reduced) return
     // Последний шаг занимает остаток шкалы, поэтому итог сцены успевает
     // постоять на экране, а не мелькает на самой кромке контейнера
-    const next = Math.min(steps - 1, Math.floor(value * steps))
-    setStep(current => (current === next ? current : next))
+    const raw = value * steps
+
+    setStep(current => {
+      // Вперёд — только когда граница пройдена с запасом; назад — так же
+      if (raw >= current + 1 + STEP_DEADBAND) return Math.min(steps - 1, Math.floor(raw))
+      if (raw <= current - STEP_DEADBAND) return Math.max(0, Math.floor(raw))
+      return current
+    })
   })
 
   return reduced ? steps - 1 : step

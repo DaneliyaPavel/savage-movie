@@ -288,6 +288,35 @@
 }
 
 /*
+ * Сниженное движение в разделе направлений.
+ *
+ * Прокрутка это уже уважала: каждая сцена показывает не первый свой кадр, а
+ * итог — слово произнесено, полоса раскрыта, лист поделён, шов снят. А слой
+ * взаимодействий не уважал вовсе: он собран на CSS-переходах, до которых
+ * MotionConfig не достаёт. Наведение на полосу fashion по-прежнему
+ * раскрывало её анимацией раскладки на 620 мс, заголовок beauty полсекунды
+ * менял кегль, стрелка CTA уезжала вбок.
+ *
+ * Снимается движение, а не обратная связь: цвет и прозрачность остаются —
+ * без них непонятно, что состояние вообще сменилось, — а всё, что двигает
+ * или перестраивает, происходит мгновенно.
+ */
+@media (prefers-reduced-motion: reduce) {
+  [data-stage],
+  [data-stage] *,
+  [data-scene='hero'],
+  [data-scene='hero'] *,
+  #services-outro,
+  #services-outro * {
+    transition-property:
+      opacity, color, background-color, border-color, text-decoration-color !important;
+    transition-duration: var(--motion-state) !important;
+    transition-timing-function: var(--ease-out-expo) !important;
+    animation: none !important;
+  }
+}
+
+/*
  * Появление шапки. Как и .hero-reveal — только transform, без opacity.
  * Прежняя версия была motion.header с initial={{opacity:0}}: Framer пишет
  * это инлайновым стилем ещё на SSR, и навигация всего сайта оказывалась
@@ -736,6 +765,20 @@
     --ease-in-out-cubic: cubic-bezier(0.4, 0, 0.2, 1);
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-in-out-back: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /*
+     * Шкала времени раздела направлений.
+     *
+     * Четыре ступени вместо семи случайных значений. До этого на странице
+     * жили 150 мс (умолчание Tailwind, доставшееся семи местам вместе с чужой
+     * кривой), 200, 300, 500, 620 и 700 — и по длительности нельзя было
+     * понять, насколько крупное событие происходит. Теперь длительность
+     * называет масштаб: нажатие, смена состояния, смена композиции, склейка.
+     */
+    --motion-press: 120ms;
+    --motion-state: 180ms;
+    --motion-move: 420ms;
+    --motion-cut: 700ms;
   }
 
   /* Freshman.tv style typography utilities */

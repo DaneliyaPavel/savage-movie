@@ -153,7 +153,8 @@ export function StageBeauty({
                 /* Зона нажатия у индекса материалов растянута по вертикали
                    псевдоэлементом: сама строка остаётся строкой */
                 className={cn(
-                  'type-meta relative block font-mono uppercase transition-colors',
+                  'type-meta relative block font-mono uppercase',
+                  'transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)]',
                   "before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-['']",
                   'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
                   isCurrent
@@ -176,7 +177,11 @@ export function StageBeauty({
           {/* Обе строки всегда в разметке: меняется вес присутствия, а не факт */}
           <span
             className={cn(
-              'block origin-left transition-[font-size,color] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+              /* Смена кегля — движение камеры, а не смена состояния: она идёт
+                 по шкале композиции. Измерено: 0,3 мс раскладки на кадр, ни
+                 одного пропущенного кадра — свойство остаётся font-size, а не
+                 подменяется масштабированием, которое исказило бы вес шрифта */
+              'block origin-left transition-[font-size,color] duration-[var(--motion-move)] ease-[var(--ease-out-expo)]',
               closer
                 ? 'text-[clamp(1.1rem,2.4vw,2rem)] text-white/45'
                 : 'text-[clamp(2.8rem,7vw,6rem)] text-white'
@@ -186,7 +191,7 @@ export function StageBeauty({
           </span>
           <span
             className={cn(
-              'block origin-left transition-[font-size,color] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+              'block origin-left transition-[font-size,color] duration-[var(--motion-move)] ease-[var(--ease-out-expo)]',
               closer
                 ? 'text-[clamp(2.8rem,7vw,6rem)] text-white'
                 : 'text-[clamp(1.1rem,2.4vw,2rem)] text-white/35'
