@@ -1,6 +1,6 @@
 'use client'
 
-import { StageRail, StageShell, StageTitle } from './stage-shell'
+import { SceneFoot, STAGE_BOTTOM, StageRail, StageShell, StageTitle } from './stage-shell'
 import { SceneMedia } from './scene-media'
 import { DirectionCta } from './direction-cta'
 import { ProofRail } from './proof-rail'
@@ -40,7 +40,15 @@ export function StageCommercial({
             active={active}
             aspect="auto"
             sizes="100vw"
-            eager
+            /*
+              Ни priority, ни eager. Сцена 01 стоит ровно на экран ниже
+              первого, и браузер поднимает такой кадр сам: порог отложенной
+              загрузки в Chrome — 1250px на быстрой сети и 2500px на
+              медленной, то есть на медленной он приходит раньше, а не позже.
+              А вот второй <link rel=preload> в голове документа отбирал канал
+              у кадра первого экрана — у того самого, ради которого priority и
+              существует. На странице он теперь ровно один.
+            */
             className="h-full w-full"
           />
         ) : null}
@@ -55,7 +63,12 @@ export function StageCommercial({
 
       <StageRail direction={direction} />
 
-      <div className="relative z-10 flex h-full flex-col justify-end px-6 pb-14 md:px-10 md:pb-16 lg:px-20">
+      <div
+        className={cn(
+          'relative z-10 flex h-full flex-col justify-end px-6 md:px-10 lg:px-20',
+          STAGE_BOTTOM
+        )}
+      >
         <StageTitle id={id} className="text-[clamp(2.6rem,7.5vw,6.5rem)]">
           {BEATS.map((beat, index) => (
             <span
@@ -86,15 +99,18 @@ export function StageCommercial({
           Рекламные ролики для запуска продукта, кампании, retail, digital и экранов.
         </p>
 
-        <div className="mt-8 flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
-          <DirectionCta direction={direction} onBrief={onBrief} onNavigate={onNavigate} />
-          <ProofRail
-            direction={direction}
-            onCaseOpen={onCaseOpen}
-            brandsOnly
-            className="opacity-60 transition-opacity hover:opacity-100"
-          />
-        </div>
+        <SceneFoot
+          className="mt-8"
+          cta={<DirectionCta direction={direction} onBrief={onBrief} onNavigate={onNavigate} />}
+          aside={
+            <ProofRail
+              direction={direction}
+              onCaseOpen={onCaseOpen}
+              brandsOnly
+              className="opacity-60 transition-opacity hover:opacity-100"
+            />
+          }
+        />
       </div>
     </StageShell>
   )

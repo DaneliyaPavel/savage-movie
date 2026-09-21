@@ -39,8 +39,16 @@ export interface LazyHlsVideoProps {
   title?: string
   /** Прогресс просмотра: старт, половина, досмотр. Каждое событие — один раз */
   onProgressMilestone?: (milestone: 'start' | 'half' | 'complete') => void
-  /** Постер грузится с priority: только для медиа первого экрана */
+  /** Постер не откладывается до приближения к вьюпорту */
   eager?: boolean
+  /**
+   * Постер — LCP страницы: <link rel=preload> и fetchpriority=high. По
+   * умолчанию совпадает с eager, потому что раньше это было одно и то же
+   * свойство. Разводятся они там, где кадр нужен сразу, но канал первого
+   * экрана забирать не должен: второй priority на странице не ускоряет
+   * второй кадр, он замедляет первый.
+   */
+  priority?: boolean
   /** sizes для next/image; по умолчанию — полноширинный блок (hero, showreel) */
   sizes?: string
   /**
@@ -74,6 +82,7 @@ export function LazyHlsVideo({
   title,
   onProgressMilestone,
   eager = false,
+  priority = eager,
   sizes = '100vw',
   active = true,
 }: LazyHlsVideoProps) {
@@ -229,7 +238,8 @@ export function LazyHlsVideo({
             aria-hidden="true"
             fill
             sizes={sizes}
-            priority={eager}
+            priority={priority}
+            loading={priority ? undefined : eager ? 'eager' : 'lazy'}
             className={cn(
               'object-cover transition-opacity duration-700',
               isPlaying ? 'opacity-0' : 'opacity-100'
@@ -241,8 +251,8 @@ export function LazyHlsVideo({
             src={posterUrl}
             alt=""
             aria-hidden="true"
-            loading={eager ? 'eager' : 'lazy'}
-            fetchPriority={eager ? 'high' : 'auto'}
+            loading={eager || priority ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : 'auto'}
             decoding="async"
             className={cn(
               'absolute inset-0 h-full w-full object-cover transition-opacity duration-700',

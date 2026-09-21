@@ -115,17 +115,17 @@ export function ServicesEndFrame({
           </button>
 
           {/* Те же контакты, что в футере и в разметке организации */}
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-3 font-mono text-[0.6rem] uppercase tracking-[0.2em] text-white/45 md:text-[0.68rem]">
+          <div className="type-meta flex flex-wrap items-center gap-x-8 gap-y-3 font-mono uppercase text-white/50">
             <a
               href={PHONE_HREF}
-              className="transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+              className="relative transition-colors before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
               {PHONE_DISPLAY}
             </a>
             <a
               href={EMAIL_HREF}
               onClick={onEmailClick}
-              className="transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+              className="relative transition-colors before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
               {EMAIL}
             </a>
@@ -134,7 +134,7 @@ export function ServicesEndFrame({
               target="_blank"
               rel="noopener noreferrer"
               onClick={onTelegramClick}
-              className="transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+              className="relative transition-colors before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
               Telegram
             </a>

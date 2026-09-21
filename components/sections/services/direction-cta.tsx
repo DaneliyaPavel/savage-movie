@@ -36,7 +36,9 @@ export function DirectionCta({
   const isLight = theme === 'white'
 
   const shared = cn(
-    'group inline-flex items-center gap-3 border-b pb-2 text-left text-base font-medium transition-colors md:text-lg',
+    /* gap-2.5, а не gap-3: стрелка — это знак препинания у слова, и оптически
+       она стоит ближе, чем номинальные 12px между двумя словами */
+    'group inline-flex items-center gap-2.5 border-b pb-2 text-left text-base font-medium transition-colors md:text-lg',
     'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
     isLight
       ? 'border-black/25 text-[#0D0D0D] hover:border-accent hover:text-accent'

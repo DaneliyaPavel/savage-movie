@@ -29,6 +29,20 @@ describe('normalizePosterUrl', () => {
     expect(normalizePosterUrl(url)).toBe(url)
   })
 
+  it('Bunny через собственный прокси /cdn/ — тоже приводим к thumbnail.jpg', () => {
+    expect(
+      normalizePosterUrl(
+        'https://savagemovie.ru/cdn/1ea8ba75-551a-428e-be79-d8a2add06a01/preview.webp?v=1774532512'
+      )
+    ).toBe('https://savagemovie.ru/cdn/1ea8ba75-551a-428e-be79-d8a2add06a01/thumbnail.jpg')
+  })
+
+  it('относительный путь к тому же прокси — приводим так же', () => {
+    expect(normalizePosterUrl('/cdn/1ea8ba75-551a-428e-be79-d8a2add06a01/preview.webp')).toBe(
+      '/cdn/1ea8ba75-551a-428e-be79-d8a2add06a01/thumbnail.jpg'
+    )
+  })
+
   it('сторонний хост с похожим путём — тоже не трогаем', () => {
     const url = 'https://not-b-cdn.net.evil.example/video/preview.webp'
     expect(normalizePosterUrl(url)).toBe(url)

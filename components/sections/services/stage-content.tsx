@@ -1,6 +1,17 @@
 'use client'
 
-import { StageRail, StageShell, StageTitle } from './stage-shell'
+import Image from 'next/image'
+
+import {
+  SceneCredit,
+  SceneFoot,
+  STAGE_BOTTOM,
+  STAGE_TOP,
+  StageRail,
+  StageShell,
+  StageTitle,
+} from './stage-shell'
+import { canOptimizePoster } from '@/lib/commercial-landing/poster-url'
 import { SceneMedia } from './scene-media'
 import { DirectionCta } from './direction-cta'
 import { useStage, useStageStep } from './use-stage'
@@ -80,33 +91,54 @@ export function StageContent({
     <StageShell id={id} direction={direction} containerRef={containerRef} depth={380}>
       <StageRail direction={direction} />
 
-      <div className="absolute inset-0 flex items-center justify-center px-4 pb-56 pt-28 md:px-10 md:pb-60 lg:px-20">
-        {/* Рамка монтажного листа: линии сетки — это зазор фона, поэтому в
+      {/*
+        Лист занимает остаток экрана, а не половину его высоты при
+        фиксированном резерве в четырнадцать рем под набор. На 1440×720 набор
+        просил больше, чем резерв, и «ОДНА СМЕНА» накрывала нижний ряд долей.
+      */}
+      {/* Без собственного z: иначе обёртка создаёт контекст наложения и
+          заявление уходит под затемнение и под пометку на полях */}
+      <div className="flex h-full flex-col">
+        <div
+          className={cn(
+            'flex min-h-0 flex-1 items-center justify-center px-4 md:px-10 lg:px-20',
+            STAGE_TOP
+          )}
+        >
+          {/* Рамка монтажного листа: линии сетки — это зазор фона, поэтому в
             стыках не удваивается толщина */}
-        {/* На телефоне лист выше пропорцией: при 16:9 на узком экране восемь
+          {/* На телефоне лист выше пропорцией: при 16:9 на узком экране восемь
             долей ужимаются в полоску и перестают быть доказательством */}
-        <div className="grid aspect-[5/4] max-h-[50svh] w-full max-w-[min(94vw,1480px)] grid-cols-4 grid-rows-2 gap-[2px] bg-white/15 md:aspect-[16/9]">
-          {CELLS.map((cell, index) => {
-            const shown = index < visible
+          {/* Рамка по внешней кромке той же толщины, что и линии сетки: без неё
+            лист обрывался на краю крайних долей и читался сеткой, а не
+            монтажным листом */}
+          <div
+            className="grid aspect-[5/4] w-full max-w-[min(94vw,1480px)] grid-cols-4 grid-rows-2 gap-[2px] bg-white/15 p-[2px] md:aspect-[16/9]"
+            /* Не выше половины экрана и не выше того, что осталось */
+            style={{ maxHeight: 'min(50svh, 100%)' }}
+          >
+            {CELLS.map((cell, index) => {
+              const shown = index < visible
 
-            return (
-              <div
-                key={`${cell.label}-${index}`}
-                /*
+              return (
+                <div
+                  key={`${cell.label}-${index}`}
+                  /*
                   Невидимая доля убирается из раскладки, а не гасится
                   прозрачностью: в сетке с двумя явными рядами погашенная
                   ячейка всё равно занимает место и выдавливает лист за
                   пределы кадра. Перечень выдачи при этом не теряется для
                   поиска — он есть текстом в спецификации ниже по странице.
                 */
-                className={cn(
-                  'relative min-h-0 min-w-0 overflow-hidden bg-[#0A0A0A]',
-                  'transition-opacity duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]',
-                  shown ? span : 'hidden'
-                )}
-              >
-                {index === 0 && step === 0 ? (
-                  /*
+                  /* transition-opacity здесь не было смысла: доля появляется
+                   через display, а его браузер не интерполирует */
+                  className={cn(
+                    'relative min-h-0 min-w-0 overflow-hidden bg-[#0D0D0D]',
+                    shown ? span : 'hidden'
+                  )}
+                >
+                  {index === 0 && step === 0 ? (
+                    /*
                     Движение живёт ровно столько, сколько лист остаётся одним
                     мастер-кадром. Дальше это контрольный лист смены, и все
                     доли — один и тот же кадр под разной обрезкой. Раньше
@@ -114,53 +146,74 @@ export function StageContent({
                     показывали постер: два разных изображения на листе,
                     который весь построен на том, что съёмка была одна.
                   */
-                  master ? (
-                    <SceneMedia
-                      work={master}
-                      active={active}
-                      aspect="auto"
-                      sizes="92vw"
-                      className="h-full w-full"
-                    />
-                  ) : null
-                ) : master?.posterUrl ? (
-                  /* Доли — один и тот же кадр под разной обрезкой. Обычный img,
-                     потому что постер может прийти из CMS внешним адресом.
-                     eslint-disable-next-line @next/next/no-img-element */
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={master.posterUrl}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    className="absolute inset-0 h-full w-full object-cover"
-                    style={{
-                      objectPosition: cell.position,
-                      transform: `scale(${cell.zoom})`,
-                    }}
-                  />
-                ) : null}
+                    master ? (
+                      <SceneMedia
+                        work={master}
+                        active={active}
+                        aspect="auto"
+                        sizes="92vw"
+                        className="h-full w-full"
+                      />
+                    ) : null
+                  ) : master?.posterUrl ? (
+                    /*
+                    Доли — один и тот же кадр под разной обрезкой, и sizes у них
+                    тот же, что у мастер-кадра. Это не формальность: оптимизатор
+                    строит URL из sizes, поэтому все восемь долей и мастер-кадр
+                    просят ровно один файл, который к моменту деления уже лежит
+                    в кэше. Раньше доли брали исходник CMS напрямую — лист в
+                    середине сцены догружал вторую, неоптимизированную копию
+                    того же кадра.
+                  */
+                    canOptimizePoster(master.posterUrl) ? (
+                      <Image
+                        src={master.posterUrl}
+                        alt=""
+                        fill
+                        sizes="92vw"
+                        quality={75}
+                        className="object-cover"
+                        style={{
+                          objectPosition: cell.position,
+                          transform: `scale(${cell.zoom})`,
+                        }}
+                      />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={master.posterUrl}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className="absolute inset-0 h-full w-full object-cover"
+                        style={{
+                          objectPosition: cell.position,
+                          transform: `scale(${cell.zoom})`,
+                        }}
+                      />
+                    )
+                  ) : null}
 
-                {/*
+                  {/*
                   Подписи приходят вместе с последним делением. Пока лист ещё
                   делится, они только мешают увидеть само деление; нумерация
                   убрана совсем — долю, которую видно, человек считает глазами.
                 */}
-                <span
-                  className={cn(
-                    'absolute bottom-2 left-2 font-mono text-[0.52rem] uppercase tracking-[0.2em] text-white/80 transition-opacity duration-500 md:text-[0.6rem]',
-                    complete ? 'opacity-100' : 'opacity-0'
-                  )}
-                >
-                  {cell.label}
-                </span>
-              </div>
-            )
-          })}
+                  <span
+                    className={cn(
+                      'type-meta-sm absolute bottom-2 left-2 font-mono uppercase text-white/80 transition-opacity duration-500 [text-shadow:0_1px_2px_rgba(0,0,0,0.95),0_0_12px_rgba(0,0,0,0.75)]',
+                      complete ? 'opacity-100' : 'opacity-0'
+                    )}
+                  >
+                    {cell.label}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         </div>
-      </div>
 
-      {/*
+        {/*
         Единственная рукописная пометка страницы.
         
         Контрольный лист смены — производственный документ, и на настоящем
@@ -169,64 +222,66 @@ export function StageContent({
         на этой странице занят одним словом) и говорит ровно тот факт, которого
         нет ни в заголовке, ни в подписях долей.
       */}
-      <span
-        aria-hidden="true"
-        className={cn(
-          'pointer-events-none absolute right-6 z-[6] -rotate-[7deg] text-lg text-white/70 transition-opacity duration-700 md:right-12 md:text-2xl lg:right-24',
-          /* На поле рядом с заявлением, а не поверх листа: пометка на полях
-             читается, пометка поверх кадра — нет */
-          'bottom-[30%] md:bottom-[15%]',
-          complete ? 'opacity-100' : 'opacity-0'
-        )}
-        style={{ fontFamily: 'var(--font-handwritten), cursive' }}
-      >
-        одна площадка, один день
-      </span>
-
-      {/* Лист уходит под заявление: без затемнения белый набор ложится на
-          светлый кадр и перестаёт читаться ровно в момент вывода */}
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-[28%] bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/80 to-transparent"
-      />
-
-      <div className="relative z-10 flex h-full flex-col justify-end px-6 pb-12 md:px-10 md:pb-14 lg:px-20">
-        <StageTitle
-          id={id}
+        <span
+          aria-hidden="true"
           className={cn(
-            /*
+            'pointer-events-none absolute right-6 z-[6] -rotate-[7deg] text-lg text-white/70 transition-opacity duration-700 md:right-12 md:text-2xl lg:right-24',
+            /* На поле рядом с заявлением, а не поверх листа: пометка на полях
+             читается, пометка поверх кадра — нет */
+            'bottom-[30%] md:bottom-[15%]',
+            complete ? 'opacity-100' : 'opacity-0'
+          )}
+          style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+        >
+          одна площадка, один день
+        </span>
+
+        {/* Лист уходит под заявление: без затемнения белый набор ложится на
+          светлый кадр и перестаёт читаться ровно в момент вывода */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-[28%] bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/80 to-transparent"
+        />
+
+        <div className={cn('relative z-10 shrink-0 px-6 pt-8 md:px-10 lg:px-20', STAGE_BOTTOM)}>
+          <StageTitle
+            id={id}
+            className={cn(
+              /*
               Кегль подтянут к общему кеглю территорий. Единственный красный
               удар страницы стоял в самом мелком заголовке из восьми — то есть
               самое дорогое предложение студии было набрано тише всего
               остального.
             */
-            'text-[clamp(2rem,6.6vw,5.8rem)] transition-opacity duration-500',
-            complete ? 'opacity-100' : 'opacity-25'
-          )}
-        >
-          Одна смена.
-          {/*
+              'text-[clamp(2rem,6.6vw,5.8rem)] transition-opacity duration-500',
+              complete ? 'opacity-100' : 'opacity-25'
+            )}
+          >
+            Одна смена.
+            {/*
             Единственный красный удар всей страницы. Он стоит здесь, а не в
             beauty: это момент, когда экран уже доказал самое дорогое
             предложение студии, и слово просто совпадает с доказательством.
           */}
-          <span className={cn('block transition-colors duration-500', complete && 'text-accent')}>
-            Не один ролик.
-          </span>
-        </StageTitle>
+            <span className={cn('block transition-colors duration-500', complete && 'text-accent')}>
+              Не один ролик.
+            </span>
+          </StageTitle>
 
-        <div className="mt-7 flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
-          <DirectionCta direction={direction} onBrief={onBrief} onNavigate={onNavigate} />
-
-          {master ? (
-            <a
-              href={`/projects/${master.slug}`}
-              onClick={() => onCaseOpen(direction, master.slug)}
-              className="font-mono text-[0.6rem] uppercase tracking-[0.22em] text-white/50 transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent md:text-[0.68rem]"
-            >
-              Мастер-материал — {master.client}
-            </a>
-          ) : null}
+          <SceneFoot
+            className="mt-7"
+            cta={<DirectionCta direction={direction} onBrief={onBrief} onNavigate={onNavigate} />}
+            aside={
+              master ? (
+                <SceneCredit
+                  href={`/projects/${master.slug}`}
+                  onClick={() => onCaseOpen(direction, master.slug)}
+                >
+                  Мастер-материал — {master.client}
+                </SceneCredit>
+              ) : undefined
+            }
+          />
         </div>
       </div>
     </StageShell>

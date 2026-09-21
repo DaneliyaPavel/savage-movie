@@ -20,6 +20,14 @@ import type { DirectionWork } from '@/lib/services/proof'
  *
  * Первый кадр — LCP страницы, поэтому он единственный грузится с priority.
  * При prefers-reduced-motion смены нет вовсе: остаётся первый кадр.
+ *
+ * В разметке живут только уже показанный кадр и следующий за ним. Раньше все
+ * шесть стояли сразу: они лежат внутри вьюпорта, просто на нулевой
+ * прозрачности, поэтому «ленивая» загрузка для браузера ничего не откладывала
+ * — шесть полноэкранных кадров начинали качаться одновременно с тем
+ * единственным, ради которого и стоит priority, и отбирали у него канал.
+ * Следующий план подтягивается за 2,4 с до своей склейки: этого хватает с
+ * запасом, а первому экрану остаётся один запрос вместо шести.
  */
 
 /** Длительность плана. Общая с ритмом сцен ниже — страница монтируется в один такт */
@@ -33,7 +41,13 @@ export interface ServicesHeroProps {
 }
 
 export function ServicesHero({ eyebrow, title, lead, montage }: ServicesHeroProps) {
-  const [frame, setFrame] = useState(0)
+  /**
+   * frame — что на экране, reached — до какого плана монтаж уже дошёл.
+   * Второе только растёт: на втором круге кадр не должен уходить из разметки
+   * и возвращаться обратно. Одно состояние на двоих, потому что меняются они
+   * всегда вместе.
+   */
+  const [{ frame, reached }, setCut] = useState({ frame: 0, reached: 0 })
   const timerRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -45,14 +59,30 @@ export function ServicesHero({ eyebrow, title, lead, montage }: ServicesHeroProp
      * Вкладка в фоне не должна копить склейки: без этой проверки человек,
      * вернувшийся через минуту, увидит рывок сразу на несколько планов.
      */
+    const last = montage.length - 1
     const tick = () => {
-      if (document.visibilityState === 'visible') {
-        setFrame(current => (current + 1) % montage.length)
-      }
+      if (document.visibilityState !== 'visible') return
+      setCut(prev => {
+        const next = (prev.frame + 1) % montage.length
+        // Следующий план подтягивается за такт до своей склейки
+        return { frame: next, reached: Math.max(prev.reached, Math.min(next + 1, last)) }
+      })
     }
+
+    /*
+     * Второй план приходит после первой отрисовки, а не вместе с ней. Все
+     * кадры монтажа лежат внутри вьюпорта — просто на нулевой прозрачности, —
+     * и «ленивая» загрузка для браузера ничего не откладывает: пока их было
+     * шесть, шесть полноэкранных запросов стартовали одновременно с тем
+     * единственным, ради которого стоит priority.
+     */
+    const prime = window.requestAnimationFrame(() =>
+      setCut(prev => ({ ...prev, reached: Math.max(prev.reached, Math.min(1, last)) }))
+    )
 
     timerRef.current = window.setInterval(tick, CUT_MS)
     return () => {
+      window.cancelAnimationFrame(prime)
       if (timerRef.current !== null) window.clearInterval(timerRef.current)
     }
   }, [montage.length])
@@ -63,25 +93,31 @@ export function ServicesHero({ eyebrow, title, lead, montage }: ServicesHeroProp
       className="relative isolate flex min-h-[100svh] w-full flex-col justify-end overflow-hidden bg-[#0D0D0D] px-6 pb-16 pt-28 text-white md:px-10 md:pb-20 lg:px-20"
     >
       <div className="absolute inset-0 -z-10">
-        {montage.map((work, index) => (
-          <div
-            key={work.slug}
-            aria-hidden="true"
-            /* Встык: видимость переключается без transition — это склейка */
-            className={cn('absolute inset-0', index === frame ? 'opacity-100' : 'opacity-0')}
-          >
-            {work.posterUrl ? (
-              <Image
-                src={work.posterUrl}
-                alt=""
-                fill
-                sizes="100vw"
-                priority={index === 0}
-                className="object-cover"
-              />
-            ) : null}
-          </div>
-        ))}
+        {montage.map((work, index) => {
+          // Кадр монтируется, когда до него остался один такт, и из разметки
+          // больше не уходит: на втором круге он приходит уже из кэша
+          if (index > reached) return null
+
+          return (
+            <div
+              key={work.slug}
+              aria-hidden="true"
+              /* Встык: видимость переключается без transition — это склейка */
+              className={cn('absolute inset-0', index === frame ? 'opacity-100' : 'opacity-0')}
+            >
+              {work.posterUrl ? (
+                <Image
+                  src={work.posterUrl}
+                  alt=""
+                  fill
+                  sizes="100vw"
+                  priority={index === 0}
+                  className="object-cover"
+                />
+              ) : null}
+            </div>
+          )
+        })}
 
         {/*
           Затемнение прижато к низу, а не размазано по всему кадру. Прежняя
@@ -106,9 +142,9 @@ export function ServicesHero({ eyebrow, title, lead, montage }: ServicesHeroProp
         листал, и объяснять ему прокрутку значит занимать строку ничем.
       */}
       <div className="hero-reveal">
-        <p className="font-mono text-[0.58rem] uppercase tracking-[0.18em] text-white/50 md:text-xs md:tracking-[0.28em]">
-          {eyebrow}
-        </p>
+        {/* Тот же кегль и трекинг, что у всех пометок ниже: технический слой
+            страницы начинается здесь и обязан начинаться в своём наборе */}
+        <p className="type-meta font-mono uppercase text-white/50">{eyebrow}</p>
 
         <h1
           id="services-hero-title"

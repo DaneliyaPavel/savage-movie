@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from 'react'
 
-import { StageRail, StageShell, StageTitle } from './stage-shell'
+import {
+  SceneCredit,
+  SceneFoot,
+  STAGE_BOTTOM,
+  STAGE_TOP,
+  StageRail,
+  StageShell,
+  StageTitle,
+} from './stage-shell'
 import { SceneMedia } from './scene-media'
 import { DirectionCta } from './direction-cta'
 import { useStage } from './use-stage'
@@ -102,7 +110,13 @@ export function StageMusic({ id, direction, active, onBrief, onNavigate, onCaseO
 
       <StageRail direction={direction} />
 
-      <div className="relative z-10 flex h-full flex-col justify-between px-6 pb-14 pt-32 md:px-10 md:pb-16 md:pt-36 lg:px-20">
+      <div
+        className={cn(
+          'relative z-10 flex h-full flex-col justify-between px-6 md:px-10 lg:px-20',
+          STAGE_TOP,
+          STAGE_BOTTOM
+        )}
+      >
         <div>
           <StageTitle id={id} className="text-[clamp(2.8rem,9vw,7.5rem)]">
             {BEATS.map((word, index) => (
@@ -125,7 +139,7 @@ export function StageMusic({ id, direction, active, onBrief, onNavigate, onCaseO
               Стоит под словом, потому что считает именно его такт */}
           <span
             aria-hidden="true"
-            className="mt-6 block font-mono text-[0.6rem] uppercase tracking-[0.24em] text-white/40 md:text-[0.68rem]"
+            className="type-meta mt-6 block font-mono uppercase text-white/35"
           >
             {timecode(beat)}
           </span>
@@ -137,19 +151,19 @@ export function StageMusic({ id, direction, active, onBrief, onNavigate, onCaseO
           SOLDATOV, DRALO и СОВКОМБАНК, и второй их список у нижней кромки был
           бы тем же перечнем, набранным дважды на одном кадре.
         */}
-        <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
-          <DirectionCta direction={direction} onBrief={onBrief} onNavigate={onNavigate} />
-
-          {lead ? (
-            <a
-              href={`/projects/${lead.slug}`}
-              onClick={() => onCaseOpen(direction, lead.slug)}
-              className="font-mono text-[0.6rem] uppercase tracking-[0.22em] text-white/50 transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent md:text-[0.68rem]"
-            >
-              {lead.client} — {lead.title}
-            </a>
-          ) : null}
-        </div>
+        <SceneFoot
+          cta={<DirectionCta direction={direction} onBrief={onBrief} onNavigate={onNavigate} />}
+          aside={
+            lead ? (
+              <SceneCredit
+                href={`/projects/${lead.slug}`}
+                onClick={() => onCaseOpen(direction, lead.slug)}
+              >
+                {lead.client} — {lead.title}
+              </SceneCredit>
+            ) : undefined
+          }
+        />
       </div>
     </StageShell>
   )

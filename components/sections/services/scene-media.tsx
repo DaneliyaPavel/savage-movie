@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Image from 'next/image'
 
 import { LazyHlsVideo } from '@/components/sections/commercial/lazy-hls-video'
@@ -32,14 +33,28 @@ export interface SceneMediaProps {
   aspect?: string
   className?: string
   sizes?: string
-  /** Кадр первого экрана: постер грузится с приоритетом */
+  /**
+   * Кадр грузится сразу, не дожидаясь приближения к вьюпорту. Это НЕ
+   * приоритет: браузер просто не откладывает запрос.
+   */
   eager?: boolean
+  /**
+   * LCP страницы. Ставит <link rel=preload> и fetchpriority=high — то есть
+   * забирает канал у всего остального. На странице такой кадр ровно один;
+   * второй priority не ускоряет второй кадр, а замедляет первый.
+   */
+  priority?: boolean
   /**
    * Точка кадра, которая обязана остаться в рамке. На телефоне
    * полноэкранный слот режет горизонтальный кадр до центральной трети, и
    * лицо, стоящее не по центру, из кадра уезжает.
    */
   objectPosition?: string
+  /**
+   * Кадр в разметке, но не на экране: так beauty держит все четыре материала
+   * загруженными и раскодированными заранее, а переключение остаётся склейкой.
+   */
+  hidden?: boolean
 }
 
 export function SceneMedia({
@@ -49,9 +64,20 @@ export function SceneMedia({
   className,
   sizes = '100vw',
   eager = false,
+  priority = false,
   objectPosition,
+  hidden = false,
 }: SceneMediaProps) {
   const title = `${work.client} — ${work.title}`
+  /*
+   * Постер может не приехать: в CMS остаются ссылки на файлы, которых уже нет,
+   * а прокси CDN отвечает 502. Браузер в этом случае рисует поверх композиции
+   * значок битой картинки и альтернативный текст — то есть ровно посреди
+   * финального кадра появляется строка «Biotherm — Молекула воды» служебным
+   * шрифтом. Вместо этого остаётся поверхность сцены, геометрия не меняется,
+   * а имя работы уходит в скринридер.
+   */
+  const [failed, setFailed] = useState(false)
 
   if (work.playbackId) {
     return (
@@ -63,9 +89,13 @@ export function SceneMedia({
         active={active}
         aspect={aspect}
         sizes={sizes}
-        eager={eager}
+        eager={eager || priority}
+        priority={priority}
         title={title}
-        className={className}
+        /* Поверхность под видео — та же, что у сцены. Раньше контейнер
+           красился в #0A0A0A: на чёрной странице #0D0D0D это прямоугольник
+           на три единицы темнее, который видно ровно до первого кадра */
+        className={cn('bg-[#0D0D0D]', className)}
       />
     )
   }
@@ -76,17 +106,22 @@ export function SceneMedia({
 
   return (
     <div
-      className={cn('relative overflow-hidden bg-[#0A0A0A]', className)}
+      className={cn('relative overflow-hidden bg-[#0D0D0D]', hidden && 'opacity-0', className)}
+      aria-hidden={hidden ? true : undefined}
       style={{ aspectRatio: aspect }}
     >
-      {canOptimizePoster(poster) ? (
+      {failed ? (
+        <span className="sr-only">{title}</span>
+      ) : canOptimizePoster(poster) ? (
         <Image
           src={poster}
           alt={title}
           fill
           sizes={sizes}
-          priority={eager}
+          priority={priority}
+          loading={priority ? undefined : eager ? 'eager' : 'lazy'}
           quality={75}
+          onError={() => setFailed(true)}
           style={objectPosition ? { objectPosition } : undefined}
           className="object-cover"
         />
@@ -98,9 +133,10 @@ export function SceneMedia({
         <img
           src={poster}
           alt={title}
-          loading={eager ? 'eager' : 'lazy'}
-          fetchPriority={eager ? 'high' : 'auto'}
+          loading={eager || priority ? 'eager' : 'lazy'}
+          fetchPriority={priority ? 'high' : 'auto'}
           decoding="async"
+          onError={() => setFailed(true)}
           style={objectPosition ? { objectPosition } : undefined}
           className="absolute inset-0 h-full w-full object-cover"
         />
