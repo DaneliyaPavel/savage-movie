@@ -41,6 +41,16 @@ export interface ServicesHeroProps {
 }
 
 export function ServicesHero({ eyebrow, title, lead, montage }: ServicesHeroProps) {
+  const sectionRef = useRef<HTMLElement>(null)
+  /**
+   * Монтаж идёт только пока первый экран виден.
+   *
+   * Раньше таймер стоял на весь сеанс: человек дочитывал спецификацию внизу
+   * страницы, а наверху продолжали сменяться планы — перерисовка каждые 2,4 с
+   * ради кадра, которого никто не видит. Склейка — событие для зрителя, а не
+   * фоновый процесс.
+   */
+  const [onScreen, setOnScreen] = useState(true)
   /**
    * frame — что на экране, reached — до какого плана монтаж уже дошёл.
    * Второе только растёт: на втором круге кадр не должен уходить из разметки
@@ -51,7 +61,19 @@ export function ServicesHero({ eyebrow, title, lead, montage }: ServicesHeroProp
   const timerRef = useRef<number | null>(null)
 
   useEffect(() => {
+    const node = sectionRef.current
+    if (!node || typeof IntersectionObserver === 'undefined') return
+
+    const observer = new IntersectionObserver(entries =>
+      setOnScreen(entries[0]?.isIntersecting ?? true)
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
     if (montage.length < 2) return
+    if (!onScreen) return
     if (typeof window === 'undefined' || !window.matchMedia) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
@@ -85,10 +107,12 @@ export function ServicesHero({ eyebrow, title, lead, montage }: ServicesHeroProp
       window.cancelAnimationFrame(prime)
       if (timerRef.current !== null) window.clearInterval(timerRef.current)
     }
-  }, [montage.length])
+  }, [montage.length, onScreen])
 
   return (
     <section
+      ref={sectionRef}
+      data-scene="hero"
       aria-labelledby="services-hero-title"
       className="relative isolate flex min-h-[100svh] w-full flex-col justify-end overflow-hidden bg-[#0D0D0D] px-6 pb-16 pt-28 text-white md:px-10 md:pb-20 lg:px-20"
     >

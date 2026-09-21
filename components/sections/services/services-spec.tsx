@@ -79,7 +79,7 @@ export function ServicesSpec({ directions, onCaseOpen, onNavigate }: ServicesSpe
                       <Link
                         href={`/projects/${work.slug}`}
                         onClick={() => onCaseOpen(direction, work.slug)}
-                        className="type-meta relative font-mono uppercase text-white/50 transition-colors before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                        className="type-meta relative font-mono uppercase text-white/50 transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)] before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
                       >
                         {work.client}
                       </Link>
@@ -99,7 +99,7 @@ export function ServicesSpec({ directions, onCaseOpen, onNavigate }: ServicesSpe
                 <Link
                   href={directionHref(direction)}
                   onClick={() => onNavigate(direction)}
-                  className="relative mt-2 block text-white/70 underline underline-offset-4 transition-colors before:absolute before:inset-x-0 before:-inset-y-2.5 before:content-[''] hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                  className="relative mt-2 block text-white/70 underline underline-offset-4 transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)] before:absolute before:inset-x-0 before:-inset-y-2.5 before:content-[''] hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
                 >
                   Страница направления
                 </Link>

@@ -38,7 +38,15 @@ export function DirectionCta({
   const shared = cn(
     /* gap-2.5, а не gap-3: стрелка — это знак препинания у слова, и оптически
        она стоит ближе, чем номинальные 12px между двумя словами */
-    'group inline-flex items-center gap-2.5 border-b pb-2 text-left text-base font-medium transition-colors md:text-lg',
+    'group inline-flex items-center gap-2.5 border-b pb-2 text-left text-base font-medium md:text-lg',
+    'transition-[color,border-color,transform] duration-[var(--motion-state)] ease-[var(--ease-out-expo)]',
+    /*
+      Нажатие. Единственное движение на странице, которого не видно, но
+      которое чувствуешь: страница подтверждает, что услышала палец, до
+      того как начнётся прокрутка к брифу. Полтора процента — ниже порога
+      «кнопка прыгнула» и выше порога «ничего не произошло».
+    */
+    'active:scale-[0.985] active:duration-[var(--motion-press)]',
     'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
     isLight
       ? 'border-black/25 text-[#0D0D0D] hover:border-accent hover:text-accent'
@@ -51,7 +59,7 @@ export function DirectionCta({
       <span>{direction.ctaLabel}</span>
       <ArrowRight
         aria-hidden="true"
-        className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"
+        className="h-4 w-4 transition-transform duration-[var(--motion-state)] ease-[var(--ease-out-expo)] group-hover:translate-x-1"
       />
     </>
   )

@@ -95,7 +95,14 @@ export function StageFashion({
                 onClick={() => setOverride(index)}
                 className={cn(
                   'group relative flex h-full min-h-0 min-w-0 flex-col',
-                  'transition-[flex-grow] duration-[620ms] ease-[cubic-bezier(0.16,1,0.3,1)]',
+                  /*
+                    420 мс вместо 620. На экспоненциальной кривой полоса
+                    проходит больше половины пути за первые сто миллисекунд,
+                    поэтому ответ и на 620 начинался сразу — но хвост длиной в
+                    две трети секунды превращал разворот в раскрывающийся
+                    аккордеон. Разворот листают, а не раскрывают.
+                  */
+                  'transition-[flex-grow] duration-[var(--motion-move)] ease-[var(--ease-out-expo)]',
                   'focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent'
                 )}
                 style={{ flexGrow: isOpen ? 5 : 1, flexBasis: 0 }}
@@ -106,7 +113,17 @@ export function StageFashion({
                     work={isOpen ? work : { ...work, playbackId: null }}
                     active={active && isOpen}
                     aspect="auto"
-                    sizes={isOpen ? '70vw' : '16vw'}
+                    /*
+                      Один sizes на оба состояния, и это про движение, а не про
+                      трафик. Пока сжатая полоса просила 16vw, а раскрытая
+                      70vw, браузер на каждом наведении выбирал из srcset
+                      другой файл: полоса начинала раскрываться с кадром в 256
+                      пикселей шириной и посреди хода подменяла его на 1080.
+                      Кадр на глазах менял резкость, а декодирование давало
+                      самый длинный кадр отрисовки на всей странице — 67 мс
+                      при быстром проходе мышью по брендам.
+                    */
+                    sizes="70vw"
                     /* Бумага, а не чёрный: тёмный кадр на сжатой полосе читался
                      дырой в ленте, хотя это просто тёмный кадр */
                     className="h-full w-full bg-[#F2F2F2]"
@@ -121,7 +138,8 @@ export function StageFashion({
               */}
                 <span
                   className={cn(
-                    'type-meta-sm block truncate pr-3 pt-3 text-left font-mono uppercase transition-colors',
+                    'type-meta-sm block truncate pr-3 pt-3 text-left font-mono uppercase',
+                    'transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)]',
                     /* Первая подпись встаёт по полю листа, хотя её кадр уходит
                      за кромку: поле держит набор, кромку переходит только
                      изображение */

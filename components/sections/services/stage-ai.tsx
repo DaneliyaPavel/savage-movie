@@ -45,7 +45,16 @@ export function StageAi({ id, direction, active, onBrief, onNavigate, onCaseOpen
   // Шов сначала едет вправо, потом исчезает вместе со вторым кадром
   const seam = useTransform(progress, [0, 0.5], reduced ? [50, 50] : [50, 76])
   const seamLeft = useMotionTemplate`${seam}%`
-  const overlayWidth = useTransform(seam, value => `${100 - value}%`)
+  /*
+   * Правый кадр обрезается, а не сжимается.
+   *
+   * Раньше контейнер второго кадра ехал по width: это свойство раскладки, и
+   * браузер пересчитывал её на каждом кадре прокрутки — тридцать четыре
+   * пересчёта за один проход сцены, во весь экран. Видимый результат тот же:
+   * clip-path режет тот же прямоугольник по той же отметке шва, но живёт в
+   * композиторе и раскладку не трогает вовсе.
+   */
+  const overlayClip = useMotionTemplate`inset(0 0 0 ${seam}%)`
 
   const seamOpacity = useTransform(progress, [0.5, 0.86], reduced ? [0, 0] : [1, 0])
   const overlayOpacity = useTransform(progress, [0.5, 0.92], reduced ? [0, 0] : [1, 0])
@@ -72,13 +81,13 @@ export function StageAi({ id, direction, active, onBrief, onNavigate, onCaseOpen
         ) : null}
       </div>
 
-      {/* Второй кадр живёт справа от шва. Контейнер обрезает, а сам кадр
-          остаётся в ширину экрана — иначе он бы сплющивался по ходу сцены */}
+      {/* Второй кадр живёт справа от шва. Кадр всегда во весь экран и никогда
+          не меняет размер — видимой остаётся только часть правее отметки */}
       <motion.div
-        style={{ width: overlayWidth, opacity: overlayOpacity }}
-        className="absolute inset-y-0 right-0 overflow-hidden will-change-[width,opacity]"
+        style={{ clipPath: overlayClip, opacity: overlayOpacity }}
+        className="absolute inset-0"
       >
-        <div className="absolute right-0 top-0 h-full w-screen">
+        <div className="absolute inset-0">
           {right ? (
             <SceneMedia
               work={{ ...right, playbackId: null }}

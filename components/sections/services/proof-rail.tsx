@@ -54,7 +54,8 @@ export function ProofRail({
             /* Строка доказательств высотой в набор; зона касания растянута
                ровно до соседнего ряда и ни на пиксель дальше */
             className={cn(
-              'group relative inline-flex items-baseline gap-2 transition-colors',
+              'group relative inline-flex items-baseline gap-2',
+              'transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)]',
               "before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-['']",
               'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
               isLight ? 'text-[#0D0D0D] hover:text-accent' : 'text-white hover:text-accent'
@@ -68,7 +69,7 @@ export function ProofRail({
             ) : (
               <span
                 className={cn(
-                  'type-meta font-mono uppercase transition-colors',
+                  'type-meta font-mono uppercase transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)]',
                   isLight
                     ? 'text-black/50 group-hover:text-accent'
                     : 'text-white/50 group-hover:text-accent'

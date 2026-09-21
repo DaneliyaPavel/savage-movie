@@ -105,12 +105,12 @@ export function ServicesEndFrame({
           <button
             type="button"
             onClick={onBriefClick}
-            className="group inline-flex items-center gap-3 border-b border-white pb-2 text-lg font-medium transition-colors hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent md:text-xl"
+            className="group inline-flex items-center gap-3 border-b border-white pb-2 text-lg font-medium transition-[color,border-color,transform] duration-[var(--motion-state)] ease-[var(--ease-out-expo)] hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent active:scale-[0.985] active:duration-[var(--motion-press)] md:text-xl"
           >
             Обсудить проект
             <ArrowDown
               aria-hidden="true"
-              className="h-4 w-4 transition-transform duration-200 group-hover:translate-y-1"
+              className="h-4 w-4 transition-transform duration-[var(--motion-state)] ease-[var(--ease-out-expo)] group-hover:translate-y-1"
             />
           </button>
 
@@ -118,14 +118,14 @@ export function ServicesEndFrame({
           <div className="type-meta flex flex-wrap items-center gap-x-8 gap-y-3 font-mono uppercase text-white/50">
             <a
               href={PHONE_HREF}
-              className="relative transition-colors before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+              className="relative transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)] before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
               {PHONE_DISPLAY}
             </a>
             <a
               href={EMAIL_HREF}
               onClick={onEmailClick}
-              className="relative transition-colors before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+              className="relative transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)] before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
               {EMAIL}
             </a>
@@ -134,7 +134,7 @@ export function ServicesEndFrame({
               target="_blank"
               rel="noopener noreferrer"
               onClick={onTelegramClick}
-              className="relative transition-colors before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+              className="relative transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)] before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
               Telegram
             </a>

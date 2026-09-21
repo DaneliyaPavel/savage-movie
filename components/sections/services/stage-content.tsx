@@ -201,7 +201,7 @@ export function StageContent({
                 */}
                   <span
                     className={cn(
-                      'type-meta-sm absolute bottom-2 left-2 font-mono uppercase text-white/80 transition-opacity duration-500 [text-shadow:0_1px_2px_rgba(0,0,0,0.95),0_0_12px_rgba(0,0,0,0.75)]',
+                      'type-meta-sm absolute bottom-2 left-2 font-mono uppercase text-white/80 transition-opacity duration-[var(--motion-move)] ease-[var(--ease-out-expo)] [text-shadow:0_1px_2px_rgba(0,0,0,0.95),0_0_12px_rgba(0,0,0,0.75)]',
                       complete ? 'opacity-100' : 'opacity-0'
                     )}
                   >
@@ -225,7 +225,7 @@ export function StageContent({
         <span
           aria-hidden="true"
           className={cn(
-            'pointer-events-none absolute right-6 z-[6] -rotate-[7deg] text-lg text-white/70 transition-opacity duration-700 md:right-12 md:text-2xl lg:right-24',
+            'pointer-events-none absolute right-6 z-[6] -rotate-[7deg] text-lg text-white/70 transition-opacity duration-[var(--motion-cut)] ease-[var(--ease-out-expo)] md:right-12 md:text-2xl lg:right-24',
             /* На поле рядом с заявлением, а не поверх листа: пометка на полях
              читается, пометка поверх кадра — нет */
             'bottom-[30%] md:bottom-[15%]',
@@ -253,7 +253,7 @@ export function StageContent({
               самое дорогое предложение студии было набрано тише всего
               остального.
             */
-              'text-[clamp(2rem,6.6vw,5.8rem)] transition-opacity duration-500',
+              'text-[clamp(2rem,6.6vw,5.8rem)] transition-opacity duration-[var(--motion-move)] ease-[var(--ease-out-expo)]',
               complete ? 'opacity-100' : 'opacity-25'
             )}
           >
@@ -263,7 +263,12 @@ export function StageContent({
             beauty: это момент, когда экран уже доказал самое дорогое
             предложение студии, и слово просто совпадает с доказательством.
           */}
-            <span className={cn('block transition-colors duration-500', complete && 'text-accent')}>
+            <span
+              className={cn(
+                'block transition-colors duration-[var(--motion-move)] ease-[var(--ease-out-expo)]',
+                complete && 'text-accent'
+              )}
+            >
               Не один ролик.
             </span>
           </StageTitle>
