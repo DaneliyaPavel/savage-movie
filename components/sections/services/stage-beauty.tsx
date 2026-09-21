@@ -3,7 +3,14 @@
 import { useState } from 'react'
 import { motion, useTransform } from 'framer-motion'
 
-import { StageRail, StageShell, StageTitle } from './stage-shell'
+import {
+  SceneCredit,
+  SceneFoot,
+  STAGE_BOTTOM,
+  StageRail,
+  StageShell,
+  StageTitle,
+} from './stage-shell'
 import { SceneMedia } from './scene-media'
 import { DirectionCta } from './direction-cta'
 import { useStage, useStageStep } from './use-stage'
@@ -82,19 +89,31 @@ export function StageBeauty({
       depth={300}
       surfaceClassName="bg-[#070707]"
     >
+      {/*
+        Все четыре материала стоят в разметке сразу, друг под другом.
+        Переключение — это склейка, а не загрузка: раньше в кадре жила только
+        выбранная работа, и на медленной сети после нажатия на GLOSS ещё
+        полсекунды висела SKIN, а потом кадр менялся рывком. Слои лежат внутри
+        вьюпорта, поэтому браузер тянет их по приближении сцены, успевает
+        раскодировать и отдаёт мгновенно; полноэкранного LCP это не касается —
+        территория третья по счёту и до неё два экрана прокрутки.
+      */}
       <motion.div style={{ scale }} className="absolute inset-0 will-change-transform">
-        {current ? (
+        {works.map((work, position) => (
           <SceneMedia
+            key={work.slug}
             /* Поток не поднимаем: у этих работ фактура живёт в кадре, а не в
                хронометраже, и выбранный план сильнее любой своей секунды */
-            work={{ ...current, playbackId: null }}
-            active={active}
+            work={{ ...work, playbackId: null }}
+            active={active && position === index}
             aspect="auto"
             sizes="100vw"
-            objectPosition={FOCUS_BY_SLUG[current.slug]}
-            className="h-full w-full"
+            objectPosition={FOCUS_BY_SLUG[work.slug]}
+            hidden={position !== index}
+            /* Поверхность слоя — чернота этой сцены, а не базовая страницы */
+            className="absolute inset-0 h-full w-full bg-[#070707]"
           />
-        ) : null}
+        ))}
       </motion.div>
 
       {/*
@@ -131,10 +150,15 @@ export function StageBeauty({
                 onMouseEnter={() => setIndex(position)}
                 onFocus={() => setIndex(position)}
                 onClick={() => setIndex(position)}
+                /* Зона нажатия у индекса материалов растянута по вертикали
+                   псевдоэлементом: сама строка остаётся строкой */
                 className={cn(
-                  'font-mono text-[0.62rem] uppercase tracking-[0.28em] transition-colors md:text-[0.7rem]',
+                  'type-meta relative block font-mono uppercase transition-colors',
+                  "before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-['']",
                   'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
-                  isCurrent ? 'text-white' : 'text-white/35 hover:text-white/70'
+                  isCurrent
+                    ? 'text-white [text-shadow:0_1px_14px_rgba(0,0,0,0.8)]'
+                    : 'text-white/35 hover:text-white/70'
                 )}
               >
                 {label}
@@ -175,19 +199,20 @@ export function StageBeauty({
 
       {/* CTA остаётся у нижней кромки: по центру он спорил бы с заявлением за
           одну и ту же оптическую строку */}
-      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-wrap items-end justify-between gap-x-10 gap-y-4 px-6 pb-14 md:px-10 md:pb-16 lg:px-20">
-        <DirectionCta direction={direction} onBrief={onBrief} onNavigate={onNavigate} />
-
-        {current ? (
-          <a
-            href={`/projects/${current.slug}`}
-            onClick={() => onCaseOpen(direction, current.slug)}
-            className="font-mono text-[0.6rem] uppercase tracking-[0.22em] text-white/50 transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent md:text-[0.68rem]"
-          >
-            {current.client} — {current.title}
-          </a>
-        ) : null}
-      </div>
+      <SceneFoot
+        className={cn('absolute inset-x-0 bottom-0 z-10 px-6 md:px-10 lg:px-20', STAGE_BOTTOM)}
+        cta={<DirectionCta direction={direction} onBrief={onBrief} onNavigate={onNavigate} />}
+        aside={
+          current ? (
+            <SceneCredit
+              href={`/projects/${current.slug}`}
+              onClick={() => onCaseOpen(direction, current.slug)}
+            >
+              {current.client} — {current.title}
+            </SceneCredit>
+          ) : undefined
+        }
+      />
     </StageShell>
   )
 }

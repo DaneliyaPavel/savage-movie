@@ -17,15 +17,25 @@ function isBunnyStreamHost(hostname: string): boolean {
   return /(^|\.)b-cdn\.net$/i.test(hostname)
 }
 
+/**
+ * Путь вида `/{uuid}/preview.webp` — это контракт самого Bunny Stream, и он
+ * не меняется от того, через какой хост библиотека раздаётся. Сейчас она
+ * ходит через собственный прокси сайта (`/cdn/{uuid}/...`), поэтому проверки
+ * одного лишь хоста `*.b-cdn.net` перестало хватать: анимированный webp
+ * уезжал в постер как есть.
+ */
+const BUNNY_PREVIEW_PATH =
+  /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/preview\.webp$/i
+
 export function normalizePosterUrl(url: string): string {
-  let hostname: string
+  let parsed: URL
   try {
-    hostname = new URL(url).hostname
+    parsed = new URL(url, 'https://savagemovie.invalid')
   } catch {
-    // Относительный путь (свои /uploads/...) или невалидный URL — не трогаем
+    // Невалидный URL — не трогаем
     return url
   }
-  if (!isBunnyStreamHost(hostname)) return url
+  if (!isBunnyStreamHost(parsed.hostname) && !BUNNY_PREVIEW_PATH.test(parsed.pathname)) return url
   return url.replace(/\/preview\.webp(?:\?.*)?$/i, '/thumbnail.jpg')
 }
 
