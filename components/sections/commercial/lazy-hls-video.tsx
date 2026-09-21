@@ -17,28 +17,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+
+import { canOptimizePoster } from '@/lib/commercial-landing/poster-url'
 import type Hls from 'hls.js'
 
 import { getStreamUrl, getThumbnailUrl } from '@/lib/integrations/bunny/client'
 import { cn } from '@/lib/utils'
-
-/**
- * Постер кейса (или hero) — самый тяжёлый объект на странице, если это
- * несжатый оригинал из CMS: next/image сжимает и отдаёт под реальный размер
- * карточки. Next.js оптимизирует так только для своего хоста и хостов из
- * remotePatterns (next.config.ts) — для произвольного внешнего URL, вписанного
- * в CMS вручную, он бы упал с ошибкой конфигурации. Поэтому проверяем: свой
- * же путь (начинается с "/") или уже разрешённый Bunny CDN — иначе остаёмся
- * на обычном <img>, ничего не ломая.
- */
-function canOptimizePoster(url: string): boolean {
-  if (url.startsWith('/')) return true
-  try {
-    return /(^|\.)b-cdn\.net$/i.test(new URL(url).hostname)
-  } catch {
-    return false
-  }
-}
 
 export interface LazyHlsVideoProps {
   playbackId: string
@@ -271,7 +255,12 @@ export function LazyHlsVideo({
       {shouldLoad ? (
         <video
           ref={videoRef}
-          poster={posterUrl || undefined}
+          /*
+            Атрибут poster намеренно пуст, когда постер уже нарисован
+            оптимизированным слоем выше: иначе браузер вторым запросом тянет
+            тот же кадр исходником, а исходники в этой CMS весят мегабайтами.
+          */
+          poster={posterUrl && !canOptimizePoster(posterUrl) ? posterUrl : undefined}
           muted
           loop={loop}
           playsInline

@@ -90,10 +90,12 @@ export function StageAi({ id, direction, active, onBrief, onNavigate, onCaseOpen
       />
 
       {/* Плотность только под набором и под технической строкой: кадр, ради
-          которого вся сцена и построена, не должен приходить сквозь вуаль */}
+          которого вся сцена и построена, не должен приходить сквозь вуаль.
+          Ниже она выше, чем у соседей: обе половины этой сцены сняты в
+          светлом ключе, и вывод обязан читаться на любой секунде потока */}
       <span
         aria-hidden="true"
-        className="absolute inset-x-0 bottom-0 h-[56%] bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/65 to-transparent"
+        className="absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/80 to-transparent"
       />
       <span
         aria-hidden="true"
@@ -106,7 +108,9 @@ export function StageAi({ id, direction, active, onBrief, onNavigate, onCaseOpen
           разделения между ними уже нет */}
       <motion.div
         style={{ opacity: vocabularyOpacity }}
-        className="absolute inset-x-0 top-[34%] z-20 flex justify-between px-6 font-mono text-[0.56rem] uppercase tracking-[0.22em] text-white/70 md:px-10 md:text-[0.66rem] lg:px-20"
+        /* Собственная тень: словари стоят в верхней трети, куда плотность
+           намеренно не доходит, а обе половины сцены сняты в светлом ключе */
+        className="absolute inset-x-0 top-[34%] z-20 flex justify-between px-6 font-mono text-[0.56rem] uppercase tracking-[0.22em] text-white/80 [text-shadow:0_1px_16px_rgba(0,0,0,0.85)] md:px-10 md:text-[0.66rem] lg:px-20"
       >
         <ul className="space-y-1.5">
           <li className="text-white/35">REAL</li>

@@ -78,9 +78,11 @@ const sceneId = (direction: { id: string }) => `scene-${direction.id}`
 export interface ServicesPageClientProps {
   directions: ResolvedDirection[]
   montage: DirectionWork[]
+  /** Кадр выхода: выбран раскадровкой, а не взят из монтажа */
+  closing: DirectionWork | null
 }
 
-export function ServicesPageClient({ directions, montage }: ServicesPageClientProps) {
+export function ServicesPageClient({ directions, montage, closing }: ServicesPageClientProps) {
   /*
    * Выход наблюдается наравне с территориями. Без него головка таймлайна,
    * удерживающая последнюю активную сцену, продолжала бы висеть над брифом и
@@ -152,14 +154,6 @@ export function ServicesPageClient({ directions, montage }: ServicesPageClientPr
     activeDirection && LIGHT_STAGES.has(activeDirection.id)
       ? ('white' as const)
       : ('black' as const)
-
-  /*
-   * Монтаж закрывается тем же кадром, с которого начался. Прежде выход брал
-   * последний план — то есть ровно тот, который человек досматривал экраном
-   * выше, в музыкальном клипе: финал повторял предыдущую сцену. Возврат к
-   * первому кадру — это конец фильма, а не ещё один его кадр.
-   */
-  const closing = montage[0] ?? null
 
   return (
     <MotionConfig reducedMotion="user">

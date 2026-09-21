@@ -17,7 +17,12 @@ import { JsonLdScripts } from '@/components/seo/json-ld-scripts'
 import { getProjectsServer, type Project } from '@/features/projects/api'
 import { logger } from '@/lib/utils/logger'
 import { SERVICES_PATH } from '@/lib/services/directions'
-import { heroMontage, resolveDirections, type ResolvedDirection } from '@/lib/services/proof'
+import {
+  closingFrame,
+  heroMontage,
+  resolveDirections,
+  type ResolvedDirection,
+} from '@/lib/services/proof'
 
 import { ServicesPageClient } from './client'
 
@@ -137,11 +142,13 @@ export default async function ServicesPage() {
 
   const directions = resolveDirections(projects)
   const montage = heroMontage(directions)
+  // Кадр выхода выбран раскадровкой отдельно от монтажа, см. lib/services/frames.ts
+  const closing = closingFrame(projects, montage)
 
   return (
     <>
       <JsonLdScripts scripts={buildJsonLd(directions)} />
-      <ServicesPageClient directions={directions} montage={montage} />
+      <ServicesPageClient directions={directions} montage={montage} closing={closing} />
     </>
   )
 }
