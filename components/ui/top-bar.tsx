@@ -23,7 +23,12 @@ export function TopBar() {
      */
     <header className="topbar-reveal fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-5 md:px-10 transition-colors duration-300">
       {/* Logo */}
-      <Link href="/" className="group relative">
+      {/* Знак рисуется в 24–28px, а нажимается в 48: зону держит псевдоэлемент,
+          визуальный размер не меняется */}
+      <Link
+        href="/"
+        className="group relative before:absolute before:-inset-x-2 before:-inset-y-3 before:content-['']"
+      >
         <span className="inline-flex items-center">
           <Image
             src="/sm-logo.svg"
@@ -49,7 +54,7 @@ export function TopBar() {
         onClick={toggle}
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        className={`group relative flex items-center gap-3 ${textColor} transition-[color,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:active:scale-100 motion-reduce:active:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ff2936] [-webkit-tap-highlight-color:transparent]`}
+        className={`group relative flex items-center gap-3 before:absolute before:-inset-x-2 before:-inset-y-1.5 before:content-[''] ${textColor} transition-[color,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:active:scale-100 motion-reduce:active:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ff2936] [-webkit-tap-highlight-color:transparent]`}
         aria-label={isOpen ? t('nav.closeMenu') : t('nav.openMenu')}
       >
         <span className="text-sm font-medium tracking-wide uppercase opacity-60 group-hover:opacity-100 transition-opacity">

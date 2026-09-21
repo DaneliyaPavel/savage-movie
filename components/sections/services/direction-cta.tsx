@@ -38,7 +38,10 @@ export function DirectionCta({
   const shared = cn(
     /* gap-2.5, а не gap-3: стрелка — это знак препинания у слова, и оптически
        она стоит ближе, чем номинальные 12px между двумя словами */
-    'group inline-flex items-center gap-2.5 border-b pb-2 text-left text-base font-medium md:text-lg',
+    'group relative inline-flex items-center gap-2.5 border-b pb-2 text-left text-base font-medium md:text-lg',
+    /* Главное действие территории нажимается в сорок пять пикселей по высоте,
+       а рисуется по-прежнему в тридцать семь: разницу держит псевдоэлемент */
+    "before:absolute before:inset-x-0 before:-inset-y-1 before:content-['']",
     'transition-[color,border-color,transform] duration-[var(--motion-state)] ease-[var(--ease-out-expo)]',
     /*
       Нажатие. Единственное движение на странице, которого не видно, но

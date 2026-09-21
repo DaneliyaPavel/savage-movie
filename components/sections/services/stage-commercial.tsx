@@ -1,5 +1,7 @@
 'use client'
 
+import { motion, useTransform } from 'framer-motion'
+
 import { SceneFoot, STAGE_BOTTOM, StageRail, StageShell, StageTitle } from './stage-shell'
 import { SceneMedia } from './scene-media'
 import { DirectionCta } from './direction-cta'
@@ -29,11 +31,19 @@ export function StageCommercial({
 }: SceneProps) {
   const { containerRef, progress, reduced } = useStage()
   const step = useStageStep(progress, BEATS.length, reduced)
+  /*
+   * Камера между ударами. Три слова — три события на экран прокрутки, и
+   * между ними кадр стоял намертво: человек крутил колесо по триста
+   * пикселей, а на экране не менялось ничего, пока не приходила следующая
+   * склейка. Удар остаётся ударом, но кадр под ним всё время едет навстречу
+   * вместе с рукой — прокрутка видна на каждом пикселе, а не раз в треть сцены.
+   */
+  const push = useTransform(progress, [0, 1], reduced ? [1, 1] : [1, 1.08])
   const lead = direction.works[0]
 
   return (
-    <StageShell id={id} direction={direction} containerRef={containerRef} depth={260}>
-      <div className="absolute inset-0">
+    <StageShell id={id} direction={direction} containerRef={containerRef} depth={200}>
+      <motion.div style={{ scale: push }} className="absolute inset-0 will-change-transform">
         {lead ? (
           <SceneMedia
             work={lead}
@@ -59,7 +69,7 @@ export function StageCommercial({
           aria-hidden="true"
           className="absolute inset-x-0 bottom-0 h-[58%] bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/70 to-transparent"
         />
-      </div>
+      </motion.div>
 
       <StageRail direction={direction} />
 

@@ -105,7 +105,7 @@ export function ServicesEndFrame({
           <button
             type="button"
             onClick={onBriefClick}
-            className="group inline-flex items-center gap-3 border-b border-white pb-2 text-lg font-medium transition-[color,border-color,transform] duration-[var(--motion-state)] ease-[var(--ease-out-expo)] hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent active:scale-[0.985] active:duration-[var(--motion-press)] md:text-xl"
+            className="group relative inline-flex items-center gap-3 border-b border-white pb-2 before:absolute before:inset-x-0 before:-inset-y-1 before:content-[''] text-lg font-medium transition-[color,border-color,transform] duration-[var(--motion-state)] ease-[var(--ease-out-expo)] hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent active:scale-[0.985] active:duration-[var(--motion-press)] md:text-xl"
           >
             Обсудить проект
             <ArrowDown

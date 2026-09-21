@@ -64,10 +64,12 @@ export function StageAi({ id, direction, active, onBrief, onNavigate, onCaseOpen
    * убрать движение: у него шва нет с самого начала.
    */
   const vocabularyOpacity = useTransform(progress, [0.5, 0.86], reduced ? [1, 1] : [1, 0])
-  const conclusion = useTransform(progress, [0.62, 0.95], reduced ? [1, 1] : [0.3, 1])
+  // Вывод дотягивается до полной яркости к самому выходу из сцены: пауза
+  // после него была прокруткой, на которую экран ничем не отвечал
+  const conclusion = useTransform(progress, [0.62, 1], reduced ? [1, 1] : [0.3, 1])
 
   return (
-    <StageShell id={id} direction={direction} containerRef={containerRef} depth={320}>
+    <StageShell id={id} direction={direction} containerRef={containerRef} depth={260}>
       {/* Поле, которое в итоге остаётся одним */}
       <div className="absolute inset-0">
         {left ? (
@@ -130,13 +132,13 @@ export function StageAi({ id, direction, active, onBrief, onNavigate, onCaseOpen
         className="type-meta absolute inset-x-0 top-[34%] z-20 flex justify-between px-6 font-mono uppercase text-white/80 [text-shadow:0_1px_16px_rgba(0,0,0,0.85)] md:px-10 lg:px-20"
       >
         <ul className="space-y-1.5">
-          <li className="text-white/35">REAL</li>
+          <li className="text-white/50">REAL</li>
           {CAMERA_TERMS.map(term => (
             <li key={term}>{term}</li>
           ))}
         </ul>
         <ul className="space-y-1.5 text-right">
-          <li className="text-white/35">GENERATED</li>
+          <li className="text-white/50">GENERATED</li>
           {MODEL_TERMS.map(term => (
             <li key={term}>{term}</li>
           ))}

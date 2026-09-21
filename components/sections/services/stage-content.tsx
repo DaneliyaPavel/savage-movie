@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { motion, useTransform } from 'framer-motion'
 
 import {
   SceneCredit,
@@ -86,9 +87,20 @@ export function StageContent({
   const visible = VISIBLE_BY_STEP[step] ?? 8
   const span = SPAN_BY_STEP[step] ?? SPAN_BY_STEP[3]!
   const complete = step >= VISIBLE_BY_STEP.length - 1
+  /*
+   * Камера отъезжает, пока кадр делится.
+   *
+   * Деление — склейка, и она остаётся склейкой. Но между четырьмя склейками
+   * сцена стояла по шестьсот пикселей прокрутки без единого изменения: лист
+   * замирал, и человек не мог понять, листается ли вообще страница. Отъезд
+   * идёт по всей сцене непрерывно и по смыслу продолжает деление — чем
+   * больше долей, тем дальше камера от листа. Точка опоры — верхняя кромка
+   * листа: из центра увеличенный лист на входе заезжал под техническую строку.
+   */
+  const pullBack = useTransform(progress, [0, 1], reduced ? [1, 1] : [1.04, 1])
 
   return (
-    <StageShell id={id} direction={direction} containerRef={containerRef} depth={380}>
+    <StageShell id={id} direction={direction} containerRef={containerRef} depth={260}>
       <StageRail direction={direction} />
 
       {/*
@@ -112,10 +124,10 @@ export function StageContent({
           {/* Рамка по внешней кромке той же толщины, что и линии сетки: без неё
             лист обрывался на краю крайних долей и читался сеткой, а не
             монтажным листом */}
-          <div
+          <motion.div
             className="grid aspect-[5/4] w-full max-w-[min(94vw,1480px)] grid-cols-4 grid-rows-2 gap-[2px] bg-white/15 p-[2px] md:aspect-[16/9]"
             /* Не выше половины экрана и не выше того, что осталось */
-            style={{ maxHeight: 'min(50svh, 100%)' }}
+            style={{ maxHeight: 'min(50svh, 100%)', scale: pullBack, transformOrigin: '50% 0%' }}
           >
             {CELLS.map((cell, index) => {
               const shown = index < visible
@@ -210,7 +222,7 @@ export function StageContent({
                 </div>
               )
             })}
-          </div>
+          </motion.div>
         </div>
 
         {/*

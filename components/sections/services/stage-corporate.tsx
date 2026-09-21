@@ -64,12 +64,21 @@ export function StageCorporate({
   // При выключенном движении плоскости уже на местах: смысл сцены не должен
   // зависеть от того, доехала ли прокрутка до нужной отметки
   const still: string[] = ['0%', '0%']
-  const fromLeft = useTransform(progress, [0.1, 0.48], reduced ? still : ['-104%', '0%'])
-  const fromRight = useTransform(progress, [0.26, 0.68], reduced ? still : ['104%', '0%'])
-  const fromBottom = useTransform(progress, [0.44, 0.9], reduced ? still : ['104%', '0%'])
+  /*
+   * Первая плоскость трогается с первого пикселя залипания, последняя встаёт
+   * на место ровно в тот момент, когда сцена начинает уезжать. Раньше сцена
+   * десятую долю стояла пустой на входе и ещё десятую — собранной на выходе:
+   * по двести пикселей прокрутки с каждой стороны, в которые не происходило
+   * ничего. Собранный разворот человек всё равно видит целиком — он уходит
+   * вверх уже собранным. Спокойный характер держат плавные нахлёсты
+   * плоскостей, а не паузы.
+   */
+  const fromLeft = useTransform(progress, [0, 0.42], reduced ? still : ['-104%', '0%'])
+  const fromRight = useTransform(progress, [0.2, 0.66], reduced ? still : ['104%', '0%'])
+  const fromBottom = useTransform(progress, [0.44, 1], reduced ? still : ['104%', '0%'])
 
   return (
-    <StageShell id={id} direction={direction} containerRef={containerRef} depth={300} theme="white">
+    <StageShell id={id} direction={direction} containerRef={containerRef} depth={240} theme="white">
       <StageRail direction={direction} theme="white" />
 
       {/*

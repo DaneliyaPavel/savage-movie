@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState, type KeyboardEvent } from 'react'
+import { motion, useTransform } from 'framer-motion'
 
 import {
   SceneCredit,
@@ -59,9 +60,62 @@ export function StageFashion({
 
   const activeIndex = Math.min(override ?? autoIndex, Math.max(works.length - 1, 0))
   const current = works[activeIndex]
+  /*
+   * Кадр внутри полосы ведёт прокрутку непрерывно.
+   *
+   * Полоса раскрывается четыре раза за сцену, и между раскрытиями разворот
+   * стоял неподвижно по триста-четыреста пикселей прокрутки — это и было
+   * «кручу, а ничего не происходит». Теперь обрезка кадра медленно идёт
+   * вверх вместе с рукой: полосы остаются теми же, раскладка не трогается
+   * (flex-grow по-прежнему меняется только на склейке), движется один
+   * transform внутри уже обрезанного окна. Запас в 8% масштаба ровно
+   * покрывает ход в ±3.5%, край кадра в окно не заходит.
+   */
+  const drift = useTransform(progress, [0, 1], reduced ? ['0%', '0%'] : ['3.5%', '-3.5%'])
+
+  /*
+   * Лента — выбор одного из четырёх, а не четыре независимые кнопки.
+   *
+   * Раньше каждая полоса была отдельной остановкой Tab с aria-pressed, и
+   * фокус на ней тут же её раскрывал: пройти ленту клавиатурой насквозь, не
+   * переключив разворот четыре раза, было нельзя, а «нажата» у одной из
+   * четырёх взаимоисключающих кнопок ещё и неправда. Теперь это группа
+   * переключателей: одна остановка Tab, выбор стрелками, состояние
+   * объявляется как выбранное. Поведение мышью не изменилось.
+   */
+  const stripRefs = useRef<(HTMLButtonElement | null)[]>([])
+
+  const focusStrip = (next: number) => {
+    setOverride(next)
+    stripRefs.current[next]?.focus()
+  }
+
+  const handleStripKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const last = works.length - 1
+    if (last < 1) return
+    const step =
+      event.key === 'ArrowRight' || event.key === 'ArrowDown'
+        ? 1
+        : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+          ? -1
+          : 0
+    if (step) {
+      event.preventDefault()
+      focusStrip((activeIndex + step + works.length) % works.length)
+      return
+    }
+    if (event.key === 'Home') {
+      event.preventDefault()
+      focusStrip(0)
+    }
+    if (event.key === 'End') {
+      event.preventDefault()
+      focusStrip(last)
+    }
+  }
 
   return (
-    <StageShell id={id} direction={direction} containerRef={containerRef} depth={280} theme="white">
+    <StageShell id={id} direction={direction} containerRef={containerRef} depth={220} theme="white">
       {/*
         В технической строке — форматы направления, а не список брендов:
         имена ZARINA, MAVIN, SENSUAL и NAUMI набраны индексом прямо под
@@ -80,7 +134,11 @@ export function StageFashion({
         занимает столько, сколько ему нужно, а лента — всё, что осталось.
       */}
       <div className="flex h-full flex-col">
-        <div className={cn('flex min-h-0 flex-1 pr-6 md:pr-10 lg:pr-20', STAGE_TOP)}>
+        <div
+          role="radiogroup"
+          aria-label="Работы направления"
+          className={cn('flex min-h-0 flex-1 pr-6 md:pr-10 lg:pr-20', STAGE_TOP)}
+        >
           {works.map((work, index) => {
             const isOpen = index === activeIndex
 
@@ -88,11 +146,17 @@ export function StageFashion({
               <button
                 key={work.slug}
                 type="button"
-                aria-pressed={isOpen}
-                aria-label={`Показать работу ${work.client}`}
+                role="radio"
+                aria-checked={isOpen}
+                tabIndex={isOpen ? 0 : -1}
+                ref={node => {
+                  stripRefs.current[index] = node
+                }}
+                aria-label={`${work.client} — ${work.title}`}
                 onMouseEnter={() => setOverride(index)}
                 onFocus={() => setOverride(index)}
                 onClick={() => setOverride(index)}
+                onKeyDown={handleStripKey}
                 className={cn(
                   'group relative flex h-full min-h-0 min-w-0 flex-col',
                   /*
@@ -109,11 +173,15 @@ export function StageFashion({
               >
                 <span className="relative block min-h-0 w-full flex-1 overflow-hidden bg-[#F2F2F2]">
                   {/* Видео — только у раскрытой полосы; остальные живут кадром */}
-                  <SceneMedia
-                    work={isOpen ? work : { ...work, playbackId: null }}
-                    active={active && isOpen}
-                    aspect="auto"
-                    /*
+                  <motion.span
+                    style={{ y: drift, scale: reduced ? 1 : 1.08 }}
+                    className="absolute inset-0 block will-change-transform"
+                  >
+                    <SceneMedia
+                      work={isOpen ? work : { ...work, playbackId: null }}
+                      active={active && isOpen}
+                      aspect="auto"
+                      /*
                       Один sizes на оба состояния, и это про движение, а не про
                       трафик. Пока сжатая полоса просила 16vw, а раскрытая
                       70vw, браузер на каждом наведении выбирал из srcset
@@ -123,11 +191,12 @@ export function StageFashion({
                       самый длинный кадр отрисовки на всей странице — 67 мс
                       при быстром проходе мышью по брендам.
                     */
-                    sizes="70vw"
-                    /* Бумага, а не чёрный: тёмный кадр на сжатой полосе читался
+                      sizes="70vw"
+                      /* Бумага, а не чёрный: тёмный кадр на сжатой полосе читался
                      дырой в ленте, хотя это просто тёмный кадр */
-                    className="h-full w-full bg-[#F2F2F2]"
-                  />
+                      className="h-full w-full bg-[#F2F2F2]"
+                    />
+                  </motion.span>
                 </span>
 
                 {/*
@@ -150,7 +219,8 @@ export function StageFashion({
                      помещается начиная с планшета. Место под строку остаётся
                      занятым, иначе сжатые кадры окажутся выше раскрытого */
                     !isOpen && 'opacity-0 md:opacity-100',
-                    isOpen ? 'text-[#0D0D0D]' : 'text-black/35 group-hover:text-black/70'
+                    /* Индекс брендов — информация, а не фон: 35% на бумаге давали 2,44:1 */
+                    isOpen ? 'text-[#0D0D0D]' : 'text-black/55 group-hover:text-black/80'
                   )}
                 >
                   {work.client}

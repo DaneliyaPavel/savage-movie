@@ -63,7 +63,7 @@ export function ServicesSpec({ directions, onCaseOpen, onNavigate }: ServicesSpe
             className="grid grid-cols-1 gap-x-8 gap-y-3 border-t border-white/10 py-7 lg:grid-cols-12"
           >
             <dt className="lg:col-span-4">
-              <span className="type-meta font-mono uppercase text-white/35">{direction.index}</span>
+              <span className="type-meta font-mono uppercase text-white/50">{direction.index}</span>
               <span className="mt-2 block text-lg font-medium md:text-xl">{direction.title}</span>
             </dt>
 
@@ -78,6 +78,9 @@ export function ServicesSpec({ directions, onCaseOpen, onNavigate }: ServicesSpe
                     <li key={work.slug}>
                       <Link
                         href={`/projects/${work.slug}`}
+                        /* Предзагрузка выключена по той же причине, что и в
+                           строке доказательств: см. proof-rail.tsx */
+                        prefetch={false}
                         onClick={() => onCaseOpen(direction, work.slug)}
                         className="type-meta relative font-mono uppercase text-white/50 transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)] before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
                       >

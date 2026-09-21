@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState, type KeyboardEvent } from 'react'
 import { motion, useTransform } from 'framer-motion'
 
 import {
@@ -77,6 +77,43 @@ export function StageBeauty({
   const current = works[index]
   const closer = step >= 1
 
+  /*
+   * Материалы — выбор одного из четырёх. Как и лента fashion, раньше это были
+   * четыре остановки Tab с aria-pressed: клавиатурой нельзя было пройти
+   * мимо, не сменив кадр четырежды. Одна остановка, выбор стрелками,
+   * состояние объявляется выбранным.
+   */
+  const materialRefs = useRef<(HTMLButtonElement | null)[]>([])
+
+  const focusMaterial = (next: number) => {
+    setIndex(next)
+    materialRefs.current[next]?.focus()
+  }
+
+  const handleMaterialKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const last = works.length - 1
+    if (last < 1) return
+    const step =
+      event.key === 'ArrowDown' || event.key === 'ArrowRight'
+        ? 1
+        : event.key === 'ArrowUp' || event.key === 'ArrowLeft'
+          ? -1
+          : 0
+    if (step) {
+      event.preventDefault()
+      focusMaterial((index + step + works.length) % works.length)
+      return
+    }
+    if (event.key === 'Home') {
+      event.preventDefault()
+      focusMaterial(0)
+    }
+    if (event.key === 'End') {
+      event.preventDefault()
+      focusMaterial(last)
+    }
+  }
+
   // Кадр идёт навстречу. Движение только по transform — композитор браузера
   // справляется с этим без перерисовки слоя.
   const scale = useTransform(progress, [0, 1], reduced ? [1.2, 1.2] : [1, 1.55])
@@ -86,7 +123,7 @@ export function StageBeauty({
       id={id}
       direction={direction}
       containerRef={containerRef}
-      depth={300}
+      depth={240}
       surfaceClassName="bg-[#070707]"
     >
       {/*
@@ -137,7 +174,11 @@ export function StageBeauty({
       <StageRail direction={direction} />
 
       {/* Индекс материалов у правой кромки: переключает не карточку, а весь экран */}
-      <ul className="absolute right-6 top-1/2 z-20 -translate-y-1/2 space-y-3 text-right md:right-10 lg:right-20">
+      <ul
+        role="radiogroup"
+        aria-label="Материал кадра"
+        className="absolute right-6 top-1/2 z-20 -translate-y-1/2 space-y-3 text-right md:right-10 lg:right-20"
+      >
         {works.map((work, position) => {
           const label = MATERIAL_BY_SLUG[work.slug] ?? work.client.toUpperCase()
           const isCurrent = position === index
@@ -146,20 +187,35 @@ export function StageBeauty({
             <li key={work.slug}>
               <button
                 type="button"
-                aria-pressed={isCurrent}
+                role="radio"
+                aria-checked={isCurrent}
+                tabIndex={isCurrent ? 0 : -1}
+                ref={node => {
+                  materialRefs.current[position] = node
+                }}
+                aria-label={`${label} — ${work.client}`}
                 onMouseEnter={() => setIndex(position)}
                 onFocus={() => setIndex(position)}
                 onClick={() => setIndex(position)}
+                onKeyDown={handleMaterialKey}
                 /* Зона нажатия у индекса материалов растянута по вертикали
                    псевдоэлементом: сама строка остаётся строкой */
                 className={cn(
                   'type-meta relative block font-mono uppercase',
                   'transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)]',
-                  "before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-['']",
+                  /* Строка материала — одиннадцать пикселей набора, а
+                     нажимается в шестьдесят на двадцать восемь. По вертикали
+                     ровно шесть пикселей в каждую сторону: между строками
+                     двенадцать, поэтому соседние зоны смыкаются встык и не
+                     перекрываются — иначе касание в промежутке выбирало бы
+                     соседний материал */
+                  "before:absolute before:-inset-x-3 before:-inset-y-1.5 before:content-['']",
                   'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
                   isCurrent
                     ? 'text-white [text-shadow:0_1px_14px_rgba(0,0,0,0.8)]'
-                    : 'text-white/35 hover:text-white/70'
+                    : /* Невыбранный материал остаётся кнопкой, а кнопку надо
+                       прочитать до нажатия: 35% давали 3,1:1 */
+                      'text-white/50 hover:text-white/80'
                 )}
               >
                 {label}

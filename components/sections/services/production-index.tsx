@@ -33,65 +33,86 @@ export function ProductionIndex({ directions, activeId, sceneId, theme }: Produc
   const active = directions.find(direction => sceneId(direction) === activeId) ?? null
 
   return (
-    <nav
-      aria-label="Направления производства"
-      aria-hidden={active ? undefined : true}
-      className={cn(
-        'fixed inset-x-0 bottom-0 z-40 flex items-center gap-4 px-6 pb-5 md:px-10 lg:px-20',
-        'transition-opacity duration-[var(--motion-move)] ease-[var(--ease-out-expo)]',
-        active ? 'opacity-100' : 'pointer-events-none opacity-0'
-      )}
-    >
+    <>
       {/*
+        Смена территории для скринридера.
+        
+        Зрячий видит её мгновенно: подпись головки меняется, деление
+        утолщается, кадр становится другим. Незрячий не видел ничего — вся
+        навигация раздела была для него немой, потому что aria-current
+        меняется молча. Область объявляет ровно одно событие на территорию, а
+        не поток на каждый пиксель прокрутки: значение меняется только когда
+        сцена действительно сменилась, и текст называет направление целиком, а
+        не его двухсимвольный номер на плёнке.
+      */}
+      <p aria-live="polite" aria-atomic="true" className="sr-only">
+        {active ? `Направление ${active.index}: ${active.title}` : ''}
+      </p>
+
+      <nav
+        aria-label="Направления производства"
+        aria-hidden={active ? undefined : true}
+        className={cn(
+          'fixed inset-x-0 bottom-0 z-40 flex items-center gap-4 px-6 pb-5 md:px-10 lg:px-20',
+          'transition-opacity duration-[var(--motion-move)] ease-[var(--ease-out-expo)]',
+          active ? 'opacity-100' : 'pointer-events-none opacity-0'
+        )}
+      >
+        {/*
         Головка лежит поверх произвольного кадра: на светлой части плана белая
         строка и белые деления пропадают целиком. Плашки под ними нет — она
         превратила бы таймлайн в панель интерфейса, — поэтому читаемость
         держит собственная тень, ровно как у технической строки сцены.
       */}
-      <span
-        className={cn(
-          'type-meta w-[9.5rem] shrink-0 font-mono uppercase',
-          'transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)]',
-          isLight
-            ? 'text-black/60 [text-shadow:0_1px_14px_rgba(255,255,255,0.75)]'
-            : 'text-white/70 [text-shadow:0_1px_14px_rgba(0,0,0,0.75)]'
-        )}
-      >
-        {active ? `${active.index} ${active.label}` : ''}
-      </span>
+        <span
+          className={cn(
+            /* На телефоне подпись занимала 152 из 390 пикселей ширины, и на семь
+             делений оставалось по двадцать — меньше минимального размера цели.
+             Короче поле — шире деления, набор при этом помещается целиком */
+            'type-meta w-[7rem] shrink-0 font-mono uppercase md:w-[9.5rem]',
+            'transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)]',
+            isLight
+              ? 'text-black/60 [text-shadow:0_1px_14px_rgba(255,255,255,0.75)]'
+              : 'text-white/70 [text-shadow:0_1px_14px_rgba(0,0,0,0.75)]'
+          )}
+        >
+          {active ? `${active.index} ${active.label}` : ''}
+        </span>
 
-      <ul className="flex flex-1 items-center gap-1.5">
-        {directions.map(direction => {
-          const id = sceneId(direction)
-          const isActive = activeId === id
+        {/* Зазор между делениями перенесён внутрь ссылки прозрачным полем:
+          деления выглядят так же, но касаться можно и в промежутке */}
+        <ul className="flex flex-1 items-center">
+          {directions.map(direction => {
+            const id = sceneId(direction)
+            const isActive = activeId === id
 
-          return (
-            <li key={direction.id} className="flex-1">
-              <a
-                href={`#${id}`}
-                aria-current={isActive ? 'true' : undefined}
-                aria-label={`${direction.index} — ${direction.title}`}
-                /*
+            return (
+              <li key={direction.id} className="flex-1">
+                <a
+                  href={`#${id}`}
+                  aria-current={isActive ? 'true' : undefined}
+                  aria-label={`${direction.index} — ${direction.title}`}
+                  /*
                   Деление рисуется в три пикселя, а нажимается в тридцать
                   два: псевдоэлемент растягивает зону касания вверх и вниз,
                   не сдвигая саму линию. Прежние 12px по высоте — меньше
                   минимального размера цели и заметно меньше пальца.
                 */
-                className={cn(
-                  'relative block h-3 pt-1',
-                  "before:absolute before:inset-x-0 before:-top-2 before:-bottom-3 before:content-['']",
-                  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
-                )}
-              >
-                {/*
+                  className={cn(
+                    'relative block h-3 pt-1',
+                    "before:absolute before:inset-x-0 before:-top-2 before:-bottom-3 before:content-['']",
+                    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
+                  )}
+                >
+                  {/*
                   Активное деление отмечено толщиной и полной плотностью, а не
                   цветом. Красный на этой странице — одно событие в монтаже
                   («Не один ролик»), и если он же подсвечивает деление на
                   каждом из семи экранов, событие перестаёт быть событием.
                 */}
-                <span
-                  className={cn(
-                    /*
+                  <span
+                    className={cn(
+                      /*
                       Переход на два конкретных свойства, а не на all. Под all
                       попадали и ширина, и цвет, и всё, что когда-либо
                       добавится: браузер каждый раз ищет, что именно
@@ -100,25 +121,26 @@ export function ProductionIndex({ directions, activeId, sceneId, theme }: Produc
                       потому что подсветка деления и смена кадра должны
                       читаться одним событием.
                     */
-                    'block w-full transition-[height,background-color] duration-[var(--motion-state)] ease-[var(--ease-out-expo)]',
-                    isLight
-                      ? 'drop-shadow-[0_0_3px_rgba(255,255,255,0.9)]'
-                      : 'drop-shadow-[0_0_3px_rgba(0,0,0,0.9)]',
-                    isActive ? 'h-[2px]' : 'h-px',
-                    isActive
-                      ? isLight
-                        ? 'bg-black'
-                        : 'bg-white'
-                      : isLight
-                        ? 'bg-black/20 hover:bg-black/45'
-                        : 'bg-white/20 hover:bg-white/50'
-                  )}
-                />
-              </a>
-            </li>
-          )
-        })}
-      </ul>
-    </nav>
+                      'block w-full transition-[height,background-color] duration-[var(--motion-state)] ease-[var(--ease-out-expo)]',
+                      isLight
+                        ? 'drop-shadow-[0_0_3px_rgba(255,255,255,0.9)]'
+                        : 'drop-shadow-[0_0_3px_rgba(0,0,0,0.9)]',
+                      isActive ? 'h-[2px]' : 'h-px',
+                      isActive
+                        ? isLight
+                          ? 'bg-black'
+                          : 'bg-white'
+                        : isLight
+                          ? 'bg-black/20 hover:bg-black/45'
+                          : 'bg-white/20 hover:bg-white/50'
+                    )}
+                  />
+                </a>
+              </li>
+            )
+          })}
+        </ul>
+      </nav>
+    </>
   )
 }

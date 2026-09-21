@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { motion, useTransform } from 'framer-motion'
 
 import {
   SceneCredit,
@@ -53,7 +54,7 @@ function timecode(beat: number): string {
 }
 
 export function StageMusic({ id, direction, active, onBrief, onNavigate, onCaseOpen }: SceneProps) {
-  const { containerRef, reduced } = useStage()
+  const { containerRef, progress, reduced } = useStage()
   const [beat, setBeat] = useState(0)
   const lead = direction.works[0]
 
@@ -75,9 +76,19 @@ export function StageMusic({ id, direction, active, onBrief, onNavigate, onCaseO
 
   const spoken = reduced ? BEATS.length - 1 : beat % BEATS.length
 
+  /*
+   * Такт идёт по часам, а не по прокрутке, и прокрутке он не отвечает. Пока
+   * сцена держала полтора экрана, человек крутил колесо, слова менялись сами
+   * по себе, а кадр стоял — страница выглядела так, будто ввод не доходит.
+   * Сцена стала короче ровно на ту длину, что не нужна ритму, а кадр под
+   * тактом едет навстречу прокрутке: часы задают ритм, рука — движение.
+   * Уйти из сцены можно в любой момент — таймер ничего не удерживает.
+   */
+  const push = useTransform(progress, [0, 1], reduced ? [1, 1] : [1, 1.06])
+
   return (
-    <StageShell id={id} direction={direction} containerRef={containerRef} depth={240}>
-      <div className="absolute inset-0">
+    <StageShell id={id} direction={direction} containerRef={containerRef} depth={160}>
+      <motion.div style={{ scale: push }} className="absolute inset-0 will-change-transform">
         {lead ? (
           <SceneMedia
             work={lead}
@@ -106,7 +117,7 @@ export function StageMusic({ id, direction, active, onBrief, onNavigate, onCaseO
           aria-hidden="true"
           className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0D0D0D]/85 to-transparent"
         />
-      </div>
+      </motion.div>
 
       <StageRail direction={direction} />
 

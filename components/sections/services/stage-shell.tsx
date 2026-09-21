@@ -75,7 +75,14 @@ export function StageShell({
        * нитка поперёк белого разворота. Пока контейнер покрашен сам, в этой
        * доле пикселя оказывается собственный цвет сцены, и шва нет.
        */
-      className={cn('relative', surface)}
+      /*
+       * При выключенном движении сцена не залипает вовсе. Она и так показывает
+       * итоговую композицию с первого кадра, и вся длина контейнера сверх
+       * экрана была прокруткой, на которую страница ничем не отвечала — от
+       * полуэкрана до полутора на каждой из семи территорий. Высота в один
+       * экран задана через !important, потому что глубина пишется инлайном.
+       */
+      className={cn('relative motion-reduce:!h-svh', surface)}
       style={{ height: `${depth}svh` }}
     >
       <div
@@ -127,7 +134,9 @@ export function StageRail({
     <div
       className={cn(
         'type-meta pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-end px-6 pt-24 font-mono uppercase md:px-10 md:pt-28',
-        isLight ? 'text-black/50' : 'text-white/50 [text-shadow:0_1px_18px_rgba(0,0,0,0.6)]',
+        /* На бумаге чёрный в половину плотности даёт 3,98:1 — ниже порога
+           для текста, который называет форматы направления. 55% дают 4,74 */
+        isLight ? 'text-black/55' : 'text-white/50 [text-shadow:0_1px_18px_rgba(0,0,0,0.6)]',
         className
       )}
     >
@@ -235,7 +244,7 @@ export function SceneCredit({
         'transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)]',
         "before:absolute before:inset-x-0 before:-inset-y-2.5 before:content-['']",
         'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
-        theme === 'white' ? 'text-black/50' : 'text-white/50'
+        theme === 'white' ? 'text-black/55' : 'text-white/50'
       )}
     >
       {children}

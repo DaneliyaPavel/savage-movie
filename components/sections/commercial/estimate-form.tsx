@@ -60,6 +60,9 @@ const chipClassName =
 const fieldClassName =
   'w-full border-b border-white/20 bg-transparent py-3 text-base text-white transition-colors placeholder:text-white/50 focus:border-accent focus:outline-none'
 
+/** Один текст ошибки на форму — поле, которое её вызвало, на него и ссылается */
+const ERROR_ID = 'estimate-error'
+
 const labelClassName =
   'mb-4 block font-mono text-[0.65rem] uppercase tracking-[0.2em] text-white/55 md:text-xs'
 
@@ -95,6 +98,19 @@ export function EstimateForm({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /**
+   * Какое поле остановило отправку.
+   *
+   * Раньше проверка ставила одну строку ошибки и возвращалась — человек
+   * нажимал «Отправить», рядом с курсором не происходило ничего, а сообщение
+   * появлялось выше по форме, никак не связанное с полем. Теперь ошибка
+   * называет поле: фокус уходит в него, поле помечено aria-invalid и ссылается
+   * на текст ошибки, то есть скринридер читает её как описание этого поля.
+   */
+  const [errorField, setErrorField] = useState<'name' | 'contact' | 'consent' | null>(null)
+  const nameRef = useRef<HTMLInputElement>(null)
+  const contactRef = useRef<HTMLInputElement>(null)
+  const consentRef = useRef<HTMLInputElement>(null)
 
   const startedAtRef = useRef<number | null>(null)
   const formStartTrackedRef = useRef(false)
@@ -206,20 +222,35 @@ export function EstimateForm({
     // Повторный submit (двойной клик, Enter в поле) не создаёт вторую заявку
     if (isSubmitting || isSubmitted) return
 
+    const fail = (
+      field: 'name' | 'contact' | 'consent',
+      message: string,
+      node: HTMLInputElement | null
+    ) => {
+      setError(message)
+      setErrorField(field)
+      node?.focus()
+    }
+
     if (name.trim().length < 2) {
-      setError('Укажите, как к вам обращаться')
+      fail('name', 'Укажите, как к вам обращаться', nameRef.current)
       return
     }
     if (!contact.trim()) {
-      setError('Оставьте телефон, Telegram или email — по нему и ответим')
+      fail(
+        'contact',
+        'Оставьте телефон, Telegram или email — по нему и ответим',
+        contactRef.current
+      )
       return
     }
     if (!consent) {
-      setError('Нужно согласие на обработку персональных данных')
+      fail('consent', 'Нужно согласие на обработку персональных данных', consentRef.current)
       return
     }
 
     setError(null)
+    setErrorField(null)
     setIsSubmitting(true)
 
     // ClientID нужен, чтобы связать заявку с визитом в отчётах Метрики.
@@ -498,9 +529,12 @@ export function EstimateForm({
                   </label>
                   <input
                     id="estimate-name"
+                    ref={nameRef}
                     type="text"
                     autoComplete="name"
                     required
+                    aria-invalid={errorField === 'name' || undefined}
+                    aria-describedby={errorField === 'name' ? ERROR_ID : undefined}
                     value={name}
                     onChange={event => setName(event.target.value)}
                     placeholder="Как к вам обращаться"
@@ -530,8 +564,19 @@ export function EstimateForm({
                 </label>
                 <input
                   id="estimate-contact"
+                  ref={contactRef}
                   type="text"
+                  /*
+                    Поле принимает телефон, Telegram или почту, поэтому тип
+                    остаётся text — иначе браузер забракует два варианта из
+                    трёх. Автозаполнение при этом было выключено вовсе, хотя
+                    это единственное обязательное поле, без которого заявка не
+                    доедет: на телефоне человек набирал номер руками.
+                  */
+                  autoComplete="tel"
                   required
+                  aria-invalid={errorField === 'contact' || undefined}
+                  aria-describedby={errorField === 'contact' ? ERROR_ID : undefined}
                   value={contact}
                   onChange={event => setContact(event.target.value)}
                   placeholder="Телефон, Telegram или email"
@@ -621,8 +666,11 @@ export function EstimateForm({
 
               <label className="mt-10 flex cursor-pointer items-start gap-3 text-sm text-white/50">
                 <input
+                  ref={consentRef}
                   type="checkbox"
                   checked={consent}
+                  aria-invalid={errorField === 'consent' || undefined}
+                  aria-describedby={errorField === 'consent' ? ERROR_ID : undefined}
                   onChange={event => setConsent(event.target.checked)}
                   className="mt-0.5 h-4 w-4 shrink-0 accent-[oklch(0.59_0.24_25)]"
                 />
@@ -635,7 +683,7 @@ export function EstimateForm({
               </label>
 
               {error ? (
-                <p role="alert" className="mt-6 text-sm text-destructive-foreground">
+                <p id={ERROR_ID} role="alert" className="mt-6 text-sm text-destructive-foreground">
                   {error}
                 </p>
               ) : null}
