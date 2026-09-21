@@ -62,17 +62,26 @@ export function ProductionIndex({ directions, activeId, sceneId, theme }: Produc
                 aria-current={isActive ? 'true' : undefined}
                 aria-label={`${direction.index} — ${direction.title}`}
                 className={cn(
-                  'block h-3 pt-[5px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
+                  'block h-3 pt-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
                 )}
               >
+                {/*
+                  Активное деление отмечено толщиной и полной плотностью, а не
+                  цветом. Красный на этой странице — одно событие в монтаже
+                  («Не один ролик»), и если он же подсвечивает деление на
+                  каждом из семи экранов, событие перестаёт быть событием.
+                */}
                 <span
                   className={cn(
-                    'block h-px w-full transition-colors duration-300',
+                    'block w-full transition-all duration-300',
+                    isActive ? 'h-[2px]' : 'h-px',
                     isActive
-                      ? 'bg-accent'
+                      ? isLight
+                        ? 'bg-black'
+                        : 'bg-white'
                       : isLight
-                        ? 'bg-black/25 hover:bg-black/50'
-                        : 'bg-white/25 hover:bg-white/55'
+                        ? 'bg-black/20 hover:bg-black/45'
+                        : 'bg-white/20 hover:bg-white/50'
                   )}
                 />
               </a>

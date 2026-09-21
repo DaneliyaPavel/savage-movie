@@ -14,12 +14,20 @@ import type { DirectionWork, ResolvedDirection } from '@/lib/services/proof'
  *
  * Бренд набран крупнее названия работы намеренно: человек ищет глазами
  * знакомое имя, а не заголовок ролика.
+ *
+ * brandsOnly убирает названия работ совсем. На полноэкранной сцене четыре
+ * пары «бренд + название» — это восемь объектов вдоль нижней кромки, которые
+ * спорят с CTA за тот же взгляд; знакомое имя в этой строке и так делает всю
+ * работу, а «Шесть утра» и «Ух ты, парк» полностью перечислены в
+ * спецификации ниже по странице.
  */
 export interface ProofRailProps {
   direction: ResolvedDirection
   works?: DirectionWork[]
   onCaseOpen: (direction: ResolvedDirection, slug: string) => void
   theme?: 'black' | 'white'
+  /** Только имена брендов, без названий работ */
+  brandsOnly?: boolean
   className?: string
 }
 
@@ -28,6 +36,7 @@ export function ProofRail({
   works,
   onCaseOpen,
   theme = 'black',
+  brandsOnly = false,
   className,
 }: ProofRailProps) {
   const items = works ?? direction.works
@@ -50,16 +59,20 @@ export function ProofRail({
             <span className="text-sm font-medium uppercase tracking-[0.08em] md:text-base">
               {work.client}
             </span>
-            <span
-              className={cn(
-                'font-mono text-[0.6rem] uppercase tracking-[0.18em] transition-colors md:text-[0.68rem]',
-                isLight
-                  ? 'text-black/45 group-hover:text-accent'
-                  : 'text-white/45 group-hover:text-accent'
-              )}
-            >
-              {work.title}
-            </span>
+            {brandsOnly ? (
+              <span className="sr-only">{work.title}</span>
+            ) : (
+              <span
+                className={cn(
+                  'font-mono text-[0.6rem] uppercase tracking-[0.18em] transition-colors md:text-[0.68rem]',
+                  isLight
+                    ? 'text-black/45 group-hover:text-accent'
+                    : 'text-white/45 group-hover:text-accent'
+                )}
+              >
+                {work.title}
+              </span>
+            )}
           </Link>
         </li>
       ))}

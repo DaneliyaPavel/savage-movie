@@ -153,8 +153,13 @@ export function ServicesPageClient({ directions, montage }: ServicesPageClientPr
       ? ('white' as const)
       : ('black' as const)
 
-  /** Кадр, которым закрывается монтаж — последний из увиденных */
-  const closing = montage[montage.length - 1] ?? null
+  /*
+   * Монтаж закрывается тем же кадром, с которого начался. Прежде выход брал
+   * последний план — то есть ровно тот, который человек досматривал экраном
+   * выше, в музыкальном клипе: финал повторял предыдущую сцену. Возврат к
+   * первому кадру — это конец фильма, а не ещё один его кадр.
+   */
+  const closing = montage[0] ?? null
 
   return (
     <MotionConfig reducedMotion="user">
@@ -162,12 +167,17 @@ export function ServicesPageClient({ directions, montage }: ServicesPageClientPr
         <TopBar />
         <JalousieMenu />
 
+        {/*
+          В надзаголовке осталось то, чего нет в самом заголовке: сколько
+          территорий и где мы их снимаем. Имя студии оттуда убрано — оно стоит
+          в шапке двумя сантиметрами выше, и повторять его строкой ниже значит
+          представляться дважды.
+        */}
         <ServicesHero
-          eyebrow="SAVAGE MOVIE / PRODUCTION DIRECTIONS / SPB + MOSCOW"
+          eyebrow="СЕМЬ НАПРАВЛЕНИЙ / САНКТ-ПЕТЕРБУРГ + МОСКВА"
           title="Какую задачу нужно снять?"
           lead="Сначала задача. Камера потом."
           montage={montage}
-          scrollHint="Семь направлений подряд"
         />
 
         <ProductionIndex

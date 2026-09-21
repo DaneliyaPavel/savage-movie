@@ -70,9 +70,19 @@ export function StageBeauty({
         ) : null}
       </motion.div>
 
+      {/*
+        Ни грамма плотности на самой фактуре. Прежняя заливка держала 45%
+        черноты по верхней кромке и 30% посередине — то есть территория,
+        которая обещает «почти физически», показывала макро через закопчённое
+        стекло. Затемнение осталось только там, где лежит набор.
+      */}
       <span
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-t from-[#070707] via-[#070707]/30 to-[#070707]/45"
+        className="absolute inset-x-0 bottom-0 h-[52%] bg-gradient-to-t from-[#070707] via-[#070707]/65 to-transparent"
+      />
+      <span
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#070707]/60 to-transparent"
       />
 
       <StageRail direction={direction} />
@@ -105,10 +115,10 @@ export function StageBeauty({
       </ul>
 
       <div className="relative z-10 flex h-full flex-col justify-end px-6 pb-14 md:px-10 md:pb-16 lg:px-20">
-        {/* Интерлиньяж чуть свободнее общего: в этой сцене соседние строки
-            сильно разного кегля, и на плотном наборе уменьшившаяся строка
-            заезжает под выносные элементы выросшей */}
-        <StageTitle id={id} leading={0.95} className="[text-shadow:0_2px_40px_rgba(0,0,0,0.55)]">
+        {/* Интерлиньяж свободнее общего: в этой сцене соседние строки сильно
+            разного кегля, и на плотном наборе точки над Ё выросшей строки
+            выходят за свой строчный бокс и упираются в уменьшившуюся */}
+        <StageTitle id={id} leading={1.12} className="[text-shadow:0_2px_40px_rgba(0,0,0,0.55)]">
           {/* Обе строки всегда в разметке: меняется вес присутствия, а не факт */}
           <span
             className={cn(

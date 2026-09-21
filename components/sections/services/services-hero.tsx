@@ -30,11 +30,9 @@ export interface ServicesHeroProps {
   title: string
   lead: string
   montage: DirectionWork[]
-  /** Подпись к первому кадру — нужна для скринридера и поиска */
-  scrollHint: string
 }
 
-export function ServicesHero({ eyebrow, title, lead, montage, scrollHint }: ServicesHeroProps) {
+export function ServicesHero({ eyebrow, title, lead, montage }: ServicesHeroProps) {
   const [frame, setFrame] = useState(0)
   const timerRef = useRef<number | null>(null)
 
@@ -85,9 +83,15 @@ export function ServicesHero({ eyebrow, title, lead, montage, scrollHint }: Serv
           </div>
         ))}
 
-        {/* Затемнение под текст: коммерческий кадр бывает светлым, и заголовок
-            обязан оставаться читаемым на любом плане монтажа */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/80 to-[#0D0D0D]/35" />
+        {/*
+          Затемнение прижато к низу, а не размазано по всему кадру. Прежняя
+          заливка держала 35% черноты даже в верхней трети, и любой план
+          монтажа приходил на первый экран приглушённым: студия, которая
+          снимает кадр, показывала его через вуаль. Теперь плотность нужна
+          только там, где действительно лежит набор.
+        */}
+        <div className="absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/75 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#0D0D0D]/55 to-transparent" />
       </div>
 
       {/*
@@ -95,23 +99,25 @@ export function ServicesHero({ eyebrow, title, lead, montage, scrollHint }: Serv
         см. .hero-reveal в globals.css): заголовок виден в первом отрисованном
         кадре, ещё до того, как доедет и выполнится JS.
       */}
-      <div className="hero-reveal max-w-6xl">
-        <p className="font-mono text-[0.62rem] uppercase tracking-[0.28em] text-white/55 md:text-xs">
+      {/*
+        Заголовок уходит вправо за поля контейнера: кадр продолжается за
+        кромкой листа, и набор продолжается вместе с ним. Подсказки «листайте
+        вниз» под ним больше нет — человек, который видит первый экран, ещё не
+        листал, и объяснять ему прокрутку значит занимать строку ничем.
+      */}
+      <div className="hero-reveal">
+        <p className="font-mono text-[0.58rem] uppercase tracking-[0.18em] text-white/50 md:text-xs md:tracking-[0.28em]">
           {eyebrow}
         </p>
 
         <h1
           id="services-hero-title"
-          className="mt-8 font-brand-hero text-[3.1rem] uppercase italic leading-[0.84] tracking-[-0.035em] text-balance sm:text-7xl lg:text-8xl xl:text-[7.5rem]"
+          className="mt-7 -mr-[6vw] font-brand-hero text-[3.4rem] uppercase italic leading-[0.8] tracking-[-0.04em] text-balance sm:text-[5.4rem] lg:text-[7.4rem] xl:text-[9rem]"
         >
           {title}
         </h1>
 
-        <p className="mt-10 max-w-2xl text-base leading-relaxed text-white/75 md:text-lg">{lead}</p>
-
-        <p className="mt-12 font-mono text-[0.6rem] uppercase tracking-[0.24em] text-white/45 md:text-[0.68rem]">
-          {scrollHint}
-        </p>
+        <p className="mt-9 max-w-[26ch] text-lg leading-snug text-white/80 md:text-xl">{lead}</p>
       </div>
     </section>
   )

@@ -64,19 +64,33 @@ export function StageShell({
 }
 
 /**
- * Техническая строка сцены — номер с меткой слева, сегмент справа.
+ * Техническая строка сцены — сегмент направления у правой кромки.
  *
  * Лежит поверх кадра, а не над ним: это разметка на плёнке, а не подзаголовок
  * секции. Ради читаемости на светлом кадре под ней нет плашки — только
  * собственная тень текста.
+ *
+ * Номера и латинской метки здесь больше нет. Ровно те же «01 COMMERCIAL»
+ * стоят в головке таймлайна внизу экрана: два одинаковых слова на одном
+ * кадре, разведённые на восемьсот пикселей, читались не как разметка, а как
+ * недосмотр. Имя территории называет головка, плёнка — сегмент. Для
+ * скринридера номер остаётся: он задаёт порядок, который зрячий получает из
+ * делений индекса.
  */
 export function StageRail({
   direction,
   theme = 'black',
+  meta,
   className,
 }: {
   direction: ResolvedDirection
   theme?: 'black' | 'white'
+  /**
+   * Чем подписана плёнка. null — сцена уже показывает эти бренды сама, и
+   * повторять их строкой сверху значит печатать один и тот же список дважды
+   * на одном кадре.
+   */
+  meta?: string | null
   className?: string
 }) {
   const isLight = theme === 'white'
@@ -84,17 +98,17 @@ export function StageRail({
   return (
     <div
       className={cn(
-        'pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 px-6 pt-24 font-mono text-[0.58rem] uppercase tracking-[0.24em] md:px-10 md:pt-28 md:text-[0.68rem] lg:px-20',
-        isLight ? 'text-black/55' : 'text-white/60 [text-shadow:0_1px_18px_rgba(0,0,0,0.6)]',
+        'pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-end px-6 pt-24 font-mono text-[0.58rem] uppercase tracking-[0.24em] md:px-10 md:pt-28 md:text-[0.68rem]',
+        isLight ? 'text-black/45' : 'text-white/45 [text-shadow:0_1px_18px_rgba(0,0,0,0.6)]',
         className
       )}
     >
-      <span>
-        <span aria-hidden="true">{direction.index}</span>
-        <span className="sr-only">Направление {direction.index}: </span>
-        <span className="pl-3">{direction.label}</span>
+      <span className="sr-only">
+        Направление {direction.index}: {direction.title}.{' '}
       </span>
-      <span className="text-right">{direction.meta}</span>
+      {meta === null ? null : (
+        <span className="max-w-[72%] text-right lg:pr-10">{meta ?? direction.meta}</span>
+      )}
     </div>
   )
 }
@@ -130,7 +144,7 @@ export function StageTitle({
        * с полуторным интервалом вместо плотного набора.
        */
       style={{ lineHeight: leading }}
-      className={cn('font-brand uppercase tracking-[-0.03em]', className)}
+      className={cn('font-stage uppercase tracking-[-0.03em]', className)}
     >
       {children}
     </h2>

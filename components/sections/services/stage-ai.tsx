@@ -47,7 +47,7 @@ export function StageAi({ id, direction, active, onBrief, onNavigate, onCaseOpen
    * убрать движение: у него шва нет с самого начала.
    */
   const vocabularyOpacity = useTransform(progress, [0.5, 0.86], reduced ? [1, 1] : [1, 0])
-  const conclusion = useTransform(progress, [0.62, 0.95], reduced ? [1, 1] : [0.25, 1])
+  const conclusion = useTransform(progress, [0.62, 0.95], reduced ? [1, 1] : [0.3, 1])
 
   return (
     <StageShell id={id} direction={direction} containerRef={containerRef} depth={320}>
@@ -89,9 +89,15 @@ export function StageAi({ id, direction, active, onBrief, onNavigate, onCaseOpen
         className="absolute inset-y-0 z-20 w-px bg-accent"
       />
 
+      {/* Плотность только под набором и под технической строкой: кадр, ради
+          которого вся сцена и построена, не должен приходить сквозь вуаль */}
       <span
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/35 to-[#0D0D0D]/55"
+        className="absolute inset-x-0 bottom-0 h-[56%] bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/65 to-transparent"
+      />
+      <span
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-[#0D0D0D]/70 to-transparent"
       />
 
       <StageRail direction={direction} />
