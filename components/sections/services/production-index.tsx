@@ -41,10 +41,18 @@ export function ProductionIndex({ directions, activeId, sceneId, theme }: Produc
         active ? 'opacity-100' : 'pointer-events-none opacity-0'
       )}
     >
+      {/*
+        Головка лежит поверх произвольного кадра: на светлой части плана белая
+        строка и белые деления пропадают целиком. Плашки под ними нет — она
+        превратила бы таймлайн в панель интерфейса, — поэтому читаемость
+        держит собственная тень, ровно как у технической строки сцены.
+      */}
       <span
         className={cn(
-          'w-[9.5rem] shrink-0 font-mono text-[0.58rem] uppercase tracking-[0.24em] transition-colors md:text-[0.66rem]',
-          isLight ? 'text-black/60' : 'text-white/70'
+          'type-meta w-[9.5rem] shrink-0 font-mono uppercase transition-colors',
+          isLight
+            ? 'text-black/60 [text-shadow:0_1px_14px_rgba(255,255,255,0.75)]'
+            : 'text-white/70 [text-shadow:0_1px_14px_rgba(0,0,0,0.75)]'
         )}
       >
         {active ? `${active.index} ${active.label}` : ''}
@@ -61,8 +69,16 @@ export function ProductionIndex({ directions, activeId, sceneId, theme }: Produc
                 href={`#${id}`}
                 aria-current={isActive ? 'true' : undefined}
                 aria-label={`${direction.index} — ${direction.title}`}
+                /*
+                  Деление рисуется в три пикселя, а нажимается в тридцать
+                  два: псевдоэлемент растягивает зону касания вверх и вниз,
+                  не сдвигая саму линию. Прежние 12px по высоте — меньше
+                  минимального размера цели и заметно меньше пальца.
+                */
                 className={cn(
-                  'block h-3 pt-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
+                  'relative block h-3 pt-1',
+                  "before:absolute before:inset-x-0 before:-top-2 before:-bottom-3 before:content-['']",
+                  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
                 )}
               >
                 {/*
@@ -74,6 +90,9 @@ export function ProductionIndex({ directions, activeId, sceneId, theme }: Produc
                 <span
                   className={cn(
                     'block w-full transition-all duration-300',
+                    isLight
+                      ? 'drop-shadow-[0_0_3px_rgba(255,255,255,0.9)]'
+                      : 'drop-shadow-[0_0_3px_rgba(0,0,0,0.9)]',
                     isActive ? 'h-[2px]' : 'h-px',
                     isActive
                       ? isLight

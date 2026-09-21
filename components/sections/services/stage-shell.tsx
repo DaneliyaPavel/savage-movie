@@ -17,6 +17,23 @@ import type { ResolvedDirection } from '@/lib/services/proof'
  * depth — во сколько экранов длится территория. Это её экранное время:
  * у сцены с восемью состояниями его должно быть больше, чем у сцены с тремя.
  */
+
+/**
+ * Отступ сверху, ниже которого сцена имеет право что-то рисовать.
+ *
+ * Техническая строка стоит на pt-24/pt-28 и занимает строку: всё, что
+ * начинается выше этой отметки, ложится прямо на неё. Значение было выписано
+ * руками в четырёх сценах тремя разными числами (7rem, 8.5rem, pt-28, pt-32),
+ * и в регулярном продакшне монтажный лист начинался на четырнадцать пикселей
+ * выше нижней кромки строки — на коротком экране они пересекались.
+ */
+export const STAGE_TOP = 'pt-[7rem] md:pt-[8.5rem]'
+/** То же расстояние для абсолютно позиционированных слоёв */
+export const STAGE_TOP_INSET = 'top-[7rem] md:top-[8.5rem]'
+
+/** Нижнее поле сцены. Общее на все семь: под ним стоит головка таймлайна */
+export const STAGE_BOTTOM = 'pb-14 md:pb-16'
+
 export interface StageShellProps {
   id: string
   direction: ResolvedDirection
@@ -39,6 +56,7 @@ export function StageShell({
   children,
 }: StageShellProps) {
   const isLight = theme === 'white'
+  const surface = surfaceClassName ?? (isLight ? 'bg-white' : 'bg-[#0D0D0D]')
 
   return (
     <section
@@ -47,14 +65,24 @@ export function StageShell({
       data-stage={direction.id}
       data-stage-theme={theme}
       aria-labelledby={`${id}-title`}
-      className="relative"
+      /*
+       * Фон стоит и на контейнере, и на залипающем экране.
+       *
+       * Высота контейнера задана в svh, и на большинстве телефонов она
+       * получается дробной: 260svh при экране 844 — это 2194.39px. Залипающий
+       * экран при этом ровно 844. На стыке двух сцен остаётся доля пикселя, в
+       * которой видно фон <main> — на переходе «реклама → fashion» это тёмная
+       * нитка поперёк белого разворота. Пока контейнер покрашен сам, в этой
+       * доле пикселя оказывается собственный цвет сцены, и шва нет.
+       */
+      className={cn('relative', surface)}
       style={{ height: `${depth}svh` }}
     >
       <div
         className={cn(
           'sticky top-0 h-svh w-full overflow-hidden',
-          isLight ? 'bg-white text-[#0D0D0D]' : 'bg-[#0D0D0D] text-white',
-          surfaceClassName
+          isLight ? 'text-[#0D0D0D]' : 'text-white',
+          surface
         )}
       >
         {children}
@@ -98,8 +126,8 @@ export function StageRail({
   return (
     <div
       className={cn(
-        'pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-end px-6 pt-24 font-mono text-[0.58rem] uppercase tracking-[0.24em] md:px-10 md:pt-28 md:text-[0.68rem]',
-        isLight ? 'text-black/45' : 'text-white/45 [text-shadow:0_1px_18px_rgba(0,0,0,0.6)]',
+        'type-meta pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-end px-6 pt-24 font-mono uppercase md:px-10 md:pt-28',
+        isLight ? 'text-black/50' : 'text-white/50 [text-shadow:0_1px_18px_rgba(0,0,0,0.6)]',
         className
       )}
     >
@@ -148,5 +176,68 @@ export function StageTitle({
     >
       {children}
     </h2>
+  )
+}
+
+/**
+ * Нижняя строка сцены: CTA слева, доказательство справа.
+ *
+ * Одна на семь территорий, потому что раньше её было семь. Каждая сцена
+ * выписывала одну и ту же раскладку своими руками, и значения разошлись:
+ * gap-y-4 против gap-y-5, mt-7 против mt-8 — но главное, все семь стояли на
+ * `items-end`. Выравнивание по нижней кромке боксов у строки, где слева
+ * ссылка с подчёркиванием, а справа голый текст, опускает правую часть на
+ * одиннадцать пикселей ниже левой. Это ровно тот случай, когда «почти
+ * совпадает» хуже намеренной асимметрии: здесь выравнивание по базовой линии.
+ */
+export function SceneFoot({
+  cta,
+  aside,
+  className,
+}: {
+  cta: ReactNode
+  aside?: ReactNode
+  className?: string
+}) {
+  return (
+    <div
+      className={cn('flex flex-wrap items-baseline justify-between gap-x-10 gap-y-4', className)}
+    >
+      {cta}
+      {aside}
+    </div>
+  )
+}
+
+/**
+ * Кредит работы в нижней строке сцены. Один класс вместо шести копий.
+ */
+export function SceneCredit({
+  href,
+  onClick,
+  theme = 'black',
+  children,
+}: {
+  href: string
+  onClick?: () => void
+  theme?: 'black' | 'white'
+  children: ReactNode
+}) {
+  return (
+    <a
+      href={href}
+      onClick={onClick}
+      /* Строка кредита набрана в 10 пикселей и раньше нажималась в те же
+         десять: зона касания растянута псевдоэлементом, сама строка не
+         сдвигается */
+      className={cn(
+        'type-meta relative font-mono uppercase transition-colors hover:text-accent',
+        "before:absolute before:inset-x-0 before:-inset-y-2.5 before:content-['']",
+        'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
+        theme === 'white' ? 'text-black/50' : 'text-white/50'
+      )}
+    >
+      {children}
+    </a>
   )
 }

@@ -2,7 +2,17 @@
 
 import { motion, useTransform } from 'framer-motion'
 
-import { StageRail, StageShell, StageTitle } from './stage-shell'
+import {
+  SceneCredit,
+  SceneFoot,
+  STAGE_BOTTOM,
+  STAGE_TOP,
+  STAGE_TOP_INSET,
+  StageRail,
+  StageShell,
+  StageTitle,
+} from './stage-shell'
+import { cn } from '@/lib/utils'
 import { SceneMedia } from './scene-media'
 import { DirectionCta } from './direction-cta'
 import { useStage } from './use-stage'
@@ -66,7 +76,10 @@ export function StageCorporate({
         Правая колонна — одна непрерывная полоса от технической строки до
         нижней кромки, разрезанная надвое.
       */}
-      <div className="absolute inset-y-0 right-0 top-[8.5rem] hidden w-[54%] md:block">
+      {/* bottom-0, а не inset-y-0: inset-y-0 задаёт то же top, и какое из двух
+          объявлений победит, решает порядок правил в собранном CSS, а не
+          порядок классов в строке */}
+      <div className={cn('absolute bottom-0 right-0 hidden w-[54%] md:block', STAGE_TOP_INSET)}>
         <motion.div
           style={{ x: fromRight }}
           className="absolute inset-x-0 top-0 h-[64%] overflow-hidden will-change-transform"
@@ -110,7 +123,7 @@ export function StageCorporate({
       */}
       <div /* Поле начинается ниже технической строки: на короткой высоте она
              иначе ложится ровно на верхнюю кромку кадра */
-        className="absolute inset-y-0 left-0 z-10 flex w-full flex-col pt-[7rem] md:w-[46%] md:pt-[8.5rem]"
+        className={cn('absolute inset-y-0 left-0 z-10 flex w-full flex-col md:w-[46%]', STAGE_TOP)}
       >
         <motion.div
           style={{ x: fromLeft }}
@@ -127,7 +140,7 @@ export function StageCorporate({
           ) : null}
         </motion.div>
 
-        <div className="shrink-0 px-6 pb-14 pt-8 md:px-10 md:pb-16 lg:px-20">
+        <div className={cn('shrink-0 px-6 pt-8 md:px-10 lg:px-20', STAGE_BOTTOM)}>
           <StageTitle
             id={id}
             className="max-w-[14ch] text-[clamp(2.1rem,4.2vw,3.8rem)] text-[#0D0D0D]"
@@ -139,7 +152,7 @@ export function StageCorporate({
             выглядеть скучно.
           </StageTitle>
 
-          <p className="mt-6 max-w-sm text-sm leading-relaxed text-black/65 md:text-base">
+          <p className="mt-7 max-w-sm text-sm leading-relaxed text-black/65 md:text-base">
             Brand films, employer video, производство, люди и события — без постановочных
             рукопожатий.
           </p>
@@ -153,25 +166,29 @@ export function StageCorporate({
             страницы.
           */}
 
-          <div className="mt-8 flex flex-wrap items-end gap-x-10 gap-y-4">
-            <DirectionCta
-              direction={direction}
-              onBrief={onBrief}
-              onNavigate={onNavigate}
-              theme="white"
-              className="whitespace-nowrap"
-            />
-
-            {first ? (
-              <a
-                href={`/projects/${first.slug}`}
-                onClick={() => onCaseOpen(direction, first.slug)}
-                className="font-mono text-[0.6rem] uppercase tracking-[0.22em] text-black/50 transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent md:text-[0.68rem]"
-              >
-                {first.client} — {first.title}
-              </a>
-            ) : null}
-          </div>
+          <SceneFoot
+            className="mt-8 justify-start"
+            cta={
+              <DirectionCta
+                direction={direction}
+                onBrief={onBrief}
+                onNavigate={onNavigate}
+                theme="white"
+                className="whitespace-nowrap"
+              />
+            }
+            aside={
+              first ? (
+                <SceneCredit
+                  href={`/projects/${first.slug}`}
+                  onClick={() => onCaseOpen(direction, first.slug)}
+                  theme="white"
+                >
+                  {first.client} — {first.title}
+                </SceneCredit>
+              ) : undefined
+            }
+          />
         </div>
       </div>
     </StageShell>

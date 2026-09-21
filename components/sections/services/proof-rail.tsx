@@ -51,8 +51,12 @@ export function ProofRail({
           <Link
             href={`/projects/${work.slug}`}
             onClick={() => onCaseOpen(direction, work.slug)}
+            /* Строка доказательств высотой в набор; зона касания растянута
+               ровно до соседнего ряда и ни на пиксель дальше */
             className={cn(
-              'group inline-flex items-baseline gap-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
+              'group relative inline-flex items-baseline gap-2 transition-colors',
+              "before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-['']",
+              'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
               isLight ? 'text-[#0D0D0D] hover:text-accent' : 'text-white hover:text-accent'
             )}
           >
@@ -64,10 +68,10 @@ export function ProofRail({
             ) : (
               <span
                 className={cn(
-                  'font-mono text-[0.6rem] uppercase tracking-[0.18em] transition-colors md:text-[0.68rem]',
+                  'type-meta font-mono uppercase transition-colors',
                   isLight
-                    ? 'text-black/45 group-hover:text-accent'
-                    : 'text-white/45 group-hover:text-accent'
+                    ? 'text-black/50 group-hover:text-accent'
+                    : 'text-white/50 group-hover:text-accent'
                 )}
               >
                 {work.title}

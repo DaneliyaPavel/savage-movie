@@ -2,7 +2,15 @@
 
 import { motion, useMotionTemplate, useTransform } from 'framer-motion'
 
-import { StageRail, StageShell, StageTitle } from './stage-shell'
+import {
+  SceneCredit,
+  SceneFoot,
+  STAGE_BOTTOM,
+  StageRail,
+  StageShell,
+  StageTitle,
+} from './stage-shell'
+import { cn } from '@/lib/utils'
 import { SceneMedia } from './scene-media'
 import { DirectionCta } from './direction-cta'
 import { useStage } from './use-stage'
@@ -110,7 +118,7 @@ export function StageAi({ id, direction, active, onBrief, onNavigate, onCaseOpen
         style={{ opacity: vocabularyOpacity }}
         /* Собственная тень: словари стоят в верхней трети, куда плотность
            намеренно не доходит, а обе половины сцены сняты в светлом ключе */
-        className="absolute inset-x-0 top-[34%] z-20 flex justify-between px-6 font-mono text-[0.56rem] uppercase tracking-[0.22em] text-white/80 [text-shadow:0_1px_16px_rgba(0,0,0,0.85)] md:px-10 md:text-[0.66rem] lg:px-20"
+        className="type-meta absolute inset-x-0 top-[34%] z-20 flex justify-between px-6 font-mono uppercase text-white/80 [text-shadow:0_1px_16px_rgba(0,0,0,0.85)] md:px-10 lg:px-20"
       >
         <ul className="space-y-1.5">
           <li className="text-white/35">REAL</li>
@@ -126,7 +134,12 @@ export function StageAi({ id, direction, active, onBrief, onNavigate, onCaseOpen
         </ul>
       </motion.div>
 
-      <div className="relative z-10 flex h-full flex-col justify-end px-6 pb-14 md:px-10 md:pb-16 lg:px-20">
+      <div
+        className={cn(
+          'relative z-10 flex h-full flex-col justify-end px-6 md:px-10 lg:px-20',
+          STAGE_BOTTOM
+        )}
+      >
         <motion.div style={{ opacity: conclusion }}>
           <StageTitle
             id={id}
@@ -142,19 +155,20 @@ export function StageAi({ id, direction, active, onBrief, onNavigate, onCaseOpen
           Генерация, live action и постпродакшн в одном pipeline.
         </p>
 
-        <div className="mt-8 flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
-          <DirectionCta direction={direction} onBrief={onBrief} onNavigate={onNavigate} />
-
-          {left ? (
-            <a
-              href={`/projects/${left.slug}`}
-              onClick={() => onCaseOpen(direction, left.slug)}
-              className="font-mono text-[0.6rem] uppercase tracking-[0.22em] text-white/50 transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent md:text-[0.68rem]"
-            >
-              {left.client} — {left.title}
-            </a>
-          ) : null}
-        </div>
+        <SceneFoot
+          className="mt-8"
+          cta={<DirectionCta direction={direction} onBrief={onBrief} onNavigate={onNavigate} />}
+          aside={
+            left ? (
+              <SceneCredit
+                href={`/projects/${left.slug}`}
+                onClick={() => onCaseOpen(direction, left.slug)}
+              >
+                {left.client} — {left.title}
+              </SceneCredit>
+            ) : undefined
+          }
+        />
       </div>
     </StageShell>
   )
