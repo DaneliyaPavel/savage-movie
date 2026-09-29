@@ -12,9 +12,9 @@
 </a>
 
 # SAVAGE MOVIE
-### Премиальный сайт‑портфолио видеографа и продюсера
+### Сайт production-студии Savage Movie
 
-Публичный сайт + блог + курсы + бронирование + админ‑панель + платежи + интеграции.
+Публичный сайт студии, коммерческая воронка (бриф → email / Telegram / n8n), блог, курсы, админ‑панель, платежи.
 <br/>
 **Stack:** Next.js 16 + FastAPI + PostgreSQL + Docker
 
@@ -38,8 +38,8 @@
       <td align="center"><a href="DOCKER_SETUP.md">Docker</a></td>
       <td align="center"><a href="DEPLOY_VDS.md">Deploy VDS</a></td>
       <td align="center"><a href="backend/README.md">Backend API</a></td>
+      <td align="center"><a href="docs/context/STATUS.md">Context</a></td>
       <td align="center"><a href="ARCHITECTURE.md">Architecture</a></td>
-      <td align="center"><a href="PROJECT_STRUCTURE.md">Structure</a></td>
       <td align="center"><a href="MIGRATION_INSTRUCTIONS.md">Migrations</a></td>
       <td align="center"><a href="UPLOAD_GUIDE.md">Uploads</a></td>
       <td align="center"><a href="DATA_RECOVERY_GUIDE.md">Recovery</a></td>
@@ -54,15 +54,15 @@
 <table>
   <tr>
     <td>🎬 Видео‑портфолио</td>
-    <td>Проекты с Mux и кастомными плеерами</td>
+    <td>Проекты, кейсы, Bunny Stream (HLS)</td>
   </tr>
   <tr>
-    <td>🧠 Курсы</td>
+    <td>🧠 Курсы (отдельный продукт Savage Academy)</td>
     <td>Покупка, прогресс, просмотр уроков</td>
   </tr>
   <tr>
     <td>📅 Бронирование</td>
-    <td>Calendly для записи на услуги</td>
+    <td>Заявка на созвон и бриф на смету</td>
   </tr>
   <tr>
     <td>🧩 Админ‑панель</td>
@@ -92,7 +92,7 @@
   </tr>
 </table>
 
-> Замените изображения в `docs/assets/` на реальные скриншоты, сохранив имена файлов.
+> Изображения в `docs/assets/` — заглушки.
 
 ---
 
@@ -155,7 +155,7 @@ savage-movie/
 └── docker-compose.yml
 ```
 
-Подробная структура: `PROJECT_STRUCTURE.md`.
+Актуальный контекст и структура: [`docs/context/`](docs/context/STATUS.md) (начните со STATUS.md). Правила для агентов: [`CLAUDE.md`](CLAUDE.md), [`AGENTS.md`](AGENTS.md).
 
 ---
 
@@ -219,7 +219,7 @@ npm run format       # Prettier
 
 **Backend:** FastAPI, SQLAlchemy (async), Alembic, PostgreSQL
 
-**Интеграции:** YooKassa, Mux, Resend, Calendly, OAuth Google/Yandex
+**Интеграции:** Bunny Stream, YooKassa, Resend/SMTP, Telegram, n8n, Яндекс.Метрика, OAuth Google/Yandex
 
 ---
 
@@ -228,8 +228,9 @@ npm run format       # Prettier
 - `DOCKER_SETUP.md` — Docker‑развертывание
 - `DEPLOY_VDS.md` — деплой на VDS
 - `backend/README.md` — backend API и деплой
-- `ARCHITECTURE.md` — архитектура и потоки запросов
-- `PROJECT_STRUCTURE.md` — структура проекта
+- `docs/context/` — актуальный контекст проекта (STATUS, DECISIONS, TECH, SEO, BRAND…)
+- `ARCHITECTURE.md` — потоки запросов (частично устарел, см. `docs/context/TECH.md`)
+- `docs/archive/` — исторические аудиты, не источник истины
 - `MIGRATION_INSTRUCTIONS.md` — Alembic миграции
 - `UPLOAD_GUIDE.md` — загрузка файлов
 - `DATA_RECOVERY_GUIDE.md` — восстановление данных

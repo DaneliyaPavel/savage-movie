@@ -1,3 +1,5 @@
+> **Частично устарел.** Актуальная архитектура, деплой и nginx-маршрутизация — в [docs/context/TECH.md](docs/context/TECH.md).
+
 # ARCHITECTURE
 
 ## Overview
