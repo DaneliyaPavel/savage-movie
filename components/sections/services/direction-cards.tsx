@@ -15,8 +15,6 @@ import {
 import { cn } from '@/lib/utils'
 import type { DirectionWork, ResolvedDirection } from '@/lib/services/proof'
 
-import { LazyHlsVideo } from '@/components/sections/commercial/lazy-hls-video'
-import { SHOWREEL_POSTER } from '@/lib/services/showreel'
 import { DirectionCta } from './direction-cta'
 import { SceneMedia } from './scene-media'
 
@@ -51,8 +49,6 @@ const CARD_HEIGHT = 'h-[max(32rem,calc(100svh-var(--stack-top)-var(--deck-depth)
 
 export interface DirectionCardsProps {
   directions: readonly ResolvedDirection[]
-  /** Поток шоурила: если есть, все карточки играют его вместо кадров работ */
-  showreelId?: string
   /** Направление стало текущим в стопке (для аналитики) */
   onOpen: (direction: ResolvedDirection) => void
   onBrief: (direction: ResolvedDirection) => void
@@ -62,7 +58,6 @@ export interface DirectionCardsProps {
 
 export function DirectionCards({
   directions,
-  showreelId,
   onOpen,
   onBrief,
   onNavigate,
@@ -168,7 +163,6 @@ export function DirectionCards({
             key={direction.id}
             ref={setRef(index)}
             direction={direction}
-            showreelId={showreelId}
             cover={covers[index] as MotionValue<number>}
             index={index}
             count={count}
@@ -188,7 +182,6 @@ export function DirectionCards({
 interface DirectionCardProps {
   ref: (node: HTMLElement | null) => void
   direction: ResolvedDirection
-  showreelId?: string
   /** Прогресс накрывания следующей карточкой */
   cover: MotionValue<number>
   index: number
@@ -206,7 +199,6 @@ interface DirectionCardProps {
 function DirectionCard({
   ref,
   direction,
-  showreelId,
   cover,
   index,
   count,
@@ -262,21 +254,7 @@ function DirectionCard({
           className="relative min-h-0 flex-1 overflow-hidden bg-[#141414] motion-reduce:min-h-[32rem]"
         >
           {/* Кадр работы во всю карточку; текст лежит поверх на затемнении */}
-          {showreelId && mounted ? (
-            /* Один шоурил на все карточки: поток поднимается только у текущей,
-               у остальных виден постер, так что на телефоне идёт один поток */
-            <LazyHlsVideo
-              playbackId={showreelId}
-              poster={SHOWREEL_POSTER}
-              autoPlay
-              loop
-              active={current}
-              aspect="16 / 9"
-              sizes="100vw"
-              title="Шоурил Savage Movie"
-              className="absolute inset-0 h-full w-full bg-[#101010]"
-            />
-          ) : work && mounted ? (
+          {work && mounted ? (
             <SceneMedia
               key={work.slug}
               work={work}
@@ -295,9 +273,7 @@ function DirectionCard({
             <div>
               <p className="type-meta font-mono uppercase text-white/60 [text-shadow:0_1px_14px_rgba(0,0,0,0.8)]">
                 {work
-                  ? showreelId
-                    ? 'Шоурил Savage Movie'
-                    : `${work.client} / ${work.title}${work.year ? ` / ${work.year}` : ''}`
+                  ? `${work.client} / ${work.title}${work.year ? ` / ${work.year}` : ''}`
                   : null}
               </p>
               <p className="type-meta mt-1 font-mono uppercase text-white/50 lg:hidden">
@@ -309,7 +285,7 @@ function DirectionCard({
             </div>
 
             <div className="flex flex-col gap-5">
-              {!showreelId && direction.works.length > 1 ? (
+              {direction.works.length > 1 ? (
                 <ul aria-label="Кадр работы" className="flex flex-wrap gap-2">
                   {direction.works.map(item => (
                     <li key={item.slug}>
