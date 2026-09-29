@@ -57,7 +57,7 @@ describe('DirectionCards', () => {
     setup()
     const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-direction]'))
     expect(cards[0]?.className).toContain('sticky')
-    expect(cards[3]?.getAttribute('style')).toContain('3 * var(--peek)')
+    expect(cards[3]?.getAttribute('style')).toContain('3 * var(--deck)')
   })
 
   it('CTA опубликованного направления — ссылка, остальных — кнопка в бриф', () => {
