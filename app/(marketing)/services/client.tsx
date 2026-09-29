@@ -123,11 +123,11 @@ export function ServicesPageClient({
           title="Что будем снимать?"
           lead="Рекламу, коллекцию, продукт или клип. Ниже — работы по каждому направлению."
           montage={montage}
+          showreelId={showreelId}
         />
 
         <DirectionCards
           directions={directions}
-          showreelId={showreelId}
           onOpen={handleOpen}
           onBrief={handleBrief}
           onNavigate={handleNavigate}

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 
+import { LazyHlsVideo } from '@/components/sections/commercial/lazy-hls-video'
+import { SHOWREEL_POSTER } from '@/lib/services/showreel'
 import { cn } from '@/lib/utils'
 import type { DirectionWork } from '@/lib/services/proof'
 
@@ -14,9 +16,10 @@ import type { DirectionWork } from '@/lib/services/proof'
  * склейка. Ритм держится на 2,4 с — столько нужно, чтобы кадр успел
  * прочитаться, и мало, чтобы он успел наскучить.
  *
- * Здесь нет видео. Семь направлений — это семь потоков на первом экране ради
- * фона под заголовком; кадры тех же работ дают ту же плотность продакшна за
- * долю трафика, а движение приходит ниже, в самих сценах.
+ * Фон — шоурил студии, тот же поток, что в hero главной: один поток на первом
+ * экране, постер первым. Если шоурил не задан, фоном идёт монтаж кадров работ:
+ * семь потоков ради фона были бы лишними, а кадры дают ту же плотность за долю
+ * трафика.
  *
  * Первый кадр — LCP страницы, поэтому он единственный грузится с priority.
  * При prefers-reduced-motion смены нет вовсе: остаётся первый кадр.
@@ -38,9 +41,11 @@ export interface ServicesHeroProps {
   title: string
   lead: string
   montage: DirectionWork[]
+  /** Поток шоурила, как в hero главной; без него фоном идёт монтаж кадров работ */
+  showreelId?: string
 }
 
-export function ServicesHero({ eyebrow, title, lead, montage }: ServicesHeroProps) {
+export function ServicesHero({ eyebrow, title, lead, montage, showreelId }: ServicesHeroProps) {
   const sectionRef = useRef<HTMLElement>(null)
   /**
    * Монтаж идёт только пока первый экран виден.
@@ -72,6 +77,7 @@ export function ServicesHero({ eyebrow, title, lead, montage }: ServicesHeroProp
   }, [])
 
   useEffect(() => {
+    if (showreelId) return
     if (montage.length < 2) return
     if (!onScreen) return
     if (typeof window === 'undefined' || !window.matchMedia) return
@@ -107,7 +113,7 @@ export function ServicesHero({ eyebrow, title, lead, montage }: ServicesHeroProp
       window.cancelAnimationFrame(prime)
       if (timerRef.current !== null) window.clearInterval(timerRef.current)
     }
-  }, [montage.length, onScreen])
+  }, [montage.length, onScreen, showreelId])
 
   return (
     <section
@@ -117,7 +123,24 @@ export function ServicesHero({ eyebrow, title, lead, montage }: ServicesHeroProp
       className="relative isolate flex min-h-[100svh] w-full flex-col justify-end overflow-hidden bg-[#0D0D0D] px-6 pb-16 pt-28 text-white md:px-10 md:pb-20 lg:px-20"
     >
       <div className="absolute inset-0 -z-10">
-        {montage.map((work, index) => {
+        {showreelId ? (
+          /* Тот же шоурил и постер, что в hero главной. Постер — LCP страницы,
+             поток играет, пока экран виден, и не стартует при reduced motion */
+          <LazyHlsVideo
+            playbackId={showreelId}
+            poster={SHOWREEL_POSTER}
+            autoPlay
+            loop
+            eager
+            priority
+            active={onScreen}
+            aspect="16 / 9"
+            sizes="100vw"
+            title="Шоурил Savage Movie"
+            className="absolute inset-0 h-full w-full bg-[#0D0D0D]"
+          />
+        ) : null}
+        {(showreelId ? [] : montage).map((work, index) => {
           // Кадр монтируется, когда до него остался один такт, и из разметки
           // больше не уходит: на втором круге он приходит уже из кэша
           if (index > reached) return null
