@@ -17,6 +17,7 @@ import { JsonLdScripts } from '@/components/seo/json-ld-scripts'
 import { getProjectsServer, type Project } from '@/features/projects/api'
 import { logger } from '@/lib/utils/logger'
 import { SERVICES_PATH } from '@/lib/services/directions'
+import { getShowreelPlaybackId } from '@/lib/services/showreel'
 import {
   closingFrame,
   heroMontage,
@@ -141,6 +142,7 @@ export default async function ServicesPage() {
   })
 
   const directions = resolveDirections(projects)
+  const showreelId = await getShowreelPlaybackId()
   const montage = heroMontage(directions)
   // Кадр выхода выбран раскадровкой отдельно от монтажа, см. lib/services/frames.ts
   const closing = closingFrame(projects, montage)
@@ -148,7 +150,12 @@ export default async function ServicesPage() {
   return (
     <>
       <JsonLdScripts scripts={buildJsonLd(directions)} />
-      <ServicesPageClient directions={directions} montage={montage} closing={closing} />
+      <ServicesPageClient
+        directions={directions}
+        montage={montage}
+        closing={closing}
+        showreelId={showreelId}
+      />
     </>
   )
 }
