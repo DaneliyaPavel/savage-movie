@@ -1,8 +1,8 @@
 /**
  * Клиентская сборка раздела направлений.
  *
- * Первый экран — монтаж кадров, дальше ролл из семи направлений (одно
- * раскрыто), бриф и спецификация. Раньше каждое направление было отдельной
+ * Первый экран — монтаж кадров, дальше одна залипающая сцена из семи
+ * направлений (выбор идёт от прокрутки), бриф и спецификация. Раньше каждое направление было отдельной
  * залипающей сценой на полтора-два экрана прокрутки; ролл показывает все
  * семь сразу и оставляет прокрутку обычной.
  *
@@ -23,7 +23,7 @@ import { EstimateForm } from '@/components/sections/commercial/estimate-form'
 import { ServicesHero } from '@/components/sections/services/services-hero'
 import { ServicesEndFrame } from '@/components/sections/services/services-endframe'
 import { ServicesSpec } from '@/components/sections/services/services-spec'
-import { DirectionRoll } from '@/components/sections/services/direction-roll'
+import { DirectionStage } from '@/components/sections/services/direction-stage'
 
 import { captureAttribution } from '@/lib/analytics/attribution'
 import { trackMetrikaGoal } from '@/lib/analytics/metrika'
@@ -61,8 +61,8 @@ export function ServicesPageClient({ directions, montage, closing }: ServicesPag
     trackMetrikaGoal('service_page_view')
   }, [])
 
-  // Просмотр засчитываем по факту раскрытия строки, а не по её появлению на
-  // экране: закрытые строки читаются как список, а не как просмотр.
+  // Просмотр засчитываем, когда направление стало главным в сцене, а не когда
+  // сцена появилась: быстрая прокрутка не должна насчитывать все семь.
   const handleOpen = useCallback((direction: ResolvedDirection) => {
     if (seenRef.current.has(direction.id)) return
     seenRef.current.add(direction.id)
@@ -118,7 +118,7 @@ export function ServicesPageClient({ directions, montage, closing }: ServicesPag
           montage={montage}
         />
 
-        <DirectionRoll
+        <DirectionStage
           directions={directions}
           onOpen={handleOpen}
           onBrief={handleBrief}
