@@ -1,8 +1,8 @@
 /**
  * Клиентская сборка раздела направлений.
  *
- * Первый экран — монтаж кадров, дальше одна залипающая сцена из семи
- * направлений (выбор идёт от прокрутки), бриф и спецификация. Раньше каждое направление было отдельной
+ * Первый экран — монтаж кадров, дальше стопка из семи карточек
+ * направлений (раскрываются от прокрутки), бриф и спецификация. Раньше каждое направление было отдельной
  * залипающей сценой на полтора-два экрана прокрутки; ролл показывает все
  * семь сразу и оставляет прокрутку обычной.
  *
@@ -23,7 +23,7 @@ import { EstimateForm } from '@/components/sections/commercial/estimate-form'
 import { ServicesHero } from '@/components/sections/services/services-hero'
 import { ServicesEndFrame } from '@/components/sections/services/services-endframe'
 import { ServicesSpec } from '@/components/sections/services/services-spec'
-import { DirectionStage } from '@/components/sections/services/direction-stage'
+import { DirectionCards } from '@/components/sections/services/direction-cards'
 
 import { captureAttribution } from '@/lib/analytics/attribution'
 import { trackMetrikaGoal } from '@/lib/analytics/metrika'
@@ -118,7 +118,7 @@ export function ServicesPageClient({ directions, montage, closing }: ServicesPag
           montage={montage}
         />
 
-        <DirectionStage
+        <DirectionCards
           directions={directions}
           onOpen={handleOpen}
           onBrief={handleBrief}
