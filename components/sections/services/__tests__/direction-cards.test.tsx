@@ -7,6 +7,11 @@ import type { ResolvedDirection } from '@/lib/services/proof'
 import { DirectionCards } from '../direction-cards'
 
 vi.mock('../scene-media', () => ({ SceneMedia: () => null }))
+vi.mock('@/components/sections/commercial/lazy-hls-video', () => ({
+  LazyHlsVideo: ({ playbackId, active }: { playbackId: string; active: boolean }) => (
+    <div data-testid="reel" data-id={playbackId} data-active={String(active)} />
+  ),
+}))
 
 beforeAll(() => {
   window.matchMedia =
@@ -26,10 +31,11 @@ const directions: ResolvedDirection[] = SERVICE_DIRECTIONS.map(direction => ({
   works: [],
 }))
 
-function setup() {
+function setup(showreelId?: string) {
   return render(
     <DirectionCards
       directions={directions}
+      showreelId={showreelId}
       onOpen={vi.fn()}
       onBrief={vi.fn()}
       onNavigate={vi.fn()}
@@ -65,5 +71,13 @@ describe('DirectionCards', () => {
     const link = screen.getByRole('link', { name: /Как мы снимаем рекламу/ })
     expect(link.getAttribute('href')).toBe('/reklamny-rolik')
     expect(screen.getAllByRole('button', { name: /Обсудить съёмку коллекции/ })).toHaveLength(1)
+  })
+
+  it('с шоурилом играет только текущая карточка, остальные держат постер', () => {
+    setup('reel-id')
+    const reels = screen.getAllByTestId('reel')
+    expect(reels.length).toBeGreaterThan(0)
+    expect(reels.every(node => node.getAttribute('data-id') === 'reel-id')).toBe(true)
+    expect(reels.filter(node => node.getAttribute('data-active') === 'true')).toHaveLength(1)
   })
 })

@@ -44,9 +44,16 @@ export interface ServicesPageClientProps {
   montage: DirectionWork[]
   /** Кадр выхода: выбран раскадровкой, а не взят из монтажа */
   closing: DirectionWork | null
+  /** Поток шоурила, как в hero главной; пусто — карточки показывают кадры работ */
+  showreelId?: string
 }
 
-export function ServicesPageClient({ directions, montage, closing }: ServicesPageClientProps) {
+export function ServicesPageClient({
+  directions,
+  montage,
+  closing,
+  showreelId,
+}: ServicesPageClientProps) {
   /** Направление, с которым открыт бриф: становится первым ответом формы */
   const [briefDirection, setBriefDirection] = useState<string | null>(null)
 
@@ -120,6 +127,7 @@ export function ServicesPageClient({ directions, montage, closing }: ServicesPag
 
         <DirectionCards
           directions={directions}
+          showreelId={showreelId}
           onOpen={handleOpen}
           onBrief={handleBrief}
           onNavigate={handleNavigate}
