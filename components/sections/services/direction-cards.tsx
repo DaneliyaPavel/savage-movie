@@ -251,33 +251,35 @@ function DirectionCard({
 
         <div
           inert={covered}
-          className="grid min-h-0 flex-1 content-start gap-5 px-6 pb-6 pt-5 md:px-10 md:pt-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:gap-14 lg:px-20 lg:pb-10"
+          className="relative min-h-0 flex-1 overflow-hidden bg-[#141414] motion-reduce:min-h-[32rem]"
         >
-          {work ? (
-            <div className="relative aspect-video overflow-hidden bg-[#141414] lg:aspect-auto lg:h-full lg:min-h-0 motion-reduce:lg:aspect-video motion-reduce:lg:h-auto">
-              {mounted ? (
-                <SceneMedia
-                  key={work.slug}
-                  work={work}
-                  active={current}
-                  aspect="16 / 9"
-                  sizes="(min-width: 1024px) 58vw, 100vw"
-                  className="absolute inset-0 h-full w-full"
-                />
-              ) : null}
-              <span className="type-meta pointer-events-none absolute bottom-3 left-4 font-mono uppercase text-white/70 [text-shadow:0_1px_14px_rgba(0,0,0,0.8)]">
-                {work.client} / {work.title}
-                {work.year ? ` / ${work.year}` : ''}
-              </span>
-            </div>
+          {/* Кадр работы во всю карточку; текст лежит поверх на затемнении */}
+          {work && mounted ? (
+            <SceneMedia
+              key={work.slug}
+              work={work}
+              active={current}
+              aspect="16 / 9"
+              sizes="100vw"
+              className="absolute inset-0 h-full w-full"
+            />
           ) : null}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#101010] from-5% via-[#101010]/70 via-40% to-transparent"
+          />
 
-          <div className="flex flex-col justify-between gap-6">
+          <div className="relative z-10 flex h-full flex-col justify-end gap-6 px-6 pb-6 md:px-10 md:pb-10 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-end lg:gap-14 lg:px-20">
             <div>
-              <p className="type-meta font-mono uppercase text-white/50 lg:hidden">
+              <p className="type-meta font-mono uppercase text-white/60 [text-shadow:0_1px_14px_rgba(0,0,0,0.8)]">
+                {work
+                  ? `${work.client} / ${work.title}${work.year ? ` / ${work.year}` : ''}`
+                  : null}
+              </p>
+              <p className="type-meta mt-1 font-mono uppercase text-white/50 lg:hidden">
                 {direction.meta}
               </p>
-              <p className="mt-3 max-w-[34ch] text-lg leading-snug text-white/85 md:text-xl lg:mt-0 lg:text-2xl">
+              <p className="mt-3 max-w-[30ch] text-2xl leading-tight text-white md:text-3xl lg:text-4xl">
                 {direction.description}
               </p>
             </div>
