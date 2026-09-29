@@ -13,6 +13,19 @@ const API_URL = serverEnv.API_URL || publicEnv.NEXT_PUBLIC_API_URL || 'http://lo
 export type { ApiError } from './base'
 
 /**
+ * Сборка превью на Vercel идёт без живого backend: API_URL там не задан, и
+ * предрендер /clients падал на ECONNREFUSED, из-за чего превью не выкатывалось.
+ *
+ * Условие намеренно узкое: только фаза сборки и только окружение preview
+ * (VERCEL_ENV выставляет сам Vercel). Docker-сборка образа на VDS и
+ * production-окружение Vercel его не выполняют, поэтому там отказ backend
+ * по-прежнему роняет сборку громко, а не запекает пустые страницы в деплой.
+ */
+function isPreviewBuildWithoutBackend(): boolean {
+  return process.env.VERCEL_ENV === 'preview' && process.env.NEXT_PHASE === 'phase-production-build'
+}
+
+/**
  * Получает токен из cookies (для server-side)
  */
 function getTokenFromCookies(cookies: {
@@ -41,10 +54,17 @@ export async function apiRequest<T>(
     requestOptions.cache = 'no-store'
   }
 
-  return baseApiRequest<T>(url, {
-    ...requestOptions,
-    token,
-  })
+  try {
+    return await baseApiRequest<T>(url, {
+      ...requestOptions,
+      token,
+    })
+  } catch (error) {
+    if (!isPreviewBuildWithoutBackend()) throw error
+    // Страницы собираются с пустыми данными; ISR подтянет настоящие, когда backend доступен
+    console.warn(`[preview build] backend недоступен, ${normalizedEndpoint} собран пустым`)
+    return [] as T
+  }
 }
 
 /**
