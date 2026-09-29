@@ -10,7 +10,7 @@
 | P0-2 | нет краулимой навигации на главной | **DONE (код) / UNVERIFIED (raw HTML)** | `SiteFooter` в `page.tsx`; live-футер содержит 12 ссылок |
 | P0-3 | /reklamny-rolik не в индексе | **UNVERIFIED** | нужен GSC/Вебмастер |
 | P0-4 | тип VideoProductionCompany | **DONE** | `app/layout.tsx` Organization + комментарий |
-| P1-1 | нет страницы под «видеопродакшн спб/москва» | **STILL RELEVANT** | H1 главной «SAVAGE MOVIE»; лид без Москвы; решение D-03: главная берёт кластер |
+| P1-1 | нет страницы под «видеопродакшн спб/москва» | **STILL RELEVANT** | H1 главной «SAVAGE MOVIE»; лид без Москвы; D-06: городских копий нет, кластер должна брать главная (вывод SERP-анализа 08.09, не решение владельца) |
 | P1-2/3 | телефон/NAP | **DONE (сайт) / STILL RELEVANT (внешние профили)** | `lib/contacts.ts`, tel: на live; каталоги/Яндекс Услуги не проверялись |
 | P1-4 | клиенты Lamoda/Okko… | **STILL RELEVANT** | нужны права (O-06) |
 | P1-5 | анонимные отзывы | **STILL RELEVANT** | live `/about` |
