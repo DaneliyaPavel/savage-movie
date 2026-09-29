@@ -1,114 +1,53 @@
 # CLAUDE.md — Savage Movie
 
-## Project Overview
+> **Сначала прочитай [docs/context/STATUS.md](docs/context/STATUS.md)**, затем [docs/context/DECISIONS.md](docs/context/DECISIONS.md). Код, CMS или старый документ не являются product/business truth, если есть более новое решение владельца. `docs/archive/` — не источник истины.
 
-Premium portfolio website for a videographer/producer. Full-stack app with video portfolio, online courses, booking, blog, admin panel, and payments. Bilingual (Russian/English).
+## Что это
 
-## Tech Stack
+savagemovie.ru — **живой production** и основной коммерческий digital-актив **Savage Movie**: production-студии (рекламные ролики, имиджевое видео, fashion/beauty, digital, корпоративное видео, клипы, AI/hybrid production). СПб + Москва + Россия. Не портфолио одного видеографа. Savage Academy (курсы) — связанный, но отдельный продукт; не смешивать без прямого запроса. Основной язык — русский.
 
-**Frontend:** Next.js 16, React 19, TypeScript 5, Tailwind CSS 4, Shadcn/UI + Radix UI
-**Backend:** FastAPI, SQLAlchemy 2 (async), PostgreSQL 16, Alembic migrations
-**Infra:** Docker Compose, Nginx, GitHub Actions CI/CD, VDS deployment
+## Production safety (обязательно)
 
-**Key integrations:** Bunny Stream (video), YooKassa (payments), Resend (email), Calendly (booking), Google/Yandex OAuth
+Без явной задачи владельца **нельзя**: менять `main`, commit/push/merge, deploy, запускать prod-миграции, трогать DNS/nginx/secrets, auth/payments, формы, аналитику, CRM/n8n, lead capture, удалять prod-данные. Работа: исследование → диагноз → план → ветка → изменение → проверки → отчёт. PR — draft, без merge. Push в `main` = автодеплой на VDS без тестов.
 
-## Commands
+## Стек (проверено по репозиторию)
+
+Next.js 16, React 19, TypeScript 5, Tailwind 4, shadcn/Radix, Framer Motion · FastAPI, SQLAlchemy 2 async, PostgreSQL 16, Alembic · Docker Compose, nginx, GitHub Actions → GHCR → VDS.
+Интеграции: **Bunny Stream** (видео, HLS; не Mux; поля БД `mux_playback_id` хранят Bunny id), YooKassa (курсы), Resend/SMTP (почта), Telegram (через реле), **n8n webhook** (лиды), **Яндекс.Метрика 108213944**, Google/Yandex OAuth. Calendly **не используется** (`/booking` — заявка на созвон).
+
+## Ключевые механики
+
+- **Лиды:** бриф `/api/estimate` (лендинг `/reklamny-rolik`, `/services`) → email/SMTP + Telegram + n8n, атрибуция (utm, yclid, ClientID); цель Метрики `production_lead_success` — единственная конверсия. `/api/contact` — старый путь (`/contact`, `/booking`).
+- **CMS priority:** контент `/reklamny-rolik` лежит в settings (`commercial_landing`) и **перекрывает** дефолты `lib/commercial-landing/content.ts` (`merge.ts` заменяет массивы целиком). Правка кода не меняет live.
+- **nginx:** каждый новый Next-роут `app/api/*` обязан иметь `location` в `infra/nginx/conf.d/default.conf`, иначе `/api/` уйдёт в FastAPI и вернёт 404 (тест `infra/nginx/__tests__`).
+- **Canonical** задаётся только на маршруте, не в root layout (тест `app/__tests__/canonical-architecture.test.ts`).
+- Миграции Alembic выполняются на старте backend-контейнера — деплой = потенциальная prod-миграция.
+- Backend-код на проде монтируется из git-чекаута поверх образа.
+
+## Команды
 
 ```bash
-# Frontend
-npm run dev          # Next.js dev server (port 3000)
-npm run build        # Production build
-npm run lint         # ESLint
-npm run lint:fix     # ESLint with auto-fix
-npm run type-check   # tsc --noEmit
-npm test             # Vitest
-
-# Backend
-cd backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-alembic upgrade head                          # Run migrations
-alembic revision --autogenerate -m "desc"     # Create migration
-
-# Docker
-npm run docker:dev   # Interactive Docker menu
-./scripts/init-docker.sh  # First-time setup
+npm run dev | build | lint | lint:fix | type-check | test | format:check
+cd backend && uvicorn app.main:app --reload --port 8000
+cd backend && alembic upgrade head          # только локально
+./scripts/init-docker.sh                    # первый запуск (Docker)
 ```
 
-## Project Structure
+Перед завершением frontend-задачи: `npm run lint && npm run type-check && npm test`. Backend-тестов (`backend/tests`) нет.
 
-```
-app/                    # Next.js App Router pages
-  (auth)/               # Login, register, OAuth callbacks
-  (marketing)/          # Public pages (about, blog, clients, courses, projects, etc.)
-  admin/                # Admin CRUD dashboard
-  dashboard/            # User dashboard
-  api/                  # Next.js API routes (session, payments, uploads, contact)
+## Структура
 
-components/             # React components
-  ui/                   # Base Shadcn/Radix components (card, tabs, accordion, etc.)
-  sections/             # Page sections
-  admin/                # Admin panel components
-  features/             # Feature-specific components
-  providers/            # Context providers
+`app/` (App Router: `(marketing)`, `admin`, `dashboard`, `api`) · `components/{ui,sections,features,admin}` · `features/{projects,courses,clients}` · `lib/{api,integrations,commercial-landing,services,analytics}` · `backend/app/{delivery,application,infrastructure,interfaces}` · `infra/nginx` · `scripts/` · `docs/{context,archive}`.
+Server Components по умолчанию; `lib/api/client.ts` (браузер) vs `lib/api/server.ts` (SSR); мапперы API → UI; i18n через `title_ru/title_en` и `lib/i18n-context.tsx`.
 
-features/               # Domain modules (each has api.ts, mappers.ts, components/)
-  projects/
-  courses/
+## Конвенции
 
-lib/                    # Shared utilities
-  api/                  # API clients (client.ts, server.ts, base.ts + domain files)
-  integrations/         # Bunny Stream, YooKassa, Resend SDKs
-  env.ts                # Public env validation (Zod)
-  env.server.ts         # Server-only env validation
-  utils/                # cn(), logger, slugify
+Без `;`, одинарные кавычки, trailing comma es5, 100 символов; alias `@/*`; файлы kebab-case, компоненты PascalCase; Tailwind + `cn()` + CVA; формы RHF + Zod; strict TS без неиспользуемого. Коммиты — Conventional Commits на русском. Не выдумывать клиентов, кейсы, награды, результаты, адреса, отзывы, SLA.
 
-backend/                # FastAPI backend (Python)
-  app/
-    delivery/api/       # HTTP route handlers
-    application/services/  # Business logic
-    infrastructure/     # DB models, repositories, integrations
-    interfaces/schemas/ # Pydantic DTOs
-  alembic/              # Database migrations
+## Бренд и тон
 
-infra/                  # Nginx configs, TLS
-scripts/                # Docker, deploy, backup, admin scripts
-```
+Бренд определяется по production и main (см. [BRAND.md](docs/context/BRAND.md)); Brand OS/Brandbook/Design Tokens v2 не используются. Тон: коротко, конкретно, уверенно, без агентских клише и лишних англицизмов. Новые страницы строить в «монтажном» языке `/services`, `/clients`, `/reklamny-rolik` ([DESIGN_SYSTEM.md](docs/context/DESIGN_SYSTEM.md)).
 
-## Architecture & Patterns
+## Env
 
-- **Server Components by default**, `"use client"` only when needed
-- **Feature module pattern:** `features/MODULE/{api.ts, mappers.ts, utils.ts, components/}`
-- **API clients split:** `lib/api/client.ts` (browser, uses `NEXT_PUBLIC_API_URL`) vs `lib/api/server.ts` (SSR, uses `API_URL`, dynamically imported)
-- **Mappers transform** API responses to UI models (e.g., `ApiProject` → `MarketingProject`)
-- **Backend layered architecture:** delivery (routes) → application (services) → infrastructure (repositories, DB)
-- **i18n via DB fields:** `title_ru`/`title_en`, mapped in frontend mappers
-- **Auth:** JWT in HttpOnly cookie via `/api/auth/session`, OAuth callbacks through FastAPI
-- **Payments:** Frontend → Next.js API route → YooKassa SDK; webhooks proxied to FastAPI
-
-## Coding Conventions
-
-- **No semicolons**, single quotes, trailing commas (es5), 100 char line width
-- **Path alias:** `@/*` maps to project root
-- **Import order:** external packages → `@/` absolute → `./` relative
-- **Components:** PascalCase files and exports. Shadcn compound exports pattern: `export { Card, CardHeader, CardTitle, CardContent }`
-- **Functions/variables:** camelCase
-- **Files:** kebab-case (e.g., `premium-fullscreen-player.tsx`)
-- **Styling:** Tailwind utilities + `cn()` helper (clsx + tailwind-merge) + CVA for variants
-- **Forms:** React Hook Form + Zod schemas + `@hookform/resolvers`
-- **Data attributes:** Components use `data-slot` for styling hooks
-- **TypeScript:** Strict mode, no unused locals/parameters
-- **Backend Python:** PascalCase models, snake_case everything else, Pydantic for validation
-
-## Environment Variables
-
-Public (client-safe): `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BUNNY_CDN_HOSTNAME`, `NEXT_PUBLIC_SHOWREEL_VIDEO_ID`, `NEXT_PUBLIC_CALENDLY_URL`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_YANDEX_CLIENT_ID`
-
-Server-only: `API_URL`, `JWT_SECRET`, `BUNNY_STREAM_API_KEY`, `BUNNY_STREAM_LIBRARY_ID`, `BUNNY_STREAM_CDN_HOSTNAME`, `YOOKASSA_*`, `RESEND_API_KEY`, `GOOGLE_CLIENT_SECRET`, `YANDEX_CLIENT_SECRET`, DB credentials
-
-Validated at startup via Zod schemas in `lib/env.ts` and `lib/env.server.ts`.
-
-## Testing
-
-- **Vitest** with jsdom, globals enabled, `@/` path alias
-- Tests in `__tests__/` directories alongside source
-- Coverage via v8 provider
+Публичные: `NEXT_PUBLIC_{API_URL,APP_URL,BUNNY_CDN_HOSTNAME,SHOWREEL_VIDEO_ID,GOOGLE_CLIENT_ID,YANDEX_CLIENT_ID}`. Серверные: `API_URL`, `JWT_SECRET`, `BUNNY_STREAM_*`, `YOOKASSA_*`, `RESEND_API_KEY`, `SMTP_*`, `TELEGRAM_*`, `LEAD_WEBHOOK_URL/TOKEN`, `ADMIN_EMAIL`, БД. Валидация: `lib/env.ts`, `lib/env.server.ts`. Секреты не логировать и не коммитить.

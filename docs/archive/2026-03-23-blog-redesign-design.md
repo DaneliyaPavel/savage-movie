@@ -1,3 +1,5 @@
+> **АРХИВ. Не источник истины.** Дизайн-документ выполненной задачи. Актуальный контекст: [docs/context/STATUS.md](../context/STATUS.md).
+
 # Blog Redesign — Design Document
 
 ## Problem
