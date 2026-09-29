@@ -1,21 +1,18 @@
 /**
  * Клиентская сборка раздела направлений.
  *
- * Раздел устроен не как страница из секций, а как одна сцена, которая меняет
- * состояние. Каждая территория — высокий контейнер с залипающим в нём экраном;
- * положение внутри контейнера задаёт геометрию: раскрытие колонок в fashion,
- * приближение кадра в beauty, деление мастер-кадра на восемь в регулярном
- * продакшне, движение шва в AI. Поэтому здесь нет ни одной общей композиции —
- * общим остался только контракт сцены.
+ * Первый экран — монтаж кадров, дальше ролл из семи направлений (одно
+ * раскрыто), бриф и спецификация. Раньше каждое направление было отдельной
+ * залипающей сценой на полтора-два экрана прокрутки; ролл показывает все
+ * семь сразу и оставляет прокрутку обычной.
  *
- * Тут живёт только то, что требует браузера: какая территория сейчас на
- * экране, какое видео имеет право играть, что уходит в Метрику и с каким
- * направлением открывается бриф. Заголовки, копия, названия брендов и ссылки
- * на работы приходят с сервера готовыми.
+ * Тут живёт только то, что требует браузера: какое направление раскрыто,
+ * что уходит в Метрику и с каким направлением открывается бриф. Заголовки,
+ * копия, названия брендов и ссылки на работы приходят с сервера готовыми.
  */
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { MotionConfig } from 'framer-motion'
 
 import { TopBar } from '@/components/ui/top-bar'
@@ -24,21 +21,9 @@ import { SiteFooter } from '@/components/sections/site-footer'
 import { EstimateForm } from '@/components/sections/commercial/estimate-form'
 
 import { ServicesHero } from '@/components/sections/services/services-hero'
-import { ProductionIndex } from '@/components/sections/services/production-index'
-import { StageCommercial } from '@/components/sections/services/stage-commercial'
-import { StageFashion } from '@/components/sections/services/stage-fashion'
-import { StageBeauty } from '@/components/sections/services/stage-beauty'
-import { StageContent } from '@/components/sections/services/stage-content'
-import { StageCorporate } from '@/components/sections/services/stage-corporate'
-import { StageAi } from '@/components/sections/services/stage-ai'
-import { StageMusic } from '@/components/sections/services/stage-music'
-import {
-  ServicesEndFrame,
-  SERVICES_OUTRO_ID,
-} from '@/components/sections/services/services-endframe'
+import { ServicesEndFrame } from '@/components/sections/services/services-endframe'
 import { ServicesSpec } from '@/components/sections/services/services-spec'
-import { useActiveScene } from '@/components/sections/services/use-active-scene'
-import type { SceneProps } from '@/components/sections/services/scene-props'
+import { DirectionRoll } from '@/components/sections/services/direction-roll'
 
 import { captureAttribution } from '@/lib/analytics/attribution'
 import { trackMetrikaGoal } from '@/lib/analytics/metrika'
@@ -48,32 +33,11 @@ import type { DirectionWork, ResolvedDirection } from '@/lib/services/proof'
 import type { ServiceDirectionId } from '@/lib/services/directions'
 
 /**
- * Сцена территории. У каждой своя метафора взаимодействия — удар, индекс,
- * приближение, размножение, сборка пространства, шов, доля. Общий здесь
- * только контракт: это и есть разница с прежней версией, где семь территорий
- * были семью настройками одного компонента.
- */
-const STAGES: Record<ServiceDirectionId, (props: SceneProps) => React.ReactElement> = {
-  commercial: StageCommercial,
-  fashion: StageFashion,
-  beauty: StageBeauty,
-  'content-production': StageContent,
-  corporate: StageCorporate,
-  ai: StageAi,
-  music: StageMusic,
-}
-
-/** Белая инверсия ритма. Две из семи — больше перестало бы быть сломом */
-const LIGHT_STAGES = new Set<ServiceDirectionId>(['fashion', 'corporate'])
-
-/**
  * Территории, у которых в технической строке стоит ориентир бюджета. Только
  * для них имеет смысл цель service_price_view: в остальных справа стоят
  * доказательства, а не деньги.
  */
 const PRICED_STAGES = new Set<ServiceDirectionId>(['commercial', 'content-production'])
-
-const sceneId = (direction: { id: string }) => `scene-${direction.id}`
 
 export interface ServicesPageClientProps {
   directions: ResolvedDirection[]
@@ -83,19 +47,11 @@ export interface ServicesPageClientProps {
 }
 
 export function ServicesPageClient({ directions, montage, closing }: ServicesPageClientProps) {
-  /*
-   * Выход наблюдается наравне с территориями. Без него головка таймлайна,
-   * удерживающая последнюю активную сцену, продолжала бы висеть над брифом и
-   * уверять, что человек всё ещё в музыкальном клипе.
-   */
-  const sceneIds = useMemo(() => [...directions.map(sceneId), SERVICES_OUTRO_ID], [directions])
-  const activeId = useActiveScene(sceneIds)
-
   /** Направление, с которым открыт бриф: становится первым ответом формы */
   const [briefDirection, setBriefDirection] = useState<string | null>(null)
 
   const viewTrackedRef = useRef(false)
-  /** Территории, просмотр которых уже засчитан: цель шлётся один раз за визит */
+  /** Направления, просмотр которых уже засчитан: цель шлётся один раз за визит */
   const seenRef = useRef(new Set<string>())
 
   useEffect(() => {
@@ -105,24 +61,17 @@ export function ServicesPageClient({ directions, montage, closing }: ServicesPag
     trackMetrikaGoal('service_page_view')
   }, [])
 
-  const activeDirection = useMemo(
-    () => directions.find(direction => sceneId(direction) === activeId) ?? null,
-    [directions, activeId]
-  )
+  // Просмотр засчитываем по факту раскрытия строки, а не по её появлению на
+  // экране: закрытые строки читаются как список, а не как просмотр.
+  const handleOpen = useCallback((direction: ResolvedDirection) => {
+    if (seenRef.current.has(direction.id)) return
+    seenRef.current.add(direction.id)
 
-  // Просмотр засчитываем по факту того, что территория стала главной на
-  // экране, а не по пересечению нижней кромки: иначе быстрая прокрутка
-  // насчитала бы все семь направлений за две секунды.
-  useEffect(() => {
-    if (!activeDirection) return
-    if (seenRef.current.has(activeDirection.id)) return
-    seenRef.current.add(activeDirection.id)
-
-    trackMetrikaGoal('service_direction_view', { service: activeDirection.id })
-    if (PRICED_STAGES.has(activeDirection.id)) {
-      trackMetrikaGoal('service_price_view', { service: activeDirection.id })
+    trackMetrikaGoal('service_direction_view', { service: direction.id })
+    if (PRICED_STAGES.has(direction.id)) {
+      trackMetrikaGoal('service_price_view', { service: direction.id })
     }
-  }, [activeDirection])
+  }, [])
 
   const scrollToBrief = useCallback(() => {
     const node = document.getElementById('estimate')
@@ -150,11 +99,6 @@ export function ServicesPageClient({ directions, montage, closing }: ServicesPag
     trackMetrikaGoal('service_case_open', { service: direction.id, case_slug: slug })
   }, [])
 
-  const indexTheme =
-    activeDirection && LIGHT_STAGES.has(activeDirection.id)
-      ? ('white' as const)
-      : ('black' as const)
-
   return (
     <MotionConfig reducedMotion="user">
       <main className="min-h-screen bg-[#0D0D0D]">
@@ -174,29 +118,13 @@ export function ServicesPageClient({ directions, montage, closing }: ServicesPag
           montage={montage}
         />
 
-        <ProductionIndex
+        <DirectionRoll
           directions={directions}
-          activeId={activeDirection ? activeId : null}
-          sceneId={sceneId}
-          theme={indexTheme}
+          onOpen={handleOpen}
+          onBrief={handleBrief}
+          onNavigate={handleNavigate}
+          onCaseOpen={handleCaseOpen}
         />
-
-        {directions.map(direction => {
-          const Stage = STAGES[direction.id]
-          const id = sceneId(direction)
-
-          return (
-            <Stage
-              key={direction.id}
-              id={id}
-              direction={direction}
-              active={activeId === id}
-              onBrief={handleBrief}
-              onNavigate={handleNavigate}
-              onCaseOpen={handleCaseOpen}
-            />
-          )
-        })}
 
         <ServicesEndFrame
           closing={closing}
