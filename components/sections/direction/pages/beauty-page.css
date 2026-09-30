@@ -2,7 +2,8 @@
  * /beauty-video — сцена «Макро».
  *
  * Всё, что нужно только этой странице, живёт здесь с префиксом dir-beauty-:
- * общий globals.css параллельно правят другие сцены. Кривая и длительности
+ * общие блоки кита (кнопка, финал, вопросы) не переопределяются, кроме явно
+ * названных слотов. Кривая и длительности
  * действия — из шкалы раздела (--ease-out-expo, --motion-press/state/move/cut);
  * «медленное дорогое» движение сцены (700–1400 мс) — две собственные ступени
  * --bty-slow и --bty-long на той же кривой.
@@ -21,15 +22,8 @@
   --bty-ease: var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
   --bty-slow: 1100ms;
   --bty-long: 1400ms;
-}
-
-/*
- * framer-motion useScroll({ target }) меряет смещение цели относительно корневого
- * контейнера и в dev-режиме предупреждает, что html — position: static.
- * relative ничего не сдвигает; правило действует только на странице с этой сценой.
- */
-html:has(.dir-beauty) {
-  position: relative;
+  /* Плёночное зерно: тот же шум, что в .grain-overlay сайта, но белым с альфой — ложится на диски */
+  --bty-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* Циклы секции вне экрана не крутятся: они ничего не показывают, но едят кадры */
@@ -405,6 +399,142 @@ html:has(.dir-beauty) {
   }
 }
 
+/* ─────────────────────────── Копирайт hero ─────────────────────────── */
+
+/* Kicker: моно-строка с красной риской, как у всех страниц направлений */
+.dir-beauty-kicker {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  line-height: 1.6;
+}
+
+.dir-beauty-kicker-dash {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 1px;
+  /* Половина строки: риска стоит на уровне первой строки, даже когда метка переносится */
+  margin-top: 0.8em;
+}
+
+.dir-beauty-h1 {
+  margin-top: 1.25rem;
+}
+
+.dir-beauty-title {
+  font-size: clamp(3.25rem, min(18vw, 30svh), 11rem);
+}
+
+.dir-beauty-sub {
+  margin-top: 1rem;
+  font-size: 1.0625rem;
+  line-height: 1.375;
+}
+
+.dir-beauty-lede {
+  margin-top: 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.625;
+}
+
+.dir-beauty-actions {
+  margin-top: 1.75rem;
+}
+
+.dir-beauty-hero-hint {
+  margin-top: 1.25rem;
+}
+
+@media (min-width: 48rem) {
+  .dir-beauty-h1 {
+    margin-top: 2.25rem;
+  }
+
+  .dir-beauty-sub {
+    margin-top: 2rem;
+    font-size: 1.375rem;
+  }
+
+  .dir-beauty-lede {
+    margin-top: 1.5rem;
+    font-size: 1rem;
+  }
+
+  .dir-beauty-actions {
+    margin-top: 2.25rem;
+  }
+
+  .dir-beauty-hero-hint {
+    margin-top: 1.75rem;
+  }
+}
+
+/*
+ * Низкие окна (1280×720, ноутбуки с панелями): кнопка первого экрана не уходит за
+ * край. Ужимаются вертикальные отступы и кегль заголовка — он и так привязан к svh.
+ */
+@media (min-width: 48rem) and (max-height: 860px) {
+  .dir-beauty-hero {
+    padding-top: 5rem;
+    padding-bottom: 3.25rem;
+  }
+
+  .dir-beauty-h1 {
+    margin-top: 1.25rem;
+  }
+
+  .dir-beauty-title {
+    font-size: clamp(3.25rem, min(18vw, 23svh), 11rem);
+  }
+
+  .dir-beauty-sub {
+    margin-top: 0.875rem;
+    font-size: 1.25rem;
+  }
+
+  .dir-beauty-lede {
+    margin-top: 0.75rem;
+  }
+
+  .dir-beauty-actions {
+    margin-top: 1.25rem;
+  }
+
+  .dir-beauty-hero-hint {
+    margin-top: 1rem;
+  }
+}
+
+/*
+ * Подсказка жеста набрана не микрометкой, а читаемой строкой: глагол белый, остальное
+ * тише. Всегда одна строка: на самых узких экранах (320) кегль и трекинг снижаются.
+ */
+.dir-beauty-hero-hint {
+  color: rgb(255 255 255 / 0.72);
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.dir-beauty-hint-key {
+  color: #ffffff;
+}
+
+@media (min-width: 23rem) {
+  .dir-beauty-hero-hint {
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+  }
+}
+
+@media (min-width: 48rem) {
+  .dir-beauty-hero-hint {
+    font-size: 0.75rem;
+    letter-spacing: 0.16em;
+  }
+}
+
 /* Указатель прокрутки */
 .dir-beauty-cue {
   position: absolute;
@@ -472,73 +602,7 @@ html:has(.dir-beauty) {
     100% 12px;
 }
 
-/* ─────────────────────────────────── Кнопки ─────────────────────────────────── */
-
-.dir-beauty-btn {
-  position: relative;
-  isolation: isolate;
-  display: inline-flex;
-  min-height: 3.5rem;
-  align-items: center;
-  justify-content: center;
-  gap: 0.9rem;
-  overflow: hidden;
-  padding: 0 1.5rem 0 1.75rem;
-  border: 0;
-  border-radius: 2px;
-  background: #ffffff;
-  color: #000000;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--motion-press) var(--bty-ease);
-}
-
-.dir-beauty-btn:active {
-  transform: scale(0.98);
-}
-
-.dir-beauty-btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-}
-
-.dir-beauty-btn-label {
-  position: relative;
-  z-index: 1;
-}
-
-/* Красная «диафрагма» раскрывается от стрелки; текст на ней остаётся чёрным (≈4,5:1 на отрисованном акценте) */
-.dir-beauty-btn-iris {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background: var(--accent);
-  clip-path: circle(0% at calc(100% - 2.1rem) 50%);
-  transition: clip-path var(--motion-cut) var(--bty-ease);
-}
-
-.dir-beauty-btn-arrow {
-  transition: transform var(--motion-move) var(--bty-ease);
-}
-
-.dir-beauty-btn:focus-visible .dir-beauty-btn-iris,
-.dir-beauty-btn:active .dir-beauty-btn-iris {
-  clip-path: circle(160% at calc(100% - 2.1rem) 50%);
-}
-
-.dir-beauty-btn:focus-visible .dir-beauty-btn-arrow {
-  transform: translateX(4px);
-}
-
-@media (hover: hover) {
-  .dir-beauty-btn:hover .dir-beauty-btn-iris {
-    clip-path: circle(160% at calc(100% - 2.1rem) 50%);
-  }
-
-  .dir-beauty-btn:hover .dir-beauty-btn-arrow {
-    transform: translateX(4px);
-  }
-}
+/* ─────────────────────────────── Ссылка у кнопки ─────────────────────────────── */
 
 /* Текстовая ссылка рядом: линия растёт слева направо, стрелка опускается */
 .dir-beauty-link {
@@ -591,11 +655,13 @@ html:has(.dir-beauty) {
 
 @media (min-width: 48rem) {
   .dir-beauty-zoom {
-    height: 290svh;
+    height: 270svh;
   }
 }
 
 .dir-beauty-zoom-stage {
+  /* Полный радиус круга в пикселях: считает JS по диагонали сцены, до замера — запас для 1440×900 */
+  --zr: 950px;
   position: sticky;
   top: 0;
   height: 100svh;
@@ -608,6 +674,57 @@ html:has(.dir-beauty) {
   background:
     radial-gradient(circle at 30% 24%, rgb(var(--bty-warm) / 0.24), transparent 40%),
     linear-gradient(180deg, rgb(0 0 0 / 0.25), rgb(0 0 0 / 0.04) 40%, rgb(0 0 0 / 0.35));
+}
+
+/*
+ * Собственная опора диска. На тёмных кадрах круг объектива был почти чёрным и
+ * ничего не показывал, вся ценность сцены зависела от яркости фото. Теперь круг
+ * сам держит форму: подъём чёрного, спекулярный блик, тёплый отсвет снизу,
+ * светлая кромка (плотнее к краю, как у стекла) и плёночное зерно. Слой нарисован
+ * на полный радиус и только масштабируется, поэтому кромка всегда совпадает с кругом.
+ */
+.dir-beauty-zoom-lift {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.dir-beauty-zoom-lit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--zr) * 2);
+  aspect-ratio: 1;
+  margin: calc(var(--zr) * -1) 0 0 calc(var(--zr) * -1);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 25%, rgb(255 244 232 / 0.34), transparent 20%),
+    radial-gradient(
+      circle at 30% 25%,
+      rgb(var(--bty-warm) / 0.26),
+      rgb(var(--bty-warm) / 0.08) 34%,
+      transparent 56%
+    ),
+    radial-gradient(circle at 76% 84%, rgb(0 0 0 / 0.42), transparent 52%),
+    radial-gradient(
+      closest-side,
+      transparent 64%,
+      rgb(255 255 255 / 0.08) 86%,
+      rgb(255 255 255 / 0.3) 97.5%,
+      rgb(255 255 255 / 0.6) 99.6%,
+      transparent 100%
+    ),
+    radial-gradient(closest-side, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.03));
+  will-change: transform;
+}
+
+.dir-beauty-zoom-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: var(--bty-grain);
+  background-size: 180px;
+  opacity: 0.14;
 }
 
 /*
@@ -1200,33 +1317,6 @@ html:has(.dir-beauty) {
   transition: color var(--motion-move) ease;
 }
 
-/* Крупный номер за текстом: контраст масштаба и тихая фактура вместо пустого поля */
-.dir-beauty-row-num {
-  position: absolute;
-  right: 0;
-  bottom: 1.25rem;
-  color: rgb(255 255 255 / 0.05);
-  font-size: 5.5rem;
-  line-height: 0.8;
-  letter-spacing: -0.05em;
-  pointer-events: none;
-  transition: color var(--bty-slow) var(--bty-ease);
-  user-select: none;
-}
-
-.dir-beauty-row[data-on='true'] .dir-beauty-row-num {
-  color: rgb(255 255 255 / 0.1);
-}
-
-@media (min-width: 64rem) {
-  .dir-beauty-row-num {
-    top: 50%;
-    bottom: auto;
-    font-size: clamp(8rem, 17vw, 15rem);
-    transform: translateY(-46%);
-  }
-}
-
 .dir-beauty-row-text {
   position: relative;
   margin-top: 1.25rem;
@@ -1242,33 +1332,115 @@ html:has(.dir-beauty) {
   color: rgb(255 255 255 / 0.82);
 }
 
-/* ─────────────────────────────── Предмет: капсула ─────────────────────────────── */
+/*
+ * Линейка крупности у каждой строки: вместо гигантского номера за текстом. Красная
+ * линия идёт от ×1 до отметки кадра, когда строка проходит середину экрана.
+ */
+.dir-beauty-row-scale {
+  position: relative;
+  display: block;
+  max-width: 34rem;
+  margin-top: 1.75rem;
+}
+
+.dir-beauty-row-scale-ruler {
+  position: relative;
+  display: block;
+  height: 1rem;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgb(255 255 255 / 0.28) 0 1px,
+      transparent 1px calc(100% / 32)
+    ),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.6) 0 1px, transparent 1px 12.5%);
+  background-position: bottom;
+  background-repeat: no-repeat;
+  background-size:
+    100% 6px,
+    100% 12px;
+}
+
+.dir-beauty-row-scale-ruler::before,
+.dir-beauty-row-scale-ruler::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 1px;
+  background: rgb(255 255 255 / 0.6);
+}
+
+/* Последняя отметка шкалы: повторяющийся градиент её не рисует */
+.dir-beauty-row-scale-ruler::after {
+  right: 0;
+  height: 12px;
+}
+
+/* Отметка кадра на шкале: красный штрих над линейкой, появляется, когда линия дошла */
+.dir-beauty-row-scale-ruler::before {
+  left: calc(var(--m) * 100%);
+  height: 1rem;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity var(--motion-state) ease;
+}
+
+.dir-beauty-row[data-on='true'] .dir-beauty-row-scale-ruler::before {
+  opacity: 1;
+  transition-delay: 900ms;
+}
+
+.dir-beauty-row-scale-fill {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--bty-long) var(--bty-ease);
+}
+
+.dir-beauty-row[data-on='true'] .dir-beauty-row-scale-fill {
+  transform: scaleX(var(--m));
+}
+
+.dir-beauty-row-scale-ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.45rem;
+  color: rgb(255 255 255 / 0.62);
+  letter-spacing: 0.16em;
+}
+
+/* ─────────────────────────────── Предмет: световой объект ─────────────────────────────── */
 
 .dir-beauty-object {
   background:
-    radial-gradient(ellipse 70% 55% at 50% 42%, rgb(var(--bty-warm) / 0.07), transparent 70%),
+    radial-gradient(ellipse 70% 55% at 50% 50%, rgb(var(--bty-warm) / 0.07), transparent 70%),
     #000000;
   border-top: 1px solid rgb(255 255 255 / 0.1);
 }
 
 .dir-beauty-object-stage {
-  --vw: clamp(6.25rem, 13vw, 11rem);
+  /* Диаметр светового объекта: от него считаются орбита, блик, стол и выноски */
+  --od: clamp(8.5rem, 18vw, 14.5rem);
   position: relative;
   z-index: 1;
   display: flex;
-  min-height: 27rem;
-  height: min(66svh, 40rem);
+  height: clamp(18.5rem, 46svh, 27rem);
   align-items: center;
   justify-content: center;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   touch-action: pan-y;
 }
 
-/* Линия стола: предмет стоит, а не висит */
+/* Линия стола: объект стоит, а не висит */
 .dir-beauty-object-stage::after {
   content: '';
   position: absolute;
-  top: calc(50% + var(--vw) * 1.21);
+  top: calc(50% + var(--od) / 2);
   right: 0;
   left: 0;
   z-index: 1;
@@ -1282,33 +1454,14 @@ html:has(.dir-beauty) {
   );
 }
 
-.dir-beauty-object-word {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  pointer-events: none;
-  user-select: none;
-}
-
-.dir-beauty-object-word > * {
-  color: rgb(255 255 255 / 0.09);
-  font-size: clamp(6rem, 23vw, 20rem);
-  letter-spacing: -0.05em;
-  line-height: 0.9;
-  white-space: nowrap;
-}
-
 .dir-beauty-halo {
   position: absolute;
   top: 50%;
   left: 50%;
   z-index: 1;
-  width: calc(var(--vw) * 5.5);
+  width: calc(var(--od) * 3.4);
   aspect-ratio: 1;
-  margin: calc(var(--vw) * -2.75) 0 0 calc(var(--vw) * -2.75);
+  margin: calc(var(--od) * -1.7) 0 0 calc(var(--od) * -1.7);
   border-radius: 50%;
   background: radial-gradient(
     closest-side,
@@ -1324,8 +1477,8 @@ html:has(.dir-beauty) {
   top: 50%;
   left: 50%;
   z-index: 2;
-  width: calc(var(--vw) * 3.3);
-  height: calc(var(--vw) * 4.9);
+  width: min(calc(var(--od) * 2.7), 100%);
+  height: calc(var(--od) * 1.75);
   border: 1px dashed rgb(255 255 255 / 0.24);
   border-radius: 50%;
   transform: translate(-50%, -50%);
@@ -1346,43 +1499,30 @@ html:has(.dir-beauty) {
   will-change: transform;
 }
 
-.dir-beauty-vessel {
+.dir-beauty-orb-wrap {
   position: relative;
   z-index: 3;
-  display: flex;
-  width: var(--vw);
-  flex-direction: column;
-  align-items: center;
-  gap: calc(var(--vw) * 0.07);
+  width: var(--od);
+  aspect-ratio: 1;
 }
 
-.dir-beauty-glass {
-  position: relative;
+/* Шар без формы конкретного предмета: тёмное стекло, свет к нему приходит с орбиты */
+.dir-beauty-orb {
+  position: absolute;
+  inset: 0;
   display: block;
   overflow: hidden;
-  isolation: isolate;
+  border-radius: 50%;
   background: rgb(255 255 255 / 0.2);
-}
-
-.dir-beauty-glass[data-part='cap'] {
-  width: 44%;
-  height: calc(var(--vw) * 0.3);
-  border-radius: calc(var(--vw) * 0.06);
-}
-
-.dir-beauty-glass[data-part='body'] {
-  width: 100%;
-  height: calc(var(--vw) * 2.05);
-  border-radius: calc(var(--vw) * 0.3) calc(var(--vw) * 0.3) calc(var(--vw) * 0.22)
-    calc(var(--vw) * 0.22);
+  isolation: isolate;
 }
 
 /* Кромка: коническая полоса света, которую поворачивает JS по углу света */
-.dir-beauty-glass-rim {
+.dir-beauty-orb-rim {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: calc(var(--vw) * 2.9);
+  width: calc(var(--od) * 1.6);
   aspect-ratio: 1;
   background: conic-gradient(
     from -52deg,
@@ -1397,53 +1537,111 @@ html:has(.dir-beauty) {
   will-change: transform;
 }
 
-.dir-beauty-glass-fill {
+.dir-beauty-orb-fill {
   position: absolute;
-  inset: 1.5px;
-  border-radius: inherit;
-  background: linear-gradient(96deg, #0a0a0a 0%, #151515 38%, #0a0a0a 62%, #121212 100%);
+  inset: 2px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #171717 0%, #090909 68%, #030303 100%);
+  box-shadow: inset 0 0 calc(var(--od) * 0.22) rgb(0 0 0 / 0.7);
 }
 
-.dir-beauty-glass-streak {
+/* Свет на поверхности: пятно смещается к освещённой стороне, противоположная темнеет */
+.dir-beauty-orb-lit {
   position: absolute;
-  top: 7%;
-  bottom: 14%;
-  left: 15%;
-  width: 7%;
-  border-radius: 9999px;
-  background: linear-gradient(
-    180deg,
-    transparent,
-    rgb(255 255 255 / 0.5) 18%,
-    rgb(255 255 255 / 0.14) 75%,
+  top: 50%;
+  left: 50%;
+  width: 130%;
+  aspect-ratio: 1;
+  margin: -65% 0 0 -65%;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgb(255 255 255 / 0.55),
+    rgb(var(--bty-warm) / 0.3) 34%,
+    rgb(var(--bty-warm) / 0.06) 62%,
+    transparent 76%
+  );
+  will-change: transform;
+}
+
+.dir-beauty-orb-spec {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34%;
+  height: 9%;
+  margin: -4.5% 0 0 -17%;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgb(255 255 255 / 0.9),
+    rgb(255 255 255 / 0.25) 60%,
     transparent
   );
+  will-change: transform;
 }
 
-.dir-beauty-glass-liquid {
+/* Рамка видоискателя вокруг объекта: место, куда встанет продукт */
+.dir-beauty-orb-corner {
   position: absolute;
-  right: 1.5px;
-  bottom: 1.5px;
-  left: 1.5px;
-  height: 56%;
-  border-top: 1px solid rgb(255 255 255 / 0.4);
-  border-radius: 0 0 calc(var(--vw) * 0.21) calc(var(--vw) * 0.21);
-  background: linear-gradient(
-    180deg,
-    rgb(255 255 255 / 0.1),
-    rgb(var(--bty-warm) / 0.14) 55%,
-    rgb(var(--bty-warm) / 0.24)
-  );
+  width: 1rem;
+  height: 1rem;
+  border: 0 solid rgb(255 255 255 / 0.8);
+  pointer-events: none;
+}
+
+.dir-beauty-orb-corner[data-at='tl'] {
+  top: -1.1rem;
+  left: -1.1rem;
+  border-width: 1px 0 0 1px;
+}
+
+.dir-beauty-orb-corner[data-at='tr'] {
+  top: -1.1rem;
+  right: -1.1rem;
+  border-width: 1px 1px 0 0;
+}
+
+.dir-beauty-orb-corner[data-at='bl'] {
+  bottom: -1.1rem;
+  left: -1.1rem;
+  border-width: 0 0 1px 1px;
+}
+
+.dir-beauty-orb-corner[data-at='br'] {
+  right: -1.1rem;
+  bottom: -1.1rem;
+  border-width: 0 1px 1px 0;
+}
+
+.dir-beauty-orb-caption {
+  position: absolute;
+  top: calc(100% + 1.75rem);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #ffffff;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.dir-beauty-orb-caption::before {
+  content: '';
+  width: 1.25rem;
+  height: 1px;
+  background: var(--accent);
 }
 
 .dir-beauty-floor {
   position: absolute;
-  top: calc(50% + var(--vw) * 1.21);
+  top: calc(50% + var(--od) / 2);
   left: 50%;
   z-index: 2;
-  width: calc(var(--vw) * 2.6);
-  height: calc(var(--vw) * 0.5);
-  margin: calc(var(--vw) * -0.25) 0 0 calc(var(--vw) * -1.3);
+  width: calc(var(--od) * 2.3);
+  height: calc(var(--od) * 0.42);
+  margin: calc(var(--od) * -0.21) 0 0 calc(var(--od) * -1.15);
   background: radial-gradient(closest-side, rgb(255 255 255 / 0.16), transparent);
   will-change: transform;
 }
@@ -1453,7 +1651,7 @@ html:has(.dir-beauty) {
   position: absolute;
   z-index: 4;
   display: none;
-  width: min(19rem, 26vw);
+  width: min(19rem, 24vw);
   align-items: center;
   gap: 0.75rem;
   color: rgb(255 255 255 / 0.78);
@@ -1466,21 +1664,21 @@ html:has(.dir-beauty) {
 }
 
 .dir-beauty-callout[data-side='l'] {
-  right: calc(50% + var(--vw) / 2 + 1.25rem);
+  right: calc(50% + var(--od) / 2 + 2.25rem);
 }
 
 .dir-beauty-callout[data-side='r'] {
-  left: calc(50% + var(--vw) / 2 + 1.25rem);
+  left: calc(50% + var(--od) / 2 + 2.25rem);
   flex-direction: row-reverse;
   text-align: right;
 }
 
 .dir-beauty-callout[data-row='0'] {
-  top: 22%;
+  top: 30%;
 }
 
 .dir-beauty-callout[data-row='1'] {
-  top: 66%;
+  top: 56%;
 }
 
 .dir-beauty-callout-text {
@@ -1526,14 +1724,85 @@ html:has(.dir-beauty) {
   transform: scaleX(0);
 }
 
-/* На телефоне выносок нет места: те же слова строкой под предметом */
+/*
+ * Линейка угла света вместо призрачного слова за предметом: те же деления, что у
+ * склеек; красная линия и цифры идут за источником света.
+ */
+.dir-beauty-object-scale {
+  position: relative;
+  z-index: 2;
+  margin-top: 1.25rem;
+}
+
+.dir-beauty-object-scale-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 0.4rem 2.5rem;
+  color: rgb(255 255 255 / 0.7);
+}
+
+.dir-beauty-object-hint {
+  color: rgb(255 255 255 / 0.75);
+}
+
+.dir-beauty-object-ruler {
+  position: relative;
+  height: 1rem;
+  margin-top: 0.75rem;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgb(255 255 255 / 0.28) 0 1px,
+      transparent 1px calc(100% / 72)
+    ),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.6) 0 1px, transparent 1px 25%);
+  background-position: bottom;
+  background-repeat: no-repeat;
+  background-size:
+    100% 6px,
+    100% 12px;
+}
+
+.dir-beauty-object-ruler::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  height: 12px;
+  background: rgb(255 255 255 / 0.6);
+}
+
+.dir-beauty-object-ruler-fill {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0.1);
+  transform-origin: left;
+  will-change: transform;
+}
+
+.dir-beauty-object-ruler-ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.45rem;
+  color: rgb(255 255 255 / 0.62);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+}
+
+/* На телефоне выносок нет места: те же слова строкой под линейкой */
 .dir-beauty-marks {
   position: relative;
   z-index: 2;
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem 1.5rem;
-  margin-top: 1.5rem;
+  margin-top: 1.25rem;
   color: rgb(255 255 255 / 0.75);
 }
 
@@ -1543,9 +1812,17 @@ html:has(.dir-beauty) {
   color: var(--accent);
 }
 
+/* На широком экране слова живут выносками; список остаётся для скринридера */
 @media (min-width: 48rem) {
   .dir-beauty-marks {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    clip-path: inset(50%);
   }
 }
 
@@ -1555,7 +1832,7 @@ html:has(.dir-beauty) {
   /* Диаметр диска: на телефоне и планшете он стоит под кнопкой, не под строками */
   --pd: min(78vw, 34rem);
   display: flex;
-  min-height: 84svh;
+  min-height: 76svh;
   align-items: center;
   --veil: 0.74;
 }
@@ -1622,7 +1899,7 @@ html:has(.dir-beauty) {
   overflow: hidden;
   border-radius: 50%;
   isolation: isolate;
-  background: #0d0d0d;
+  background: radial-gradient(circle at 34% 28%, #2a2622, #0d0d0d 72%);
 }
 
 .dir-beauty-proof-frame {
@@ -1644,6 +1921,35 @@ html:has(.dir-beauty) {
   transition: opacity var(--bty-slow) var(--bty-ease);
 }
 
+/*
+ * Опора диска, как в сцене наезда: подъём чёрного, блик и светлая кромка лежат поверх
+ * вуали, поэтому круг читается и на тёмном кадре, а вуаль по-прежнему держит текст.
+ */
+.dir-beauty-proof-lit {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 33% 25%, rgb(255 255 255 / 0.18), transparent 38%),
+    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.03) 72%),
+    radial-gradient(
+      closest-side,
+      transparent 72%,
+      rgb(255 255 255 / 0.1) 92%,
+      rgb(255 255 255 / 0.32) 100%
+    );
+}
+
+.dir-beauty-proof-grain {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background-image: var(--bty-grain);
+  background-size: 170px;
+  opacity: 0.14;
+}
+
 .dir-beauty-proof-glint {
   position: absolute;
   inset: 0;
@@ -1661,8 +1967,9 @@ html:has(.dir-beauty) {
 .dir-beauty-proof-ring {
   position: absolute;
   inset: 7%;
-  border: 1px solid rgb(255 255 255 / 0.5);
+  border: 1px solid rgb(255 255 255 / 0.62);
   border-radius: 50%;
+  box-shadow: inset 0 0 2.5rem rgb(255 255 255 / 0.05);
 }
 
 .dir-beauty-proof-dash {
@@ -1685,185 +1992,6 @@ html:has(.dir-beauty) {
 @media (min-width: 64rem) {
   .dir-beauty-proof-mark {
     bottom: 9%;
-  }
-}
-
-/* ─────────────────────────── CTA после процесса: «билет» ─────────────────────────── */
-
-.dir-beauty-ticket {
-  --tk-ink: #ffffff;
-  --tk-dim: rgb(255 255 255 / 0.72);
-  --tk-meta: rgb(255 255 255 / 0.62);
-  border-top: 1px solid rgb(255 255 255 / 0.1);
-  color: var(--tk-ink);
-  isolation: isolate;
-}
-
-/*
- * Чёрный на отрисованном акценте (oklch .59 .24 25 ≈ #e90328) — около 4,5:1 только
- * при полной непрозрачности: любая альфа уводит абзац ниже порога, поэтому на шторке
- * весь текст чисто чёрный.
- */
-.dir-beauty-ticket:focus-within,
-.dir-beauty-ticket:active {
-  --tk-ink: #000000;
-  --tk-dim: #000000;
-  --tk-meta: #000000;
-}
-
-@media (hover: hover) {
-  .dir-beauty-ticket:hover {
-    --tk-ink: #000000;
-    --tk-dim: #000000;
-    --tk-meta: #000000;
-  }
-}
-
-.dir-beauty-ticket-curtain {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--accent);
-  transform: translate3d(0, 101%, 0);
-  transition: transform var(--motion-cut) var(--bty-ease);
-}
-
-.dir-beauty-ticket:focus-within .dir-beauty-ticket-curtain,
-.dir-beauty-ticket:active .dir-beauty-ticket-curtain {
-  transform: none;
-}
-
-@media (hover: hover) {
-  .dir-beauty-ticket:hover .dir-beauty-ticket-curtain {
-    transform: none;
-  }
-}
-
-.dir-beauty-ticket-grid {
-  display: grid;
-  gap: 1.5rem;
-}
-
-/* 1024–1279: метка над строкой, иначе заголовок зажат в узкую колонку и метка рвётся */
-@media (min-width: 64rem) {
-  .dir-beauty-ticket-grid {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    column-gap: 3rem;
-  }
-
-  .dir-beauty-ticket-kicker {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (min-width: 80rem) {
-  .dir-beauty-ticket-grid {
-    grid-template-columns: 17.5rem minmax(0, 1fr) auto;
-  }
-
-  .dir-beauty-ticket-kicker {
-    grid-column: auto;
-  }
-}
-
-.dir-beauty-ticket-kicker {
-  color: var(--tk-meta);
-  transition: color var(--motion-state) ease;
-}
-
-.dir-beauty-ticket-diamond {
-  width: 0.5rem;
-  height: 0.5rem;
-  border: 1px solid var(--accent);
-  background: var(--accent);
-  transform: rotate(45deg);
-  transition:
-    background-color var(--motion-state) ease,
-    border-color var(--motion-state) ease;
-}
-
-.dir-beauty-ticket:focus-within .dir-beauty-ticket-diamond,
-.dir-beauty-ticket:active .dir-beauty-ticket-diamond {
-  border-color: #000000;
-  background: #000000;
-}
-
-@media (hover: hover) {
-  .dir-beauty-ticket:hover .dir-beauty-ticket-diamond {
-    border-color: #000000;
-    background: #000000;
-  }
-}
-
-.dir-beauty-ticket-copy h2 {
-  color: var(--tk-ink);
-  transition: color var(--motion-state) ease;
-}
-
-.dir-beauty-ticket-copy p {
-  /* Тонкое начертание на красной шторке теряет контраст; вес общий, чтобы строки не прыгали */
-  font-weight: 400;
-  color: var(--tk-dim);
-  transition: color var(--motion-state) ease;
-}
-
-.dir-beauty-ticket-btn {
-  display: flex;
-  min-height: 3.5rem;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--tk-ink);
-  cursor: pointer;
-  text-align: left;
-  -webkit-tap-highlight-color: transparent;
-  transition: color var(--motion-state) ease;
-}
-
-/* Вся полоса — область нажатия; фокус рисуется по её кромке, внутри красной шторки он чёрный */
-.dir-beauty-ticket-btn::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-}
-
-.dir-beauty-ticket-btn:focus-visible {
-  outline: 2px solid #ffffff;
-  outline-offset: 6px;
-}
-
-.dir-beauty-ticket-btn:focus-visible::after {
-  outline: 2px solid #000000;
-  outline-offset: -10px;
-}
-
-.dir-beauty-ticket-arrow {
-  display: grid;
-  width: 3.25rem;
-  height: 3.25rem;
-  flex-shrink: 0;
-  place-items: center;
-  border: 1px solid rgb(255 255 255 / 0.45);
-  border-radius: 50%;
-  transition:
-    border-color var(--motion-state) ease,
-    transform var(--motion-move) var(--bty-ease);
-}
-
-.dir-beauty-ticket:focus-within .dir-beauty-ticket-arrow,
-.dir-beauty-ticket:active .dir-beauty-ticket-arrow {
-  border-color: #000000;
-  transform: rotate(-45deg);
-}
-
-@media (hover: hover) {
-  .dir-beauty-ticket:hover .dir-beauty-ticket-arrow {
-    border-color: #000000;
-    transform: rotate(-45deg);
   }
 }
 
@@ -2241,33 +2369,11 @@ html:has(.dir-beauty) {
   position: relative;
 }
 
-.dir-beauty-faq-deco {
-  display: none;
-}
-
-/* Только там, где под липким заголовком есть пустая половина колонки */
-@media (min-width: 64rem) and (min-height: 46rem) {
-  .dir-beauty-faq-deco {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    display: block;
-    pointer-events: none;
-  }
-
-  .dir-beauty-faq-stick {
-    position: sticky;
-    top: 0;
-    height: 100svh;
-  }
-
-  .dir-beauty-faq-dial {
-    position: absolute;
-    bottom: 4.5rem;
-    left: 5rem;
-    width: min(19rem, 24vw);
-    aspect-ratio: 1;
-  }
+/* Слот aside кита: липкая левая колонка, компактно — по высоте до экрана минус шапка */
+.dir-beauty-faq-dial {
+  position: relative;
+  width: min(15rem, 22vw, 34svh);
+  aspect-ratio: 1;
 }
 
 .dir-beauty-faq-ticks,
@@ -2391,6 +2497,77 @@ html:has(.dir-beauty) {
     linear-gradient(135deg, #171717, #050505 70%);
 }
 
+/*
+ * Контурный титр финала: точки «Ё» в «СЪЁМКУ» и верх «/» обрезались верхней кромкой
+ * строки (интерлиньяж 0,95 при overflow: hidden). Запас сверху — 0,16 кегля титра
+ * (кегль — clamp(4,5rem, 15vw, 14rem), поэтому запас тот же clamp). Правка только
+ * внутри этой страницы: общий блок не меняется.
+ */
+.dir-beauty .dir-end-marquee-wrap {
+  padding-top: clamp(0.72rem, 2.4vw, 2.24rem);
+}
+
+/* ─────────────────────────────── Знак финала (aside) ─────────────────────────────── */
+
+/* Шкала вернулась к ×1: прицел пуст и стоит ровно. Декор слота aside финала, от lg */
+.dir-beauty-end-sign {
+  position: relative;
+  display: block;
+  width: 11rem;
+  aspect-ratio: 1;
+  margin: 1.75rem 0.75rem 0 0;
+}
+
+.dir-beauty-end-ring,
+.dir-beauty-end-cross {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.dir-beauty-end-ring {
+  inset: 0;
+  border: 1px solid rgb(255 255 255 / 0.55);
+}
+
+.dir-beauty-end-ring::before {
+  content: '';
+  position: absolute;
+  inset: 16%;
+  border: 1px dashed rgb(255 255 255 / 0.3);
+  border-radius: 50%;
+}
+
+/* Перекрестие вылезает за кольцо и обрывается у пустого центра */
+.dir-beauty-end-cross {
+  inset: -0.9rem;
+  background:
+    linear-gradient(rgb(255 255 255 / 0.5), rgb(255 255 255 / 0.5)) center / 1px 100% no-repeat,
+    linear-gradient(rgb(255 255 255 / 0.5), rgb(255 255 255 / 0.5)) center / 100% 1px no-repeat;
+  -webkit-mask: radial-gradient(circle, transparent 17%, #000000 17.5%);
+  mask: radial-gradient(circle, transparent 17%, #000000 17.5%);
+}
+
+.dir-beauty-end-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin: -0.225rem 0 0 -0.225rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.dir-beauty-end-label {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 1.5rem);
+  color: rgb(255 255 255 / 0.85);
+  white-space: nowrap;
+  /* На светлом кадре справа подпись не должна терять контраст */
+  text-shadow: 0 0 10px rgb(0 0 0 / 0.85);
+}
+
 /* ───────────────────────────────── Сниженное движение ───────────────────────────────── */
 
 /*
@@ -2432,24 +2609,17 @@ html:has(.dir-beauty) {
   .dir-beauty-focus-point,
   .dir-beauty-layer[data-on='true'] .dir-beauty-focus-point,
   .dir-beauty-row-line,
+  .dir-beauty-row-scale-fill,
+  .dir-beauty-row-scale-ruler::before,
   .dir-beauty-callout-line,
-  .dir-beauty-proof-frame,
-  .dir-beauty-ticket-curtain,
-  .dir-beauty-btn-iris {
+  .dir-beauty-proof-frame {
     transition: none;
   }
 
-  .dir-beauty-btn-arrow,
-  .dir-beauty-link svg,
-  .dir-beauty-ticket-arrow {
+  .dir-beauty-link svg {
     transition-property: color, border-color;
   }
 
-  .dir-beauty-ticket:hover .dir-beauty-ticket-arrow,
-  .dir-beauty-ticket:focus-within .dir-beauty-ticket-arrow,
-  .dir-beauty-ticket:active .dir-beauty-ticket-arrow,
-  .dir-beauty-btn:hover .dir-beauty-btn-arrow,
-  .dir-beauty-btn:focus-visible .dir-beauty-btn-arrow,
   .dir-beauty-link:hover svg {
     transform: none;
   }

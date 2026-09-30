@@ -3,12 +3,10 @@ import type { DirectionPageBase } from '../types'
 /**
  * Тексты сцены «Разворот». Это подписи к композиции, а не новые факты: каждая
  * строка либо повторяет то, что уже сказано в форматах, процессе и FAQ, либо
- * называет элемент журнальной вёрстки (выпуск, оглавление, вклейка).
+ * называет элемент журнальной вёрстки (оглавление, вклейка, купон).
  */
 export interface FashionScene {
-  /** Номер выпуска — порядковый номер направления в /services */
-  issue: string
-  /** Строка под заголовком первого экрана */
+  /** Строка под заголовком первого экрана (вне H1: сам H1 — только «Fashion-видео») */
   lead: string
   /** Абзац первого экрана */
   text: string
@@ -24,15 +22,14 @@ export interface FashionScene {
   contentsLead: string
   /** Слова-заставки вместо кадров, если работ из портфолио нет */
   plates: string[]
-  /** Лукбук: заголовок и подписи */
-  lookbook: { title: string; note: string; emptyNote: string; hint: string }
-  /** Работы: заголовок и подпись */
-  works: { title: string; note: string }
+  /** Лукбук: заголовок, подпись счётчика кадров и подсказки (мышь и touch) */
+  lookbook: { title: string; counter: string; hint: string; touchHint: string }
+  /** Работы: заголовок, подпись и фраза-заполнитель в сетке при нечётном числе работ */
+  works: { title: string; note: string; pullLabel: string; pull: string }
   /** Результат каждого этапа одной строкой — по порядку этапов */
   stepMarks: string[]
-  /** Смысловые CTA: после работ и после процесса */
+  /** Единственный промежуточный CTA: купон после работ */
   proofCta: { kicker: string; lead: string; tail: string; note: string }
-  processCta: { kicker: string; line: string; note: string; label: string }
   /** Финальный блок */
   end: { lines: string[]; note: string }
 }
@@ -70,7 +67,6 @@ export const FASHION_PAGE: DirectionPageBase & {
   ctaLabel: 'Обсудить съёмку коллекции',
   stickyLabel: 'Обсудить коллекцию',
   scene: {
-    issue: '02',
     lead: 'для коллекций, кампаний и дропов',
     text: 'Снимаем образ, а не каталог: режиссура, свет и монтаж под характер коллекции. Главный ролик и версии под сайт, соцсети и маркетплейсы — за одну съёмку.',
     place: 'Санкт-Петербург · Москва · по России',
@@ -86,11 +82,16 @@ export const FASHION_PAGE: DirectionPageBase & {
     plates: ['Ткань', 'Свет', 'Пластика', 'Силуэт', 'Ритм', 'Образ'],
     lookbook: {
       title: 'Ткань, свет, пластика',
-      note: 'Кадры из работ',
-      emptyNote: 'Ткань, силуэт и движение',
+      counter: 'Кадр',
       hint: 'Тяните или листайте',
+      touchHint: 'Листайте',
     },
-    works: { title: 'Коллекции в движении', note: 'Fashion-работы студии' },
+    works: {
+      title: 'Коллекции в движении',
+      note: 'Fashion-работы студии',
+      pullLabel: 'Подход',
+      pull: 'Снимаем образ, а не каталог.',
+    },
     stepMarks: [
       'Визуальный язык',
       'Раскадровка',
@@ -102,13 +103,7 @@ export const FASHION_PAGE: DirectionPageBase & {
       kicker: 'Отрезная линия',
       lead: 'Есть коллекция?',
       tail: 'Подберём формат съёмки.',
-      note: 'Бриф из двух шагов: коллекция, площадки, нужные версии.',
-    },
-    processCta: {
-      kicker: 'Бриф · два шага',
-      line: 'Начнём с брифа',
-      note: 'Коллекция, площадки, версии — остальное разберём вместе.',
-      label: 'Рассказать про коллекцию',
+      note: 'Бриф из двух шагов: коллекция, площадки, нужные версии. Остальное разберём вместе.',
     },
     end: {
       lines: ['Какая', 'коллекция', 'следующая?'],

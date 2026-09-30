@@ -382,6 +382,10 @@ html:has(.dir-shell) {
 
 .dir-shell > button.fixed {
   transition-property: opacity, translate, scale, color;
+  /* Тонкое кольцо держит белую плашку и на светлой секции: там одной тени мало */
+  box-shadow:
+    0 0 0 1px rgb(13 13 13 / 0.14),
+    0 12px 32px rgb(0 0 0 / 0.3);
 }
 
 .dir-shell > button.fixed::before,

@@ -28,9 +28,8 @@ export const BEAUTY_PAGE: DirectionPageBase & {
   words: { word: string; note: string }[]
   materials: BeautyMaterial[]
   /** Пятый материал вынесен в отдельную сцену: предмет в центре, свет обходит его */
-  object: { index: string; title: string; text: string; marks: string[] }
+  object: { index: string; title: string; text: string; marks: string[]; caption: string }
   proofCta: { kicker: string; title: string; text: string; label: string }
-  processCta: { kicker: string; title: string; text: string; label: string }
   end: { lines: string[]; note: string }
 } = {
   id: 'beauty',
@@ -98,18 +97,14 @@ export const BEAUTY_PAGE: DirectionPageBase & {
     title: 'Предметная съёмка',
     text: 'Флаконы, стекло, упаковка: отражения, блики и свет под характер бренда. Продукт — главный герой кадра.',
     marks: ['Стекло', 'Отражения', 'Блики', 'Упаковка'],
+    // Подпись под световым объектом: предмета на сцене нет, его место занимает продукт клиента
+    caption: 'Ваш продукт',
   },
   proofCta: {
-    kicker: 'Ваш продукт',
-    title: 'Покажите продукт — посмотрим на него камерой',
-    text: 'Вживую или по образцам: что в нём видно камерой — текстура, цвет, звук, движение. На этом строим идею.',
+    kicker: 'Первый шаг',
+    title: 'Покажите продукт',
+    text: 'Вживую или по образцам: посмотрим на него камерой — текстура, цвет, звук, движение. На этом строим идею.',
     label: 'Показать продукт',
-  },
-  processCta: {
-    kicker: 'Шаг 01 / Продукт и задача',
-    title: 'Назовите площадки — соберём план съёмки',
-    text: 'Расскажите про продукт и где ролик будет жить. Подберём свет, оптику и нарисуем раскадровку.',
-    label: 'Разобрать задачу',
   },
   end: {
     lines: ['Какой продукт', 'снимаем?'],

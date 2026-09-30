@@ -3,8 +3,9 @@
  *
  * Метафора: журнальный номер, который листают. Страница идёт как номер:
  * обложка → оглавление → разворот → лукбук → работы → выходные данные.
- * Чёрная страница с кадрами чередуется с белой «бумажной» (оглавление, работы,
- * вклейка): смена фона — это и есть переворот страницы.
+ * Чёрная страница с кадрами чередуется с «бумажной» (оглавление, работы,
+ * купон): смена фона — это и есть переворот страницы. Бумага — общий токен
+ * семейства (.dir-paper-section), загнутый угол — фирменная деталь этой сцены.
  *
  * Фирменный жест первого экрана — обложка листается сама: кадры сменяют друг
  * друга сгибом (clip-path с тенью у кромки), под подписью бежит счётчик
@@ -42,7 +43,6 @@ import {
 } from 'framer-motion'
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUpRight, Scissors } from 'lucide-react'
 
-import { useMenu } from '@/components/ui/menu-context'
 import { cn } from '@/lib/utils'
 import { DIRECTION_READING } from '@/lib/services/pages'
 import { FASHION_PAGE } from '@/lib/services/pages/content/fashion'
@@ -56,6 +56,7 @@ import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
 import { DirectionEnd } from '../direction-end'
 import { DirectionFaq } from '../direction-faq'
+import { DirectionButton, setTitle, typo } from '../direction-kit'
 import { OtherDirections } from '../other-directions'
 import { Still } from '../still'
 import './fashion-page.css'
@@ -64,7 +65,6 @@ export interface FashionPageProps {
   works: DirectionPageWork[]
 }
 
-const NBSP = ' '
 const SCENE = FASHION_PAGE.scene
 const FORMATS = FASHION_PAGE.formats
 const SPREAD_ID = 'fashion-spread'
@@ -79,27 +79,6 @@ const pad = (value: number) => String(value).padStart(2, '0')
 const plateWord = (index: number) => SCENE.plates[index % SCENE.plates.length] ?? ''
 const delay = (ms: number, extra?: CSSProperties) =>
   ({ '--fs-d': `${ms}ms`, ...extra }) as CSSProperties
-
-/**
- * Неразрывные пробелы по правилам набора: после предлогов и союзов до трёх
- * букв, перед тире, между числом и единицей. Применяется только к тексту,
- * который рисует эта страница; JSON-LD и FAQ остаются с обычными пробелами.
- */
-function tidy(text: string): string {
-  const words = text.split(' ')
-  let out = ''
-  for (let i = 0; i < words.length; i += 1) {
-    const word = words[i] ?? ''
-    out += word
-    if (i === words.length - 1) break
-    const next = words[i + 1] ?? ''
-    const short = /^[A-Za-zА-Яа-яЁё]{1,3}$/.test(word.replace(/^[«(„"]+/, ''))
-    const beforeDash = next === '—' || next === '–'
-    const numberUnit = /\d$/.test(word) && /^[A-Za-zА-Яа-яЁё%]/.test(next)
-    out += short || beforeDash || numberUnit ? NBSP : ' '
-  }
-  return out
-}
 
 const reducedNow = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -170,48 +149,6 @@ type Pages = ReturnType<typeof paginate>
 /** Две страницы, на которых сейчас лежит открытый формат */
 const spreadPages = (index: number) => `${pad(3 + index * 2)}–${pad(4 + index * 2)}`
 
-/**
- * Белые страницы под шапкой: шапка сайта по умолчанию светлая, и над бумагой
- * её не видно. Наблюдаем тонкую полоску на уровне центра шапки.
- */
-function usePaperHeader() {
-  const { setHeaderDark } = useMenu()
-
-  useEffect(() => {
-    if (typeof IntersectionObserver === 'undefined') return
-    const nodes = Array.from(document.querySelectorAll<HTMLElement>('[data-fs-paper]'))
-    if (nodes.length === 0) return
-    const inside = new Set<Element>()
-    let observer: IntersectionObserver | null = null
-
-    const build = () => {
-      observer?.disconnect()
-      inside.clear()
-      // Полоска в 1px на уровне центра шапки: цвет меняется ровно на кромке бумаги
-      const bottom = Math.max(0, window.innerHeight - 37)
-      observer = new IntersectionObserver(
-        entries => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) inside.add(entry.target)
-            else inside.delete(entry.target)
-          }
-          setHeaderDark(inside.size > 0)
-        },
-        { rootMargin: `-36px 0px -${bottom}px 0px`, threshold: 0 }
-      )
-      nodes.forEach(node => observer?.observe(node))
-    }
-
-    build()
-    window.addEventListener('resize', build)
-    return () => {
-      observer?.disconnect()
-      window.removeEventListener('resize', build)
-      setHeaderDark(false)
-    }
-  }, [setHeaderDark])
-}
-
 /* ───────────────────────────── Общие мелочи набора ───────────────────────────── */
 
 /** Колонтитул: бегущий заголовок слева, номер страницы справа, тонкая линия между */
@@ -231,8 +168,10 @@ function Folio({
     <div
       aria-hidden="true"
       className={cn(
-        'type-meta flex items-center gap-4 font-mono uppercase tabular-nums',
-        tone === 'paper' ? 'text-black/70 max-lg:pr-[calc(var(--fs-fold)-0.5rem)]' : 'text-white/60'
+        'dir-kit-meta flex items-center gap-4 font-mono uppercase tabular-nums',
+        tone === 'paper'
+          ? 'text-[color:var(--dir-paper-mute)] max-lg:pr-[calc(var(--fs-fold)-0.5rem)]'
+          : 'text-white/60'
       )}
     >
       <span className="h-1.5 w-1.5 shrink-0 bg-accent" />
@@ -250,6 +189,16 @@ function Folio({
       <span className="shrink-0">{right}</span>
     </div>
   )
+}
+
+/**
+ * Загнутый угол листа: вырез в верхнем правом углу и оборот. Рисуется отдельным
+ * узлом, а не clip-path секции: кромку общей бумаги (.dir-paper-section) нельзя
+ * резать, она лежит снаружи секции. Соседний лист подряд — тот же лист, угол
+ * у него скрыт стилями.
+ */
+function Dogear() {
+  return <span aria-hidden="true" className="dir-fashion-dogear" />
 }
 
 interface PlateProps {
@@ -302,48 +251,10 @@ function Plate({
         {word}
       </span>
       <span className="absolute right-3 top-3 h-2 w-2 bg-accent" />
-      <span className="type-meta absolute bottom-3 right-3 font-mono tabular-nums text-white/60">
+      <span className="dir-kit-meta absolute bottom-3 right-3 font-mono tabular-nums text-white/60">
         {pad(index + 1)}
       </span>
     </div>
-  )
-}
-
-/** Главная кнопка сцены: плашка с красной шторкой на наведении, как на всём сайте */
-function BriefButton({
-  label,
-  location,
-  tone = 'light',
-  className,
-}: {
-  label: string
-  location: string
-  tone?: 'light' | 'dark'
-  className?: string
-}) {
-  const page = useDirectionPage()
-  return (
-    <button
-      type="button"
-      onClick={() => page.openBrief(location)}
-      className={cn(
-        'group relative inline-flex min-h-12 items-center justify-center gap-3 overflow-hidden rounded-sm px-8 py-4 text-base font-medium transition-transform duration-[var(--motion-press)] ease-[var(--ease-out-expo)] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
-        tone === 'light' ? 'bg-white text-black' : 'bg-black text-white',
-        className
-      )}
-    >
-      <span className="relative z-10 transition-colors duration-[var(--motion-move)] group-hover:text-white">
-        {label}
-      </span>
-      <ArrowRight
-        aria-hidden="true"
-        className="relative z-10 h-4 w-4 transition-[transform,color] duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-hover:translate-x-1 group-hover:text-white"
-      />
-      <span
-        aria-hidden="true"
-        className="absolute inset-0 -translate-x-full bg-accent transition-transform duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-hover:translate-x-0"
-      />
-    </button>
   )
 }
 
@@ -394,6 +305,7 @@ interface TurnState {
 }
 
 function Cover({ frames }: { frames: SceneFrame[] }) {
+  const page = useDirectionPage()
   const reduced = useReduced()
   const rootRef = useRef<HTMLElement>(null)
   const count = frames.length
@@ -491,9 +403,14 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
     if (!tilt.current.raf) tilt.current.raf = requestAnimationFrame(applyTilt)
   }
 
+  // Сброс id после отмены: в StrictMode эффект отрабатывает дважды, и ненулевой id
+  // навсегда запретил бы новые кадры
   useEffect(() => {
     const current = tilt.current
-    return () => cancelAnimationFrame(current.raf)
+    return () => {
+      cancelAnimationFrame(current.raf)
+      current.raf = 0
+    }
   }, [])
 
   const onFrameDown = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -524,17 +441,15 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
       onPointerLeave={onPointerLeave}
       className="relative isolate flex min-h-[100svh] w-full flex-col overflow-hidden bg-black px-6 pb-8 pt-[5.25rem] md:px-10 md:pb-10 md:pt-24 lg:px-20"
     >
-      {/* Мастхед: название, номер выпуска, география; номер выпуска строго по центру */}
+      {/* Мастхед: одна моно-строка, как kicker у соседних страниц: метка с красной риской
+          слева, география справа. Номера выпуска нет: он повторял порядковый индекс */}
       <div className="relative z-20">
-        <div className="type-meta grid grid-cols-[auto_auto] items-center justify-between gap-4 font-mono uppercase tabular-nums text-white/70 sm:grid-cols-[1fr_auto_1fr]">
+        <div className="dir-kit-meta flex flex-wrap items-center justify-between gap-x-6 gap-y-1 font-mono uppercase tabular-nums text-white/70">
           <span className="dir-fashion-rise flex items-center gap-3" style={delay(0)}>
-            <span aria-hidden="true" className="h-1.5 w-1.5 bg-accent" />
+            <span aria-hidden="true" className="h-px w-6 bg-accent sm:w-8" />
             Savage Movie · Fashion
           </span>
-          <span className="dir-fashion-rise hidden sm:inline" style={delay(80)}>
-            Выпуск № {SCENE.issue}
-          </span>
-          <span className="dir-fashion-rise justify-self-end text-right" style={delay(160)}>
+          <span className="dir-fashion-rise text-right" style={delay(160)}>
             <span className="hidden md:inline">{SCENE.place}</span>
             <span className="md:hidden">СПб · Москва</span>
           </span>
@@ -553,7 +468,7 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
           {/* «В номере»: кавер-линии в один ряд слева сверху, ведут к форматам */}
           <nav aria-label="В номере" className="hidden w-full max-w-[44rem] pt-1 md:block">
             <p
-              className="dir-fashion-rise type-meta mb-2 flex items-center gap-3 font-mono uppercase text-white/75"
+              className="dir-fashion-rise dir-kit-meta mb-2 flex items-center gap-3 font-mono uppercase text-white/75"
               style={delay(980)}
             >
               <span aria-hidden="true" className="h-px w-6 bg-accent" />В номере
@@ -573,11 +488,11 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
                     }}
                     className="group block min-h-11 py-2.5 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
                   >
-                    <span className="type-meta block font-mono tabular-nums text-white/75 transition-colors duration-[var(--motion-state)] group-hover:text-accent">
+                    <span className="dir-kit-meta block font-mono tabular-nums text-white/75 transition-colors duration-[var(--motion-state)] group-hover:text-accent">
                       Стр. {pad(3 + i * 2)}
                     </span>
                     <span className="mt-1 block font-stage text-[0.8rem] uppercase leading-[1.05] tracking-[-0.01em] text-white transition-transform duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-hover:translate-x-1 lg:text-[0.88rem]">
-                      {tidy(format.title)}
+                      {typo(format.title)}
                     </span>
                   </a>
                 </li>
@@ -588,42 +503,46 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
           {/* Сдвиг при прокрутке — у всего нижнего блока разом: строки не заезжают друг на друга */}
           <motion.div style={{ y: titleY }} className="dir-fashion-tilt-title">
             <div>
-              <h1 className="pointer-events-none text-white">
+              {/* H1 — только название с дефисом: «Fashion-видео». Дефис — настоящий символ,
+                  красный, на конце первой строки; на узком телефоне он скрыт визуально, но
+                  остаётся в тексте (иначе «FASHION-» не помещается в колонку) */}
+              <h1 id="fashion-title" className="pointer-events-none text-white">
                 <span
                   className="dir-fashion-rise block font-stage text-[clamp(3.4rem,17.5vw,6.5rem)] uppercase leading-[0.82] tracking-[-0.04em] md:text-[clamp(4rem,13.2vw,10rem)] xl:text-[clamp(6rem,min(15.2vw,23svh),19rem)]"
                   style={delay(260, { '--fs-rise': '0.3em' } as CSSProperties)}
                 >
-                  Fashion
-                </span>{' '}
+                  Fashion<span className="dir-fashion-hy">-</span>
+                </span>
                 <span
                   className="dir-fashion-rise -mt-[0.02em] ml-[10vw] block font-brand-hero text-[clamp(3.4rem,17.5vw,6.5rem)] uppercase leading-[0.82] tracking-[-0.04em] md:ml-[8vw] md:text-[clamp(4rem,13.2vw,10rem)] xl:ml-[10vw] xl:text-[clamp(6rem,min(15.2vw,23svh),19rem)]"
                   style={delay(380, { '--fs-rise': '0.3em' } as CSSProperties)}
                 >
                   видео
-                </span>{' '}
-                <span
-                  className="dir-fashion-rise mt-5 block max-w-md text-lg font-light leading-snug text-white/90 md:mt-8 md:text-xl"
-                  style={delay(560)}
-                >
-                  {tidy(SCENE.lead)}
                 </span>
               </h1>
+
+              <p
+                className="dir-fashion-rise mt-5 max-w-md text-lg font-light leading-snug text-white/90 md:mt-8 md:text-xl"
+                style={delay(560)}
+              >
+                {typo(SCENE.lead)}
+              </p>
 
               <p
                 className="dir-fashion-rise dir-fashion-lede mt-5 max-w-lg text-sm leading-relaxed text-white/80 text-pretty md:text-base"
                 style={delay(660)}
               >
-                {tidy(SCENE.text)}
+                {typo(SCENE.text)}
               </p>
 
               <div
                 className="dir-fashion-rise mt-6 flex flex-col gap-3 md:mt-8 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2"
                 style={delay(780)}
               >
-                <BriefButton
+                <DirectionButton
                   label={FASHION_PAGE.ctaLabel}
-                  location="hero"
-                  className="w-full sm:w-auto sm:shrink-0"
+                  onClick={() => page.openBrief('hero')}
+                  className="w-full sm:w-auto sm:min-w-[20rem] sm:shrink-0"
                 />
                 <a
                   href={`#${SPREAD_ID}`}
@@ -693,24 +612,26 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
                           priority={i === 0}
                           quality={75}
                           className="h-full w-full"
-                          imgClassName="dir-fashion-settle"
+                          imgClassName="dir-fashion-settle dir-fashion-lift"
                         />
                         <span className="dir-fashion-edge" />
                       </div>
                     ))}
                   </div>
-                  {/* Скримы: заголовок и кредиты читаются на любом кадре, даже белом */}
+                  {/* Скримы только там, где на кадр ложится текст: на десктопе это полоса под
+                      заголовком у левой кромки (остальной кадр чистый и светлый), на телефоне —
+                      верх под кредитом со стрелками и низ под заголовком */}
                   <span
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 z-[5] bg-gradient-to-r from-black/75 via-black/25 to-transparent to-[62%]"
+                    className="dir-fashion-title-scrim pointer-events-none absolute inset-0 z-[5] max-md:hidden"
                   />
                   <span
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-[45%] bg-gradient-to-t from-black/85 via-black/35 to-transparent md:h-1/4 md:from-black/45 md:via-transparent"
+                    className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-[30%] bg-gradient-to-t from-black/70 to-transparent md:hidden"
                   />
                   <span
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-28 bg-gradient-to-b from-black/70 to-transparent md:hidden"
+                    className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-24 bg-gradient-to-b from-black/60 to-transparent md:hidden"
                   />
                   <span
                     aria-hidden="true"
@@ -734,7 +655,7 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
                 >
                   <p
                     key={shown}
-                    className="dir-fashion-rise type-meta truncate font-mono uppercase tabular-nums text-white/70"
+                    className="dir-fashion-rise dir-kit-meta truncate font-mono uppercase tabular-nums text-white/70"
                     style={{ '--fs-rise': '8px' } as CSSProperties}
                   >
                     {credit ? (
@@ -744,7 +665,7 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
                         <span className="hidden @[21rem]:inline"> · {credit.title}</span>
                       </>
                     ) : (
-                      <>Обложка · выпуск № {SCENE.issue}</>
+                      <>Обложка</>
                     )}
                   </p>
                 </div>
@@ -800,13 +721,13 @@ function Contents({
   return (
     <section
       id="fashion-contents"
-      data-fs-paper=""
       aria-labelledby="fashion-contents-title"
-      className="dir-fashion-paper relative scroll-mt-[4.5rem] bg-[var(--fs-paper)] px-6 pb-16 pt-6 text-black md:px-10 md:pb-24 lg:px-20"
+      className="dir-paper-section dir-fashion-sheet mt-[var(--dir-edge)] scroll-mt-[4.5rem] px-6 pb-12 pt-6 md:px-10 md:pb-16 lg:px-20"
     >
+      <Dogear />
       <Folio
         tone="paper"
-        left={`Fashion-видео · выпуск № ${SCENE.issue}`}
+        left="Fashion-видео · оглавление"
         leftShort="Fashion-видео"
         right="Стр. 02"
       />
@@ -814,20 +735,20 @@ function Contents({
       <h2
         id="fashion-contents-title"
         data-reveal=""
-        className="mt-8 font-stage text-[clamp(2.1rem,10.6vw,11rem)] uppercase leading-[0.84] tracking-[-0.05em] md:mt-12"
+        className="mt-8 font-stage text-[clamp(2.1rem,8.4vw,7.5rem)] uppercase leading-[0.9] tracking-[-0.05em] md:mt-8"
       >
         Содержание
       </h2>
 
-      <div className="mt-10 grid gap-10 md:mt-14 lg:grid-cols-12 lg:gap-x-16">
+      <div className="mt-8 grid gap-10 md:mt-10 lg:grid-cols-12 lg:gap-x-16">
         <div className="flex flex-col justify-between gap-10 lg:col-span-4">
           <p
             data-reveal=""
-            className="max-w-sm text-lg font-normal leading-snug text-black/85 text-pretty md:text-xl"
+            className="max-w-sm text-lg font-normal leading-snug text-[color:var(--dir-paper-ink)] text-pretty md:text-xl"
           >
-            {tidy(SCENE.contentsLead)}
+            {typo(SCENE.contentsLead)}
           </p>
-          <figure data-reveal="" className="hidden w-[62%] lg:block">
+          <figure data-reveal="" className="hidden w-1/2 lg:block">
             <div className="relative aspect-[3/4] bg-black">
               <Plate
                 frame={frame}
@@ -837,8 +758,8 @@ function Contents({
                 className="absolute inset-0"
               />
             </div>
-            <figcaption className="type-meta mt-3 flex justify-between gap-3 font-mono uppercase tabular-nums text-black/70">
-              <span>{frame ? `Кадр — ${frame.client}` : 'Выпуск № ' + SCENE.issue}</span>
+            <figcaption className="dir-kit-meta mt-3 flex justify-between gap-3 font-mono uppercase tabular-nums text-[color:var(--dir-paper-mute)]">
+              <span>{frame ? `Кадр — ${frame.client}` : 'Вклейка'}</span>
               <span>02</span>
             </figcaption>
           </figure>
@@ -852,7 +773,7 @@ function Contents({
                 key={row.key}
                 data-reveal=""
                 style={{ '--reveal-delay': `${i * 60}ms` } as CSSProperties}
-                className="border-t border-black/30 last:border-b"
+                className="border-t border-[color:var(--dir-paper-line)] last:border-b"
               >
                 <a
                   href={`#${id}`}
@@ -861,17 +782,17 @@ function Contents({
                     if (row.key === 'spread') goToFormat(0)
                     else jumpTo(id)
                   }}
-                  className="group relative grid grid-cols-[4.4rem_1fr_auto] items-center gap-x-4 py-5 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent md:grid-cols-[8rem_1fr_auto] md:py-7"
+                  className="group relative grid grid-cols-[4.4rem_1fr_auto] items-center gap-x-4 py-5 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent md:grid-cols-[8rem_1fr_auto] md:py-4"
                 >
-                  <span className="font-stage text-[clamp(2.2rem,5vw,4.6rem)] leading-none tabular-nums tracking-[-0.05em] transition-colors duration-[var(--motion-state)] group-hover:text-accent">
+                  <span className="font-stage text-[clamp(2.2rem,4.6vw,4.2rem)] leading-none tabular-nums tracking-[-0.05em] transition-colors duration-[var(--motion-state)] group-hover:text-accent">
                     {pad(page)}
                   </span>
                   <span className="min-w-0">
                     <span className="block font-stage text-[clamp(1.3rem,2.8vw,2.6rem)] uppercase leading-[0.95] tracking-[-0.02em] transition-transform duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-hover:translate-x-2">
-                      {tidy(row.title)}
+                      {typo(row.title)}
                     </span>
-                    <span className="type-meta mt-2 block font-mono uppercase text-black/70">
-                      {tidy(row.note)}
+                    <span className="dir-kit-meta mt-2 block font-mono uppercase text-[color:var(--dir-paper-mute)]">
+                      {typo(row.note)}
                     </span>
                   </span>
                   <ArrowUpRight
@@ -1081,7 +1002,7 @@ function Spread({ frames }: { frames: SceneFrame[] }) {
 
             <p
               key={active}
-              className="dir-fashion-rise type-meta hidden items-center justify-between gap-4 font-mono uppercase tabular-nums text-white/70 md:absolute md:inset-x-0 md:bottom-full md:mb-8 md:flex"
+              className="dir-fashion-rise dir-kit-meta hidden items-center justify-between gap-4 font-mono uppercase tabular-nums text-white/70 md:absolute md:inset-x-0 md:bottom-full md:mb-8 md:flex"
               style={{ '--fs-rise': '8px' } as CSSProperties}
             >
               <span className="min-w-0 truncate">
@@ -1112,7 +1033,7 @@ function Spread({ frames }: { frames: SceneFrame[] }) {
             id="fashion-spread-title"
             className="mt-4 font-stage text-[0.95rem] uppercase leading-[1] tracking-[-0.01em] text-white md:mt-[clamp(0.75rem,3.2svh,2rem)] md:text-[clamp(1.6rem,min(3vw,5.2svh),3.6rem)] md:leading-[0.92] md:tracking-[-0.02em] md:text-balance"
           >
-            Три формата fashion-видео
+            {setTitle('Три формата fashion-видео')}
           </h2>
 
           <ol className="mt-3 flex flex-col md:mt-[clamp(0.75rem,3.2svh,2rem)]">
@@ -1123,7 +1044,7 @@ function Spread({ frames }: { frames: SceneFrame[] }) {
                 className="group relative border-t border-white/15 last:border-b"
               >
                 <div className="grid grid-cols-[2.25rem_1fr] gap-x-3 py-2.5 md:grid-cols-[3.5rem_1fr] md:py-[clamp(0.75rem,2.2svh,1.75rem)]">
-                  <span className="type-meta pt-1 font-mono tabular-nums text-white/55 transition-colors duration-[var(--motion-state)] group-data-[active=true]:text-accent md:pt-1.5">
+                  <span className="dir-kit-meta pt-1 font-mono tabular-nums text-white/55 transition-colors duration-[var(--motion-state)] group-data-[active=true]:text-accent md:pt-1.5">
                     {format.index}
                   </span>
                   <div>
@@ -1143,16 +1064,16 @@ function Spread({ frames }: { frames: SceneFrame[] }) {
                         {/* Сдвиг на внутреннем слое: transform на h3 сделал бы его опорным
                             блоком для кольца фокуса, и оно сжалось бы при наведении */}
                         <span className="inline-block transition-transform duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-hover:translate-x-1">
-                          {tidy(format.title)}
+                          {typo(format.title)}
                         </span>
                       </button>
                     </h3>
-                    <p className="type-meta mt-1 hidden font-mono uppercase text-white/55 group-data-[active=true]:block md:block">
+                    <p className="dir-kit-meta mt-1 hidden font-mono uppercase text-white/55 group-data-[active=true]:block md:block">
                       {format.tag}
                     </p>
                     <div className="dir-fashion-fmt grid grid-rows-[0fr] transition-[grid-template-rows] duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-data-[active=true]:grid-rows-[1fr]">
                       <p className="min-h-0 overflow-hidden pt-2 text-[0.8rem] leading-relaxed text-white/55 text-pretty transition-colors duration-[var(--motion-state)] group-data-[active=true]:text-white/85 md:max-w-[min(30rem,calc(50vw-9.5rem))] md:pt-3 md:text-[clamp(1rem,1.1vw,1.2rem)] lg:max-w-[min(30rem,calc(50vw-12rem))]">
-                        {tidy(format.text)}
+                        {typo(format.text)}
                       </p>
                     </div>
                   </div>
@@ -1200,15 +1121,7 @@ const SHAPES = [
   { width: 'w-[56vw] md:w-[18rem] lg:w-[21rem]', ratio: 'aspect-[2/3]', drop: 'mt-12 md:mt-40' },
 ] as const
 
-function Lookbook({
-  frames,
-  works,
-  pages,
-}: {
-  frames: SceneFrame[]
-  works: DirectionPageWork[]
-  pages: Pages
-}) {
+function Lookbook({ frames, pages }: { frames: SceneFrame[]; pages: Pages }) {
   const page = useDirectionPage()
   const trackRef = useRef<HTMLDivElement>(null)
   const thumbRef = useRef<HTMLSpanElement>(null)
@@ -1232,7 +1145,6 @@ function Lookbook({
         }))
       : SCENE.plates.map(word => ({ frame: null, word }))
   const total = prints.length
-  const names = Array.from(new Set(works.map(work => work.client))).join(' · ')
   // В Tab попадает первый кадр каждой работы: остальные достаёт мышь, касание и стрелки ленты
   const isFirstOfWork = prints.map(
     (print, i) =>
@@ -1268,12 +1180,16 @@ function Lookbook({
     return () => {
       observer?.disconnect()
       cancelAnimationFrame(scrollRaf.current)
+      scrollRaf.current = 0
     }
   }, [measure, schedule])
 
   useEffect(() => {
     const state = chip.current
-    return () => cancelAnimationFrame(state.raf)
+    return () => {
+      cancelAnimationFrame(state.raf)
+      state.raf = 0
+    }
   }, [])
 
   const step = useCallback((dir: 1 | -1) => {
@@ -1350,24 +1266,34 @@ function Lookbook({
     <section
       id="fashion-lookbook"
       aria-labelledby="fashion-lookbook-title"
-      className="relative overflow-hidden bg-black py-20 md:py-28"
+      className="relative overflow-hidden bg-black pb-16 pt-20 md:pb-20 md:pt-28"
     >
       <div className="px-6 md:px-10 lg:px-20">
         <Folio left="Лукбук" right={`Стр. ${pages.lookbook.label}`} />
         <div className="mt-10 grid gap-x-10 gap-y-8 md:mt-14 lg:grid-cols-12 lg:items-end">
+          {/* Интерлиньяж 0,96: запятая после «Ткань» и «Свет» не задевает строку ниже */}
           <h2
             id="fashion-lookbook-title"
             data-reveal=""
-            className="max-w-[11ch] font-brand-hero text-[clamp(2.9rem,9.4vw,10rem)] uppercase leading-[0.88] tracking-tighter text-white text-balance lg:col-span-9"
+            className="max-w-[11ch] font-brand-hero text-[clamp(2.9rem,9.4vw,10rem)] uppercase leading-[0.96] tracking-tighter text-white text-balance lg:col-span-9"
           >
-            {tidy(SCENE.lookbook.title)}
+            {setTitle(SCENE.lookbook.title)}
           </h2>
           <div className="flex flex-col items-start gap-5 lg:col-span-3 lg:items-end">
-            <p className="type-meta max-w-xs font-mono uppercase leading-relaxed text-white/70 lg:text-right">
-              {names ? tidy(`${SCENE.lookbook.note}: ${names}`) : tidy(SCENE.lookbook.emptyNote)}
+            {/* Счётчик кадров ленты: заменил список клиентов, который повторял подписи под кадрами */}
+            <p aria-hidden="true" className="flex items-end gap-3 font-mono uppercase tabular-nums">
+              <span className="dir-kit-meta pb-2 text-white/60">{SCENE.lookbook.counter}</span>
+              <span
+                key={current}
+                className="dir-fashion-rise font-stage text-[clamp(2.6rem,4.4vw,4.2rem)] leading-[0.9] tracking-[-0.04em] text-white"
+                style={{ '--fs-rise': '10px' } as CSSProperties}
+              >
+                {pad(current + 1)}
+              </span>
+              <span className="dir-kit-meta pb-2 text-white/60">/ {pad(total)}</span>
             </p>
             <div className="hidden items-center gap-2 md:flex">
-              <span className="type-meta mr-3 font-mono uppercase text-white/60">
+              <span className="dir-kit-meta mr-3 font-mono uppercase text-white/60">
                 {SCENE.lookbook.hint}
               </span>
               <RoundButton label="Назад по ленте" onClick={() => step(-1)} disabled={atStart}>
@@ -1379,6 +1305,18 @@ function Lookbook({
             </div>
           </div>
         </div>
+
+        {/* На touch стрелок нет: подсказка-жест показывает, куда вести палец; после первого
+            сдвига ленты гаснет */}
+        <p
+          aria-hidden="true"
+          data-at-start={atStart}
+          className="dir-fashion-swipe dir-kit-meta mt-8 font-mono uppercase text-white/70"
+        >
+          <span className="dir-fashion-swipe-line" />
+          {SCENE.lookbook.touchHint}
+          <ArrowRight className="dir-fashion-swipe-arrow h-4 w-4 text-accent" />
+        </p>
       </div>
 
       <div
@@ -1421,7 +1359,7 @@ function Lookbook({
                       />
                     </span>
                   </span>
-                  <span className="type-meta mt-3 flex items-baseline justify-between gap-3 font-mono uppercase tabular-nums text-white/70">
+                  <span className="dir-kit-meta mt-3 flex items-baseline justify-between gap-3 font-mono uppercase tabular-nums text-white/70">
                     <span className="text-white">{pad(i + 1)}</span>
                     <span className="min-w-0 truncate text-right transition-colors duration-[var(--motion-state)] group-hover:text-white group-focus-visible:text-white">
                       {frame ? `${frame.client} · ${frame.title}` : print.word}
@@ -1457,20 +1395,17 @@ function Lookbook({
         </div>
 
         <div ref={chipRef} aria-hidden="true" data-on="false" className="dir-fashion-chip">
-          <span className="type-meta font-mono uppercase">{chipLabel}</span>
+          <span className="dir-kit-meta font-mono uppercase">{chipLabel}</span>
         </div>
       </div>
 
-      <div aria-hidden="true" className="mt-8 flex items-center gap-5 px-6 md:px-10 lg:px-20">
-        <span className="relative h-px flex-1 bg-white/20">
+      <div aria-hidden="true" className="mt-8 px-6 md:px-10 lg:px-20">
+        <span className="relative block h-px w-full bg-white/20">
           <span
             ref={thumbRef}
             className="absolute left-0 top-[-1px] block h-[3px] bg-accent"
             style={{ width: '25%' }}
           />
-        </span>
-        <span className="type-meta font-mono tabular-nums text-white/70">
-          {pad(current + 1)} / {pad(total)}
         </span>
       </div>
     </section>
@@ -1479,11 +1414,16 @@ function Lookbook({
 
 /* ─────────────────────────────── 05. Работы ─────────────────────────────── */
 
+/*
+ * Пары в 12 колонках без пустых полос: большой кадр + малый, сдвинутый вниз на
+ * 3,5rem (низы подписей почти на одной линии), во втором ряду зеркально. Раньше
+ * шаг сдвига доходил до 11rem, и рядом с картой оставалась пустая половина полотна.
+ */
 const WORK_SLOTS = [
-  { col: 'lg:col-span-5 lg:col-start-1', ratio: 'aspect-[4/5]', drop: '' },
-  { col: 'lg:col-span-4 lg:col-start-8', ratio: 'aspect-[3/4]', drop: 'lg:mt-44' },
-  { col: 'lg:col-span-4 lg:col-start-2', ratio: 'aspect-[3/4]', drop: '' },
-  { col: 'lg:col-span-5 lg:col-start-7', ratio: 'aspect-[4/5]', drop: 'lg:mt-28' },
+  { col: 'lg:col-span-6 lg:col-start-1', ratio: 'aspect-[4/5]', drop: '' },
+  { col: 'lg:col-span-5 lg:col-start-8', ratio: 'aspect-[3/4]', drop: 'lg:mt-14' },
+  { col: 'lg:col-span-5 lg:col-start-1', ratio: 'aspect-[3/4]', drop: 'lg:mt-14' },
+  { col: 'lg:col-span-6 lg:col-start-7', ratio: 'aspect-[4/5]', drop: '' },
 ] as const
 
 function Works({ works, pages }: { works: DirectionPageWork[]; pages: Pages }) {
@@ -1510,10 +1450,10 @@ function Works({ works, pages }: { works: DirectionPageWork[]; pages: Pages }) {
   return (
     <section
       id="fashion-works"
-      data-fs-paper=""
       aria-labelledby="fashion-works-title"
-      className="dir-fashion-paper relative scroll-mt-[4.5rem] bg-[var(--fs-paper)] px-6 pb-12 pt-6 text-black md:px-10 md:pb-16 lg:px-20"
+      className="dir-paper-section dir-fashion-sheet scroll-mt-[4.5rem] px-6 pb-4 pt-6 md:px-10 lg:px-20"
     >
+      <Dogear />
       <Folio tone="paper" left="Работы" right={`Стр. ${pages.works?.label ?? ''}`} />
 
       <div className="mt-10 flex flex-wrap items-end justify-between gap-x-10 gap-y-5 md:mt-14">
@@ -1522,16 +1462,16 @@ function Works({ works, pages }: { works: DirectionPageWork[]; pages: Pages }) {
           data-reveal=""
           className="max-w-[13ch] font-stage text-[clamp(2.3rem,6.6vw,6.8rem)] uppercase leading-[0.88] tracking-[-0.04em] text-balance"
         >
-          {tidy(SCENE.works.title)}
+          {setTitle(SCENE.works.title)}
         </h2>
-        <p className="type-meta max-w-xs font-mono uppercase leading-relaxed text-black/70 md:text-right">
+        <p className="dir-kit-meta max-w-xs font-mono uppercase leading-relaxed text-[color:var(--dir-paper-mute)] md:text-right">
           {SCENE.works.note} · {pad(works.length)}
         </p>
       </div>
 
       <ul
         ref={listRef}
-        className="mt-12 grid gap-x-6 gap-y-14 md:mt-20 md:grid-cols-2 lg:grid-cols-12 lg:gap-y-20"
+        className="mt-10 grid gap-x-6 gap-y-12 md:mt-14 md:grid-cols-2 md:gap-y-14 lg:grid-cols-12 lg:gap-y-16"
       >
         {works.map((work, i) => {
           const slot = WORK_SLOTS[i % WORK_SLOTS.length] ?? WORK_SLOTS[0]
@@ -1545,7 +1485,7 @@ function Works({ works, pages }: { works: DirectionPageWork[]; pages: Pages }) {
               className={cn(
                 'dir-fashion-work',
                 slot.col,
-                i % 2 === 1 && 'md:mt-16 lg:mt-0',
+                i % 2 === 1 && 'md:mt-10 lg:mt-0',
                 slot.drop
               )}
             >
@@ -1565,7 +1505,7 @@ function Works({ works, pages }: { works: DirectionPageWork[]; pages: Pages }) {
                     <Still
                       src={first}
                       alt=""
-                      sizes="(min-width: 1024px) 40vw, (min-width: 768px) 50vw, 100vw"
+                      sizes="(min-width: 1024px) 46vw, (min-width: 768px) 50vw, 100vw"
                       quality={65}
                       objectPosition="center 28%"
                       className="absolute inset-0"
@@ -1585,7 +1525,7 @@ function Works({ works, pages }: { works: DirectionPageWork[]; pages: Pages }) {
                       <Still
                         src={second}
                         alt=""
-                        sizes="(min-width: 1024px) 40vw, (min-width: 768px) 50vw, 100vw"
+                        sizes="(min-width: 1024px) 46vw, (min-width: 768px) 50vw, 100vw"
                         quality={65}
                         objectPosition="center 28%"
                         className="absolute inset-0"
@@ -1600,25 +1540,43 @@ function Works({ works, pages }: { works: DirectionPageWork[]; pages: Pages }) {
                     <ArrowUpRight className="h-5 w-5" />
                   </span>
                 </span>
-                <span className="type-meta mt-4 flex items-baseline justify-between gap-4 font-mono uppercase tabular-nums text-black/70">
+                <span className="dir-kit-meta mt-4 flex items-baseline justify-between gap-4 font-mono uppercase tabular-nums text-[color:var(--dir-paper-mute)]">
                   <span>№ {pad(i + 1)}</span>
                   <span>{work.year ?? ''}</span>
                 </span>
                 <span className="mt-2 block font-stage text-[clamp(1.9rem,3.8vw,3.8rem)] uppercase leading-[0.92] tracking-[-0.03em] transition-transform duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-hover:translate-x-1.5">
                   {work.client}
                 </span>
-                <span className="mt-2 block text-sm text-black/80 md:text-base">
-                  {tidy(work.title)}
+                <span className="mt-2 block text-sm text-[color:var(--dir-paper-ink)] md:text-base">
+                  {typo(work.title)}
                 </span>
                 {excerpt ? (
-                  <span className="mt-2 block max-w-md text-sm leading-relaxed text-black/70 text-pretty">
-                    {tidy(excerpt)}
+                  <span className="mt-2 block max-w-md text-sm leading-relaxed text-[color:var(--dir-paper-mute)] text-pretty">
+                    {typo(excerpt)}
                   </span>
                 ) : null}
               </Link>
             </li>
           )
         })}
+        {works.length % 2 === 1 ? (
+          <li
+            aria-hidden="true"
+            className={cn(
+              'dir-fashion-pull hidden md:flex',
+              WORK_SLOTS[works.length % WORK_SLOTS.length]?.col,
+              works.length % 2 === 1 && 'md:mt-10 lg:mt-0'
+            )}
+          >
+            <span className="dir-kit-meta flex items-center gap-3 font-mono uppercase text-[color:var(--dir-paper-mute)]">
+              <span className="h-px w-8 bg-accent" />
+              {SCENE.works.pullLabel}
+            </span>
+            <span className="mt-6 block font-brand-hero text-[clamp(2rem,4vw,4.2rem)] uppercase leading-[1] tracking-tighter">
+              {typo(SCENE.works.pull)}
+            </span>
+          </li>
+        ) : null}
       </ul>
     </section>
   )
@@ -1626,37 +1584,46 @@ function Works({ works, pages }: { works: DirectionPageWork[]; pages: Pages }) {
 
 /* ─────────────────── CTA после работ: отрезной купон вклейки ─────────────────── */
 
+/*
+ * Единственный промежуточный призыв страницы: после работ, на том же листе бумаги.
+ * Отдельного блока «Начнём с брифа» после процесса больше нет — он был третьим
+ * призывом за два экрана до финального. Пока купон на экране, плавающая кнопка
+ * спрятана (data-sticky-hide): рядом две одинаковые кнопки не нужны.
+ */
 function ProofCta() {
+  const page = useDirectionPage()
   const copy = SCENE.proofCta
   return (
     <section
-      data-fs-paper=""
-      aria-label="Обсудить съёмку коллекции"
-      className="dir-fashion-paper relative bg-[var(--fs-paper)] px-6 pb-16 pt-10 text-black md:px-10 md:pb-24 lg:px-20"
+      data-sticky-hide=""
+      aria-label={FASHION_PAGE.ctaLabel}
+      className="dir-paper-section dir-fashion-sheet px-6 pb-16 pt-10 md:px-10 md:pb-24 lg:px-20"
     >
+      <Dogear />
       <div className="relative border border-dashed border-black/50 px-5 py-9 md:px-10 md:py-14">
         <span
           aria-hidden="true"
-          className="absolute -top-3 left-5 flex items-center gap-2 bg-[var(--fs-paper)] px-2 text-black/70 md:left-9"
+          className="absolute -top-3 left-5 flex items-center gap-2 bg-[var(--dir-paper)] px-2 text-[color:var(--dir-paper-mute)] md:left-9"
         >
           <Scissors className="h-4 w-4" />
-          <span className="type-meta font-mono uppercase">{copy.kicker}</span>
+          <span className="dir-kit-meta font-mono uppercase">{copy.kicker}</span>
         </span>
         <div className="grid gap-8 lg:grid-cols-12 lg:items-end lg:gap-x-10">
           {/* Запас по высоте строки: точки над «Ё» не задевают строку выше */}
           <p className="font-brand-hero text-[clamp(2.1rem,4.9vw,5.2rem)] uppercase leading-[1.02] tracking-tighter lg:col-span-8">
-            <span className="block">{tidy(copy.lead)}</span>
-            <span className="block text-black/55 text-balance">{tidy(copy.tail)}</span>
+            <span className="block">{typo(copy.lead)}</span>
+            <span className="block text-[color:var(--dir-paper-mute)] text-balance">
+              {typo(copy.tail)}
+            </span>
           </p>
           <div className="flex flex-col items-start gap-4 lg:col-span-4 lg:items-end">
-            <BriefButton
+            <DirectionButton
               label={FASHION_PAGE.ctaLabel}
-              location="proof"
-              tone="dark"
-              className="w-full sm:w-auto"
+              onClick={() => page.openBrief('proof')}
+              className="w-full sm:w-auto sm:min-w-[20rem]"
             />
-            <p className="type-meta max-w-[22rem] font-mono uppercase leading-relaxed text-black/70 lg:text-right">
-              {tidy(copy.note)}
+            <p className="dir-kit-meta max-w-[22rem] font-mono uppercase leading-relaxed text-[color:var(--dir-paper-mute)] lg:text-right">
+              {typo(copy.note)}
             </p>
           </div>
         </div>
@@ -1667,15 +1634,32 @@ function ProofCta() {
 
 /* ───────────────────────── 06. Процесс: выходные данные ───────────────────────── */
 
+/** Кадров в секунде на таймкоде процесса: обычная частота видео, не данные о работе студии */
+const TC_FPS = 25
+
+/** Таймкод по прогрессу линейки: каждый из шагов — одна секунда, 00:00:00:00 → 00:00:05:00 */
+function timecode(progress: number, steps: number): string {
+  const frames = Math.round(Math.min(1, Math.max(0, progress)) * steps * TC_FPS)
+  return `00:00:${pad(Math.floor(frames / TC_FPS))}:${pad(frames % TC_FPS)}`
+}
+
 function Process({ pages }: { pages: Pages }) {
-  const page = useDirectionPage()
   const reduced = useReduced()
   const steps = FASHION_PAGE.process
-  const copy = SCENE.processCta
   const trackRef = useRef<HTMLDivElement>(null)
+  const tcRef = useRef<HTMLSpanElement>(null)
   const { scrollYProgress } = useScroll({ target: trackRef, offset: ['start 80%', 'end 45%'] })
   const headX = useTransform(scrollYProgress, [0, 1], [reduced ? '100%' : '0%', '100%'])
   const fillY = useTransform(scrollYProgress, [0, 1], [reduced ? 1 : 0, 1])
+  // Сколько шагов уже пройдено головкой: номер шага загорается, когда она до него дошла
+  const [reached, setReached] = useState(1)
+
+  useMotionValueEvent(scrollYProgress, 'change', value => {
+    setReached(Math.min(steps.length, Math.floor(value * steps.length + 0.02) + 1))
+    if (tcRef.current) tcRef.current.textContent = timecode(reduced ? 1 : value, steps.length)
+  })
+
+  const shown = reduced ? steps.length : reached
 
   return (
     <section
@@ -1689,13 +1673,23 @@ function Process({ pages }: { pages: Pages }) {
         <h2
           id="fashion-process-title"
           data-reveal=""
-          className="font-stage text-[clamp(2.3rem,5.6vw,5.8rem)] uppercase leading-[0.9] tracking-[-0.03em] text-white text-balance lg:col-span-8"
+          className="font-stage text-[clamp(2.3rem,5.6vw,5.8rem)] uppercase leading-[1] tracking-[-0.03em] text-white text-balance lg:col-span-8"
         >
-          От брифа до версий
+          {'От\u00A0брифа до\u00A0версий'}
         </h2>
-        <p className="text-base leading-relaxed text-white/75 text-pretty md:text-lg lg:col-span-3 lg:col-start-10">
-          {tidy('Пять шагов от идеи до файлов под каждую площадку.')}
-        </p>
+        <div className="lg:col-span-3 lg:col-start-10">
+          <p className="text-base leading-relaxed text-white/75 text-pretty md:text-lg">
+            {typo('Пять шагов от идеи до файлов под каждую площадку.')}
+          </p>
+          {/* Таймкод едет вместе с головкой линейки; без движения показывает конец */}
+          <p
+            aria-hidden="true"
+            className="dir-kit-meta mt-4 flex items-center gap-3 font-mono uppercase tabular-nums text-white/70"
+          >
+            <span className="h-1.5 w-1.5 bg-accent" />
+            <span ref={tcRef}>{timecode(reduced ? 1 : 0, steps.length)}</span>
+          </p>
+        </div>
       </div>
 
       <div ref={trackRef} className="relative mt-14 md:mt-20">
@@ -1719,106 +1713,104 @@ function Process({ pages }: { pages: Pages }) {
           className="absolute bottom-0 left-0 top-0 w-px origin-top bg-accent xl:hidden"
         />
 
-        <ol className="grid gap-y-12 pl-6 md:pl-8 xl:grid-cols-5 xl:gap-x-6 xl:gap-y-0 xl:pl-0">
+        {/* Пятая колонка на xl уходит под плавающую кнопку: пока шаги на экране, кнопка скрыта */}
+        <ol
+          data-sticky-hide="desktop"
+          className="grid gap-y-12 pl-6 md:pl-8 xl:grid-cols-5 xl:gap-x-6 xl:gap-y-0 xl:pl-0"
+        >
           {steps.map((step, i) => (
             <li
               key={step.number}
               data-reveal=""
+              data-state={shown === i + 1 ? 'current' : shown > i + 1 ? 'done' : 'idle'}
               style={{ '--fs-step': i } as CSSProperties}
               className="md:grid md:grid-cols-[8.5rem_1fr] md:gap-x-6 xl:block xl:border-l xl:border-white/15 xl:pl-5 xl:pt-[calc(var(--fs-step)*3.4rem)]"
             >
               <span
                 aria-hidden="true"
-                className="dir-outline block font-stage text-[clamp(3.6rem,7vw,6.4rem)] leading-[0.85] tabular-nums tracking-[-0.05em] xl:text-[clamp(3.4rem,5.4vw,5.6rem)]"
+                className="dir-fashion-step-num block font-stage text-[clamp(3.6rem,7vw,6.4rem)] leading-[0.85] tabular-nums tracking-[-0.05em] xl:text-[clamp(3.4rem,5.4vw,5.6rem)]"
               >
                 {step.number}
               </span>
               <div className="mt-2 md:mt-0 xl:mt-4">
-                <p className="type-meta font-mono uppercase tabular-nums text-white/65">
+                <p className="dir-kit-meta font-mono uppercase tabular-nums text-white/70">
                   <span className="xl:block">Шаг {step.number}</span>
                   <span className="xl:hidden"> · </span>
                   {/* На xl в колонке две строки: шапки пяти шагов одной высоты, без висячих предлогов */}
                   <span className="xl:mt-1 xl:block xl:min-h-[2lh]">
-                    {tidy(SCENE.stepMarks[i] ?? '')}
+                    {typo(SCENE.stepMarks[i] ?? '')}
                   </span>
                 </p>
                 <h3 className="mt-3 font-stage text-[clamp(1.15rem,1.6vw,1.45rem)] uppercase leading-[1.02] tracking-[-0.01em] text-white xl:text-[clamp(1rem,1.4vw,1.35rem)]">
-                  {tidy(step.title)}
+                  {typo(step.title)}
                 </h3>
                 <p className="mt-3 max-w-lg text-sm leading-relaxed text-white/75 text-pretty">
-                  {tidy(step.text)}
+                  {typo(step.text)}
                 </p>
               </div>
             </li>
           ))}
         </ol>
       </div>
-
-      {/* CTA после процесса: крупная строка во всю ширину, красная линия сверху на наведении */}
-      <button
-        type="button"
-        onClick={() => page.openBrief('process')}
-        className="group relative mt-20 flex w-full items-end justify-between gap-6 overflow-hidden border-t border-white/25 py-9 text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent md:mt-28 md:py-14"
-      >
-        <span className="min-w-0">
-          <span className="type-meta flex items-center gap-3 font-mono uppercase text-white/70">
-            <span aria-hidden="true" className="h-px w-8 bg-accent" />
-            {copy.kicker}
-          </span>
-          <span className="mt-5 block font-brand-hero text-[clamp(2.7rem,10vw,10rem)] uppercase leading-[0.88] tracking-tighter text-white transition-transform duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-hover:translate-x-3">
-            {tidy(copy.line)}
-          </span>
-          <span className="mt-5 block max-w-md text-sm leading-relaxed text-white/75 text-pretty md:text-base">
-            {tidy(copy.note)}
-          </span>
-          <span className="mt-6 inline-flex items-center gap-3 border-b border-white/40 pb-1 text-base text-white transition-colors duration-[var(--motion-state)] group-hover:border-accent">
-            {tidy(copy.label)}
-          </span>
-        </span>
-        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full border border-white/40 text-white transition-[background-color,border-color] duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-hover:border-accent group-hover:bg-accent md:h-24 md:w-24">
-          <ArrowRight
-            aria-hidden="true"
-            className="h-6 w-6 transition-transform duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-hover:-rotate-45 md:h-9 md:w-9"
-          />
-        </span>
-        <span
-          aria-hidden="true"
-          className="absolute inset-x-0 top-[-1px] h-[3px] origin-left scale-x-0 bg-accent transition-transform duration-[var(--motion-cut)] ease-[var(--ease-out-expo)] group-hover:scale-x-100"
-        />
-      </button>
     </section>
   )
 }
 
-/* ─────────────────── Вопросы: вклейка в пустой левой колонке ─────────────────── */
+/* ─────────────────── Вопросы: вклейка в левой колонке ─────────────────── */
 
 /**
- * Левая колонка вопросов под заголовком пуста на 600 px. Кадр-вклейка стоит в ней
- * и липнет под заголовком, пока читают ответы. Блок вопросов общий и слота не
- * даёт, поэтому вклейка лежит поверх его сетки: ширина считается по тем же
- * 12 колонкам (px-20, gap-16 на lg), сам блок не тронут.
+ * Левая колонка вопросов под заголовком пуста на 600 px: кадр-вклейка стоит в слоте
+ * aside общего блока, колонка липкая, и кадр идёт за читателем, пока он листает
+ * ответы. Слот виден с lg; aria-hidden блок не ставит, поэтому он здесь. Высота —
+ * от окна: заголовок, вклейка и подпись помещаются под шапкой и на ноутбуке.
  */
 function FaqPlate({ frame, page }: { frame: SceneFrame | null; page: string }) {
   return (
-    <div
+    <figure
       aria-hidden="true"
-      className="pointer-events-none absolute inset-y-28 left-20 hidden w-[calc((100%-54rem)/12*5+16rem)] lg:block"
+      className="pointer-events-none w-[min(72%,calc((100svh-25rem)*0.8))]"
     >
-      <figure className="sticky top-[16rem] mt-[9.5rem] w-[min(72%,calc((100svh-24rem)*0.8))]">
-        <div className="dir-fashion-mat relative aspect-[4/5] bg-black">
+      <div className="dir-fashion-mat relative aspect-[4/5] bg-black">
+        <Plate
+          frame={frame}
+          word={plateWord(2)}
+          index={2}
+          sizes="(min-width: 1024px) 20vw, 1px"
+          className="absolute inset-0"
+        />
+      </div>
+      <figcaption className="dir-kit-meta mt-7 flex justify-between gap-3 font-mono uppercase tabular-nums text-white/60">
+        <span className="min-w-0 truncate">{frame ? `Кадр — ${frame.client}` : 'Вклейка'}</span>
+        <span className="shrink-0">Стр. {page}</span>
+      </figcaption>
+    </figure>
+  )
+}
+
+/**
+ * Знак сцены в финале: отпечаток с загнутым углом и метками реза по краям — тот же
+ * кадр-вклейка, что и в вопросах, только с другого съёмочного дня. Декор:
+ * DirectionEnd сам делает его aria-hidden и не ловит указатель.
+ */
+function EndPrint({ frame }: { frame: SceneFrame | null }) {
+  return (
+    <div className="dir-fashion-print relative w-[15rem] -rotate-3 xl:w-[17rem]">
+      <span className="dir-fashion-crop" data-corner="tl" />
+      <span className="dir-fashion-crop" data-corner="tr" />
+      <span className="dir-fashion-crop" data-corner="bl" />
+      <span className="dir-fashion-crop" data-corner="br" />
+      <div className="dir-fashion-sheet relative bg-[var(--dir-paper)] p-2">
+        <div className="relative aspect-[3/4] bg-black">
           <Plate
             frame={frame}
-            word={plateWord(2)}
-            index={2}
-            sizes="(min-width: 1024px) 20vw, 1px"
+            word={plateWord(4)}
+            index={4}
+            sizes="(min-width: 1024px) 17rem, 1px"
             className="absolute inset-0"
           />
         </div>
-        <figcaption className="type-meta mt-7 flex justify-between gap-3 font-mono uppercase tabular-nums text-white/60">
-          <span className="min-w-0 truncate">{frame ? `Кадр — ${frame.client}` : 'Вклейка'}</span>
-          <span className="shrink-0">Стр. {page}</span>
-        </figcaption>
-      </figure>
+        <Dogear />
+      </div>
     </div>
   )
 }
@@ -1830,7 +1822,6 @@ export function FashionPage({ works }: FashionPageProps) {
   const closing = frames[frames.length - 1]
   const hasWorks = works.length > 0
   const pages = paginate(hasWorks)
-  usePaperHeader()
 
   return (
     <DirectionShell id="fashion" stickyLabel={FASHION_PAGE.stickyLabel}>
@@ -1838,25 +1829,26 @@ export function FashionPage({ works }: FashionPageProps) {
         <Cover frames={frames.slice(0, 5)} />
         <Contents frame={pick(frames, 5)} pages={pages} hasWorks={hasWorks} />
         <Spread frames={frames} />
-        <Lookbook frames={frames} works={works} pages={pages} />
+        <Lookbook frames={frames} pages={pages} />
         {hasWorks ? <Works works={works} pages={pages} /> : null}
         <ProofCta />
         <Process pages={pages} />
       </div>
-      <div id="fashion-faq" className="relative">
+      <div id="fashion-faq">
         <DirectionFaq
           index={pad(pages.faq.from)}
           title="Вопросы о fashion-видео"
           items={FASHION_PAGE.faq}
+          aside={<FaqPlate frame={pick(frames, 11)} page={pad(pages.faq.from)} />}
         />
-        <FaqPlate frame={pick(frames, 11)} page={pad(pages.faq.from)} />
       </div>
       <OtherDirections current="fashion" reading={DIRECTION_READING['fashion']} />
       <DirectionEnd
-        lines={SCENE.end.lines.map((line, i, all) => (i < all.length - 1 ? `${line} ` : line))}
+        lines={SCENE.end.lines}
         ctaLabel={FASHION_PAGE.ctaLabel}
-        note={tidy(SCENE.end.note)}
+        note={typo(SCENE.end.note)}
         frame={closing ? { src: closing.src, alt: closing.client } : null}
+        aside={<EndPrint frame={pick(frames, 3)} />}
       />
     </DirectionShell>
   )

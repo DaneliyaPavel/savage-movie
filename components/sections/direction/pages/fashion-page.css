@@ -12,11 +12,10 @@
  */
 
 .dir-fashion {
-  /* Под загнутыми углами бумаги должна быть чернота, а не фон страницы */
+  /* Под вырезом загнутого угла бумаги должна быть чернота, а не фон страницы */
   background: #000;
-  /* Бумага разворота: тёплый белый, чтобы белая sticky-кнопка читалась на нём */
-  --fs-paper: #e9e6df;
-  --fs-ink: #0a0a0a;
+  /* Бумага — общий токен семейства (direction-kit.css), своего оттенка у сцены нет */
+  --fs-paper: var(--dir-paper);
   --fs-ease: var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
   /* Лист идёт с разгоном и торможением: кромка читается на всём пути, а не только в первые 200 мс */
   --fs-turn: cubic-bezier(0.72, 0, 0.18, 1);
@@ -230,6 +229,43 @@
   transition: translate 900ms var(--fs-ease);
 }
 
+/*
+ * Экспозиция обложки: на тёмных кадрах (а fashion-съёмка часто низкий ключ) обложка
+ * выглядела мутной. Кадр чуть светлее и насыщеннее, а затемнение осталось только
+ * под заголовком — у левой кромки, в полосе, где он лежит на кадре.
+ */
+.dir-fashion-lift {
+  filter: brightness(1.1) saturate(1.22) contrast(1.04);
+}
+
+.dir-fashion-title-scrim {
+  background: linear-gradient(90deg, rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.16) 24%, rgb(0 0 0 / 0) 40%);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 6%,
+    #000 26%,
+    #000 82%,
+    transparent 96%
+  );
+  mask-image: linear-gradient(to bottom, transparent 6%, #000 26%, #000 82%, transparent 96%);
+}
+
+/* Дефис «Fashion-видео»: красный, на конце первой строки; на узком телефоне — только в тексте */
+.dir-fashion-hy {
+  color: var(--accent);
+}
+
+@media (max-width: 639px) {
+  .dir-fashion-hy {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
 /* Паспарту: тонкая рамка на воздухе вокруг кадра, как у отпечатка */
 .dir-fashion-mat {
   outline: 1px solid rgb(255 255 255 / 0.22);
@@ -301,6 +337,49 @@
 .dir-fashion-track img {
   -webkit-user-drag: none;
   user-select: none;
+}
+
+/*
+ * Подсказка-жест для touch: на телефоне у ленты нет стрелок, и непонятно, что кадры
+ * листаются. Стрелка трижды «толкает» вправо и замирает; после первого сдвига ленты
+ * подсказка гаснет (data-at-start=false). На устройствах с мышью её нет.
+ */
+.dir-fashion-swipe {
+  display: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  transition: opacity var(--motion-move) ease;
+}
+
+.dir-fashion-swipe[data-at-start='false'] {
+  opacity: 0;
+}
+
+.dir-fashion-swipe-line {
+  flex: 1;
+  height: 1px;
+  background: rgb(255 255 255 / 0.25);
+}
+
+@keyframes dir-fashion-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(8px);
+  }
+}
+
+.dir-fashion-swipe-arrow {
+  animation: dir-fashion-nudge 1.4s var(--fs-ease) 1s 3;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .dir-fashion-swipe {
+    display: flex;
+  }
 }
 
 /* Подпись-курсор: следует за мышью по рамке, на touch её нет вовсе */
@@ -377,6 +456,24 @@
     0 100%,
     0 100%;
   background-repeat: no-repeat;
+}
+
+/*
+ * Номера шагов. Контурный текст у Montserrat Black даёт швы внутри букв, поэтому
+ * цвет сплошной: ещё не пройденный шаг — 42% белого (около 4:1 на чёрном, было 26%),
+ * пройденный — белый, тот, у которого сейчас красная головка, — accent.
+ */
+.dir-fashion-step-num {
+  color: rgb(255 255 255 / 0.42);
+  transition: color var(--motion-state) ease;
+}
+
+[data-state='done'] > .dir-fashion-step-num {
+  color: #fff;
+}
+
+[data-state='current'] > .dir-fashion-step-num {
+  color: var(--accent);
 }
 
 /* ────────────────────── Заставка вместо кадра (нет работ) ────────────────────── */
@@ -456,30 +553,49 @@
 /* ─────────────────────────── Бумага: переворот страницы ─────────────────────────── */
 
 /*
- * Смена чёрного и бумаги — переворот страницы. У листа загнут верхний правый
- * угол (срез и оборот), а у краёв лёгкая тень, будто лист изгибается. Вторая
- * бумажная секция подряд — тот же лист: без угла и без тени на стыке.
+ * Бумага — общий .dir-paper-section: фон, мягкая кромка сверху и снизу, шапка
+ * над ней переключается сама. Сцене остался загнутый верхний правый угол: вырез
+ * и оборот рисует отдельный узел .dir-fashion-dogear (clip-path на самой секции
+ * обрезал бы кромку, которая лежит снаружи).
+ *
+ * Кромка над листом в зоне угла гаснет: вырез чёрный, а полоса-проявление у
+ * правого края была бы светлой на чёрном. Лист, идущий сразу за листом, — тот
+ * же лист: без угла и без кромки на стыке (кромка под первым только закрасила бы
+ * низ второго бумагой на бумаге).
  */
-.dir-fashion-paper {
+.dir-fashion-sheet {
   --fs-fold: 3.5rem;
-  clip-path: polygon(0 0, calc(100% - var(--fs-fold)) 0, 100% var(--fs-fold), 100% 100%, 0 100%);
-  background-image:
-    linear-gradient(to bottom, rgb(10 10 10 / 0.16), transparent 28px),
-    linear-gradient(to top, rgb(10 10 10 / 0.16), transparent 28px);
-  background-position: top, bottom;
-  background-size: 100% 28px;
-  background-repeat: no-repeat;
 }
 
 @media (max-width: 767px) {
-  .dir-fashion-paper {
+  .dir-fashion-sheet {
     --fs-fold: 2.25rem;
   }
 }
 
-/* Оборот угла: треугольник темнее бумаги, с гранью по сгибу */
-.dir-fashion-paper::before {
-  content: '';
+.dir-fashion-sheet::before {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - var(--fs-fold) - 5rem),
+    transparent calc(100% - var(--fs-fold))
+  );
+  mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - var(--fs-fold) - 5rem),
+    transparent calc(100% - var(--fs-fold))
+  );
+}
+
+.dir-paper-section + .dir-paper-section.dir-fashion-sheet::before,
+.dir-paper-section.dir-fashion-sheet:has(+ .dir-paper-section)::after {
+  display: none;
+}
+
+.dir-paper-section + .dir-paper-section > .dir-fashion-dogear {
+  display: none;
+}
+
+.dir-fashion-dogear {
   position: absolute;
   top: 0;
   right: 0;
@@ -487,31 +603,88 @@
   width: var(--fs-fold);
   height: var(--fs-fold);
   pointer-events: none;
-  background: linear-gradient(45deg, #bdb8ab 0%, #d8d4c9 55%, #e4e1d8 100%);
+}
+
+/* Вырез: верхний правый треугольник — чёрный фон страницы */
+.dir-fashion-dogear::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #000;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+/* Оборот угла: нижний левый треугольник темнее бумаги, с гранью по сгибу */
+.dir-fashion-dogear::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, #b4b4af 0%, #d3d3ce 55%, #e3e3df 100%);
   clip-path: polygon(0 0, 100% 100%, 0 100%);
 }
 
-.dir-fashion-paper + .dir-fashion-paper {
-  clip-path: none;
-  background-image: linear-gradient(to top, rgb(10 10 10 / 0.16), transparent 28px);
-  background-position: bottom;
+/* Купон и подпись-заполнитель в сетке работ */
+.dir-fashion-pull {
+  flex-direction: column;
+  justify-content: center;
+  border-top: 1px solid var(--dir-paper-line);
+  padding-top: 1.5rem;
 }
 
-.dir-fashion-paper + .dir-fashion-paper::before {
+/* ───────────────────────── Знак в финале: отпечаток ───────────────────────── */
+
+.dir-fashion-print {
+  --fs-fold: 1.75rem;
+}
+
+/* У отпечатка угол срезан по-настоящему: под ним кадр финала, а не чёрный фон */
+.dir-fashion-print > div {
+  clip-path: polygon(0 0, calc(100% - var(--fs-fold)) 0, 100% var(--fs-fold), 100% 100%, 0 100%);
+  box-shadow: 0 18px 40px rgb(0 0 0 / 0.45);
+}
+
+.dir-fashion-print .dir-fashion-dogear::before {
   display: none;
 }
 
-.dir-fashion-paper:has(+ .dir-fashion-paper) {
-  background-image: linear-gradient(to bottom, rgb(10 10 10 / 0.16), transparent 28px);
-  background-position: top;
+/* Метки реза по углам: тонкие уголки белым, красный — у верхнего левого */
+.dir-fashion-crop {
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  border: 0 solid rgb(255 255 255 / 0.7);
+}
+
+.dir-fashion-crop[data-corner='tl'] {
+  top: -0.75rem;
+  left: -0.75rem;
+  border-width: 1px 0 0 1px;
+  border-color: var(--accent);
+}
+
+.dir-fashion-crop[data-corner='tr'] {
+  top: -0.75rem;
+  right: -0.75rem;
+  border-width: 1px 1px 0 0;
+}
+
+.dir-fashion-crop[data-corner='bl'] {
+  bottom: -0.75rem;
+  left: -0.75rem;
+  border-width: 0 0 1px 1px;
+}
+
+.dir-fashion-crop[data-corner='br'] {
+  right: -0.75rem;
+  bottom: -0.75rem;
+  border-width: 0 1px 1px 0;
 }
 
 /* ─────────────────────────────── Курсор на кнопках ─────────────────────────────── */
 
 /* Tailwind 4 ставит кнопкам cursor: default; плашки, строки и стрелки должны «нажиматься» */
 .dir-fashion button:not(:disabled),
-#fashion-faq button:not(:disabled),
-#direction-end button:not(:disabled) {
+#fashion-faq button:not(:disabled) {
   cursor: pointer;
 }
 
@@ -550,13 +723,4 @@
   .dir-fashion-second {
     transition: none !important;
   }
-}
-
-/*
- * framer-motion useScroll({ target }) меряет смещение цели относительно корневого
- * контейнера и в dev-режиме предупреждает, что html — position: static.
- * relative ничего не сдвигает; правило действует только на странице с этой сценой.
- */
-html:has(.dir-fashion) {
-  position: relative;
 }
