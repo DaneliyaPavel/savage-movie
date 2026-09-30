@@ -1,10 +1,13 @@
 /**
  * Работы направления как титры: строка — проект, справа кадр, год и стрелка.
  *
- * Кадр стоит в строке всегда, приглушённый; «зажигается» у строки под
- * курсором или фокусом, а на телефоне — у строки, которая проходит через
- * центр экрана (тот же жест, что в ролле /clients: наведения там нет).
- * Кадр и цвет меняются слоями и transform — без layout.
+ * Кадр крупный (на lg около 40% ширины строки, не шире 34rem) и стоит вплотную
+ * к тексту, поэтому середина строки не пустеет. Он всегда приглушён;
+ * «зажигается» у строки под курсором или фокусом — растёт сам и приближается
+ * внутри, — а на телефоне у строки, которая проходит через центр экрана (тот же
+ * жест, что в ролле /clients: наведения там нет). Без постера строка держит
+ * ту же высоту: на месте кадра — штриховка. Кадр и цвет меняются слоями и
+ * transform — без layout.
  */
 'use client'
 
@@ -93,7 +96,7 @@ export function DirectionCredits({ title, works, index, note }: DirectionCredits
           </h2>
         </div>
         {note ? (
-          <p className="type-meta max-w-xs font-mono uppercase leading-relaxed text-white/55">
+          <p className="dir-kit-meta max-w-xs font-mono uppercase leading-relaxed text-white/60">
             {typo(note)}
           </p>
         ) : null}
@@ -102,7 +105,7 @@ export function DirectionCredits({ title, works, index, note }: DirectionCredits
       {/* Шапка таблицы титров: только на широком экране, декор */}
       <div
         aria-hidden="true"
-        className="type-meta hidden grid-cols-[3rem_minmax(0,1fr)_11rem_4.5rem] gap-x-6 lg:grid-cols-[4.5rem_minmax(0,1fr)_16rem_6rem] border-b border-white/10 py-3 font-mono uppercase text-white/45 md:grid"
+        className="dir-kit-meta hidden grid-cols-[3rem_minmax(0,1fr)_minmax(0,30%)_4.5rem] gap-x-6 border-b border-white/10 py-3 font-mono uppercase text-white/55 md:grid lg:grid-cols-[4.5rem_minmax(0,1fr)_min(40%,34rem)_5rem]"
       >
         <span />
         <span>Клиент / работа</span>
@@ -110,7 +113,7 @@ export function DirectionCredits({ title, works, index, note }: DirectionCredits
         <span className="text-right">Год</span>
       </div>
 
-      <ul ref={listRef} role="list">
+      <ul ref={listRef} role="list" data-sticky-hide="desktop">
         {works.map((work, position) => (
           <li
             key={work.slug}
@@ -123,9 +126,9 @@ export function DirectionCredits({ title, works, index, note }: DirectionCredits
               prefetch={false}
               data-credit=""
               onClick={() => page.openCase(work.slug)}
-              className="dir-kit-credit grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3 py-7 md:grid-cols-[3rem_minmax(0,1fr)_11rem_4.5rem] md:min-h-[12.25rem] md:items-center lg:grid-cols-[4.5rem_minmax(0,1fr)_16rem_6rem] md:gap-x-6 md:py-8"
+              className="dir-kit-credit grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3 py-7 md:grid-cols-[3rem_minmax(0,1fr)_minmax(0,30%)_4.5rem] md:items-center md:gap-x-6 md:py-8 lg:grid-cols-[4.5rem_minmax(0,1fr)_min(40%,34rem)_5rem]"
             >
-              <span className="dir-kit-credit-idx type-meta font-mono uppercase tabular-nums md:self-start md:pt-3">
+              <span className="dir-kit-credit-idx dir-kit-meta font-mono uppercase tabular-nums md:self-start md:pt-3">
                 {String(position + 1).padStart(2, '0')}
               </span>
 
@@ -144,7 +147,7 @@ export function DirectionCredits({ title, works, index, note }: DirectionCredits
               </span>
 
               <span className="col-start-2 mt-4 flex items-center gap-3 md:col-start-4 md:row-start-1 md:mt-0 md:justify-end md:self-start md:pt-3">
-                <span className="type-meta font-mono uppercase tabular-nums text-white/60">
+                <span className="dir-kit-meta font-mono uppercase tabular-nums text-white/60">
                   {work.year ?? ' '}
                 </span>
                 <ArrowUpRight
@@ -153,20 +156,22 @@ export function DirectionCredits({ title, works, index, note }: DirectionCredits
                 />
               </span>
 
-              {work.posterUrl ? (
-                <span
-                  aria-hidden="true"
-                  className="dir-kit-credit-thumb col-start-2 mt-5 block md:col-start-3 md:row-start-1 md:mt-0"
-                >
+              <span
+                aria-hidden="true"
+                className="dir-kit-credit-thumb col-start-2 mt-5 block md:col-start-3 md:row-start-1 md:mt-0"
+              >
+                {work.posterUrl ? (
                   <Still
                     src={work.posterUrl}
                     alt=""
-                    sizes="(min-width: 1024px) 16rem, (min-width: 768px) 11rem, 90vw"
+                    sizes="(min-width: 1024px) 38vw, (min-width: 768px) 30vw, 90vw"
                     quality={65}
                     className="aspect-video w-full"
                   />
-                </span>
-              ) : null}
+                ) : (
+                  <span className="dir-kit-still-fallback block aspect-video w-full" />
+                )}
+              </span>
             </Link>
           </li>
         ))}

@@ -9,7 +9,7 @@
  */
 'use client'
 
-import { useId, useRef, useState, type KeyboardEvent } from 'react'
+import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { ArrowRight } from 'lucide-react'
 
 import type { FaqItem } from '@/lib/services/pages/types'
@@ -23,9 +23,14 @@ export interface DirectionFaqProps {
   items: FaqItem[]
   /** Номер раздела в техническом ряду: «07» */
   index?: string
+  /**
+   * Слот левой колонки под заголовком (вклейка, прицел, кадр): виден с lg, декор.
+   * Колонка липкая, поэтому слот держите компактным — до высоты экрана минус шапка.
+   */
+  aside?: ReactNode
 }
 
-export function DirectionFaq({ title, items, index }: DirectionFaqProps) {
+export function DirectionFaq({ title, items, index, aside }: DirectionFaqProps) {
   const page = useDirectionPage()
   const baseId = useId()
   const listRef = useRef<HTMLDivElement>(null)
@@ -84,11 +89,12 @@ export function DirectionFaq({ title, items, index }: DirectionFaqProps) {
             >
               {setTitle(title)}
             </h2>
+            {aside ? <div className="mt-10 hidden lg:block">{aside}</div> : null}
           </div>
         </div>
 
         <div className="lg:col-span-7">
-          <div ref={listRef}>
+          <div ref={listRef} data-sticky-hide="desktop">
             {items.map((item, position) => {
               const isOpen = open.has(position)
               const triggerId = `${baseId}-q${position}`
@@ -108,10 +114,10 @@ export function DirectionFaq({ title, items, index }: DirectionFaqProps) {
                     >
                       <span
                         aria-hidden="true"
-                        className="dir-kit-faq-idx type-meta font-mono uppercase tabular-nums"
+                        className="dir-kit-faq-idx dir-kit-meta font-mono uppercase tabular-nums"
                       >
                         {String(position + 1).padStart(2, '0')}
-                      </span>
+                      </span>{' '}
                       <span className="dir-kit-faq-q text-[clamp(1.125rem,1.7vw,1.5rem)] leading-[1.25] tracking-[-0.005em] [text-wrap:balance]">
                         {typo(item.question)}
                       </span>
@@ -144,7 +150,7 @@ export function DirectionFaq({ title, items, index }: DirectionFaqProps) {
             <button
               type="button"
               onClick={() => page.openBrief('faq')}
-              className="group type-meta inline-flex items-center gap-3 font-mono uppercase text-white underline decoration-white/30 underline-offset-[6px] transition-colors duration-[var(--motion-state)] hover:text-accent hover:decoration-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+              className="group dir-kit-meta -my-1 inline-flex min-h-11 items-center gap-3 font-mono uppercase text-white underline decoration-white/30 underline-offset-[6px] transition-colors duration-[var(--motion-state)] hover:text-accent hover:decoration-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
               К брифу
               <ArrowRight

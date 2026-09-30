@@ -11,6 +11,414 @@
  * на телефоне то же состояние даёт положение на экране или нажатие.
  */
 
+/*
+ * Токены и общие правила каркаса направлений (DirectionShell).
+ *
+ * --dir-paper — единственный светлый оттенок семейства: нейтральный, едва
+ * тёплый, без бежевого. Бренд чёрно-белый; светлая секция — «лист бумаги»
+ * между чёрными сценами, а не вторая палитра. --dir-paper-ink — текст на нём
+ * (16:1), --dir-paper-mute — вторичный (5,4:1), --dir-paper-line — линии.
+ *
+ * --dir-on-accent — цвет текста на красной заливке. Чёрный держит 4,5:1 на
+ * accent; белый на том же красном даёт около 3,7:1 на #ff2936 и лишь ~4,6:1
+ * на реальном oklch-значении, поэтому единый выбор — чёрный, как у шторки
+ * плиток. Если accent изменится, пересчитать здесь, а не в каждом месте.
+ *
+ * --dir-edge — высота мягкой кромки .dir-paper-section. Шапка переключается
+ * по полосе такой же высоты (DirectionShell), поэтому значение общее.
+ */
+:root {
+  --dir-paper: #ebebe8;
+  --dir-paper-ink: #0d0d0d;
+  --dir-paper-mute: #5d5d59;
+  --dir-paper-line: rgb(13 13 13 / 0.16);
+  --dir-on-accent: #000000;
+  --dir-edge: 40px;
+}
+
+/*
+ * framer-motion (useScroll с target) меряет положение относительно
+ * прокручиваемого контейнера и в dev ругается, если им служит статичный html.
+ * Правило действует только на страницах направлений.
+ */
+html:has(.dir-shell) {
+  position: relative;
+}
+
+.dir-shell {
+  position: relative;
+}
+
+/* ---------- Шапка: скрим и читаемость на тёмном и на светлом ---------- */
+
+/*
+ * Шапка сайта (TopBar) прозрачная и падает то на кадр, то на заголовок, то на
+ * светлую секцию. Компонент общий и не меняется: страницам направлений даётся
+ * тонкий скрим под ней, а цвет «МЕНЮ» и знака задаёт состояние headerDark,
+ * которое DirectionShell выставляет над любой светлой секцией.
+ *
+ * Скрим — два слоя (тёмный и светлый), переключаются только opacity. У самого
+ * верха страницы скрима нет: первый экран остаётся чистым кадром.
+ */
+.dir-header-scrim {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 39;
+  height: 5.5rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--motion-move) ease;
+}
+
+.dir-header-scrim[data-tone='dark'] {
+  background: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 0.86),
+    rgb(0 0 0 / 0.78) 38%,
+    rgb(0 0 0 / 0.4) 72%,
+    rgb(0 0 0 / 0)
+  );
+}
+
+.dir-header-scrim[data-tone='light'] {
+  background: linear-gradient(
+    to bottom,
+    rgb(235 235 232 / 0.96),
+    rgb(235 235 232 / 0.86) 38%,
+    rgb(235 235 232 / 0.44) 72%,
+    rgb(235 235 232 / 0)
+  );
+}
+
+.dir-shell[data-scrolled='true'][data-header='dark'] .dir-header-scrim[data-tone='dark'],
+.dir-shell[data-scrolled='true'][data-header='light'] .dir-header-scrim[data-tone='light'] {
+  opacity: 1;
+}
+
+/* Без атрибутов (до гидратации) скрим не рисуется: страница открывается чистой */
+
+/* «МЕНЮ» в компоненте стоит на 60% непрозрачности: на бумаге это около 4:1 */
+.dir-shell > header.topbar-reveal button > span:first-child {
+  opacity: 0.9;
+}
+
+/* ---------- Основная кнопка ---------- */
+
+.dir-btn {
+  --btn-bg: #ffffff;
+  --btn-ink: #000000;
+  --btn-line: transparent;
+  --btn-disc-bg: #000000;
+  --btn-disc-ink: #ffffff;
+  --btn-disc-line: transparent;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  min-height: 3rem;
+  padding: 0.375rem 0.5rem 0.375rem 1.25rem;
+  border: 1px solid var(--btn-line);
+  border-radius: 2px;
+  background: var(--btn-bg);
+  color: var(--btn-ink);
+  font-family: var(--font-stage);
+  font-weight: 900;
+  font-style: normal;
+  font-size: 0.8125rem;
+  line-height: 1.15;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--motion-press) var(--ease-out-expo),
+    color var(--motion-state) ease,
+    border-color var(--motion-state) ease;
+}
+
+.dir-btn[data-size='lg'] {
+  min-height: 4.5rem;
+  gap: 1.5rem;
+  padding: 0.625rem 0.75rem 0.625rem 1.75rem;
+  font-size: clamp(1rem, 1.25vw, 1.125rem);
+  letter-spacing: 0.07em;
+}
+
+.dir-btn[data-variant='ghost'] {
+  --btn-bg: transparent;
+  --btn-ink: #ffffff;
+  --btn-line: rgb(255 255 255 / 0.4);
+  --btn-disc-bg: transparent;
+  --btn-disc-ink: #ffffff;
+  --btn-disc-line: rgb(255 255 255 / 0.4);
+}
+
+/* На бумаге белая плашка пропала бы: там основная кнопка чёрная, контур — тёмный */
+.dir-paper-section .dir-btn:not([data-tone='dark']),
+.dir-btn[data-tone='paper'] {
+  --btn-bg: var(--dir-paper-ink);
+  --btn-ink: #ffffff;
+  --btn-disc-bg: #ffffff;
+  --btn-disc-ink: #000000;
+}
+
+.dir-paper-section .dir-btn[data-variant='ghost']:not([data-tone='dark']),
+.dir-btn[data-variant='ghost'][data-tone='paper'] {
+  --btn-bg: transparent;
+  --btn-ink: var(--dir-paper-ink);
+  --btn-line: rgb(13 13 13 / 0.45);
+  --btn-disc-bg: transparent;
+  --btn-disc-ink: var(--dir-paper-ink);
+  --btn-disc-line: rgb(13 13 13 / 0.45);
+}
+
+/* Красная шторка идёт слева направо; под текстом, над фоном плашки */
+.dir-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--accent);
+  transform: translateX(-101%);
+  transition: transform var(--motion-move) var(--ease-out-expo);
+}
+
+.dir-btn-label {
+  min-width: 0;
+  text-wrap: balance;
+}
+
+.dir-btn-disc {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--btn-disc-line);
+  border-radius: 9999px;
+  background: var(--btn-disc-bg);
+  color: var(--btn-disc-ink);
+  transition:
+    background-color var(--motion-state) ease,
+    border-color var(--motion-state) ease,
+    color var(--motion-state) ease;
+}
+
+.dir-btn[data-size='lg'] .dir-btn-disc {
+  width: 3rem;
+  height: 3rem;
+}
+
+.dir-btn-arrow {
+  width: 1rem;
+  height: 1rem;
+  transition: transform var(--motion-move) var(--ease-out-expo);
+}
+
+.dir-btn[data-size='lg'] .dir-btn-arrow {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.dir-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/*
+ * Одно состояние на наведение, фокус с клавиатуры и нажатие: на телефоне
+ * наведения нет, и отклик даёт само касание.
+ */
+.dir-btn:focus-visible,
+.dir-btn:active {
+  border-color: var(--accent);
+  color: var(--dir-on-accent);
+}
+
+.dir-btn:focus-visible::before,
+.dir-btn:active::before {
+  transform: translateX(0);
+}
+
+.dir-btn:focus-visible .dir-btn-disc,
+.dir-btn:active .dir-btn-disc {
+  --btn-disc-bg: #000000;
+  --btn-disc-ink: #ffffff;
+  --btn-disc-line: #000000;
+}
+
+.dir-btn[data-variant='ghost']:focus-visible .dir-btn-disc,
+.dir-btn[data-variant='ghost']:active .dir-btn-disc {
+  --btn-disc-bg: transparent;
+  --btn-disc-ink: var(--dir-on-accent);
+  --btn-disc-line: var(--dir-on-accent);
+}
+
+.dir-btn:focus-visible .dir-btn-arrow,
+.dir-btn:active .dir-btn-arrow {
+  transform: rotate(-45deg);
+}
+
+.dir-btn:active {
+  transform: scale(0.985);
+}
+
+@media (hover: hover) {
+  .dir-btn:hover {
+    border-color: var(--accent);
+    color: var(--dir-on-accent);
+  }
+
+  .dir-btn:hover::before {
+    transform: translateX(0);
+  }
+
+  .dir-btn:hover .dir-btn-disc {
+    --btn-disc-bg: #000000;
+    --btn-disc-ink: #ffffff;
+    --btn-disc-line: #000000;
+  }
+
+  .dir-btn[data-variant='ghost']:hover .dir-btn-disc {
+    --btn-disc-bg: transparent;
+    --btn-disc-ink: var(--dir-on-accent);
+    --btn-disc-line: var(--dir-on-accent);
+  }
+
+  .dir-btn:hover .dir-btn-arrow {
+    transform: rotate(-45deg);
+  }
+}
+
+/* ---------- Светлая секция ---------- */
+
+/*
+ * Лист бумаги между чёрными сценами. Кромка не режется: над секцией и под ней
+ * лежит градиент высотой --dir-edge, который «проявляет» бумагу из чёрного.
+ * Он рисуется снаружи секции и не ловит указатель, поэтому на самой секции
+ * нельзя ставить overflow: hidden (кромка обрежется) — декор кладите во
+ * внутренний контейнер. DirectionShell переключает шапку на тёмный знак, пока
+ * бумага под ней.
+ */
+.dir-paper-section {
+  position: relative;
+  background: var(--dir-paper);
+  color: var(--dir-paper-ink);
+}
+
+.dir-paper-section::before,
+.dir-paper-section::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  z-index: 2;
+  height: var(--dir-edge);
+  pointer-events: none;
+}
+
+.dir-paper-section::before {
+  bottom: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgb(235 235 232 / 0),
+    rgb(235 235 232 / 0.1) 25%,
+    rgb(235 235 232 / 0.4) 55%,
+    rgb(235 235 232 / 0.78) 82%,
+    var(--dir-paper)
+  );
+}
+
+.dir-paper-section::after {
+  top: 100%;
+  background: linear-gradient(
+    to top,
+    rgb(235 235 232 / 0),
+    rgb(235 235 232 / 0.1) 25%,
+    rgb(235 235 232 / 0.4) 55%,
+    rgb(235 235 232 / 0.78) 82%,
+    var(--dir-paper)
+  );
+}
+
+/* ---------- Плавающая кнопка каркаса ---------- */
+
+/*
+ * StickyEstimateCta общий с /reklamny-rolik и не меняется. Здесь только его
+ * начертание на страницах направлений — тот же диалект, что у DirectionButton:
+ * жирный капс, красная шторка слева направо. Селекторы привязаны к двум его
+ * прямым потомкам main; скрывается он контрактом data-sticky-hide (DirectionShell).
+ * Полоса на телефоне в самом компоненте полупрозрачная с размытием: здесь она
+ * плотная, без стекла.
+ */
+.dir-shell > div.fixed.bottom-0 {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: rgb(0 0 0 / 0.94);
+}
+
+.dir-shell > button.fixed,
+.dir-shell > div.fixed.bottom-0 > button {
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 3rem;
+  border-radius: 2px;
+  font-family: var(--font-stage);
+  font-weight: 900;
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dir-shell > div.fixed.bottom-0 > button {
+  position: relative;
+  transition-property: transform, color;
+}
+
+.dir-shell > button.fixed {
+  transition-property: opacity, translate, scale, color;
+}
+
+.dir-shell > button.fixed::before,
+.dir-shell > div.fixed.bottom-0 > button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--accent);
+  transform: translateX(-101%);
+  transition: transform var(--motion-move) var(--ease-out-expo);
+}
+
+.dir-shell > button.fixed:focus-visible,
+.dir-shell > div.fixed.bottom-0 > button:focus-visible,
+.dir-shell > div.fixed.bottom-0 > button:active {
+  color: var(--dir-on-accent);
+}
+
+.dir-shell > button.fixed:focus-visible::before,
+.dir-shell > div.fixed.bottom-0 > button:focus-visible::before,
+.dir-shell > div.fixed.bottom-0 > button:active::before {
+  transform: translateX(0);
+}
+
+@media (hover: hover) {
+  .dir-shell > button.fixed:hover,
+  .dir-shell > div.fixed.bottom-0 > button:hover {
+    color: var(--dir-on-accent);
+  }
+
+  .dir-shell > button.fixed:hover::before,
+  .dir-shell > div.fixed.bottom-0 > button:hover::before {
+    transform: translateX(0);
+  }
+}
+
 /* ---------- Вопросы ---------- */
 
 .dir-kit-faq-item {
@@ -427,10 +835,15 @@
     transform var(--motion-move) var(--ease-out-expo);
 }
 
-/* Кадр приглушён, пока строка не «зажжена»; затемнение — слоем, без filter */
+/*
+ * Кадр приглушён, пока строка не «зажжена»; затемнение — слоем, без filter.
+ * Когда строка зажглась, кадр растёт сам (scale коробки) и чуть приближается
+ * внутри — оба движения transform, без layout.
+ */
 .dir-kit-credit-thumb {
   position: relative;
   overflow: hidden;
+  transition: transform var(--motion-move) var(--ease-out-expo);
 }
 
 .dir-kit-credit-thumb::after {
@@ -443,7 +856,7 @@
 }
 
 .dir-kit-credit-thumb img {
-  transform: scale(1.08);
+  transform: scale(1);
   transition: transform var(--motion-cut) var(--ease-out-expo);
 }
 
@@ -481,10 +894,16 @@
   opacity: 0;
 }
 
+.dir-kit-credit:focus-visible .dir-kit-credit-thumb,
+.dir-kit-credit[data-focus='true'] .dir-kit-credit-thumb,
+.dir-kit-credit:active .dir-kit-credit-thumb {
+  transform: scale(1.035);
+}
+
 .dir-kit-credit:focus-visible .dir-kit-credit-thumb img,
 .dir-kit-credit[data-focus='true'] .dir-kit-credit-thumb img,
 .dir-kit-credit:active .dir-kit-credit-thumb img {
-  transform: scale(1);
+  transform: scale(1.06);
 }
 
 @media (hover: hover) {
@@ -510,8 +929,12 @@
     opacity: 0;
   }
 
+  .dir-kit-credit:hover .dir-kit-credit-thumb {
+    transform: scale(1.035);
+  }
+
   .dir-kit-credit:hover .dir-kit-credit-thumb img {
-    transform: scale(1);
+    transform: scale(1.06);
   }
 }
 
@@ -591,6 +1014,175 @@
   }
 }
 
+/*
+ * Плитка текущего направления: не ссылка, а «метка на карте». Без шторки и
+ * стрелки, имя приглушено (около 7:1 на чёрном), красная точка — единственный акцент.
+ */
+.dir-kit-here {
+  position: relative;
+  display: flex;
+  width: 100%;
+  cursor: default;
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 0.6rem,
+    rgb(255 255 255 / 0.035) 0.6rem calc(0.6rem + 1px)
+  );
+}
+
+.dir-kit-here-name {
+  color: rgb(255 255 255 / 0.62);
+}
+
+.dir-kit-here-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 9999px;
+  background: var(--accent);
+}
+
+/* Микрометки блоков кита: не мельче 10px на телефоне, как .type-meta на десктопе */
+.dir-kit-meta {
+  font-size: 0.625rem;
+  letter-spacing: 0.22em;
+}
+
+@media (min-width: 48rem) {
+  .dir-kit-meta {
+    font-size: 0.68rem;
+  }
+}
+
+/* ---------- Финал страницы ---------- */
+
+/*
+ * Кегль гигантского набора: на телефоне крупнее, чем по ширине колонки, не
+ * делаем — неразрывная пара «ваш фильм?» обязана уместиться в одну строку
+ * даже на 320px. Интерлиньяж 0,98: точка «Ё» и скобка «Й» не задевают
+ * строку выше (на 0,9 они упирались в хвост «Д» и «Щ»).
+ */
+.dir-end {
+  --dir-end-size: clamp(2.1rem, 11vw, 4.75rem);
+}
+
+@media (min-width: 48rem) {
+  .dir-end {
+    --dir-end-size: clamp(3rem, 9.5vw, 8.5rem);
+  }
+}
+
+.dir-end-title {
+  font-size: var(--dir-end-size);
+  line-height: 0.98;
+  overflow-wrap: break-word;
+}
+
+/*
+ * Заголовок всегда занимает три строки по высоте и прижат книзу: у двух- и
+ * трёхстрочного вопроса кнопка стоит на одном месте, а запас уходит вверх.
+ */
+.dir-end-head {
+  display: flex;
+  align-items: flex-end;
+}
+
+@media (min-width: 48rem) {
+  .dir-end-head {
+    min-height: calc(var(--dir-end-size) * 0.98 * 3);
+  }
+}
+
+/* Строка контакта: отступ внутри, компенсация снаружи — рамка фокуса не липнет к тексту */
+.dir-end-contact {
+  position: relative;
+  display: flex;
+  min-height: 4.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-inline: -0.75rem;
+  padding: 1rem 0.75rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dir-end-contact:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Верхняя линия и красная линия поверх неё: обе в границах колонки, не на весь отступ */
+.dir-end-contact::before,
+.dir-end-contact::after {
+  content: '';
+  position: absolute;
+  inset: 0 0.75rem auto;
+  height: 1px;
+  pointer-events: none;
+}
+
+.dir-end-contact::before {
+  background: rgb(255 255 255 / 0.15);
+}
+
+.dir-end-contact::after {
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--motion-move) var(--ease-out-expo);
+}
+
+.dir-end-contact-label {
+  color: rgb(255 255 255 / 0.55);
+}
+
+.dir-end-contact-value {
+  transition: color var(--motion-state) ease;
+}
+
+.dir-end-contact-arrow {
+  color: rgb(255 255 255 / 0.55);
+  transition:
+    transform var(--motion-move) var(--ease-out-expo),
+    color var(--motion-state) ease;
+}
+
+.dir-end-contact:focus-visible::after,
+.dir-end-contact:active::after {
+  transform: scaleX(1);
+}
+
+.dir-end-contact:focus-visible .dir-end-contact-value,
+.dir-end-contact:active .dir-end-contact-value,
+.dir-end-contact:focus-visible .dir-end-contact-arrow,
+.dir-end-contact:active .dir-end-contact-arrow {
+  color: var(--accent);
+}
+
+.dir-end-contact:focus-visible .dir-end-contact-arrow,
+.dir-end-contact:active .dir-end-contact-arrow {
+  transform: translate(2px, -2px);
+}
+
+@media (hover: hover) {
+  .dir-end-contact:hover::after {
+    transform: scaleX(1);
+  }
+
+  .dir-end-contact:hover .dir-end-contact-value,
+  .dir-end-contact:hover .dir-end-contact-arrow {
+    color: var(--accent);
+  }
+
+  .dir-end-contact:hover .dir-end-contact-arrow {
+    transform: translate(2px, -2px);
+  }
+}
+
+/* Бегущий титр стоит на паузе, пока финал вне экрана (атрибут ставит DirectionEnd) */
+.dir-end-marquee-wrap[data-paused='true'] .dir-end-marquee {
+  animation-play-state: paused;
+}
+
 /* ---------- Кадр: запасная поверхность ---------- */
 
 .dir-kit-still-fallback {
@@ -617,10 +1209,34 @@
   .dir-kit-faq-item[data-open='true'] .dir-kit-faq-panel,
   .dir-kit-credit::before,
   .dir-kit-credit::after,
+  .dir-kit-credit-thumb,
   .dir-kit-credit-thumb img,
   .dir-kit-dir-curtain,
-  .dir-kit-node {
+  .dir-kit-node,
+  .dir-btn::before,
+  .dir-end-contact::after,
+  .dir-shell > button.fixed::before,
+  .dir-shell > div.fixed.bottom-0 > button::before {
     transition: none;
+  }
+
+  .dir-btn,
+  .dir-btn-arrow,
+  .dir-end-contact-arrow {
+    transition-property: color, background-color, border-color;
+  }
+
+  .dir-btn:active {
+    transform: none;
+  }
+
+  .dir-btn:hover .dir-btn-arrow,
+  .dir-btn:focus-visible .dir-btn-arrow,
+  .dir-btn:active .dir-btn-arrow,
+  .dir-end-contact:hover .dir-end-contact-arrow,
+  .dir-end-contact:focus-visible .dir-end-contact-arrow,
+  .dir-end-contact:active .dir-end-contact-arrow {
+    transform: none;
   }
 
   .dir-kit-faq-q,
@@ -644,10 +1260,22 @@
     transform: none;
   }
 
+  .dir-kit-credit-thumb,
   .dir-kit-credit-thumb img,
+  .dir-kit-credit:hover .dir-kit-credit-thumb,
   .dir-kit-credit:hover .dir-kit-credit-thumb img,
+  .dir-kit-credit:focus-visible .dir-kit-credit-thumb,
+  .dir-kit-credit:focus-visible .dir-kit-credit-thumb img,
+  .dir-kit-credit:active .dir-kit-credit-thumb,
+  .dir-kit-credit:active .dir-kit-credit-thumb img,
+  .dir-kit-credit[data-focus='true'] .dir-kit-credit-thumb,
   .dir-kit-credit[data-focus='true'] .dir-kit-credit-thumb img {
     transform: none;
+  }
+
+  /* Скрим шапки: без плавной смены непрозрачности */
+  .dir-header-scrim {
+    transition: none;
   }
 
   .dir-kit-dir:hover .dir-kit-dir-ring,
