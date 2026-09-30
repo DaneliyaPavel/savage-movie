@@ -12,30 +12,155 @@ import type { DirectionPageBase } from '../types'
  * утверждён владельцем (D-03 покрывает только рекламный ролик).
  */
 
-/** Кроп мастер-кадра: прямоугольник в процентах контейнера + подпись формата */
-export interface CropCell {
-  key: string
-  label: string
+/**
+ * Мастер-кадр сцены: пропорция 4:3. На ней хорошо умещаются и вертикаль, и
+ * широкий кадр, а на телефоне она не сжимается в полоску.
+ */
+export const CONTENT_MASTER_RATIO = 4 / 3
+
+/** Прямоугольник нарезки в процентах мастер-кадра */
+export interface CropRect {
   x: number
   y: number
   w: number
   h: number
 }
 
-export const CONTENT_CROPS: readonly CropCell[] = [
-  { key: 'hero', label: 'HERO', x: 2, y: 4, w: 50, h: 52 },
-  { key: 'v1', label: '9:16', x: 55, y: 4, w: 13, h: 60 },
-  { key: 'v2', label: '9:16', x: 70, y: 4, w: 13, h: 60 },
-  { key: 'loop', label: 'LOOP', x: 85, y: 4, w: 13, h: 26 },
-  { key: 'product', label: 'PRODUCT', x: 85, y: 34, w: 13, h: 30 },
-  { key: 'story', label: 'STORY', x: 2, y: 60, w: 20, h: 36 },
-  { key: 'website', label: 'WEBSITE', x: 25, y: 62, w: 43, h: 30 },
-  { key: 'retail', label: 'RETAIL', x: 70, y: 68, w: 28, h: 28 },
+/**
+ * Нарезка по пропорции: ширина считается из высоты и пропорции мастер-кадра,
+ * поэтому «9:16» на экране — действительно 9:16, а не «примерно вертикаль».
+ */
+export function cropRect(ratio: number, h: number, x: number, y: number): CropRect {
+  const w = Math.round(((ratio * h) / CONTENT_MASTER_RATIO) * 10) / 10
+  return { x, y, w, h }
+}
+
+/** Нарезки первого экрана: кадр распадается на четыре пропорции */
+export interface HeroCut {
+  key: string
+  /** Подпись пропорции: «9:16» */
+  ratio: string
+  /** Короткое имя выдачи, на которую нарезка похожа */
+  name: string
+  /** Расшифровка в строке под кадром: текст из состава выдачи */
+  text: string
+  rect: CropRect
+  /** Куда нарезка уходит при распаде, в процентах ширины кадра */
+  drift: { x: number; y: number }
+  /** Во сколько раз нарезка сильнее другой реагирует на курсор */
+  depth: number
+}
+
+export const CONTENT_HERO_CUTS: readonly [HeroCut, ...HeroCut[]] = [
+  {
+    key: 'vertical',
+    ratio: '9:16',
+    name: 'Вертикаль',
+    text: 'Вертикальная версия для соцсетей и сторис.',
+    rect: cropRect(9 / 16, 94, 2, 3),
+    drift: { x: -2.4, y: 0.4 },
+    depth: 1.5,
+  },
+  {
+    key: 'wide',
+    ratio: '16:9',
+    name: 'HERO',
+    text: 'Главный ролик съёмки: сайт, презентации, экраны.',
+    rect: cropRect(16 / 9, 36, 45, 3),
+    drift: { x: 2.6, y: -1.6 },
+    depth: 0.8,
+  },
+  {
+    key: 'square',
+    ratio: '1:1',
+    name: 'LOOP',
+    text: 'Короткая петля без звука для баннеров и экранов.',
+    rect: cropRect(1, 36, 45, 45),
+    drift: { x: -0.6, y: 2.2 },
+    depth: 1.1,
+  },
+  {
+    key: 'portrait',
+    ratio: '4:5',
+    name: 'PRODUCT',
+    text: 'Продуктовая вставка: деталь, применение, упаковка.',
+    rect: cropRect(4 / 5, 36, 75, 45),
+    drift: { x: 2.4, y: 2 },
+    depth: 1.3,
+  },
 ]
 
+/** Выдача в плане квартала: нарезка мастер-кадра и место на монтажной линейке */
+export interface OutputPlan {
+  /** Индекс в CONTENT_PAGE.outputs */
+  output: number
+  /** Нарезка мастер-кадра, которую показывает монитор и карточка */
+  rect: CropRect
+  /** Пропорция кадра: ширина к высоте */
+  aspect: number
+  /** Дорожка линейки */
+  track: 'V1' | 'V2'
+  /** Неделя выхода, с 1 */
+  week: number
+  /** Сколько недель занимает блок на линейке */
+  span: number
+  /** Пометка рядом с названием, когда у двух выдач одно имя */
+  note?: string
+}
+
+/** В квартале тринадцать недель: линейка и календарь считают от этого числа */
+export const CONTENT_WEEKS = 13
+
+/**
+ * Схема квартала. Это порядок выхода материалов, а не график: состав,
+ * пропорции и даты фиксируются до съёмки по календарю заказчика. На странице
+ * это прямо сказано под линейкой.
+ */
+export const CONTENT_PLAN: readonly [OutputPlan, ...OutputPlan[]] = [
+  { output: 0, rect: cropRect(16 / 9, 54, 3, 8), aspect: 16 / 9, track: 'V1', week: 1, span: 2 },
+  {
+    output: 1,
+    rect: cropRect(9 / 16, 88, 58, 6),
+    aspect: 9 / 16,
+    track: 'V2',
+    week: 2,
+    span: 2,
+    note: 'монтаж А',
+  },
+  { output: 6, rect: cropRect(21 / 9, 34, 20, 52), aspect: 21 / 9, track: 'V1', week: 3, span: 2 },
+  {
+    output: 2,
+    rect: cropRect(9 / 16, 88, 12, 6),
+    aspect: 9 / 16,
+    track: 'V2',
+    week: 5,
+    span: 2,
+    note: 'монтаж Б',
+  },
+  { output: 5, rect: cropRect(16 / 9, 48, 30, 30), aspect: 16 / 9, track: 'V1', week: 6, span: 3 },
+  { output: 4, rect: cropRect(4 / 5, 64, 8, 20), aspect: 4 / 5, track: 'V2', week: 8, span: 2 },
+  { output: 3, rect: cropRect(1, 50, 50, 10), aspect: 1, track: 'V2', week: 10, span: 3 },
+  { output: 7, rect: cropRect(16 / 9, 40, 40, 56), aspect: 16 / 9, track: 'V1', week: 11, span: 3 },
+]
+
+/** Дорожки линейки: подпись и смысл одной строкой */
+export const CONTENT_TRACKS = [
+  { id: 'V2', note: 'Соцсети и вставки' },
+  { id: 'V1', note: 'Основные ролики' },
+  { id: 'A1', note: 'Звук' },
+] as const
+
 export const CONTENT_PAGE: DirectionPageBase & {
+  hero: { meta: string; places: string; lead: string }
+  scene: { title: string; lead: string; note: string }
+  spec: { label: string; value: string }[]
   outputs: { label: string; text: string }[]
-  audiences: { title: string; text: string }[]
+  audiences: { title: string; text: string; kind: 'catalog' | 'retail' | 'rhythm' }[]
+  cta: {
+    proof: { kicker: string; title: string; text: string; rows: [string, string][]; label: string }
+    process: { kicker: string; title: string; text: string; label: string; stops: string[] }
+  }
+  end: { lines: string[]; ctaLabel: string; note: string }
 } = {
   id: 'content-production',
   seo: {
@@ -56,6 +181,22 @@ export const CONTENT_PAGE: DirectionPageBase & {
   audience: 'Компании, которым нужен поток видеоматериалов, а не один ролик',
   ctaLabel: 'Спланировать съёмки',
   stickyLabel: 'Спланировать съёмки',
+  hero: {
+    meta: '04 / CONTENT',
+    places: 'Санкт-Петербург · Москва · по России',
+    lead: 'Регулярный видеопродакшн: материалы на квартал для сайта, соцсетей и магазинов',
+  },
+  scene: {
+    title: 'Одна съёмка — материалы на весь квартал',
+    lead: 'Порядок выхода строим под ваш календарь запусков: что нужно к старту, что позже.',
+    note: 'Схема порядка выдачи. Состав, пропорции и даты фиксируем до съёмки.',
+  },
+  spec: [
+    { label: 'Съёмка', value: '×1' },
+    { label: 'Выдач', value: '×8' },
+    { label: 'Период', value: 'Квартал' },
+    { label: 'Набор', value: 'Под ваш план' },
+  ],
   outputs: [
     { label: 'HERO', text: 'Главный ролик съёмки: сайт, презентации, экраны.' },
     { label: '9:16', text: 'Вертикальная версия для соцсетей и сторис.' },
@@ -70,16 +211,45 @@ export const CONTENT_PAGE: DirectionPageBase & {
     {
       title: 'Бренды с каталогом',
       text: 'Новые позиции выходят регулярно, и каждой нужен ролик. Снимать каждую отдельно дороже, чем планировать съёмку на набор.',
+      kind: 'catalog',
     },
     {
       title: 'Розница и HoReCa',
       text: 'Экраны в точках, сайт, соцсети и маркетплейсы ждут разного материала из одной съёмки.',
+      kind: 'retail',
     },
     {
       title: 'Компании с контент-планом',
       text: 'Соцсети требуют ритма. Мы снимаем по плану на квартал и отдаём материал так, чтобы его хватило на весь план.',
+      kind: 'rhythm',
     },
   ],
+  cta: {
+    proof: {
+      kicker: 'Экспорт квартала',
+      title: 'Разложим ваш контент-план на одну съёмку',
+      text: 'Расскажите про площадки и запуски. Вернёмся с набором выдач и форматом съёмки.',
+      rows: [
+        ['Съёмка', 'одна'],
+        ['Выдач', 'восемь, набор меняем'],
+        ['Порядок', 'по вашему календарю запусков'],
+        ['Смета', 'после брифа'],
+      ],
+      label: 'Спланировать съёмки',
+    },
+    process: {
+      kicker: 'Первый шаг',
+      title: 'Начнём с плана квартала',
+      text: 'Всё остальное — раскадровка, съёмка, монтаж — строится от него.',
+      label: 'Обсудить контент-план',
+      stops: ['План', 'Раскадровка', 'Съёмка', 'Монтаж', 'Передача'],
+    },
+  },
+  end: {
+    lines: ['Что снимем', 'на весь', 'квартал?'],
+    ctaLabel: 'Спланировать квартал',
+    note: 'Расскажите про контент-план и площадки. Вернёмся с предварительной оценкой и форматом съёмки после изучения задачи.',
+  },
   process: [
     {
       number: '01',

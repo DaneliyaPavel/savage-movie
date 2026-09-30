@@ -1,0 +1,399 @@
+/*
+ * /fashion-video — сцена «Разворот».
+ *
+ * Всё, что нужно только этой странице, живёт здесь с префиксом dir-fashion-:
+ * общий globals.css параллельно правят другие сцены, и чужое имя класса в нём
+ * не место. Кривая и длительности — из шкалы раздела (--ease-out-expo,
+ * --motion-press/state/move/cut).
+ *
+ * Правила движения те же, что на всём сайте: анимируются transform, clip-path
+ * и opacity декора; текст заголовка, абзацы и кнопки на первом кадре стоят на
+ * месте. Вход — keyframes со сдвигом, без opacity:0 на тексте.
+ */
+
+.dir-fashion {
+  /* Бумага разворота: тёплый белый, чтобы белая sticky-кнопка читалась на нём */
+  --fs-paper: #e9e6df;
+  --fs-ink: #0a0a0a;
+  --fs-ease: var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+/* ─────────────────────────── Вход первого экрана ─────────────────────────── */
+
+@keyframes dir-fashion-rise {
+  from {
+    transform: translateY(var(--fs-rise, 14px));
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.dir-fashion-rise {
+  animation: dir-fashion-rise 760ms var(--fs-ease) both;
+  animation-delay: var(--fs-d, 0ms);
+}
+
+@keyframes dir-fashion-rule {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.dir-fashion-rule {
+  transform-origin: left center;
+  animation: dir-fashion-rule 1100ms var(--fs-ease) both;
+  animation-delay: var(--fs-d, 0ms);
+}
+
+/* Обложка открывается снизу вверх, как разворачиваемый лист */
+@keyframes dir-fashion-cover-in {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.dir-fashion-cover-in {
+  animation: dir-fashion-cover-in 1000ms var(--fs-ease) both;
+  animation-delay: var(--fs-d, 0ms);
+}
+
+/* Свет приходит один раз: полоса проходит кадр слева направо и уходит за край */
+@keyframes dir-fashion-light {
+  from {
+    transform: translateX(-130%) skewX(-14deg);
+  }
+  to {
+    transform: translateX(260%) skewX(-14deg);
+  }
+}
+
+.dir-fashion-light {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.16) 45%,
+    rgb(255 255 255 / 0.04) 70%,
+    transparent
+  );
+  animation: dir-fashion-light 1500ms var(--fs-ease) both;
+  animation-delay: var(--fs-d, 700ms);
+}
+
+/* ─────────────────── Листание обложки (жест первого экрана) ─────────────────── */
+
+.dir-fashion-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  visibility: hidden;
+}
+
+.dir-fashion-layer[data-state='cur'] {
+  visibility: visible;
+  z-index: 2;
+}
+
+/* Входящий лист: граница clip-path едет справа налево (назад — слева направо) */
+@keyframes dir-fashion-turn {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes dir-fashion-turn-back {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Кромка листа и тень у сгиба едут вместе с границей, в той же кривой */
+@keyframes dir-fashion-fold {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes dir-fashion-fold-back {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Кадр под листом чуть отъезжает: у страницы появляется глубина */
+@keyframes dir-fashion-settle {
+  from {
+    transform: scale(1.12);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.dir-fashion-layer[data-state='next'] {
+  visibility: visible;
+  z-index: 3;
+  animation: dir-fashion-turn 950ms var(--fs-ease) both;
+}
+
+.dir-fashion-layer[data-state='next'][data-dir='back'] {
+  animation-name: dir-fashion-turn-back;
+}
+
+.dir-fashion-edge {
+  display: none;
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+}
+
+.dir-fashion-layer[data-state='next'] .dir-fashion-edge {
+  display: block;
+  border-left: 1px solid rgb(255 255 255 / 0.55);
+  background: linear-gradient(90deg, rgb(0 0 0 / 0.6), transparent 18%);
+  animation: dir-fashion-fold 950ms var(--fs-ease) both;
+}
+
+.dir-fashion-layer[data-state='next'][data-dir='back'] .dir-fashion-edge {
+  border-left: 0;
+  border-right: 1px solid rgb(255 255 255 / 0.55);
+  background: linear-gradient(270deg, rgb(0 0 0 / 0.6), transparent 18%);
+  animation-name: dir-fashion-fold-back;
+}
+
+.dir-fashion-layer[data-state='next'] .dir-fashion-settle {
+  transform-origin: right center;
+  animation: dir-fashion-settle 1200ms var(--fs-ease) both;
+}
+
+.dir-fashion-layer[data-state='next'][data-dir='back'] .dir-fashion-settle {
+  transform-origin: left center;
+}
+
+/* Реакция обложки и заголовка на курсор: свойство translate не мешает transform */
+.dir-fashion-tilt-cover {
+  translate: calc(var(--fs-mx, 0) * -14px) calc(var(--fs-my, 0) * -10px);
+  transition: translate 900ms var(--fs-ease);
+}
+
+.dir-fashion-tilt-title {
+  translate: calc(var(--fs-mx, 0) * 9px) calc(var(--fs-my, 0) * 6px);
+  transition: translate 900ms var(--fs-ease);
+}
+
+/* Паспарту: тонкая рамка на воздухе вокруг кадра, как у отпечатка */
+.dir-fashion-mat {
+  outline: 1px solid rgb(255 255 255 / 0.22);
+  outline-offset: 9px;
+}
+
+/*
+ * Низкое окно ноутбука: абзац под заголовком уходит, чтобы кнопка брифа осталась
+ * на первом экране. Смысл несёт строка-лид над ним, а тот же разговор продолжает
+ * раздел «Три формата».
+ */
+@media (min-width: 768px) and (max-height: 820px) {
+  .dir-fashion-lede {
+    display: none;
+  }
+}
+
+/* ─────────────────────────────── Лукбук ─────────────────────────────── */
+
+.dir-fashion-track {
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dir-fashion-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Пока кадры тащат мышью, примагничивание снимаем: иначе лента дёргается */
+.dir-fashion-track[data-dragging='true'] {
+  scroll-snap-type: none;
+  scroll-behavior: auto;
+  cursor: grabbing;
+  user-select: none;
+}
+
+.dir-fashion-track[data-cursor='on'],
+.dir-fashion-track[data-cursor='on'] a {
+  cursor: none;
+}
+
+.dir-fashion-item {
+  scroll-snap-align: start;
+}
+
+.dir-fashion-track img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* Подпись-курсор: следует за мышью по рамке, на touch её нет вовсе */
+.dir-fashion-chip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 30;
+  width: 5.25rem;
+  height: 5.25rem;
+  margin: -2.625rem 0 0 -2.625rem;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.dir-fashion-chip > span {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  border-radius: 9999px;
+  background: #fff;
+  color: #000;
+  transform: scale(0);
+  transition: transform var(--motion-move) var(--fs-ease);
+}
+
+.dir-fashion-chip[data-on='true'] > span {
+  transform: scale(1);
+}
+
+@media (hover: none), (pointer: coarse) {
+  .dir-fashion-chip {
+    display: none;
+  }
+}
+
+/* ──────────────────────────────── Работы ──────────────────────────────── */
+
+/* Второй кадр работы выходит листом справа; на touch — когда карточка в центре экрана */
+.dir-fashion-second {
+  clip-path: inset(0 0 0 100%);
+  transition: clip-path var(--motion-cut) var(--fs-ease);
+}
+
+.dir-fashion-work:has(a:focus-visible) .dir-fashion-second {
+  clip-path: inset(0 0 0 0);
+}
+
+@media (hover: hover) {
+  .dir-fashion-work:hover .dir-fashion-second {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@media (hover: none) {
+  .dir-fashion-work[data-seen='true'] .dir-fashion-second {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* ─────────────────────────────── Процесс ─────────────────────────────── */
+
+/* Линейка таймкода: мелкие риски каждые 10px, крупные каждые 50px */
+.dir-fashion-ruler {
+  height: 1.75rem;
+  background-image:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.32) 0 1px, transparent 1px 10px),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.7) 0 1px, transparent 1px 50px);
+  background-size:
+    100% 0.5rem,
+    100% 1rem;
+  background-position:
+    0 100%,
+    0 100%;
+  background-repeat: no-repeat;
+}
+
+/* ────────────────────── Заставка вместо кадра (нет работ) ────────────────────── */
+
+.dir-fashion-plate {
+  container-type: size;
+}
+
+.dir-fashion-plate-word {
+  position: absolute;
+  top: 5%;
+  bottom: 5%;
+  left: 7%;
+  display: flex;
+  align-items: flex-end;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: var(--font-stage);
+  font-size: clamp(2rem, min(28cqw, calc(90cqh / var(--fs-len, 6) / 0.78)), 10rem);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.92);
+  white-space: nowrap;
+}
+
+/* ──────────────────────────── Сниженное движение ──────────────────────────── */
+
+/*
+ * Снимаем то, что двигается, и оставляем обратную связь: цвет, рамка и
+ * прозрачность меняются, сдвиги и проходы — нет. Листание обложки не стартует
+ * само (см. автопереключение в странице), ручное — мгновенная смена кадра.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .dir-fashion *,
+  .dir-fashion *::before,
+  .dir-fashion *::after {
+    animation: none !important;
+    scroll-behavior: auto !important;
+    transition-property:
+      opacity, color, background-color, border-color, outline-color, text-decoration-color !important;
+    transition-duration: var(--motion-state) !important;
+  }
+
+  /* translate здесь — только реакция на курсор; у утилит Tailwind он же держит позицию */
+  .dir-fashion-tilt-cover,
+  .dir-fashion-tilt-title {
+    translate: none !important;
+  }
+
+  .dir-fashion-light {
+    display: none;
+  }
+
+  .dir-fashion-layer[data-state='next'] {
+    animation: none;
+  }
+
+  .dir-fashion-second {
+    transition: none !important;
+  }
+}
+
+/*
+ * framer-motion useScroll({ target }) меряет смещение цели относительно корневого
+ * контейнера и в dev-режиме предупреждает, что html — position: static.
+ * relative ничего не сдвигает; правило действует только на странице с этой сценой.
+ */
+html:has(.dir-fashion) {
+  position: relative;
+}

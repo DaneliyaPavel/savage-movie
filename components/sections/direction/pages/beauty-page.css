@@ -1,0 +1,1898 @@
+/*
+ * /beauty-video — сцена «Макро».
+ *
+ * Всё, что нужно только этой странице, живёт здесь с префиксом dir-beauty-:
+ * общий globals.css параллельно правят другие сцены. Кривая и длительности
+ * действия — из шкалы раздела (--ease-out-expo, --motion-press/state/move/cut);
+ * «медленное дорогое» движение сцены (700–1400 мс) — две собственные ступени
+ * --bty-slow и --bty-long на той же кривой.
+ *
+ * Правила движения те же, что на всём сайте: анимируются transform, clip-path
+ * и opacity декора; текст заголовка, абзацы и кнопки на первом кадре стоят на
+ * месте (вход — keyframes со сдвигом и расфокусом, без opacity:0 на тексте).
+ * Циклы стоят, пока секция вне экрана (data-live="false").
+ *
+ * Единственный цвет сцены, кроме чёрного, белого и красного акцента, — тёплый
+ * блик на коже (--bty-warm). Он живёт только в светe: линза, орбита, капля.
+ */
+
+.dir-beauty {
+  --bty-warm: 255 184 122;
+  --bty-ease: var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+  --bty-slow: 1100ms;
+  --bty-long: 1400ms;
+}
+
+/* Циклы секции вне экрана не крутятся: они ничего не показывают, но едят кадры */
+.dir-beauty [data-live='false'],
+.dir-beauty [data-live='false'] * {
+  animation-play-state: paused;
+}
+
+/* ─────────────────────────── Вход первого экрана ─────────────────────────── */
+
+@keyframes dir-beauty-rise {
+  from {
+    transform: translate3d(0, 1.1rem, 0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.dir-beauty-rise {
+  animation: dir-beauty-rise 1000ms var(--bty-ease) both;
+  animation-delay: var(--bd, 0ms);
+}
+
+/* Заголовок «наводится на резкость»: текст виден с первого кадра, но в расфокусе */
+@keyframes dir-beauty-focus {
+  from {
+    filter: blur(9px);
+    transform: translate3d(0, 0.14em, 0);
+  }
+  to {
+    filter: none;
+    transform: none;
+  }
+}
+
+.dir-beauty-focus {
+  animation: dir-beauty-focus 1200ms var(--bty-ease) both;
+  animation-delay: var(--bd, 0ms);
+}
+
+/* ─────────────────────────────────── Hero ─────────────────────────────────── */
+
+.dir-beauty-stage {
+  --lens-d: 420px;
+  --stage-w: 100vw;
+  --stage-h: 100svh;
+  background: #000000;
+}
+
+/* Кадр оседает из лёгкого наезда и дальше медленно «дышит» */
+@keyframes dir-beauty-settle {
+  from {
+    transform: scale(1.22);
+  }
+  to {
+    transform: scale(1.12);
+  }
+}
+
+@keyframes dir-beauty-breathe {
+  from {
+    transform: scale(1.12);
+  }
+  to {
+    transform: scale(1.2);
+  }
+}
+
+.dir-beauty-base {
+  transform-origin: 66% 46%;
+  animation:
+    dir-beauty-settle 2600ms var(--bty-ease) both,
+    dir-beauty-breathe 28s ease-in-out 2600ms infinite alternate;
+  will-change: transform;
+}
+
+/* Расфокус — один статичный слой: фильтр считается один раз, а не на каждом кадре */
+.dir-beauty-base-blur {
+  filter: blur(14px) brightness(0.6) saturate(0.92);
+  transform: scale(1.06);
+}
+
+@media (min-width: 48rem) {
+  .dir-beauty-base-blur {
+    filter: blur(22px) brightness(0.6) saturate(0.92);
+  }
+}
+
+/* Тёплый блик: мягкий свет на коже, не заливка */
+@keyframes dir-beauty-bloom-in {
+  from {
+    transform: scale(0.55);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes dir-beauty-bloom-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-6vmin, 5vmin, 0) scale(1.14);
+  }
+}
+
+.dir-beauty-bloom {
+  position: absolute;
+  top: -6vmin;
+  right: -30vmin;
+  width: 92vmin;
+  height: 92vmin;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgb(var(--bty-warm) / 0.34),
+    rgb(var(--bty-warm) / 0.1) 52%,
+    transparent
+  );
+  pointer-events: none;
+  animation:
+    dir-beauty-bloom-in 1800ms var(--bty-ease) 120ms both,
+    dir-beauty-bloom-drift 18s ease-in-out 1900ms infinite alternate;
+}
+
+@media (min-width: 48rem) {
+  .dir-beauty-bloom {
+    top: 4vmin;
+    right: -6vmin;
+    width: 78vmin;
+    height: 78vmin;
+  }
+}
+
+/* Линза: круг едет transform, кадр внутри смещён в обратную сторону (считает JS) */
+@keyframes dir-beauty-lens-open {
+  from {
+    clip-path: circle(0% at 50% 50%);
+  }
+  to {
+    clip-path: circle(50% at 50% 50%);
+  }
+}
+
+.dir-beauty-lens {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--lens-d);
+  height: var(--lens-d);
+  overflow: hidden;
+  border-radius: 50%;
+  opacity: 0;
+  clip-path: circle(0% at 50% 50%);
+  will-change: transform;
+}
+
+.dir-beauty-lens[data-ready='true'] {
+  opacity: 1;
+  animation: dir-beauty-lens-open var(--bty-slow) var(--bty-ease) 200ms both;
+}
+
+.dir-beauty-lens-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--stage-w);
+  height: var(--stage-h);
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* Блик на стекле: тёплое пятно у кромки и лёгкое затемнение к краям */
+.dir-beauty-lens-glint {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 27% 22%,
+      rgb(var(--bty-warm) / 0.5),
+      rgb(var(--bty-warm) / 0.14) 20%,
+      transparent 40%
+    ),
+    radial-gradient(circle at 50% 50%, transparent 56%, rgb(0 0 0 / 0.42) 100%),
+    linear-gradient(rgb(0 0 0 / 0.1), rgb(0 0 0 / 0.1));
+}
+
+.dir-beauty-lens-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.5);
+}
+
+/* Дуга-отсвет на кромке: у линзы всегда светится одна сторона */
+.dir-beauty-lens-rim::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 2px solid transparent;
+  border-top-color: rgb(255 255 255 / 0.85);
+  border-left-color: rgb(255 255 255 / 0.35);
+  border-radius: 50%;
+  transform: rotate(-24deg);
+}
+
+.dir-beauty-lens-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  background: rgb(0 0 0 / 0.62);
+  color: #ffffff;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity var(--bty-slow) var(--bty-ease) 900ms;
+  will-change: transform;
+}
+
+.dir-beauty-lens-tag[data-ready='true'] {
+  opacity: 1;
+}
+
+/* На телефоне подписи линзы некуда выносить: она сидит на самом стекле */
+.dir-beauty-lens-badge {
+  position: absolute;
+  right: 0;
+  bottom: 13%;
+  left: 0;
+  color: #ffffff;
+  text-align: center;
+  text-shadow: 0 0 10px rgb(0 0 0 / 0.85);
+}
+
+@media (min-width: 48rem) {
+  .dir-beauty-lens-tag {
+    display: flex;
+  }
+
+  .dir-beauty-lens-badge {
+    display: none;
+  }
+}
+
+.dir-beauty-lens-tag-line {
+  width: 1.25rem;
+  height: 1px;
+  background: var(--accent);
+}
+
+/*
+ * Скримы держат контраст текста на любом кадре: слева плотный чёрный, снизу
+ * плотный, сверху под меню. Правая часть остаётся линзе.
+ */
+.dir-beauty-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(0deg, rgb(0 0 0 / 0.94) 0%, rgb(0 0 0 / 0.72) 34%, rgb(0 0 0 / 0) 66%),
+    linear-gradient(180deg, rgb(0 0 0 / 0.6), rgb(0 0 0 / 0) 20%);
+}
+
+@media (min-width: 48rem) {
+  .dir-beauty-scrim {
+    background:
+      linear-gradient(90deg, rgb(0 0 0 / 0.9) 0%, rgb(0 0 0 / 0.62) 36%, rgb(0 0 0 / 0) 68%),
+      linear-gradient(0deg, rgb(0 0 0 / 0.85) 0%, rgb(0 0 0 / 0) 40%),
+      linear-gradient(180deg, rgb(0 0 0 / 0.55), rgb(0 0 0 / 0) 18%);
+  }
+}
+
+/*
+ * Вуаль поверх линзы: легче скрима под ней. Кадр в круге остаётся читаемым даже
+ * там, где линза ушла под текст, а сам текст не теряет контраст на светлом кадре
+ * (белое по кадру на 40% яркости — не ниже 7:1).
+ */
+.dir-beauty-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(0deg, rgb(0 0 0 / 0.7) 0%, rgb(0 0 0 / 0) 55%);
+}
+
+@media (min-width: 48rem) {
+  .dir-beauty-veil {
+    background:
+      linear-gradient(90deg, rgb(0 0 0 / 0.6) 0%, rgb(0 0 0 / 0.42) 42%, rgb(0 0 0 / 0) 66%),
+      linear-gradient(0deg, rgb(0 0 0 / 0.5) 0%, rgb(0 0 0 / 0) 40%);
+  }
+}
+
+/* Единственный проход света при загрузке: полоса идёт слева направо и уходит */
+@keyframes dir-beauty-sweep {
+  from {
+    transform: translate3d(-70%, 0, 0);
+  }
+  to {
+    transform: translate3d(70%, 0, 0);
+  }
+}
+
+.dir-beauty-sweep {
+  position: absolute;
+  inset: -10% -20%;
+  pointer-events: none;
+  background: linear-gradient(
+    104deg,
+    transparent 38%,
+    rgb(255 255 255 / 0.07) 47%,
+    rgb(var(--bty-warm) / 0.16) 52%,
+    transparent 62%
+  );
+  animation: dir-beauty-sweep 2200ms var(--bty-ease) 500ms both;
+}
+
+/* Подсказки: что делать рукой, а что — пальцем */
+.dir-beauty-hint-pointer {
+  display: none;
+}
+
+.dir-beauty-hint-touch {
+  display: inline;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dir-beauty-hint-pointer {
+    display: inline;
+  }
+
+  .dir-beauty-hint-touch {
+    display: none;
+  }
+}
+
+/* Указатель прокрутки */
+.dir-beauty-cue {
+  position: absolute;
+  right: 2.5rem;
+  bottom: 4.5rem;
+  z-index: 10;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  color: rgb(255 255 255 / 0.65);
+}
+
+@media (min-width: 64rem) {
+  .dir-beauty-cue {
+    display: flex;
+    right: 5rem;
+  }
+}
+
+.dir-beauty-cue-line {
+  position: relative;
+  display: block;
+  width: 1px;
+  height: 4rem;
+  overflow: hidden;
+  background: rgb(255 255 255 / 0.22);
+}
+
+@keyframes dir-beauty-cue {
+  from {
+    transform: translate3d(0, -100%, 0);
+  }
+  to {
+    transform: translate3d(0, 4rem, 0);
+  }
+}
+
+.dir-beauty-cue-dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1.5rem;
+  background: var(--accent);
+  animation: dir-beauty-cue 2400ms var(--bty-ease) infinite;
+}
+
+/* Линейка по нижней кромке hero: начало шкалы, которую ведут склейки ниже */
+.dir-beauty-hero-ruler {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  height: 16px;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.34) 0 1px, transparent 1px 12px),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.65) 0 1px, transparent 1px 60px);
+  background-position: bottom;
+  background-repeat: no-repeat;
+  background-size:
+    100% 6px,
+    100% 12px;
+}
+
+/* ─────────────────────────────────── Кнопки ─────────────────────────────────── */
+
+.dir-beauty-btn {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  min-height: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  overflow: hidden;
+  padding: 0 1.5rem 0 1.75rem;
+  border: 0;
+  border-radius: 2px;
+  background: #ffffff;
+  color: #000000;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--motion-press) var(--bty-ease);
+}
+
+.dir-beauty-btn:active {
+  transform: scale(0.98);
+}
+
+.dir-beauty-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.dir-beauty-btn-label {
+  position: relative;
+  z-index: 1;
+}
+
+/* Красная «диафрагма» раскрывается от стрелки; текст на ней остаётся чёрным (5,4:1) */
+.dir-beauty-btn-iris {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--accent);
+  clip-path: circle(0% at calc(100% - 2.1rem) 50%);
+  transition: clip-path var(--motion-cut) var(--bty-ease);
+}
+
+.dir-beauty-btn-arrow {
+  transition: transform var(--motion-move) var(--bty-ease);
+}
+
+.dir-beauty-btn:focus-visible .dir-beauty-btn-iris,
+.dir-beauty-btn:active .dir-beauty-btn-iris {
+  clip-path: circle(160% at calc(100% - 2.1rem) 50%);
+}
+
+.dir-beauty-btn:focus-visible .dir-beauty-btn-arrow {
+  transform: translateX(4px);
+}
+
+@media (hover: hover) {
+  .dir-beauty-btn:hover .dir-beauty-btn-iris {
+    clip-path: circle(160% at calc(100% - 2.1rem) 50%);
+  }
+
+  .dir-beauty-btn:hover .dir-beauty-btn-arrow {
+    transform: translateX(4px);
+  }
+}
+
+/* Текстовая ссылка рядом: линия растёт слева направо, стрелка опускается */
+.dir-beauty-link {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.6rem;
+  color: rgb(255 255 255 / 0.78);
+  background-image: linear-gradient(var(--accent), var(--accent));
+  background-position: 0 calc(100% - 0.7rem);
+  background-repeat: no-repeat;
+  background-size: 0% 1px;
+  transition:
+    color var(--motion-state) ease,
+    background-size var(--motion-move) var(--bty-ease);
+}
+
+.dir-beauty-link svg {
+  transition: transform var(--motion-move) var(--bty-ease);
+}
+
+.dir-beauty-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  color: #ffffff;
+  background-size: 100% 1px;
+}
+
+.dir-beauty-link:active {
+  color: #ffffff;
+  background-size: 100% 1px;
+}
+
+@media (hover: hover) {
+  .dir-beauty-link:hover {
+    color: #ffffff;
+    background-size: 100% 1px;
+  }
+
+  .dir-beauty-link:hover svg {
+    transform: translateY(3px);
+  }
+}
+
+/* ───────────────────────────── Наезд (sticky-сцена) ───────────────────────────── */
+
+.dir-beauty-zoom {
+  height: 250svh;
+}
+
+@media (min-width: 48rem) {
+  .dir-beauty-zoom {
+    height: 290svh;
+  }
+}
+
+.dir-beauty-zoom-stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.dir-beauty-zoom-veil {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 24%, rgb(var(--bty-warm) / 0.24), transparent 40%),
+    linear-gradient(180deg, rgb(0 0 0 / 0.25), rgb(0 0 0 / 0.04) 40%, rgb(0 0 0 / 0.35));
+}
+
+.dir-beauty-zoom-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(0deg, rgb(0 0 0 / 0.82) 0%, rgb(0 0 0 / 0) 52%),
+    linear-gradient(180deg, rgb(0 0 0 / 0.6), rgb(0 0 0 / 0) 24%),
+    linear-gradient(90deg, rgb(0 0 0 / 0.55), rgb(0 0 0 / 0) 62%);
+}
+
+.dir-beauty-zoom-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.dir-beauty-zoom-ring-line {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.75);
+  stroke-width: 1;
+}
+
+.dir-beauty-zoom-ring-dash {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.45);
+  stroke-width: 1;
+  stroke-dasharray: 1 9;
+}
+
+.dir-beauty-zoom-ui {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6rem 1.5rem 6.25rem;
+}
+
+@media (min-width: 48rem) {
+  .dir-beauty-zoom-ui {
+    padding: 6.5rem 2.5rem 6.5rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .dir-beauty-zoom-ui {
+    padding-right: 5rem;
+    padding-left: 5rem;
+  }
+}
+
+.dir-beauty-zoom-steps {
+  display: none;
+  gap: 1.75rem;
+  color: rgb(255 255 255 / 0.62);
+}
+
+@media (min-width: 48rem) {
+  .dir-beauty-zoom-steps {
+    display: flex;
+  }
+
+  .dir-beauty-zoom-mobile-level {
+    display: none;
+  }
+}
+
+.dir-beauty-zoom-steps li {
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid transparent;
+  transition:
+    color var(--motion-move) ease,
+    border-color var(--motion-move) ease;
+}
+
+.dir-beauty-zoom-steps li[data-state='on'] {
+  border-bottom-color: var(--accent);
+  color: #ffffff;
+}
+
+/* Слово уходит вверх и приходит снизу; высота коробки оставляет место хвосту «Д» */
+.dir-beauty-zoom-words {
+  display: grid;
+  height: 1.1em;
+  padding-right: 0.08em;
+  overflow: hidden;
+  font-size: clamp(3.25rem, 15vw, 5.75rem);
+}
+
+@media (min-width: 48rem) {
+  .dir-beauty-zoom-words {
+    font-size: clamp(5rem, 12vw, 11rem);
+  }
+}
+
+.dir-beauty-zoom-word {
+  grid-area: 1 / 1;
+  align-self: start;
+  color: #ffffff;
+  letter-spacing: -0.04em;
+  line-height: 0.92;
+  white-space: nowrap;
+  transition: transform var(--bty-slow) var(--bty-ease);
+  will-change: transform;
+}
+
+.dir-beauty-zoom-word[data-pos='next'] {
+  transform: translate3d(0, 130%, 0);
+}
+
+.dir-beauty-zoom-word[data-pos='past'] {
+  transform: translate3d(0, -130%, 0);
+}
+
+.dir-beauty-zoom-notes {
+  display: grid;
+  height: 1.75rem;
+  margin-top: 1rem;
+  overflow: hidden;
+}
+
+.dir-beauty-zoom-note {
+  grid-area: 1 / 1;
+  color: rgb(255 255 255 / 0.88);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  white-space: nowrap;
+  transition: transform var(--bty-slow) var(--bty-ease) 80ms;
+}
+
+.dir-beauty-zoom-note[data-pos='next'] {
+  transform: translate3d(0, 120%, 0);
+}
+
+.dir-beauty-zoom-note[data-pos='past'] {
+  transform: translate3d(0, -120%, 0);
+}
+
+.dir-beauty-zoom-bar {
+  display: flex;
+  max-width: 18rem;
+  gap: 0.4rem;
+  margin-top: 1.25rem;
+}
+
+.dir-beauty-zoom-bar span {
+  height: 2px;
+  flex: 1;
+  background: rgb(255 255 255 / 0.28);
+  transition: background-color var(--bty-slow) var(--bty-ease);
+}
+
+.dir-beauty-zoom-bar span[data-on='true'] {
+  background: var(--accent);
+}
+
+.dir-beauty-zoom-readout {
+  display: none;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+@media (min-width: 48rem) {
+  .dir-beauty-zoom-readout {
+    display: block;
+  }
+}
+
+.dir-beauty-zoom-readout p:nth-child(2) {
+  margin-top: 0.75rem;
+  font-size: clamp(5rem, 13vw, 12rem);
+}
+
+@keyframes dir-beauty-tick {
+  from {
+    transform: translate3d(0, 0.12em, 0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.dir-beauty-zoom-readout p:nth-child(2) span {
+  display: inline-block;
+  animation: dir-beauty-tick var(--motion-cut) var(--bty-ease) both;
+}
+
+.dir-beauty-zoom-ticks {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin-top: 1.25rem;
+}
+
+.dir-beauty-zoom-ticks li {
+  width: 1.25rem;
+  height: 2px;
+  background: rgb(255 255 255 / 0.3);
+  transition: background-color var(--motion-move) ease;
+}
+
+.dir-beauty-zoom-ticks li[data-on='true'] {
+  background: var(--accent);
+}
+
+/* ─────────────────────────── Склейка: шкала крупности ─────────────────────────── */
+
+.dir-beauty-seam {
+  background: #000000;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.dir-beauty-seam-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-right: 1.5rem;
+  padding-left: 1.5rem;
+  color: rgb(255 255 255 / 0.62);
+}
+
+@media (min-width: 48rem) {
+  .dir-beauty-seam-row {
+    padding-right: 2.5rem;
+    padding-left: 2.5rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .dir-beauty-seam-row {
+    padding-right: 5rem;
+    padding-left: 5rem;
+  }
+}
+
+.dir-beauty-seam-ruler {
+  position: relative;
+  height: 1.75rem;
+  margin-top: 0.85rem;
+  background-image:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.3) 0 1px, transparent 1px 10px),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.6) 0 1px, transparent 1px 50px);
+  background-position: bottom;
+  background-repeat: no-repeat;
+  background-size:
+    100% 8px,
+    100% 16px;
+}
+
+.dir-beauty-seam-fill {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: var(--accent);
+  transform-origin: left;
+  will-change: transform;
+}
+
+/* ─────────────────────────── Материалы: видоискатель и строки ─────────────────────────── */
+
+.dir-beauty-viewer-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  margin-right: -1.5rem;
+  margin-left: -1.5rem;
+  padding: 3.75rem 1.5rem 0.75rem;
+  background: linear-gradient(#000000 92%, transparent);
+}
+
+@media (min-width: 48rem) {
+  .dir-beauty-viewer-wrap {
+    margin-right: -2.5rem;
+    margin-left: -2.5rem;
+    padding-right: 2.5rem;
+    padding-left: 2.5rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .dir-beauty-viewer-wrap {
+    top: 6rem;
+    align-self: start;
+    margin: 0;
+    padding: 0;
+    background: none;
+  }
+}
+
+.dir-beauty-viewer {
+  position: relative;
+  isolation: isolate;
+  height: 40svh;
+  min-height: 15rem;
+  overflow: hidden;
+  background: #0d0d0d;
+}
+
+@media (min-width: 64rem) {
+  .dir-beauty-viewer {
+    height: auto;
+    max-height: calc(100svh - 8rem);
+    aspect-ratio: 4 / 5;
+  }
+}
+
+/*
+ * Слой кадра открывается кругом от точки фокуса. Предыдущий кадр уходит с
+ * задержкой: пока новый не закрыл его, под ним не должно показаться чёрное.
+ */
+.dir-beauty-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  clip-path: circle(0% at var(--fx) var(--fy));
+  transition: clip-path 0s linear var(--bty-long);
+}
+
+.dir-beauty-layer[data-on='true'] {
+  z-index: 2;
+  clip-path: circle(150% at var(--fx) var(--fy));
+  transition: clip-path var(--bty-long) var(--bty-ease);
+}
+
+.dir-beauty-layer-img {
+  position: absolute;
+  inset: 0;
+  transform: scale(1);
+  transform-origin: var(--fx) var(--fy);
+  transition: transform 0s linear var(--bty-long);
+}
+
+.dir-beauty-layer[data-on='true'] .dir-beauty-layer-img {
+  transform: scale(var(--zoom));
+  transition: transform var(--bty-long) var(--bty-ease);
+}
+
+/* Точка фокуса: кольцо, перекрестие и тёплая капля света */
+.dir-beauty-focus-point {
+  position: absolute;
+  top: var(--fy);
+  left: var(--fx);
+  width: 0;
+  height: 0;
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    opacity var(--motion-state) ease,
+    transform var(--motion-state) ease;
+}
+
+.dir-beauty-layer[data-on='true'] .dir-beauty-focus-point {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--motion-cut) var(--bty-ease) 500ms,
+    transform var(--bty-long) var(--bty-ease) 400ms;
+}
+
+.dir-beauty-focus-ring {
+  position: absolute;
+  top: -2.25rem;
+  left: -2.25rem;
+  width: 4.5rem;
+  height: 4.5rem;
+  border: 1px solid rgb(255 255 255 / 0.8);
+  border-radius: 50%;
+}
+
+.dir-beauty-focus-ring::before,
+.dir-beauty-focus-ring::after {
+  content: '';
+  position: absolute;
+  background: rgb(255 255 255 / 0.8);
+}
+
+.dir-beauty-focus-ring::before {
+  top: 50%;
+  right: -0.6rem;
+  left: -0.6rem;
+  height: 1px;
+}
+
+.dir-beauty-focus-ring::after {
+  top: -0.6rem;
+  bottom: -0.6rem;
+  left: 50%;
+  width: 1px;
+}
+
+.dir-beauty-focus-dot {
+  position: absolute;
+  top: -0.2rem;
+  left: -0.2rem;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: rgb(var(--bty-warm));
+  box-shadow:
+    0 0 0 0.25rem rgb(var(--bty-warm) / 0.25),
+    0 0 1.5rem 0.4rem rgb(var(--bty-warm) / 0.5);
+}
+
+.dir-beauty-viewer-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgb(0 0 0 / 0.55),
+    transparent 26%,
+    transparent 60%,
+    rgb(0 0 0 / 0.7)
+  );
+}
+
+.dir-beauty-corner {
+  position: absolute;
+  z-index: 4;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 0 solid rgb(255 255 255 / 0.8);
+  pointer-events: none;
+}
+
+.dir-beauty-corner[data-at='tl'] {
+  top: 0.8rem;
+  left: 0.8rem;
+  border-width: 1px 0 0 1px;
+}
+
+.dir-beauty-corner[data-at='tr'] {
+  top: 0.8rem;
+  right: 0.8rem;
+  border-width: 1px 1px 0 0;
+}
+
+.dir-beauty-corner[data-at='bl'] {
+  bottom: 0.8rem;
+  left: 0.8rem;
+  border-width: 0 0 1px 1px;
+}
+
+.dir-beauty-corner[data-at='br'] {
+  right: 0.8rem;
+  bottom: 0.8rem;
+  border-width: 0 1px 1px 0;
+}
+
+.dir-beauty-viewer-top,
+.dir-beauty-viewer-bottom {
+  position: absolute;
+  right: 2.6rem;
+  left: 2.6rem;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #ffffff;
+}
+
+.dir-beauty-viewer-top {
+  top: 0.95rem;
+}
+
+.dir-beauty-viewer-bottom {
+  bottom: 0.95rem;
+}
+
+.dir-beauty-viewer-pips {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.dir-beauty-viewer-pips span {
+  width: 1rem;
+  height: 2px;
+  background: rgb(255 255 255 / 0.35);
+  transition: background-color var(--motion-move) ease;
+}
+
+.dir-beauty-viewer-pips span[data-on='true'] {
+  background: var(--accent);
+}
+
+/* Строки материалов: плотность растёт с кадром — активная белая, остальные тише */
+.dir-beauty-row {
+  position: relative;
+  display: flex;
+  min-height: 44svh;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2.25rem 0;
+  border-top: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.dir-beauty-row:last-child {
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+}
+
+@media (min-width: 64rem) {
+  .dir-beauty-row {
+    min-height: 60svh;
+    padding: 3rem 0;
+  }
+}
+
+.dir-beauty-row-line {
+  position: absolute;
+  top: -1px;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--bty-slow) var(--bty-ease);
+}
+
+.dir-beauty-row[data-on='true'] .dir-beauty-row-line {
+  transform: scaleX(1);
+}
+
+.dir-beauty-row-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: rgb(255 255 255 / 0.6);
+}
+
+.dir-beauty-row-idx {
+  transition: color var(--motion-move) ease;
+}
+
+.dir-beauty-row[data-on='true'] .dir-beauty-row-idx {
+  color: var(--accent);
+}
+
+.dir-beauty-row-title {
+  position: relative;
+  margin-top: 1.25rem;
+  color: rgb(255 255 255 / 0.58);
+  transition: color var(--motion-move) ease;
+}
+
+/* Крупный номер за текстом: контраст масштаба и тихая фактура вместо пустого поля */
+.dir-beauty-row-num {
+  position: absolute;
+  right: 0;
+  bottom: 1.25rem;
+  color: rgb(255 255 255 / 0.05);
+  font-size: 5.5rem;
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  pointer-events: none;
+  transition: color var(--bty-slow) var(--bty-ease);
+  user-select: none;
+}
+
+.dir-beauty-row[data-on='true'] .dir-beauty-row-num {
+  color: rgb(255 255 255 / 0.1);
+}
+
+@media (min-width: 64rem) {
+  .dir-beauty-row-num {
+    top: 50%;
+    bottom: auto;
+    font-size: clamp(8rem, 17vw, 15rem);
+    transform: translateY(-46%);
+  }
+}
+
+.dir-beauty-row-text {
+  position: relative;
+  margin-top: 1.25rem;
+  color: rgb(255 255 255 / 0.58);
+  transition: color var(--motion-move) ease;
+}
+
+.dir-beauty-row[data-on='true'] .dir-beauty-row-title {
+  color: #ffffff;
+}
+
+.dir-beauty-row[data-on='true'] .dir-beauty-row-text {
+  color: rgb(255 255 255 / 0.82);
+}
+
+/* ─────────────────────────────── Предмет: капсула ─────────────────────────────── */
+
+.dir-beauty-object {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 42%, rgb(var(--bty-warm) / 0.07), transparent 70%),
+    #000000;
+  border-top: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.dir-beauty-object-stage {
+  --vw: clamp(6.25rem, 13vw, 11rem);
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 27rem;
+  height: min(66svh, 40rem);
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.5rem;
+  touch-action: pan-y;
+}
+
+/* Линия стола: предмет стоит, а не висит */
+.dir-beauty-object-stage::after {
+  content: '';
+  position: absolute;
+  top: calc(50% + var(--vw) * 1.21);
+  right: 0;
+  left: 0;
+  z-index: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.22) 18%,
+    rgb(255 255 255 / 0.22) 82%,
+    transparent
+  );
+}
+
+.dir-beauty-object-word {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.dir-beauty-object-word > * {
+  color: rgb(255 255 255 / 0.09);
+  font-size: clamp(6rem, 23vw, 20rem);
+  letter-spacing: -0.05em;
+  line-height: 0.9;
+  white-space: nowrap;
+}
+
+.dir-beauty-halo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  width: calc(var(--vw) * 5.5);
+  aspect-ratio: 1;
+  margin: calc(var(--vw) * -2.75) 0 0 calc(var(--vw) * -2.75);
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgb(var(--bty-warm) / 0.26),
+    rgb(var(--bty-warm) / 0.07) 55%,
+    transparent
+  );
+  will-change: transform;
+}
+
+.dir-beauty-orbit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  width: calc(var(--vw) * 3.3);
+  height: calc(var(--vw) * 4.9);
+  border: 1px dashed rgb(255 255 255 / 0.24);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.dir-beauty-orbit-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin: -0.3rem 0 0 -0.3rem;
+  border-radius: 50%;
+  background: rgb(var(--bty-warm));
+  box-shadow:
+    0 0 0 0.3rem rgb(var(--bty-warm) / 0.22),
+    0 0 1.5rem 0.4rem rgb(var(--bty-warm) / 0.55);
+  will-change: transform;
+}
+
+.dir-beauty-vessel {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  width: var(--vw);
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--vw) * 0.07);
+}
+
+.dir-beauty-glass {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  isolation: isolate;
+  background: rgb(255 255 255 / 0.2);
+}
+
+.dir-beauty-glass[data-part='cap'] {
+  width: 44%;
+  height: calc(var(--vw) * 0.3);
+  border-radius: calc(var(--vw) * 0.06);
+}
+
+.dir-beauty-glass[data-part='body'] {
+  width: 100%;
+  height: calc(var(--vw) * 2.05);
+  border-radius: calc(var(--vw) * 0.3) calc(var(--vw) * 0.3) calc(var(--vw) * 0.22)
+    calc(var(--vw) * 0.22);
+}
+
+/* Кромка: коническая полоса света, которую поворачивает JS по углу света */
+.dir-beauty-glass-rim {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--vw) * 2.9);
+  aspect-ratio: 1;
+  background: conic-gradient(
+    from -52deg,
+    transparent 0deg,
+    rgb(var(--bty-warm) / 0.55) 26deg,
+    #ffffff 52deg,
+    rgb(var(--bty-warm) / 0.55) 78deg,
+    transparent 104deg,
+    transparent 360deg
+  );
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+
+.dir-beauty-glass-fill {
+  position: absolute;
+  inset: 1.5px;
+  border-radius: inherit;
+  background: linear-gradient(96deg, #0a0a0a 0%, #151515 38%, #0a0a0a 62%, #121212 100%);
+}
+
+.dir-beauty-glass-streak {
+  position: absolute;
+  top: 7%;
+  bottom: 14%;
+  left: 15%;
+  width: 7%;
+  border-radius: 9999px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgb(255 255 255 / 0.5) 18%,
+    rgb(255 255 255 / 0.14) 75%,
+    transparent
+  );
+}
+
+.dir-beauty-glass-liquid {
+  position: absolute;
+  right: 1.5px;
+  bottom: 1.5px;
+  left: 1.5px;
+  height: 56%;
+  border-top: 1px solid rgb(255 255 255 / 0.4);
+  border-radius: 0 0 calc(var(--vw) * 0.21) calc(var(--vw) * 0.21);
+  background: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.1),
+    rgb(var(--bty-warm) / 0.14) 55%,
+    rgb(var(--bty-warm) / 0.24)
+  );
+}
+
+.dir-beauty-floor {
+  position: absolute;
+  top: calc(50% + var(--vw) * 1.21);
+  left: 50%;
+  z-index: 2;
+  width: calc(var(--vw) * 2.6);
+  height: calc(var(--vw) * 0.5);
+  margin: calc(var(--vw) * -0.25) 0 0 calc(var(--vw) * -1.3);
+  background: radial-gradient(closest-side, rgb(255 255 255 / 0.16), transparent);
+  will-change: transform;
+}
+
+/* Выноски: подпись, линия к предмету; рисуются при появлении сцены */
+.dir-beauty-callout {
+  position: absolute;
+  z-index: 4;
+  display: none;
+  width: min(19rem, 26vw);
+  align-items: center;
+  gap: 0.75rem;
+  color: rgb(255 255 255 / 0.78);
+}
+
+@media (min-width: 48rem) {
+  .dir-beauty-callout {
+    display: flex;
+  }
+}
+
+.dir-beauty-callout[data-side='l'] {
+  right: calc(50% + var(--vw) / 2 + 1.25rem);
+}
+
+.dir-beauty-callout[data-side='r'] {
+  left: calc(50% + var(--vw) / 2 + 1.25rem);
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.dir-beauty-callout[data-row='0'] {
+  top: 22%;
+}
+
+.dir-beauty-callout[data-row='1'] {
+  top: 66%;
+}
+
+.dir-beauty-callout-text {
+  color: #ffffff;
+}
+
+.dir-beauty-callout-line {
+  position: relative;
+  height: 1px;
+  flex: 1;
+  background: rgb(255 255 255 / 0.45);
+  transition: transform var(--bty-long) var(--bty-ease) 200ms;
+}
+
+.dir-beauty-callout[data-side='l'] .dir-beauty-callout-line {
+  transform-origin: left;
+}
+
+.dir-beauty-callout[data-side='r'] .dir-beauty-callout-line {
+  transform-origin: right;
+}
+
+.dir-beauty-callout-line::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  width: 5px;
+  height: 5px;
+  border: 1px solid rgb(255 255 255 / 0.8);
+  background: #000000;
+  transform: rotate(45deg);
+}
+
+.dir-beauty-callout[data-side='l'] .dir-beauty-callout-line::after {
+  right: -2px;
+}
+
+.dir-beauty-callout[data-side='r'] .dir-beauty-callout-line::after {
+  left: -2px;
+}
+
+.dir-beauty-object-stage[data-armed='true']:not([data-in='true']) .dir-beauty-callout-line {
+  transform: scaleX(0);
+}
+
+/* На телефоне выносок нет места: те же слова строкой под предметом */
+.dir-beauty-marks {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.5rem;
+  margin-top: 1.5rem;
+  color: rgb(255 255 255 / 0.75);
+}
+
+.dir-beauty-marks li::before {
+  content: '/';
+  margin-right: 0.5rem;
+  color: var(--accent);
+}
+
+@media (min-width: 48rem) {
+  .dir-beauty-marks {
+    display: none;
+  }
+}
+
+/* ───────────────────────────── CTA после работ ───────────────────────────── */
+
+.dir-beauty-proof {
+  display: flex;
+  min-height: 84svh;
+  align-items: center;
+  --veil: 0.74;
+}
+
+.dir-beauty-proof[data-hot='true'] {
+  --veil: 0.66;
+}
+
+@media (min-width: 64rem) {
+  .dir-beauty-proof {
+    --veil: 0.62;
+  }
+
+  .dir-beauty-proof[data-hot='true'] {
+    --veil: 0.1;
+  }
+}
+
+/* Где нет наведения, кадр «загорается», когда секция на экране; тексту остаётся тень */
+@media (hover: none) {
+  .dir-beauty-proof[data-live='true'] {
+    --veil: 0.66;
+  }
+}
+
+@keyframes dir-beauty-orbit {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-2.5vmin, 3vmin, 0);
+  }
+}
+
+@keyframes dir-beauty-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.dir-beauty-proof-lens {
+  position: absolute;
+  top: 50%;
+  right: -34vw;
+  z-index: 0;
+  width: 88vw;
+  aspect-ratio: 1;
+  margin-top: -44vw;
+  animation: dir-beauty-orbit 26s ease-in-out infinite alternate;
+}
+
+@media (min-width: 64rem) {
+  .dir-beauty-proof-lens {
+    right: 5vw;
+    width: min(40rem, 42vw);
+    margin-top: calc(min(40rem, 42vw) / -2);
+  }
+}
+
+.dir-beauty-proof-disc {
+  position: absolute;
+  inset: 7%;
+  overflow: hidden;
+  border-radius: 50%;
+  isolation: isolate;
+  background: #0d0d0d;
+}
+
+.dir-beauty-proof-frame {
+  position: absolute;
+  inset: -6%;
+  transform: scale(1.12);
+  transition: transform var(--bty-long) var(--bty-ease);
+}
+
+.dir-beauty-proof[data-hot='true'] .dir-beauty-proof-frame {
+  transform: scale(1);
+}
+
+.dir-beauty-proof-veil {
+  position: absolute;
+  inset: 0;
+  background: #000000;
+  opacity: var(--veil);
+  transition: opacity var(--bty-slow) var(--bty-ease);
+}
+
+.dir-beauty-proof-glint {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 28% 22%,
+      rgb(var(--bty-warm) / 0.42),
+      rgb(var(--bty-warm) / 0.1) 22%,
+      transparent 42%
+    ),
+    radial-gradient(circle at 50% 50%, transparent 58%, rgb(0 0 0 / 0.5) 100%);
+}
+
+.dir-beauty-proof-ring {
+  position: absolute;
+  inset: 7%;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  border-radius: 50%;
+}
+
+.dir-beauty-proof-dash {
+  position: absolute;
+  inset: 2%;
+  border: 1px dashed rgb(255 255 255 / 0.25);
+  border-radius: 50%;
+  animation: dir-beauty-spin 90s linear infinite;
+}
+
+.dir-beauty-proof-mark {
+  position: absolute;
+  bottom: 9%;
+  left: 50%;
+  color: rgb(255 255 255 / 0.85);
+  transform: translateX(-50%);
+  text-shadow: 0 0 12px rgb(0 0 0 / 0.8);
+}
+
+/* ─────────────────────────── CTA после процесса: «билет» ─────────────────────────── */
+
+.dir-beauty-ticket {
+  --tk-ink: #ffffff;
+  --tk-dim: rgb(255 255 255 / 0.72);
+  --tk-meta: rgb(255 255 255 / 0.62);
+  border-top: 1px solid rgb(255 255 255 / 0.1);
+  color: var(--tk-ink);
+  isolation: isolate;
+}
+
+.dir-beauty-ticket:focus-within,
+.dir-beauty-ticket:active {
+  --tk-ink: #000000;
+  --tk-dim: rgb(0 0 0 / 0.88);
+  --tk-meta: rgb(0 0 0 / 0.84);
+}
+
+@media (hover: hover) {
+  .dir-beauty-ticket:hover {
+    --tk-ink: #000000;
+    --tk-dim: rgb(0 0 0 / 0.88);
+    --tk-meta: rgb(0 0 0 / 0.84);
+  }
+}
+
+.dir-beauty-ticket-curtain {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--accent);
+  transform: translate3d(0, 101%, 0);
+  transition: transform var(--motion-cut) var(--bty-ease);
+}
+
+.dir-beauty-ticket:focus-within .dir-beauty-ticket-curtain,
+.dir-beauty-ticket:active .dir-beauty-ticket-curtain {
+  transform: none;
+}
+
+@media (hover: hover) {
+  .dir-beauty-ticket:hover .dir-beauty-ticket-curtain {
+    transform: none;
+  }
+}
+
+.dir-beauty-ticket-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* 1024–1279: метка над строкой, иначе заголовок зажат в узкую колонку и метка рвётся */
+@media (min-width: 64rem) {
+  .dir-beauty-ticket-grid {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 3rem;
+  }
+
+  .dir-beauty-ticket-kicker {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 80rem) {
+  .dir-beauty-ticket-grid {
+    grid-template-columns: 17.5rem minmax(0, 1fr) auto;
+  }
+
+  .dir-beauty-ticket-kicker {
+    grid-column: auto;
+  }
+}
+
+.dir-beauty-ticket-kicker {
+  color: var(--tk-meta);
+  transition: color var(--motion-state) ease;
+}
+
+.dir-beauty-ticket-diamond {
+  width: 0.5rem;
+  height: 0.5rem;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  transform: rotate(45deg);
+  transition:
+    background-color var(--motion-state) ease,
+    border-color var(--motion-state) ease;
+}
+
+.dir-beauty-ticket:focus-within .dir-beauty-ticket-diamond,
+.dir-beauty-ticket:active .dir-beauty-ticket-diamond {
+  border-color: #000000;
+  background: #000000;
+}
+
+@media (hover: hover) {
+  .dir-beauty-ticket:hover .dir-beauty-ticket-diamond {
+    border-color: #000000;
+    background: #000000;
+  }
+}
+
+.dir-beauty-ticket-copy h2 {
+  color: var(--tk-ink);
+  transition: color var(--motion-state) ease;
+}
+
+.dir-beauty-ticket-copy p {
+  color: var(--tk-dim);
+  transition: color var(--motion-state) ease;
+}
+
+.dir-beauty-ticket-btn {
+  display: flex;
+  min-height: 3.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--tk-ink);
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--motion-state) ease;
+}
+
+/* Вся полоса — область нажатия; фокус рисуется по её кромке, внутри красной шторки он чёрный */
+.dir-beauty-ticket-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.dir-beauty-ticket-btn:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 6px;
+}
+
+.dir-beauty-ticket-btn:focus-visible::after {
+  outline: 2px solid #000000;
+  outline-offset: -10px;
+}
+
+.dir-beauty-ticket-arrow {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 0.45);
+  border-radius: 50%;
+  transition:
+    border-color var(--motion-state) ease,
+    transform var(--motion-move) var(--bty-ease);
+}
+
+.dir-beauty-ticket:focus-within .dir-beauty-ticket-arrow,
+.dir-beauty-ticket:active .dir-beauty-ticket-arrow {
+  border-color: #000000;
+  transform: rotate(-45deg);
+}
+
+@media (hover: hover) {
+  .dir-beauty-ticket:hover .dir-beauty-ticket-arrow {
+    border-color: #000000;
+    transform: rotate(-45deg);
+  }
+}
+
+/* ───────────────────────────── Макро-поверхность вместо кадра ───────────────────────────── */
+
+.dir-beauty-surface {
+  display: block;
+  background:
+    radial-gradient(
+      circle at var(--mx) var(--my),
+      rgb(var(--bty-warm) / 0.42) 0,
+      rgb(var(--bty-warm) / 0.14) 14%,
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at calc(var(--mx) + 7%) calc(var(--my) - 6%),
+      rgb(255 255 255 / 0.22) 0,
+      transparent 9%
+    ),
+    repeating-radial-gradient(
+      circle at var(--mx) var(--my),
+      transparent 0 2.2rem,
+      rgb(255 255 255 / 0.07) 2.2rem calc(2.2rem + 1px)
+    ),
+    linear-gradient(135deg, #171717, #050505 70%);
+}
+
+/* ───────────────────────────────── Сниженное движение ───────────────────────────────── */
+
+/*
+ * Снимается движение, а не обратная связь: цвет и кадр остаются, циклы и
+ * входы отключены, всё, что ездило, стоит в итоговом положении. Линза
+ * остаётся открытой, слова «наезда» идут списком.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .dir-beauty-rise,
+  .dir-beauty-focus,
+  .dir-beauty-bloom,
+  .dir-beauty-sweep,
+  .dir-beauty-cue-dot,
+  .dir-beauty-proof-lens,
+  .dir-beauty-proof-dash,
+  .dir-beauty-zoom-readout p:nth-child(2) span {
+    animation: none;
+  }
+
+  .dir-beauty-base {
+    animation: none;
+    transform: scale(1.1);
+  }
+
+  .dir-beauty-sweep {
+    display: none;
+  }
+
+  .dir-beauty-lens[data-ready='true'] {
+    animation: none;
+    clip-path: circle(50% at 50% 50%);
+  }
+
+  .dir-beauty-lens-tag,
+  .dir-beauty-layer,
+  .dir-beauty-layer-img,
+  .dir-beauty-layer[data-on='true'],
+  .dir-beauty-layer[data-on='true'] .dir-beauty-layer-img,
+  .dir-beauty-focus-point,
+  .dir-beauty-layer[data-on='true'] .dir-beauty-focus-point,
+  .dir-beauty-row-line,
+  .dir-beauty-callout-line,
+  .dir-beauty-proof-frame,
+  .dir-beauty-ticket-curtain,
+  .dir-beauty-btn-iris {
+    transition: none;
+  }
+
+  .dir-beauty-btn-arrow,
+  .dir-beauty-link svg,
+  .dir-beauty-ticket-arrow {
+    transition-property: color, border-color;
+  }
+
+  .dir-beauty-ticket:hover .dir-beauty-ticket-arrow,
+  .dir-beauty-ticket:focus-within .dir-beauty-ticket-arrow,
+  .dir-beauty-ticket:active .dir-beauty-ticket-arrow,
+  .dir-beauty-btn:hover .dir-beauty-btn-arrow,
+  .dir-beauty-btn:focus-visible .dir-beauty-btn-arrow,
+  .dir-beauty-link:hover svg {
+    transform: none;
+  }
+
+  .dir-beauty-object-stage[data-armed='true']:not([data-in='true']) .dir-beauty-callout-line {
+    transform: none;
+  }
+
+  /* Наезд без прокрутки: сцена в один экран, все слова списком, круг раскрыт */
+  .dir-beauty-zoom {
+    height: auto;
+  }
+
+  .dir-beauty-zoom-stage {
+    position: relative;
+    min-height: 100svh;
+  }
+
+  .dir-beauty-zoom-words {
+    display: flex;
+    height: auto;
+    flex-direction: column;
+    overflow: visible;
+    font-size: clamp(2.6rem, 9vw, 7rem);
+  }
+
+  .dir-beauty-zoom-word {
+    position: static;
+    transform: none !important;
+    transition: none;
+  }
+
+  .dir-beauty-zoom-notes {
+    display: none;
+  }
+
+  .dir-beauty-zoom-ring {
+    display: none;
+  }
+}

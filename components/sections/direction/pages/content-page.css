@@ -1,0 +1,1454 @@
+/*
+ * /content-production — сцена «Монтажный лист».
+ *
+ * Всё, что нужно только этой странице, живёт здесь с префиксом dir-content-:
+ * общий globals.css параллельно правят другие сцены. Кривая и длительности —
+ * из шкалы раздела (--ease-out-expo, --motion-press/state/move/cut).
+ *
+ * Правила движения те же, что на всём сайте. Анимируются transform, clip-path
+ * и opacity декора; текст заголовка, абзацы и кнопки на первом кадре стоят на
+ * месте, вход — keyframes со сдвигом без opacity:0 на тексте. Бесконечные
+ * анимации стоят вне экрана (data-live) и выключены при
+ * prefers-reduced-motion. Наведение — только там, где оно есть (hover: hover);
+ * на телефоне то же состояние даёт нажатие или положение на экране.
+ */
+
+.dir-content {
+  --dc-line: rgb(255 255 255 / 0.14);
+  --dc-line-2: rgb(255 255 255 / 0.28);
+  --dc-ink-2: rgb(255 255 255 / 0.68);
+  --dc-ink-3: rgb(255 255 255 / 0.56);
+  --dc-ease: var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+  --dc-week: 13;
+}
+
+/* ─────────────────────────── Общее ─────────────────────────── */
+
+/* Бумага инженерного листа: сетка в 2,5rem, гаснущая к краям */
+.dir-content-paper {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: 2.5rem 2.5rem;
+  -webkit-mask-image: radial-gradient(120% 100% at 50% 40%, #000 30%, transparent 85%);
+  mask-image: radial-gradient(120% 100% at 50% 40%, #000 30%, transparent 85%);
+}
+
+/* Поверхность кадра там, где портфолио не пришло: свет, сетка и метки вместо картинки */
+.dir-content-plate {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background-color: #0b0b0b;
+  background-image:
+    linear-gradient(90deg, rgb(255 255 255 / 0.055) 1px, transparent 1px),
+    linear-gradient(rgb(255 255 255 / 0.055) 1px, transparent 1px),
+    radial-gradient(95% 80% at 28% 22%, #262626 0%, #0d0d0d 62%);
+  background-size:
+    10% 100%,
+    100% 10%,
+    100% 100%;
+}
+
+.dir-content-plate[data-lit='true'] {
+  background-image:
+    linear-gradient(90deg, rgb(255 255 255 / 0.1) 1px, transparent 1px),
+    linear-gradient(rgb(255 255 255 / 0.1) 1px, transparent 1px),
+    radial-gradient(95% 80% at 28% 22%, #4a4a4a 0%, #1c1c1c 62%);
+}
+
+/* Перекрестие в центре мастер-кадра */
+.dir-content-plate::before,
+.dir-content-plate::after {
+  content: '';
+  position: absolute;
+  background: rgb(255 255 255 / 0.22);
+}
+
+.dir-content-plate::before {
+  inset: 50% 46%;
+  height: 1px;
+  margin-top: -0.5px;
+}
+
+.dir-content-plate::after {
+  inset: 46% 50%;
+  width: 1px;
+  margin-left: -0.5px;
+}
+
+/* Участок мастер-кадра внутри нарезки: слой размером с мастер, сдвинутый на место */
+.dir-content-reg {
+  position: absolute;
+  display: block;
+}
+
+/* Кнопка-плашка страницы: белая, красная шторка на ховере, чёрный текст поверх (5,6:1) */
+.dir-content-btn {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  min-height: 3.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 2px;
+  background: #ffffff;
+  color: #000000;
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  transition: scale var(--motion-press) var(--dc-ease);
+}
+
+.dir-content-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--accent);
+  transform: translateX(-101%);
+  transition: transform var(--motion-move) var(--dc-ease);
+}
+
+.dir-content-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.dir-content-btn:active {
+  scale: 0.985;
+}
+
+.dir-content-btn:active::before,
+.dir-content-btn:focus-visible::before {
+  transform: translateX(0);
+}
+
+.dir-content-btn svg {
+  flex: none;
+  transition: transform var(--motion-move) var(--dc-ease);
+}
+
+.dir-content-btn:active svg,
+.dir-content-btn:focus-visible svg {
+  transform: translateX(4px);
+}
+
+@media (hover: hover) {
+  .dir-content-btn:hover::before {
+    transform: translateX(0);
+  }
+
+  .dir-content-btn:hover svg {
+    transform: translateX(4px);
+  }
+}
+
+/* Ссылка-подчёркивание: цель не ниже 44px, подчёркивание тянется за текстом */
+.dir-content-link {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--dc-ink-2);
+  text-decoration: underline;
+  text-decoration-color: rgb(255 255 255 / 0.3);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.45em;
+  transition:
+    color var(--motion-state) ease,
+    text-decoration-color var(--motion-state) ease;
+}
+
+.dir-content-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  color: #ffffff;
+}
+
+.dir-content-link svg {
+  transition: transform var(--motion-move) var(--dc-ease);
+}
+
+@media (hover: hover) {
+  .dir-content-link:hover {
+    color: #ffffff;
+    text-decoration-color: var(--accent);
+  }
+
+  .dir-content-link:hover svg {
+    transform: translateY(2px);
+  }
+}
+
+/*
+ * Появление декора при скролле. Без JS и до гидрации — конечное состояние;
+ * JS взводит data-armed только у блоков ниже экрана и снимает его вместе с
+ * data-in. Текст сюда не входит: он стоит на месте всегда.
+ */
+.dir-content-splice-line {
+  transform-origin: left;
+  transition: transform 900ms var(--dc-ease);
+}
+
+[data-armed='true']:not([data-in='true']) .dir-content-splice-line {
+  transform: scaleX(0);
+}
+
+/* ─────────────────────────── Первый экран ─────────────────────────── */
+
+@keyframes dir-content-rise {
+  from {
+    transform: translateY(var(--dc-shift, 14px));
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.dir-content-rise {
+  animation: dir-content-rise 760ms var(--dc-ease) both;
+  animation-delay: var(--dc-d, 0ms);
+}
+
+@keyframes dir-content-clip {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/*
+ * Кадр выходит снизу одним движением: мастер и нарезки стоят в общей обёртке,
+ * которая раскрывается clip-path. Заполнение только «backwards»: после входа
+ * обёртка ничего не обрезает, и нарезки свободно уходят за рамку кадра.
+ */
+.dir-content-reveal {
+  position: absolute;
+  inset: 0;
+  animation: dir-content-clip 900ms var(--dc-ease) 120ms backwards;
+}
+
+.dir-content-master {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #0d0d0d;
+}
+
+/* Свет проходит кадр один раз */
+@keyframes dir-content-light {
+  from {
+    transform: translateX(-130%) skewX(-16deg);
+  }
+  to {
+    transform: translateX(330%) skewX(-16deg);
+  }
+}
+
+.dir-content-light {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.14), transparent);
+  pointer-events: none;
+  animation: dir-content-light 1300ms var(--dc-ease) 420ms both;
+}
+
+.dir-content-stagebox {
+  width: 100%;
+  margin-left: auto;
+}
+
+@media (min-width: 64rem) {
+  /* Кадр не выше экрана: на низком ноутбуке он сужается, а не вылезает за сгиб */
+  .dir-content-stagebox {
+    max-width: min(100%, calc((100svh - 18rem) * 1.3333));
+  }
+}
+
+.dir-content-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  container-type: inline-size;
+}
+
+/* Остаток мастер-кадра после распада: тёмная копия под нарезками */
+@keyframes dir-content-dim {
+  from {
+    opacity: 0;
+  }
+}
+
+.dir-content-dim {
+  position: absolute;
+  inset: 0;
+  background: #000000;
+  opacity: 0.72;
+  animation: dir-content-dim 800ms ease-out 900ms backwards;
+}
+
+/* Рамка мастер-кадра и метки по углам остаются на месте: видно, откуда резали */
+.dir-content-rim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2);
+}
+
+.dir-content-rim i {
+  position: absolute;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 0 solid rgb(255 255 255 / 0.85);
+}
+
+.dir-content-rim i:nth-child(1) {
+  left: -1px;
+  top: -1px;
+  border-width: 1px 0 0 1px;
+}
+
+.dir-content-rim i:nth-child(2) {
+  right: -1px;
+  top: -1px;
+  border-width: 1px 1px 0 0;
+}
+
+.dir-content-rim i:nth-child(3) {
+  right: -1px;
+  bottom: -1px;
+  border-width: 0 1px 1px 0;
+}
+
+.dir-content-rim i:nth-child(4) {
+  left: -1px;
+  bottom: -1px;
+  border-width: 0 0 1px 1px;
+}
+
+/*
+ * Нарезка. left/top/width/height — её место в мастер-кадре, так что на старте
+ * кадры в сумме дают целый мастер. Потом нарезка уходит от центра на --dx/--dy
+ * (проценты ширины кадра); к этому добавляются дрейф от скролла (--dc-spread)
+ * и реакция на курсор (--dc-px/--dc-py). Всё — свойство translate.
+ */
+@keyframes dir-content-split {
+  from {
+    translate: 0 0;
+  }
+}
+
+.dir-content-cut {
+  position: absolute;
+  translate: calc(
+      (var(--dx) * (1 + var(--dc-spread, 0) * 1.4) + var(--dc-px, 0) * var(--dc-depth, 1)) * 1cqw
+    )
+    calc(
+      (var(--dy) * (1 + var(--dc-spread, 0) * 1.4) + var(--dc-py, 0) * var(--dc-depth, 1)) * 1cqw
+    );
+  animation: dir-content-split 820ms var(--dc-ease) backwards;
+  animation-delay: calc(980ms + var(--i, 0) * 90ms);
+  transition: scale var(--motion-move) var(--dc-ease);
+}
+
+.dir-content-cut-view {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #0d0d0d;
+}
+
+@keyframes dir-content-appear {
+  from {
+    opacity: 0;
+  }
+}
+
+.dir-content-cut-frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.46);
+  transition: box-shadow var(--motion-state) ease;
+  animation: dir-content-appear 420ms ease-out backwards;
+  animation-delay: calc(980ms + var(--i, 0) * 90ms);
+}
+
+/* Метка в углу нарезки: пропорция и номер, чёрная подложка держит контраст на любом кадре */
+.dir-content-cut-tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  padding: 0.3rem 0.5rem;
+  background: rgb(0 0 0 / 0.84);
+  color: #ffffff;
+  pointer-events: none;
+  transition:
+    background-color var(--motion-state) ease,
+    color var(--motion-state) ease;
+  animation: dir-content-appear 420ms ease-out backwards;
+  animation-delay: calc(1100ms + var(--i, 0) * 90ms);
+}
+
+.dir-content-cut-tag b {
+  font-weight: 600;
+}
+
+.dir-content-cut-tag i {
+  font-style: normal;
+  color: rgb(255 255 255 / 0.62);
+  transition: color var(--motion-state) ease;
+}
+
+.dir-content-cut[data-picked='true'] .dir-content-cut-frame {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.dir-content-cut[data-picked='true'] .dir-content-cut-tag {
+  background: var(--accent);
+  color: #000000;
+}
+
+.dir-content-cut[data-picked='true'] .dir-content-cut-tag i {
+  color: rgb(0 0 0 / 0.72);
+}
+
+/* Кнопка лежит поверх всей нарезки: цель касания — сам кадр */
+.dir-content-cut-hit {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dir-content-cut-hit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.dir-content-cut:has(.dir-content-cut-hit:active) {
+  scale: 0.985;
+}
+
+@media (hover: hover) {
+  .dir-content-cut:hover {
+    scale: 1.012;
+  }
+
+  .dir-content-cut:hover .dir-content-cut-frame {
+    box-shadow: inset 0 0 0 2px var(--accent);
+  }
+}
+
+/* Кадр на долю секунды вспыхивает красным, когда его касается линия развёртки */
+@keyframes dir-content-tick {
+  0% {
+    opacity: 1;
+  }
+  5% {
+    opacity: 1;
+  }
+  13%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.dir-content-cut-tick {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: inset 0 0 0 2px var(--accent);
+  animation: dir-content-tick 9s linear infinite;
+  animation-delay: calc(2000ms + var(--t, 0s));
+}
+
+/* Линия развёртки: проходит кадр слева направо за девять секунд и начинает заново */
+@keyframes dir-content-sweep {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  4% {
+    opacity: 1;
+  }
+  96% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+}
+
+.dir-content-sweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: dir-content-sweep 9s linear infinite;
+  animation-delay: 2000ms;
+}
+
+.dir-content-sweep::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: -0.6rem;
+  bottom: -0.6rem;
+  width: 1px;
+  background: var(--accent);
+}
+
+.dir-content-sweep::after {
+  content: '';
+  position: absolute;
+  right: -3px;
+  top: -0.6rem;
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+}
+
+/* Вне экрана всё, что крутится по кругу, стоит */
+.dir-content-stage[data-live='false'] .dir-content-sweep,
+.dir-content-stage[data-live='false'] .dir-content-cut-tick {
+  animation-play-state: paused;
+}
+
+/* Строка под кадром: что за нарезка выбрана. Высота фиксирована, текст не прыгает */
+.dir-content-readout {
+  display: grid;
+  min-height: 3.75rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 1rem;
+  border-top: 1px solid var(--dc-line-2);
+  padding-top: 0.875rem;
+}
+
+@keyframes dir-content-swap {
+  from {
+    transform: translateY(8px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.dir-content-swap {
+  animation: dir-content-swap var(--motion-move) var(--dc-ease) both;
+}
+
+/* ─────────────────────────── Монтажная линейка ─────────────────────────── */
+
+.dir-content-mon-wrap {
+  position: relative;
+  min-height: 0;
+  flex: 1 1 0;
+  container-type: size;
+  display: grid;
+  place-items: start center;
+}
+
+@media (min-width: 64rem) {
+  .dir-content-mon-wrap {
+    place-items: start start;
+  }
+}
+
+.dir-content-mon {
+  position: relative;
+  width: min(100cqw, calc(100cqh * 1.3333));
+  aspect-ratio: 4 / 3;
+  background: #050505;
+  box-shadow: 0 0 0 1px var(--dc-line-2);
+}
+
+.dir-content-mon-dim {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.8);
+}
+
+.dir-content-mon-lit {
+  position: absolute;
+  inset: 0;
+  transition: clip-path var(--motion-move) var(--dc-ease);
+}
+
+/* Рамка текущей выдачи: единственный небольшой слой, которому можно менять геометрию */
+.dir-content-mon-box {
+  position: absolute;
+  contain: layout;
+  box-shadow: inset 0 0 0 2px var(--accent);
+  transition:
+    left var(--motion-move) var(--dc-ease),
+    top var(--motion-move) var(--dc-ease),
+    width var(--motion-move) var(--dc-ease),
+    height var(--motion-move) var(--dc-ease);
+}
+
+.dir-content-mon-tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 0.3rem 0.5rem;
+  background: var(--accent);
+  color: #000000;
+  font-weight: 600;
+}
+
+.dir-content-tl {
+  --dc-lw: 2.5rem;
+  position: relative;
+  background: #060606;
+  box-shadow: 0 0 0 1px var(--dc-line-2);
+}
+
+@media (min-width: 48rem) {
+  .dir-content-tl {
+    --dc-lw: 7.5rem;
+  }
+}
+
+.dir-content-tl-row {
+  display: grid;
+  grid-template-columns: var(--dc-lw) minmax(0, 1fr);
+  border-top: 1px solid var(--dc-line);
+}
+
+.dir-content-tl-row:first-child {
+  border-top: 0;
+}
+
+.dir-content-tl-label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 0.5rem;
+  border-right: 1px solid var(--dc-line-2);
+  color: var(--dc-ink-2);
+}
+
+.dir-content-tl-label b {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.dir-content-tl-label i {
+  display: none;
+  font-style: normal;
+  color: var(--dc-ink-3);
+}
+
+@media (min-width: 48rem) {
+  .dir-content-tl-label {
+    padding: 0 0.875rem;
+  }
+
+  .dir-content-tl-label i {
+    display: block;
+  }
+}
+
+.dir-content-tl-weeks,
+.dir-content-tl-lane {
+  display: grid;
+  grid-template-columns: repeat(var(--dc-week), minmax(0, 1fr));
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--dc-line) 0,
+    var(--dc-line) 1px,
+    transparent 1px,
+    transparent calc(100% / var(--dc-week))
+  );
+}
+
+.dir-content-tl-weeks span {
+  display: grid;
+  height: 1.75rem;
+  place-items: center;
+  color: rgb(255 255 255 / 0.5);
+  transition: color var(--motion-state) ease;
+}
+
+.dir-content-tl-weeks span[data-state='past'] {
+  color: rgb(255 255 255 / 0.78);
+}
+
+.dir-content-tl-weeks span[data-state='now'] {
+  color: var(--accent);
+}
+
+/* На телефоне блок выдачи — 44 px по высоте: это кнопка */
+.dir-content-tl-lane {
+  align-items: stretch;
+  height: 3.25rem;
+  padding: 0.25rem 0;
+}
+
+@media (min-width: 48rem) {
+  .dir-content-tl-lane {
+    height: 3.5rem;
+    padding: 0.3125rem 0;
+  }
+}
+
+.dir-content-tl-lane[data-track='A1'] {
+  height: 1.75rem;
+  padding: 0.25rem 0;
+}
+
+@media (min-width: 48rem) {
+  .dir-content-tl-lane[data-track='A1'] {
+    height: 2rem;
+  }
+}
+
+/* Блок выдачи на дорожке: кнопка, по нажатию линейка переходит к выдаче */
+.dir-content-clip {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.4rem;
+  overflow: hidden;
+  margin: 0 1px;
+  padding: 0 0.35rem 0 0.6rem;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  background: rgb(255 255 255 / 0.05);
+  color: var(--dc-ink-2);
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--motion-state) ease,
+    border-color var(--motion-state) ease,
+    color var(--motion-state) ease;
+}
+
+/* Ручка начала блока, как у клипа в монтажной программе */
+.dir-content-clip::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: rgb(255 255 255 / 0.4);
+  transition: background-color var(--motion-state) ease;
+}
+
+.dir-content-clip-name {
+  display: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 40rem) {
+  .dir-content-clip-name {
+    display: block;
+  }
+
+  .dir-content-clip {
+    padding-left: 0.75rem;
+    gap: 0.55rem;
+  }
+}
+
+.dir-content-clip[data-state='past'] {
+  border-color: rgb(255 255 255 / 0.36);
+  background: rgb(255 255 255 / 0.1);
+  color: rgb(255 255 255 / 0.82);
+}
+
+.dir-content-clip[data-state='now'] {
+  border-color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 22%, #060606);
+  color: #ffffff;
+}
+
+.dir-content-clip[data-state='now']::before {
+  background: var(--accent);
+}
+
+.dir-content-clip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  z-index: 2;
+}
+
+.dir-content-clip:active {
+  border-color: #ffffff;
+}
+
+@media (hover: hover) {
+  .dir-content-clip:hover {
+    border-color: #ffffff;
+    color: #ffffff;
+  }
+}
+
+/* Звуковая дорожка: волна под основными роликами, декор */
+.dir-content-aclip {
+  margin: 0 1px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  background: rgb(255 255 255 / 0.03);
+  color: rgb(255 255 255 / 0.34);
+  transition:
+    color var(--motion-state) ease,
+    border-color var(--motion-state) ease;
+}
+
+.dir-content-aclip[data-state='now'] {
+  border-color: color-mix(in oklab, var(--accent) 60%, transparent);
+  color: var(--accent);
+}
+
+.dir-content-aclip svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Линия воспроизведения: положение задаёт transform, ширина рельса — ширина дорожек */
+.dir-content-ph-rail {
+  position: absolute;
+  inset: 0 0 0 var(--dc-lw);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.dir-content-ph {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+.dir-content-ph::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 1px;
+  margin-left: -0.5px;
+  background: var(--accent);
+}
+
+.dir-content-ph-flag {
+  position: absolute;
+  left: 0;
+  top: 0.25rem;
+  transform: translateX(-50%);
+  padding: 0.15rem 0.35rem;
+  background: var(--accent);
+  color: #000000;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Подсказка «листайте»: гаснет, когда линейка поехала */
+.dir-content-hint i {
+  display: inline-block;
+  width: 1px;
+  height: 0.875rem;
+  margin-right: 0.6rem;
+  vertical-align: -0.15rem;
+  background: var(--accent);
+  animation: dir-content-hint 1800ms var(--dc-ease) infinite;
+  transform-origin: top;
+}
+
+@keyframes dir-content-hint {
+  0% {
+    transform: scaleY(0);
+  }
+  55% {
+    transform: scaleY(1);
+  }
+  100% {
+    transform: scaleY(1) translateY(0.875rem);
+  }
+}
+
+.dir-content-hint[data-live='false'] i {
+  animation-play-state: paused;
+}
+
+/* ─────────────────────────── Состав выдачи ─────────────────────────── */
+
+.dir-content-grid {
+  display: grid;
+  gap: 1px;
+  background: var(--dc-line);
+  box-shadow: 0 0 0 1px var(--dc-line);
+}
+
+.dir-content-card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.125rem 1.25rem;
+  background: #050505;
+}
+
+/* Красная линия сверху прорисовывается слева направо при наведении и фокусе внутри */
+.dir-content-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--motion-move) var(--dc-ease);
+}
+
+.dir-content-card-slot {
+  position: relative;
+  container-type: size;
+  display: grid;
+  aspect-ratio: 4 / 3;
+  place-items: center;
+  margin: 0.875rem 0 1rem;
+  background-color: rgb(255 255 255 / 0.025);
+  background-image:
+    linear-gradient(90deg, rgb(255 255 255 / 0.05) 1px, transparent 1px),
+    linear-gradient(rgb(255 255 255 / 0.05) 1px, transparent 1px);
+  background-size: 1.5rem 1.5rem;
+  background-position: center;
+  box-shadow: inset 0 0 0 1px var(--dc-line);
+}
+
+.dir-content-card-frame {
+  position: relative;
+  width: min(94cqw, calc(88cqh * var(--ar)));
+  aspect-ratio: var(--ar);
+  overflow: hidden;
+  background: #0d0d0d;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.34);
+  transition: box-shadow var(--motion-state) ease;
+}
+
+.dir-content-card-zoom {
+  position: absolute;
+  inset: 0;
+  transition: scale var(--motion-cut) var(--dc-ease);
+}
+
+.dir-content-card-idx {
+  color: var(--dc-ink-3);
+  transition: color var(--motion-state) ease;
+}
+
+.dir-content-card:focus-within::before {
+  transform: scaleX(1);
+}
+
+.dir-content-card:focus-within .dir-content-card-idx {
+  color: var(--accent);
+}
+
+@media (hover: hover) {
+  .dir-content-card:hover::before {
+    transform: scaleX(1);
+  }
+
+  .dir-content-card:hover .dir-content-card-idx {
+    color: var(--accent);
+  }
+
+  .dir-content-card:hover .dir-content-card-frame {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+
+  .dir-content-card:hover .dir-content-card-zoom {
+    scale: 1.06;
+  }
+}
+
+/* Телефон: карточки идут лентой, которую листают пальцем; следующая всегда выглядывает */
+@media (max-width: 39.99rem) {
+  .dir-content-grid {
+    display: flex;
+    overflow-x: auto;
+    gap: 0.75rem;
+    margin-inline: -1.5rem;
+    padding-inline: 1.5rem;
+    background: none;
+    box-shadow: none;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 1.5rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+
+  .dir-content-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dir-content-grid:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  .dir-content-card {
+    flex: 0 0 78%;
+    scroll-snap-align: start;
+    box-shadow: 0 0 0 1px var(--dc-line);
+  }
+}
+
+/* Планшет: две колонки, крупные выдачи на всю ширину */
+@media (min-width: 40rem) and (max-width: 63.99rem) {
+  .dir-content-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dir-content-card[data-k='a'],
+  .dir-content-card[data-k='f'],
+  .dir-content-card[data-k='g'],
+  .dir-content-card[data-k='h'] {
+    grid-column: 1 / -1;
+  }
+
+  .dir-content-card[data-k='a'] .dir-content-card-slot,
+  .dir-content-card[data-k='f'] .dir-content-card-slot,
+  .dir-content-card[data-k='g'] .dir-content-card-slot,
+  .dir-content-card[data-k='h'] .dir-content-card-slot {
+    aspect-ratio: 21 / 9;
+  }
+}
+
+/* Рабочий стол: мозаика 4 × 4, а не стена одинаковых плиток */
+@media (min-width: 64rem) {
+  .dir-content-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: minmax(22rem, auto);
+  }
+
+  .dir-content-card-slot {
+    flex: 1 1 0;
+    min-height: 0;
+    aspect-ratio: auto;
+  }
+
+  .dir-content-card[data-k='a'] {
+    grid-column: 1 / span 2;
+    grid-row: 1 / span 2;
+  }
+
+  .dir-content-card[data-k='b'] {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+
+  .dir-content-card[data-k='c'] {
+    grid-column: 4;
+    grid-row: 1 / span 2;
+  }
+
+  .dir-content-card[data-k='d'] {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .dir-content-card[data-k='e'] {
+    grid-column: 2;
+    grid-row: 3;
+  }
+
+  .dir-content-card[data-k='f'] {
+    grid-column: 3 / span 2;
+    grid-row: 3;
+  }
+
+  .dir-content-card[data-k='g'] {
+    grid-column: 1 / span 3;
+    grid-row: 4;
+  }
+
+  .dir-content-card[data-k='h'] {
+    grid-column: 4;
+    grid-row: 4;
+  }
+}
+
+/* ─────────────────────────── Кому подходит: схемы ─────────────────────────── */
+
+.dir-content-dg {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background-color: rgb(255 255 255 / 0.02);
+  background-image:
+    linear-gradient(90deg, rgb(255 255 255 / 0.045) 1px, transparent 1px),
+    linear-gradient(rgb(255 255 255 / 0.045) 1px, transparent 1px);
+  background-size: 1.5rem 1.5rem;
+  box-shadow: inset 0 0 0 1px var(--dc-line);
+}
+
+.dir-content-dg-cap {
+  position: absolute;
+  color: var(--dc-ink-3);
+}
+
+/* Каталог: двенадцать позиций под одной скобкой «одна съёмка» */
+.dir-content-dg-tiles {
+  position: absolute;
+  inset: 34% 9% 16%;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.dir-content-dg-tiles span {
+  border: 1px solid rgb(255 255 255 / 0.3);
+  background: rgb(255 255 255 / 0.06);
+  transition:
+    background-color 600ms var(--dc-ease) calc(var(--i, 0) * 55ms),
+    border-color 600ms var(--dc-ease) calc(var(--i, 0) * 55ms);
+}
+
+[data-armed='true']:not([data-in='true']) .dir-content-dg-tiles span {
+  border-color: rgb(255 255 255 / 0.14);
+  background: transparent;
+}
+
+.dir-content-dg-tiles span[data-hot='true'] {
+  border-color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 34%, transparent);
+}
+
+[data-armed='true']:not([data-in='true']) .dir-content-dg-tiles span[data-hot='true'] {
+  border-color: rgb(255 255 255 / 0.14);
+  background: transparent;
+}
+
+.dir-content-dg-bracket {
+  position: absolute;
+  inset: 16% 9% auto;
+  height: 0.75rem;
+  border: 1px solid var(--accent);
+  border-bottom: 0;
+  transform-origin: left;
+  transition: transform 900ms var(--dc-ease);
+}
+
+[data-armed='true']:not([data-in='true']) .dir-content-dg-bracket {
+  transform: scaleX(0);
+}
+
+/* Розница: один источник, четыре площадки разной формы */
+.dir-content-dg-src {
+  position: absolute;
+  left: 7%;
+  top: 34%;
+  width: 24%;
+  height: 32%;
+  border: 1px solid #ffffff;
+  background: rgb(255 255 255 / 0.12);
+}
+
+.dir-content-dg-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.dir-content-dg-lines path {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.55);
+  stroke-width: 0.35;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 900ms var(--dc-ease) calc(var(--i, 0) * 110ms);
+}
+
+[data-armed='true']:not([data-in='true']) .dir-content-dg-lines path {
+  stroke-dashoffset: 1;
+}
+
+.dir-content-dg-out {
+  position: absolute;
+  border: 1px solid rgb(255 255 255 / 0.55);
+  background: rgb(255 255 255 / 0.08);
+  transition:
+    background-color 500ms var(--dc-ease) calc(400ms + var(--i, 0) * 110ms),
+    border-color 500ms var(--dc-ease) calc(400ms + var(--i, 0) * 110ms);
+}
+
+[data-armed='true']:not([data-in='true']) .dir-content-dg-out {
+  border-color: rgb(255 255 255 / 0.14);
+  background: transparent;
+}
+
+/* Контент-план: ритм выдач по неделям квартала под одной съёмкой */
+.dir-content-dg-weeks {
+  position: absolute;
+  inset: 22% 7% 24% 7%;
+  display: grid;
+  grid-template-columns: repeat(var(--dc-week), minmax(0, 1fr));
+  align-items: end;
+  border-bottom: 1px solid var(--dc-line-2);
+}
+
+.dir-content-dg-weeks span {
+  display: block;
+  margin: 0 18%;
+  background: rgb(255 255 255 / 0.78);
+  transform-origin: bottom;
+  transition: transform 700ms var(--dc-ease) calc(var(--i, 0) * 90ms);
+}
+
+[data-armed='true']:not([data-in='true']) .dir-content-dg-weeks span {
+  transform: scaleY(0);
+}
+
+.dir-content-dg-weeks span[data-shoot='true'] {
+  background: var(--accent);
+}
+
+.dir-content-dg-ticks {
+  position: absolute;
+  inset: auto 7% 16% 7%;
+  display: grid;
+  height: 0.4rem;
+  grid-template-columns: repeat(var(--dc-week), minmax(0, 1fr));
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--dc-line-2) 0,
+    var(--dc-line-2) 1px,
+    transparent 1px,
+    transparent calc(100% / var(--dc-week))
+  );
+}
+
+/* ─────────────────────────── Смысловые призывы ─────────────────────────── */
+
+.dir-content-render-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.7rem 0;
+}
+
+.dir-content-render-row i {
+  flex: 1 1 auto;
+  min-width: 1rem;
+  border-bottom: 1px dashed rgb(255 255 255 / 0.24);
+  transform: translateY(-0.25rem);
+}
+
+/* Полоса «рендера» под кнопкой: тянется по наведению и фокусу, красная */
+.dir-content-render-bar {
+  position: relative;
+  height: 2px;
+  margin-top: 0.75rem;
+  background: var(--dc-line-2);
+  overflow: hidden;
+}
+
+.dir-content-render-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--motion-cut) var(--dc-ease);
+}
+
+.dir-content-render:has(.dir-content-btn:active) .dir-content-render-bar::after,
+.dir-content-render:has(.dir-content-btn:focus-visible) .dir-content-render-bar::after {
+  transform: scaleX(1);
+}
+
+@media (hover: hover) {
+  .dir-content-render:has(.dir-content-btn:hover) .dir-content-render-bar::after {
+    transform: scaleX(1);
+  }
+}
+
+/* Лента этапов: красная линия доходит от первого этапа до последнего вместе с кнопкой */
+.dir-content-ribbon-rail {
+  position: relative;
+  height: 1px;
+  background: var(--dc-line-2);
+}
+
+.dir-content-ribbon-rail::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform: scaleX(0.04);
+  transform-origin: left;
+  transition: transform var(--motion-cut) var(--dc-ease);
+}
+
+.dir-content-ribbon:has(.dir-content-btn:active) .dir-content-ribbon-rail::after,
+.dir-content-ribbon:has(.dir-content-btn:focus-visible) .dir-content-ribbon-rail::after {
+  transform: scaleX(1);
+}
+
+@media (hover: hover) {
+  .dir-content-ribbon:has(.dir-content-btn:hover) .dir-content-ribbon-rail::after {
+    transform: scaleX(1);
+  }
+}
+
+.dir-content-ribbon-dot {
+  position: absolute;
+  top: 0;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin: -0.375rem 0 0 -0.375rem;
+  border: 1px solid rgb(255 255 255 / 0.55);
+  background: #0d0d0d;
+  transform: rotate(45deg);
+  transition:
+    background-color var(--motion-move) ease,
+    border-color var(--motion-move) ease;
+}
+
+.dir-content-ribbon-dot[data-first='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.dir-content-ribbon:has(.dir-content-btn:active) .dir-content-ribbon-dot,
+.dir-content-ribbon:has(.dir-content-btn:focus-visible) .dir-content-ribbon-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+@media (hover: hover) {
+  .dir-content-ribbon:has(.dir-content-btn:hover) .dir-content-ribbon-dot {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+}
+
+/* ─────────────────────────── Сниженное движение ─────────────────────────── */
+
+/*
+ * Вёрстка остаётся, снимается движение: нарезки стоят на местах после
+ * распада, линия развёртки и бегущие метки скрыты, декор в конечном
+ * состоянии. Обратная связь (цвет, рамка) остаётся.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .dir-content-rise,
+  .dir-content-reveal,
+  .dir-content-light,
+  .dir-content-dim,
+  .dir-content-swap,
+  .dir-content-hint i {
+    animation: none;
+  }
+
+  .dir-content-light,
+  .dir-content-sweep,
+  .dir-content-cut-tick,
+  .dir-content-hint i {
+    display: none;
+  }
+
+  .dir-content-cut {
+    animation: none;
+    translate: calc(var(--dx) * 1cqw) calc(var(--dy) * 1cqw);
+    transition: none;
+  }
+
+  .dir-content-cut-frame,
+  .dir-content-cut-tag {
+    animation: none;
+  }
+
+  .dir-content-cut:hover,
+  .dir-content-cut:has(.dir-content-cut-hit:active) {
+    scale: none;
+  }
+
+  .dir-content-mon-lit,
+  .dir-content-mon-box,
+  .dir-content-btn,
+  .dir-content-btn::before,
+  .dir-content-btn svg,
+  .dir-content-card::before,
+  .dir-content-card-zoom,
+  .dir-content-render-bar::after,
+  .dir-content-ribbon-rail::after {
+    transition: none;
+  }
+
+  .dir-content-btn:active,
+  .dir-content-card:hover .dir-content-card-zoom {
+    scale: none;
+  }
+
+  .dir-content-btn:hover svg,
+  .dir-content-btn:active svg,
+  .dir-content-link:hover svg {
+    transform: none;
+  }
+
+  [data-armed='true'] .dir-content-splice-line,
+  [data-armed='true'] .dir-content-dg-bracket,
+  [data-armed='true'] .dir-content-dg-weeks span,
+  [data-armed='true'] .dir-content-dg-lines path,
+  [data-armed='true'] .dir-content-dg-out,
+  [data-armed='true'] .dir-content-dg-tiles span {
+    transition: none;
+  }
+
+  [data-armed='true']:not([data-in='true']) .dir-content-splice-line,
+  [data-armed='true']:not([data-in='true']) .dir-content-dg-bracket {
+    transform: none;
+  }
+
+  [data-armed='true']:not([data-in='true']) .dir-content-dg-weeks span {
+    transform: none;
+  }
+
+  [data-armed='true']:not([data-in='true']) .dir-content-dg-lines path {
+    stroke-dashoffset: 0;
+  }
+
+  [data-armed='true']:not([data-in='true']) .dir-content-dg-out {
+    border-color: rgb(255 255 255 / 0.55);
+    background: rgb(255 255 255 / 0.08);
+  }
+
+  [data-armed='true']:not([data-in='true']) .dir-content-dg-tiles span {
+    border-color: rgb(255 255 255 / 0.3);
+    background: rgb(255 255 255 / 0.06);
+  }
+
+  [data-armed='true']:not([data-in='true']) .dir-content-dg-tiles span[data-hot='true'] {
+    border-color: var(--accent);
+    background: color-mix(in oklab, var(--accent) 34%, transparent);
+  }
+}
