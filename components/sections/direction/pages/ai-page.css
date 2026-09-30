@@ -958,6 +958,13 @@
   pointer-events: auto;
 }
 
+/* Подстрочники меток шов обрезает на любой высоте экрана уже в планшетной ширине */
+@media (max-width: 63.99rem) {
+  .dir-ai-box-tag > span {
+    display: none;
+  }
+}
+
 @media (max-width: 47.99rem) {
   .dir-ai-meta-long {
     display: none;
@@ -965,11 +972,6 @@
 
   .dir-ai-meta-short {
     display: inline;
-  }
-
-  /* Подстрочники меток не помещаются рядом друг с другом на любой высоте телефона */
-  .dir-ai-box-tag > span {
-    display: none;
   }
 
   .dir-ai-hero {
@@ -1181,11 +1183,11 @@
  * размах раскрытой стопки в ширину и высоту относительно ширины карточки.
  */
 .dir-ai-stage3d {
-  --dw: min(calc(100cqw / 1.3), calc(100cqh / 1.14), 54rem);
-  --gap: clamp(1.6rem, calc(var(--dw) * 0.15), 7rem);
+  /* Запасной размер для браузеров без единиц контейнера */
+  --dw: clamp(17rem, 37vw, 40rem);
+  --gap: clamp(2.4rem, 5.8vw, 6.25rem);
   /* Насколько активный слой подходит к соседнему: чем больше, тем уже открытая полоса с подписью */
   --lift-k: 0.55;
-  container-type: size;
   position: relative;
   display: flex;
   height: 100%;
@@ -1195,6 +1197,14 @@
   justify-content: center;
   perspective: 1500px;
   perspective-origin: 50% 30%;
+}
+
+@supports (width: 1cqw) {
+  .dir-ai-stage3d {
+    --dw: min(calc(100cqw / 1.3), calc(100cqh / 1.14), 54rem);
+    --gap: clamp(1.6rem, calc(var(--dw) * 0.15), 7rem);
+    container-type: size;
+  }
 }
 
 .dir-ai-deck {
@@ -1588,10 +1598,17 @@
   }
 
   .dir-ai-stage3d {
-    --dw: min(calc(100cqw / 1.26), calc(100cqh / 1.02), 34rem);
-    --gap: clamp(1.4rem, calc(var(--dw) * 0.14), 3.4rem);
+    --dw: min(76vw, 25rem);
+    --gap: clamp(1.4rem, 8vw, 2.6rem);
     --lift-k: 0.3;
     align-items: center;
+  }
+
+  @supports (width: 1cqw) {
+    .dir-ai-stage3d {
+      --dw: min(calc(100cqw / 1.26), calc(100cqh / 1.02), 34rem);
+      --gap: clamp(1.4rem, calc(var(--dw) * 0.14), 3.4rem);
+    }
   }
 
   .dir-ai-stage-hint,

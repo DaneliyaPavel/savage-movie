@@ -9,13 +9,16 @@
  *
  * Композиция (у каждой секции свой масштаб и плотность):
  *   1. Первый экран — сцена: кадры режутся по доле, сверху качается свет,
- *      снизу бьёт эквалайзер, заголовок крупнее всего остального на странице.
+ *      над линейкой бьёт эквалайзер (своя полоса, на текст не заходит),
+ *      заголовок крупнее всего остального на странице.
  *   2. Принцип — строка-лирика размером с экран, слова «поются» от скролла.
  *   3. Этапы — волна-скраббер по структуре трека (интро, куплет, припев,
  *      бридж, аутро): липкая полоса, метка идёт по волне вместе со скроллом,
- *      по волне можно тянуть и нажимать — это навигация по этапам.
+ *      по волне можно тянуть и нажимать — это навигация по этапам. У каждой
+ *      части своя композиция; бридж — белая «дорожка тишины» на всю ширину.
  *   4. Призыв после процесса — «плей-бар» во всю ширину.
- *   5. Кому нужен клип — три секвенсорных паттерна вместо списка.
+ *   5. Кому нужен клип — три секвенсорных паттерна: колонки на широком
+ *      экране, строки на узком.
  *   6. Работы, призыв после доказательства, вопросы — общий кит и свой CTA.
  *
  * Безопасность движения. Вспышек на весь экран нет: склейка — быстрая
@@ -521,6 +524,7 @@ function Hero({ frames }: { frames: SceneFrame[] }) {
   const eqRef = useRef<HTMLDivElement>(null)
   const copyRef = useRef<HTMLDivElement>(null)
   const framesRef = useRef<HTMLDivElement>(null)
+  const bumpRef = useRef<HTMLSpanElement>(null)
   const inView = useInView(rootRef)
   const [beat, setBeat] = useState(0)
   const [shift, setShift] = useState(0)
@@ -569,6 +573,17 @@ function Hero({ frames }: { frames: SceneFrame[] }) {
     if (beatRef.current % 2 === 0 && armedRef.current) cutNext()
   }, [cutNext])
   useBeatClock(bpm, inView && !reduced, onBeat)
+
+  // Удар на первую долю такта: слово чуть подпрыгивает и садится. Анимация
+  // запускается на том же узле, а не пересоздаёт его: новый текстовый узел на
+  // каждом такте считался бы новым кандидатом LCP
+  useEffect(() => {
+    if (reduced || beat === 0 || beat % 4 !== 0) return
+    bumpRef.current?.animate(
+      [{ transform: 'translateY(-0.022em) scale(1.014)' }, { transform: 'none' }],
+      { duration: (60000 / bpm) * 1.6, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
+    )
+  }, [beat, bpm, reduced])
 
   const fresh = scene.changes > 0
   // Свет меняет положение на каждой склейке, даже если кадров нет
@@ -668,7 +683,7 @@ function Hero({ frames }: { frames: SceneFrame[] }) {
               Музыкальный
             </span>{' '}
             <span className="dir-music-h1-b dir-music-in" style={vars({ '--in': 2 })}>
-              <span key={Math.floor(beat / 4)} className={beat > 0 ? 'dir-music-bump' : undefined}>
+              <span ref={bumpRef} className="dir-music-bump">
                 клип
               </span>
             </span>

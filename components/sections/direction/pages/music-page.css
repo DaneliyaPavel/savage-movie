@@ -569,20 +569,10 @@
   }
 }
 
-/* Удар на первую долю такта: слово чуть подпрыгивает и садится */
+/* Удар на первую долю такта (запускается из JS через Web Animations): слово садится на базовую линию */
 .dir-music-bump {
   display: inline-block;
   transform-origin: 50% 100%;
-  animation: dir-music-bump calc(var(--dm-beat) * 1.6) var(--dm-ease) both;
-}
-
-@keyframes dir-music-bump {
-  0% {
-    transform: translateY(-0.022em) scale(1.014);
-  }
-  100% {
-    transform: none;
-  }
 }
 
 /* Переключатель темпа: четыре числа, выбранное подчёркнуто красной чертой */
@@ -2337,7 +2327,6 @@
   .dir-music-in,
   .dir-music-eq,
   .dir-music-eq-bar,
-  .dir-music-bump,
   .dir-music-ruler-head,
   .dir-music-seq-head-col,
   .dir-music-head::after,

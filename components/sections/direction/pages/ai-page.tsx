@@ -89,13 +89,24 @@ const SHORT_WORD = /^[«("'—–]*[A-Za-zА-Яа-яЁё]{1,3},?$/
 const keepHyphen = (text: string) =>
   text.replace(/([A-Za-zА-Яа-яЁё])-(?=[A-Za-zА-Яа-яЁё])/g, '$1\u2060-\u2060')
 const CTA_LABEL = keepHyphen(AI_PAGE.ctaLabel)
+/** Вопросы идут на экран с набором, а в разметку поиска уходят из контента как есть */
+const FAQ_ITEMS = AI_PAGE.faq.map(item => ({
+  question: tidy(item.question),
+  answer: tidy(item.answer),
+}))
 
 function tidy(text: string): string {
   const words = text.split(' ')
+  const last = words.length - 1
   const tied = words
     .map((word, position) => {
-      if (position === words.length - 1) return word
-      return SHORT_WORD.test(word) ? `${word}${NBSP}` : `${word} `
+      if (position === last) return word
+      if (SHORT_WORD.test(word)) return `${word}${NBSP}`
+      // Вдова: последнее слово не остаётся в строке одно («…где пройдёт / шов.»)
+      if (position === last - 1 && words.length > 3 && word.length + words[last]!.length <= 16) {
+        return `${word}${NBSP}`
+      }
+      return `${word} `
     })
     .join('')
   return typo(tied)
@@ -811,7 +822,7 @@ function Hero({ frame }: { frame: SceneFrame | null }) {
               <span className="dir-ai-rider-head" />
             </span>
             <span className="dir-ai-ruler-read type-meta-sm font-mono uppercase tabular-nums">
-              Шов <span data-seam-pos="">{SEAM_REST}</span>
+              Шов <span data-seam-pos="">{String(SEAM_REST).padStart(3, '0')}</span>
             </span>
           </div>
         </div>
@@ -1773,12 +1784,12 @@ export function AiPage({ works }: AiPageProps) {
         <PlateCta cta={AI_PAGE.ctas.proof} where="proof" />
         <Process index={processIndex} />
         <ClipCta cta={AI_PAGE.ctas.process} where="process" />
-        <DirectionFaq index={faqIndex} title="Вопросы об AI-видео" items={AI_PAGE.faq} />
+        <DirectionFaq index={faqIndex} title="Вопросы об AI-видео" items={FAQ_ITEMS} />
         <OtherDirections current="ai" reading={DIRECTION_READING['ai']} />
         <DirectionEnd
           lines={AI_PAGE.end.lines}
           ctaLabel={CTA_LABEL}
-          note={AI_PAGE.end.note}
+          note={tidy(AI_PAGE.end.note)}
           frame={closing ? { src: closing.src, alt: closing.client } : null}
         />
       </div>
