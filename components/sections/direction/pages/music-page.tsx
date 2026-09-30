@@ -156,8 +156,8 @@ function useBeatClock(bpm: number, running: boolean, onBeat: (period: number) =>
   }, [bpm, running, onBeat])
 }
 
-function useInView(ref: RefObject<Element | null>, margin = '0px', initial = true) {
-  const [inView, setInView] = useState(initial)
+function useInView(ref: RefObject<Element | null>, margin = '0px') {
+  const [inView, setInView] = useState(true)
   useEffect(() => {
     const node = ref.current
     if (!node || typeof IntersectionObserver === 'undefined') return
