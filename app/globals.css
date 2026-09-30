@@ -1281,3 +1281,26 @@
 .dir-beat-line {
   animation: dir-beat-line 480ms linear both;
 }
+
+/*
+ * Бегущий титр финала страницы направления. Две одинаковые половины,
+ * сдвиг на 50% — шва не видно. Медленный: это фон, а не объявление.
+ */
+@keyframes dir-end-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.dir-end-marquee {
+  animation: dir-end-marquee 70s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dir-end-marquee {
+    animation: none;
+  }
+}

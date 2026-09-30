@@ -48,15 +48,25 @@ export function DirectionShell({ id, stickyLabel, children, className }: Directi
     trackMetrikaGoal('service_direction_view', { service: id })
   }, [id])
 
-  // Sticky-CTA не нужен, когда форма уже на экране: снизу он закрывал бы поля
+  // Sticky-CTA не нужен, когда на экране форма или финальный CTA страницы:
+  // он закрывал бы поля и дублировал бы главную кнопку
   useEffect(() => {
-    const form = document.getElementById('estimate')
-    if (!form || typeof IntersectionObserver === 'undefined') return
+    const targets = ['estimate', 'direction-end']
+      .map(nodeId => document.getElementById(nodeId))
+      .filter((node): node is HTMLElement => node !== null)
+    if (targets.length === 0 || typeof IntersectionObserver === 'undefined') return
+    const visible = new Set<Element>()
     const observer = new IntersectionObserver(
-      entries => setIsFormInView(entries.some(entry => entry.isIntersecting)),
+      entries => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) visible.add(entry.target)
+          else visible.delete(entry.target)
+        }
+        setIsFormInView(visible.size > 0)
+      },
       { rootMargin: '-10% 0px -10% 0px' }
     )
-    observer.observe(form)
+    targets.forEach(node => observer.observe(node))
     return () => observer.disconnect()
   }, [])
 
