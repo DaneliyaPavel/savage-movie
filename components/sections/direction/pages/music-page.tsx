@@ -92,6 +92,9 @@ const LETTER = 'A-Za-zА-Яа-яЁё'
 const SHORT_WORD = new RegExp(`([${LETTER}]{1,3})(\\s+)(?=\\S)`, 'g')
 const NUMBER_UNIT = new RegExp(`(\\d)\\s+(?=[${LETTER}%])`, 'g')
 const WORD_EDGE = /[\s«("'—–]/
+// Местоимения не склеиваем со следующим словом: в цепочке «нужен ли у нас
+// готовый» привязка и к «нас» сделала бы из четырёх слов один неразрывный кусок
+const PRONOUN = /^(мы|вы|он|она|оно|они|нас|вас|нам|вам|его|её|их|ей|ему|им|ним|ней|них)$/i
 
 /**
  * Набор как в общем ките, но с цепочками: общий typo() съедает пробел перед
@@ -107,10 +110,19 @@ function typo(text: string, maxNext = 40): string {
     .replace(SHORT_WORD, (match, word: string, _gap: string, offset: number, whole: string) => {
       const before = offset === 0 ? '' : (whole[offset - 1] ?? '')
       if (before && !WORD_EDGE.test(before)) return match
+      if (PRONOUN.test(word)) return match
       const next = /^\S+/.exec(whole.slice(offset + match.length))?.[0] ?? ''
       return next.length > maxNext ? match : `${word}${NBSP}`
     })
     .replace(NUMBER_UNIT, `$1${NBSP}`)
+}
+
+/** Абзац: типографика плюс последние два слова вместе, чтобы не оставалась строка из одного слова */
+function prose(text: string): string {
+  const set = typo(text)
+  const cut = set.lastIndexOf(' ')
+  if (cut <= 0 || set.length - cut > 14) return set
+  return `${set.slice(0, cut)}${NBSP}${set.slice(cut + 1)}`
 }
 
 function subscribeLoad(onChange: () => void) {
@@ -739,7 +751,7 @@ function Manifesto() {
       </p>
 
       <div className="dir-music-lyric-foot" data-reveal="">
-        <p className="dir-music-lyric-note">{typo(MUSIC_PAGE.lyricNote)}</p>
+        <p className="dir-music-lyric-note">{prose(MUSIC_PAGE.lyricNote)}</p>
         <p className="dir-music-lyric-source type-meta font-mono uppercase">
           <span aria-hidden="true" className="h-px w-6 bg-white/40" />
           {typo(MUSIC_PAGE.lyricSource)}
@@ -906,7 +918,7 @@ function Tracks({ frames }: { frames: SceneFrame[] }) {
             {typo('Клип собирается как трек')}
           </h2>
           <p className="dir-music-lede" data-reveal="">
-            {typo('Каждому этапу — своя часть композиции. Листайте или тяните метку по волне.')}
+            {prose('Каждому этапу — своя часть композиции. Листайте или тяните метку по волне.')}
           </p>
         </div>
       </header>
@@ -1026,7 +1038,7 @@ function Tracks({ frames }: { frames: SceneFrame[] }) {
                   {stage.partLabel}
                 </span>
                 <h3 className="dir-music-row-title">{typo(stage.title)}</h3>
-                <p className="dir-music-row-text">{typo(stage.text)}</p>
+                <p className="dir-music-row-text">{prose(stage.text)}</p>
                 <ul className="dir-music-tags" role="list">
                   {stage.tags.map((tag, position) => (
                     <li
@@ -1194,7 +1206,7 @@ function Sequencer() {
             </span>
             <div className="dir-music-seq-copy">
               <h3 className="dir-music-seq-title">{typo(item.title)}</h3>
-              <p className="dir-music-seq-text">{typo(item.text)}</p>
+              <p className="dir-music-seq-text">{prose(item.text)}</p>
             </div>
             <div aria-hidden="true" className="dir-music-seq-grid">
               {(PATTERNS[index % PATTERNS.length] ?? PATTERNS[0]).map((lane, laneIndex) => (
@@ -1253,7 +1265,7 @@ function CueCta() {
           <span className="dir-music-cta-label">{MUSIC_PAGE.cue.ctaLabel}</span>
           <ArrowRight aria-hidden="true" className="dir-music-cta-arrow" />
         </button>
-        <p className="dir-music-cue-note">{typo(MUSIC_PAGE.cue.note)}</p>
+        <p className="dir-music-cue-note">{prose(MUSIC_PAGE.cue.note)}</p>
       </div>
     </section>
   )
@@ -1265,7 +1277,7 @@ function CueCta() {
 // нужны только набору на странице
 const FAQ_ITEMS = MUSIC_PAGE.faq.map(item => ({
   question: typo(item.question),
-  answer: typo(item.answer),
+  answer: prose(item.answer),
 }))
 
 export function MusicPage({ works }: MusicPageProps) {
@@ -1303,7 +1315,7 @@ export function MusicPage({ works }: MusicPageProps) {
           <DirectionEnd
             lines={MUSIC_PAGE.end.lines}
             ctaLabel={MUSIC_PAGE.end.ctaLabel}
-            note={typo(MUSIC_PAGE.end.note)}
+            note={prose(MUSIC_PAGE.end.note)}
             frame={closing ? { src: closing.src, alt: closing.client } : null}
           />
         </div>

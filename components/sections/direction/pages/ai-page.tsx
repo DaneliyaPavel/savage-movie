@@ -719,9 +719,13 @@ function useSeam(heroRef: RefObject<HTMLElement | null>, handleRef: RefObject<HT
 
     // Ждём конца CSS-входа и продолжаем с того же места: шов не прыгает
     if (!reduced) {
-      const entrance = hero
-        .getAnimations()
-        .filter(animation => (animation as CSSAnimation).animationName === 'dir-ai-seam-in')
+      // Без Web Animations (старый браузер, тестовая среда) входа не ждём: шов сразу ведёт скрипт
+      const entrance =
+        typeof hero.getAnimations === 'function'
+          ? hero
+              .getAnimations()
+              .filter(animation => (animation as CSSAnimation).animationName === 'dir-ai-seam-in')
+          : []
       const begin = () => {
         if (disposed || mode !== 'intro') return
         release()
