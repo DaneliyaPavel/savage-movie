@@ -8,8 +8,12 @@
  * Движение — transform, clip-path и opacity декора. Длительности и кривая из
  * шкалы раздела (--motion-*, --ease-out-expo). Наведение только там, где оно
  * есть (hover: hover): на телефоне то же состояние даёт нажатие или положение
- * на экране. Всё бесконечное стоит, пока первый экран вне кадра, и снимается
- * при prefers-reduced-motion в конце файла.
+ * на экране. Всё бесконечное стоит, пока блок вне кадра, и снимается при
+ * prefers-reduced-motion в конце файла.
+ *
+ * Кнопки — DirectionButton кита, светлая секция — .dir-paper-section и токены
+ * --dir-paper*: своих диалектов кнопки и бумаги у страницы нет. Все правила
+ * начинаются с .dir-ai-* и не задевают общие блоки кита.
  */
 
 /*
@@ -32,14 +36,15 @@
 .dir-ai {
   --ai-pad: 1.5rem;
   --ai-line: rgb(255 255 255 / 0.14);
-  --ai-ink: #a9a9a9;
+  /* Серая половина заголовка и «плёнка»: светлее прежнего #a9a9a9, чтобы слово не тускнело */
+  --ai-ink: #cfcfcf;
   --ai-mute: rgb(255 255 255 / 0.72);
   background: #000;
   color: #fff;
 }
 
 /*
- * Микротекст не мельче 11 px: глобальные .type-meta-sm на телефоне дают 8,6 px, и
+ * Микротекст не мельче 10 px: глобальные .type-meta-sm на телефоне дают 8,6 px, и
  * подписи кадра, которые объясняют сцену, читаются с трудом.
  */
 .dir-ai .type-meta,
@@ -78,10 +83,12 @@
 .dir-ai-h2 {
   font-family: var(--font-stage);
   font-weight: 900;
-  line-height: 0.93;
+  line-height: 1;
   letter-spacing: -0.03em;
   text-transform: uppercase;
   text-wrap: balance;
+  /* Страховка для 320–360px: склеенная typo() связка («и лицо в крупном») не раздвигает колонку */
+  overflow-wrap: anywhere;
   color: #fff;
 }
 
@@ -89,12 +96,12 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: var(--ai-mute);
 }
 
 .dir-ai-kicker-rule {
   width: 2rem;
   height: 1px;
+  flex-shrink: 0;
   background: var(--accent);
 }
 
@@ -109,99 +116,6 @@
   }
   to {
     transform: none;
-  }
-}
-
-.dir-ai-btn {
-  position: relative;
-  display: inline-flex;
-  min-height: 3.5rem;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  padding: 0 0.875rem 0 1.5rem;
-  border: 0;
-  border-radius: 2px;
-  background: #fff;
-  color: #000;
-  overflow: hidden;
-  isolation: isolate;
-  cursor: pointer;
-  font-family: var(--font-stage);
-  font-size: 0.9375rem;
-  line-height: 1.1;
-  letter-spacing: -0.005em;
-  text-align: left;
-  text-transform: uppercase;
-  -webkit-tap-highlight-color: transparent;
-  transition:
-    color var(--motion-state) ease,
-    transform var(--motion-press) var(--ease-out-expo);
-}
-
-/* Красная шторка — тот же шов: идёт слева направо; чёрный текст на красном даёт 5,4:1 */
-.dir-ai-btn::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--accent);
-  transform: translate3d(-101%, 0, 0);
-  transition: transform var(--motion-move) var(--ease-out-expo);
-}
-
-.dir-ai-btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-}
-
-.dir-ai-btn:focus-visible::before,
-.dir-ai-btn:active::before {
-  transform: none;
-}
-
-.dir-ai-btn:active {
-  transform: scale(0.985);
-  color: #000;
-}
-
-.dir-ai-btn-ring {
-  display: grid;
-  width: 2.25rem;
-  height: 2.25rem;
-  flex-shrink: 0;
-  place-items: center;
-  border: 1px solid currentColor;
-  border-radius: 9999px;
-  transition: transform var(--motion-move) var(--ease-out-expo);
-}
-
-.dir-ai-btn:focus-visible .dir-ai-btn-ring,
-.dir-ai-btn:active .dir-ai-btn-ring {
-  transform: rotate(-45deg);
-}
-
-.dir-ai-btn-ink {
-  background: #000;
-  color: #fff;
-}
-
-.dir-ai-btn-ink:focus-visible,
-.dir-ai-btn-ink:active {
-  color: #000;
-}
-
-@media (hover: hover) {
-  .dir-ai-btn:hover::before {
-    transform: none;
-  }
-
-  .dir-ai-btn:hover .dir-ai-btn-ring {
-    transform: rotate(-45deg);
-  }
-
-  .dir-ai-btn-ink:hover {
-    color: #000;
   }
 }
 
@@ -273,7 +187,8 @@
   min-height: 100svh;
   flex-direction: column;
   overflow: hidden;
-  padding-bottom: 1.75rem;
+  /* Кнопка стоит не у самой кромки: ~76px снизу, чтобы первый экран дышал */
+  padding-bottom: 4.75rem;
   background: #000;
   /* Ширина первого экрана нужна ручке и подписям шва в cqw, чтобы не выходить за край */
   container-type: inline-size;
@@ -461,10 +376,7 @@
   width: 14px;
   height: 14px;
   color: rgb(255 255 255 / 0.95);
-  line-height: 14px;
-  text-indent: 20px;
-  text-shadow: 0 0 6px rgb(0 0 0 / 0.9);
-  white-space: nowrap;
+  filter: drop-shadow(0 0 4px rgb(0 0 0 / 0.9));
   transform: translate(-50%, -50%);
 }
 
@@ -489,34 +401,50 @@
   height: 1px;
 }
 
+/*
+ * Зона рамок: во всю ширину экрана (поля съедены отрицательным margin), чтобы срез
+ * швом совпадал с процентом шва, и по высоте — от строки меток до заголовка. Проценты
+ * рамок считаются от зоны, а не от кадра, поэтому на низком окне они сжимаются вместе
+ * с ней. Верхний вылет среза -3rem оставляет место подписи над рамкой.
+ */
+.dir-ai-boxzone {
+  position: relative;
+  z-index: 5;
+  flex: 1 1 0;
+  min-height: 6.5rem;
+  margin: 0 calc(var(--ai-pad) * -1) 1.25rem;
+  clip-path: inset(-3rem calc(100% - var(--dir-ai-seam) * 1%) 0 0);
+  pointer-events: none;
+}
+
 /* Положение рамок задано здесь, а не в разметке: на телефоне они встают столбиком у левого края */
 .dir-ai-box-keep {
   --x: 7%;
-  --y: 26%;
+  --y: 32%;
   --w: 25%;
-  --h: 27%;
+  --h: 60%;
 }
 
 .dir-ai-box-gen {
   --x: 35%;
-  --y: 30%;
+  --y: 38%;
   --w: 25%;
-  --h: 16%;
+  --h: 40%;
 }
 
 @media (max-width: 47.99rem) {
   .dir-ai-box-keep {
     --x: 6%;
-    --y: 22%;
+    --y: 26%;
     --w: 26%;
-    --h: 14%;
+    --h: 32%;
   }
 
   .dir-ai-box-gen {
     --x: 6%;
-    --y: 41%;
+    --y: 68%;
     --w: 26%;
-    --h: 7%;
+    --h: 16%;
   }
 }
 
@@ -526,6 +454,8 @@
   left: var(--x);
   width: var(--w);
   height: var(--h);
+  /* На планшете зона высокая: рамка остаётся рамкой, а не колонной */
+  max-height: 15rem;
   border: 1px solid rgb(255 255 255 / 0.9);
 }
 
@@ -754,9 +684,8 @@
   text-align: right;
 }
 
-/* Показания шва появляются, когда CSS-вход закончился и шов взял в руки скрипт */
-.dir-ai-meta-tc,
-.dir-ai-ruler-read {
+/* Показание шва появляется, когда CSS-вход закончился и шов взял в руки скрипт */
+.dir-ai-meta-tc {
   animation: dir-ai-fade 500ms ease-out 1600ms both;
 }
 
@@ -775,7 +704,7 @@
   }
 
   .dir-ai-meta-tc {
-    display: inline;
+    display: block;
   }
 }
 
@@ -898,13 +827,6 @@
   clip-path: polygon(0 0, 100% 0, 100% 40%, 50% 100%, 0 40%);
 }
 
-.dir-ai-ruler-read {
-  position: absolute;
-  top: 1rem;
-  right: var(--ai-pad);
-  color: var(--ai-mute);
-}
-
 .dir-ai-hero-row {
   position: relative;
   z-index: 6;
@@ -914,27 +836,17 @@
   margin-top: clamp(1rem, 2vw, 1.6rem);
 }
 
+/* Лид слева, кнопка справа: линейка над ними — единственная «подсказка» шва */
 @media (min-width: 64rem) {
   .dir-ai-hero-row {
-    grid-template-columns: minmax(0, 5fr) auto minmax(0, 3fr);
+    grid-template-columns: minmax(0, 1fr) auto;
     column-gap: 2.5rem;
-  }
-
-  .dir-ai-hero-row .dir-ai-btn {
-    white-space: nowrap;
-  }
-}
-
-/* На узком ноутбуке подсказка не помещается рядом с кнопкой: ручка и так читается сама */
-@media (min-width: 64rem) and (max-width: 79.99rem) {
-  .dir-ai-legend {
-    display: none;
   }
 }
 
 .dir-ai-lead {
   max-width: 30rem;
-  color: rgb(255 255 255 / 0.84);
+  color: rgb(255 255 255 / 0.88);
   font-size: 1rem;
   font-weight: 300;
   line-height: 1.5;
@@ -947,15 +859,8 @@
   }
 }
 
-.dir-ai-legend {
-  max-width: 22rem;
-  color: var(--ai-mute);
-  line-height: 1.75;
-  text-wrap: pretty;
-}
-
-.dir-ai-hero-row .dir-ai-btn {
-  pointer-events: auto;
+.dir-ai-hero-cta {
+  min-width: 0;
 }
 
 /* Подстрочники меток шов обрезает на любой высоте экрана уже в планшетной ширине */
@@ -975,15 +880,11 @@
   }
 
   .dir-ai-hero {
-    padding-bottom: 1.5rem;
+    padding-bottom: 4rem;
   }
 
   .dir-ai-top {
     padding-top: 5.5rem;
-  }
-
-  .dir-ai-hero-row .dir-ai-btn {
-    width: 100%;
   }
 
   .dir-ai-handle {
@@ -1004,11 +905,10 @@
   }
 }
 
-/* Низкий телефон (360×640): подписи шва и подсказка не помещаются, остаются сам шов и рамки */
+/* Низкий телефон (360×640): подписи шва не помещаются, остаются сам шов и рамки */
 @media (max-width: 47.99rem) and (max-height: 720px) {
   .dir-ai-seam-tag,
-  .dir-ai-legend,
-  .dir-ai-frames .dir-ai-cross {
+  .dir-ai-cross {
     display: none;
   }
 }
@@ -1019,7 +919,8 @@
   --ai-e: 0;
   --ai-p: 0;
   position: relative;
-  height: 420svh;
+  /* Закрепление 300svh: раскрытие стопки и четыре слоя укладываются в 200svh прокрутки */
+  height: 300svh;
   background: #000;
 }
 
@@ -1256,15 +1157,20 @@
 /*
  * Подпись слоя стоит у нижней кромки: следующая карточка стопки сдвинута вверх и
  * закрывает верхний левый угол, а нижняя полоса каждого слоя остаётся открытой.
+ * Кегль задан с запасом: плоскость лежит под 60° и повёрнута на 34°, по высоте
+ * строка сжимается примерно в 0,7 раза, поэтому 14px на карточке дают ~10px на экране.
  */
 .dir-ai-card-tag {
   position: absolute;
   bottom: 0;
   left: 0;
   z-index: 2;
-  padding: 0.3rem 0.55rem;
+  padding: 0.35rem 0.7rem;
   background: rgb(0 0 0 / 0.86);
   color: #fff;
+  font-size: 0.875rem;
+  letter-spacing: 0.14em;
+  line-height: 1.15;
   white-space: nowrap;
 }
 
@@ -1497,7 +1403,7 @@
 /* Телефон и планшет: заголовок сверху, стопка посередине, слои — «доком» у большого пальца */
 @media (max-width: 63.99rem) {
   .dir-ai-layers {
-    height: 380svh;
+    height: 320svh;
   }
 
   .dir-ai-pin {
@@ -1667,10 +1573,11 @@
   font-family: var(--font-stage);
   font-size: clamp(1.9rem, 5.2vw, 4.9rem);
   font-weight: 900;
-  line-height: 0.94;
+  line-height: 1;
   letter-spacing: -0.03em;
   text-transform: uppercase;
   text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 
 .dir-ai-fit-b {
@@ -1879,6 +1786,17 @@
   background: #fff;
 }
 
+@media (max-width: 29.99rem) {
+  .dir-ai-row {
+    grid-template-columns: 3rem minmax(0, 1fr);
+    column-gap: 1rem;
+  }
+
+  .dir-ai-row-title {
+    font-size: 1.05rem;
+  }
+}
+
 .dir-ai-row-glyph {
   display: block;
   width: 100%;
@@ -1910,6 +1828,7 @@
   letter-spacing: -0.02em;
   text-transform: uppercase;
   text-wrap: balance;
+  overflow-wrap: anywhere;
   transition: transform var(--motion-move) var(--ease-out-expo);
 }
 
@@ -2044,16 +1963,41 @@
   gap: 0.25rem;
 }
 
-.dir-ai-work-num {
-  display: block;
-  color: rgb(255 255 255 / 0.1);
-  font-family: var(--font-brand-hero);
-  font-size: clamp(4.5rem, 11vw, 10rem);
-  font-style: italic;
-  font-weight: 900;
-  line-height: 0.8;
-  letter-spacing: -0.05em;
-  font-variant-numeric: tabular-nums;
+/*
+ * Номер работы — на линейке, а не призрачной цифрой за названием: «01 ┤┤┤ 02»,
+ * красная головка у начала. Тот же словарь, что у линейки первого экрана.
+ */
+.dir-ai-work-idx {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  color: var(--ai-mute);
+}
+
+.dir-ai-work-idx-now {
+  color: #fff;
+}
+
+.dir-ai-work-idx-ticks {
+  position: relative;
+  height: 0.75rem;
+  flex: 1;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.34) 0 1px, transparent 1px 8px) bottom /
+      100% 5px no-repeat,
+    linear-gradient(rgb(255 255 255 / 0.28), rgb(255 255 255 / 0.28)) bottom / 100% 1px no-repeat;
+}
+
+.dir-ai-work-idx-ticks::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* Головка стоит на доле списка: первая работа — у начала, последняя — у конца */
+  left: calc(var(--at, 0) * (100% - 2px));
+  width: 2px;
+  background: var(--accent);
 }
 
 .dir-ai-work-text {
@@ -2065,7 +2009,7 @@
   font-family: var(--font-stage);
   font-size: clamp(1.75rem, 3.4vw, 3.2rem);
   font-weight: 900;
-  line-height: 0.95;
+  line-height: 1;
   letter-spacing: -0.03em;
   overflow-wrap: anywhere;
   text-transform: uppercase;
@@ -2234,27 +2178,29 @@
   }
 }
 
-/* ---------- CTA 1: плоская светлая «плёнка» ---------- */
+/* ---------- CTA 1: светлая «плёнка» (общий токен бумаги) ---------- */
 
+/*
+ * Фон, цвет текста и мягкую кромку даёт .dir-paper-section; шапка над ней темнеет
+ * сама. overflow на секции нельзя: кромка рисуется снаружи. Штриховка лежит
+ * отдельным слоем внутри и ничего не обрезает.
+ */
 .dir-ai-slab {
   position: relative;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 3rem;
-  overflow: hidden;
   padding-block: clamp(4rem, 8vw, 7.5rem);
-  background: #e8e8e8;
-  color: #000;
 }
 
-.dir-ai-slab::before {
-  content: '';
+.dir-ai-slab-hatch {
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(135deg, rgb(0 0 0 / 0.04) 0 1px, transparent 1px 12px);
+  background: repeating-linear-gradient(135deg, rgb(13 13 13 / 0.04) 0 1px, transparent 1px 12px);
   pointer-events: none;
 }
 
-.dir-ai-slab > * {
+.dir-ai-slab > :not(.dir-ai-slab-hatch) {
   position: relative;
 }
 
@@ -2266,27 +2212,24 @@
   }
 }
 
-.dir-ai-kicker-ink {
-  color: rgb(0 0 0 / 0.72);
-}
-
 .dir-ai-slab-title {
   max-width: 13ch;
   margin-top: 1.25rem;
-  color: #000;
+  color: var(--dir-paper-ink);
   font-family: var(--font-stage);
   font-size: clamp(2.25rem, 6.4vw, 6rem);
   font-weight: 900;
-  line-height: 0.92;
+  line-height: 1;
   letter-spacing: -0.035em;
   text-transform: uppercase;
   text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 
 .dir-ai-slab-text {
   max-width: 30rem;
   margin: 1.5rem 0 2rem;
-  color: rgb(0 0 0 / 0.78);
+  color: var(--dir-paper-mute);
   font-size: 1.0625rem;
   line-height: 1.55;
   text-wrap: pretty;
@@ -2294,7 +2237,7 @@
 
 .dir-ai-slab-layers {
   display: grid;
-  border-top: 1px solid #000;
+  border-top: 1px solid var(--dir-paper-ink);
 }
 
 .dir-ai-slab-layers li {
@@ -2303,8 +2246,8 @@
   align-items: center;
   gap: 1rem;
   padding: 0.95rem 0;
-  border-bottom: 1px solid rgb(0 0 0 / 0.2);
-  color: rgb(0 0 0 / 0.78);
+  border-bottom: 1px solid var(--dir-paper-line);
+  color: var(--dir-paper-mute);
 }
 
 .dir-ai-slab-bar {
@@ -2313,7 +2256,7 @@
 }
 
 .dir-ai-slab-bar[data-kind='0'] {
-  background: #000;
+  background: var(--dir-paper-ink);
 }
 
 .dir-ai-slab-bar[data-kind='1'] {
@@ -2322,12 +2265,12 @@
 }
 
 .dir-ai-slab-bar[data-kind='2'] {
-  border: 1px solid #000;
-  background: rgb(0 0 0 / 0.08);
+  border: 1px solid var(--dir-paper-ink);
+  background: rgb(13 13 13 / 0.08);
 }
 
 .dir-ai-slab-bar[data-kind='3'] {
-  background: linear-gradient(90deg, #000, #b4b4b4);
+  background: linear-gradient(90deg, var(--dir-paper-ink), rgb(13 13 13 / 0.28));
 }
 
 /* Мини-кадр: тот же шов, что на первом экране, только маленький и медленный */
@@ -2350,8 +2293,14 @@
   aspect-ratio: 5 / 3;
   overflow: hidden;
   background: #000;
-  outline: 1px solid #000;
+  outline: 1px solid var(--mini-line, var(--dir-paper-ink));
   animation: dir-ai-mini-sweep 7200ms var(--ease-in-out-cubic) infinite alternate;
+}
+
+/* В финале мини-шов — знак сцены справа от кнопки: на чёрном контур светлый */
+.dir-ai-mini-end {
+  --mini-line: rgb(255 255 255 / 0.32);
+  width: min(100%, 22rem);
 }
 
 @keyframes dir-ai-mini-sweep {
@@ -2395,16 +2344,6 @@
   width: 1px;
   margin-left: -0.5px;
   background: var(--accent);
-}
-
-.dir-ai-mini-tag {
-  position: absolute;
-  bottom: 0.75rem;
-  left: 0.75rem;
-  z-index: 4;
-  padding: 0.25rem 0.5rem;
-  background: #000;
-  color: #fff;
 }
 
 /* ---------- Процесс: монтажные дорожки ---------- */
@@ -2458,16 +2397,27 @@
 
 .dir-ai-track-text {
   display: grid;
-  grid-template-columns: clamp(4.5rem, 15vw, 8rem) minmax(0, 1fr);
+  grid-template-columns: 3.5rem minmax(0, 1fr);
   gap: 0.75rem 1rem;
 }
 
+/*
+ * Номер этапа — плашка-слейт с линией сверху, а не призрачная цифра за текстом:
+ * линия белеет у пройденного этапа и краснеет у того, где сейчас головка.
+ */
 .dir-ai-track-num {
-  color: rgb(255 255 255 / 0.22);
-  font-size: clamp(2.75rem, 12vw, 5rem);
-  line-height: 0.82;
-  letter-spacing: -0.04em;
-  transition: color var(--motion-move) ease;
+  align-self: start;
+  padding-top: 0.6rem;
+  border-top: 2px solid rgb(255 255 255 / 0.28);
+  color: rgb(255 255 255 / 0.6);
+  font-family: var(--font-stage);
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  transition:
+    color var(--motion-move) ease,
+    border-color var(--motion-move) ease;
 }
 
 .dir-ai-track-title {
@@ -2490,10 +2440,15 @@
 }
 
 .dir-ai-track-row[data-state='done'] .dir-ai-track-num {
-  color: rgb(255 255 255 / 0.42);
+  border-top-color: rgb(255 255 255 / 0.7);
+  color: rgb(255 255 255 / 0.82);
 }
 
-.dir-ai-track-row[data-state='live'] .dir-ai-track-num,
+.dir-ai-track-row[data-state='live'] .dir-ai-track-num {
+  border-top-color: var(--accent);
+  color: #fff;
+}
+
 .dir-ai-track-row[data-state='live'] .dir-ai-track-title {
   color: #fff;
 }
@@ -2649,6 +2604,7 @@
 
 .dir-ai-clipcta {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.75rem 4rem;
   padding-block: clamp(3.5rem, 7vw, 6rem);
   border-top: 1px solid var(--ai-line);
@@ -2668,19 +2624,21 @@
   font-family: var(--font-stage);
   font-size: clamp(1.75rem, 3.8vw, 3.5rem);
   font-weight: 900;
-  line-height: 0.96;
+  line-height: 1;
   letter-spacing: -0.03em;
   text-transform: uppercase;
   text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 
 .dir-ai-clipcta-text {
   max-width: 28rem;
-  color: rgb(255 255 255 / 0.74);
+  color: rgb(255 255 255 / 0.78);
   line-height: 1.6;
   text-wrap: pretty;
 }
 
+/* Дорожка: метки IN и OUT по краям, кнопка — клип у красной головки */
 .dir-ai-clipcta-track {
   display: grid;
   grid-column: 1 / -1;
@@ -2688,7 +2646,6 @@
   align-items: center;
   gap: 0.75rem;
   margin-top: 0.5rem;
-  padding-block: 0.75rem;
   border-block: 1px solid var(--ai-line);
   background: repeating-linear-gradient(
     90deg,
@@ -2701,142 +2658,74 @@
   color: var(--ai-mute);
 }
 
-.dir-ai-clip {
+.dir-ai-clip-lane {
   position: relative;
-  display: flex;
-  min-height: 4.5rem;
-  align-items: center;
-  gap: 1.25rem;
-  padding: 0 0.875rem 0 1.25rem;
-  border: 0;
-  background: #fff;
-  color: #000;
-  cursor: pointer;
-  isolation: isolate;
-  overflow: hidden;
-  text-align: left;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--motion-press) var(--ease-out-expo);
+  padding-block: 1rem;
 }
 
-.dir-ai-clip::before {
+/*
+ * Пустые клипы за кнопкой: тот же пунктир, что у дорожек процесса выше. Считаются от
+ * остатка дорожки после кнопки (26rem и зазор), поэтому не заходят под неё на любой ширине.
+ */
+.dir-ai-clip-empty {
+  --rest: max(0px, calc(100% - 27rem));
+  position: absolute;
+  top: 1rem;
+  bottom: 1rem;
+  left: calc(27rem + var(--rest) * var(--s));
+  width: calc(var(--rest) * var(--w) - 0.5rem);
+  min-width: 0;
+  border: 1px dashed rgb(255 255 255 / 0.22);
+  pointer-events: none;
+}
+
+.dir-ai-clip-lane > button {
+  position: relative;
+}
+
+/* Красная головка у начала клипа: линия выходит за дорожку, сверху — ромб-кадр */
+.dir-ai-clip-lane::before {
   content: '';
   position: absolute;
-  inset: 0;
-  z-index: -1;
+  top: -0.6rem;
+  bottom: -0.6rem;
+  left: -1px;
+  width: 1px;
   background: var(--accent);
-  transform: translate3d(-101%, 0, 0);
-  transition: transform var(--motion-move) var(--ease-out-expo);
+  pointer-events: none;
 }
 
-.dir-ai-clip:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-}
-
-.dir-ai-clip:focus-visible::before,
-.dir-ai-clip:active::before {
-  transform: none;
-}
-
-.dir-ai-clip:active {
-  transform: scale(0.99);
-}
-
-.dir-ai-clip:focus-visible .dir-ai-btn-ring,
-.dir-ai-clip:active .dir-ai-btn-ring {
-  transform: rotate(-45deg);
-}
-
-.dir-ai-clip-keys {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.dir-ai-clip-keys i {
-  width: 0.45rem;
-  height: 0.45rem;
+.dir-ai-clip-lane::after {
+  content: '';
+  position: absolute;
+  top: -0.6rem;
+  left: -4px;
+  width: 7px;
+  height: 7px;
   background: var(--accent);
-  transform: rotate(45deg);
-  transition: background-color var(--motion-state) ease;
-}
-
-.dir-ai-clip-label {
-  flex: 1;
-  font-family: var(--font-stage);
-  font-size: clamp(1.05rem, 2.3vw, 1.75rem);
-  letter-spacing: -0.01em;
-  line-height: 1.05;
-  text-transform: uppercase;
-}
-
-@media (hover: hover) {
-  .dir-ai-clip:hover::before {
-    transform: none;
-  }
-
-  .dir-ai-clip:hover .dir-ai-btn-ring {
-    transform: rotate(-45deg);
-  }
-
-  .dir-ai-clip:hover .dir-ai-clip-keys i {
-    background: #000;
-  }
-}
-
-.dir-ai-clip:focus-visible .dir-ai-clip-keys i,
-.dir-ai-clip:active .dir-ai-clip-keys i {
-  background: #000;
-}
-
-/* На самом узком телефоне клипу не хватает ширины на «Приложить к брифу» в одну строку */
-@media (max-width: 29.99rem) {
-  .dir-ai-clip-keys {
-    display: none;
-  }
-
-  .dir-ai-clip {
-    padding-left: 1rem;
-  }
+  transform: translateY(-50%) rotate(45deg);
+  pointer-events: none;
 }
 
 @media (max-width: 47.99rem) {
   .dir-ai-clipcta-track {
     grid-template-columns: minmax(0, 1fr);
+    gap: 0;
   }
 
   .dir-ai-clip-io {
     display: none;
   }
 
-  .dir-ai-btn,
-  .dir-ai-clip {
-    width: 100%;
+  .dir-ai-clip-lane {
+    padding-inline: 0.75rem;
   }
-}
 
-/* ---------- Плавающая кнопка каркаса ---------- */
-
-/*
- * Кнопка каркаса общая для всех направлений, поэтому правится только здесь, в рамках
- * этой страницы: набрана тем же Black-капсом, что и кнопки страницы, и прячется, пока
- * на экране собственный CTA страницы (hook useOwnCta ставит data-own-cta).
- */
-html:has(.dir-ai) main > button.fixed,
-html:has(.dir-ai) main > div.fixed.bottom-0 button {
-  font-family: var(--font-stage);
-  font-size: 0.8125rem;
-  letter-spacing: -0.005em;
-  text-transform: uppercase;
-}
-
-html:has(.dir-ai[data-own-cta='true']) main > button.fixed,
-html:has(.dir-ai[data-own-cta='true']) main > div.fixed.bottom-0 {
-  visibility: hidden;
-  opacity: 0;
-  transition:
-    opacity 200ms ease,
-    visibility 0s linear 200ms;
+  .dir-ai-clip-lane::before,
+  .dir-ai-clip-lane::after,
+  .dir-ai-clip-empty {
+    display: none;
+  }
 }
 
 /* ---------- Сниженное движение ---------- */
@@ -2844,7 +2733,8 @@ html:has(.dir-ai[data-own-cta='true']) main > div.fixed.bottom-0 {
 /*
  * Снимается движение, а не обратная связь: цвет остаётся, а всё, что едет,
  * переключается мгновенно. Шов стоит в покое, стопка раскрыта сразу и не
- * закреплена, головка дорожек не ходит, клипы показаны выполненными.
+ * закреплена, головка дорожек не ходит, клипы показаны выполненными. Кнопки —
+ * DirectionButton, их reduced-motion лежит в direction-kit.css.
  */
 @media (prefers-reduced-motion: reduce) {
   .dir-ai-hero,
@@ -2852,7 +2742,6 @@ html:has(.dir-ai[data-own-cta='true']) main > div.fixed.bottom-0 {
   .dir-ai-photo,
   .dir-ai-light,
   .dir-ai-meta-tc,
-  .dir-ai-ruler-read,
   .dir-ai-mini,
   .dir-ai-ring {
     animation: none;
@@ -2887,9 +2776,7 @@ html:has(.dir-ai[data-own-cta='true']) main > div.fixed.bottom-0 {
   .dir-ai-step-panel,
   .dir-ai-step::before,
   .dir-ai-row::before,
-  .dir-ai-cut-stitch,
-  .dir-ai-btn::before,
-  .dir-ai-clip::before {
+  .dir-ai-cut-stitch {
     transition: none;
   }
 
@@ -2903,7 +2790,6 @@ html:has(.dir-ai[data-own-cta='true']) main > div.fixed.bottom-0 {
   .dir-ai-work-img,
   .dir-ai-corner,
   .dir-ai-work-go svg,
-  .dir-ai-btn-ring,
   .dir-ai-grip,
   .dir-ai-diff-btn {
     transition-property: color, background-color, border-color;
@@ -2920,29 +2806,12 @@ html:has(.dir-ai[data-own-cta='true']) main > div.fixed.bottom-0 {
   .dir-ai-work-link:hover .dir-ai-work-go svg,
   .dir-ai-work-link:focus-visible .dir-ai-work-go svg,
   .dir-ai-work-link:active .dir-ai-work-go svg,
-  .dir-ai-btn:hover .dir-ai-btn-ring,
-  .dir-ai-btn:focus-visible .dir-ai-btn-ring,
-  .dir-ai-btn:active .dir-ai-btn-ring,
-  .dir-ai-clip:hover .dir-ai-btn-ring,
-  .dir-ai-clip:focus-visible .dir-ai-btn-ring,
-  .dir-ai-clip:active .dir-ai-btn-ring,
   .dir-ai-handle:active .dir-ai-grip,
-  .dir-ai-diff-btn:active,
-  .dir-ai-btn:active,
-  .dir-ai-clip:active {
+  .dir-ai-diff-btn:active {
     transform: none;
   }
 
   .dir-ai-head-lane {
     display: none;
   }
-}
-
-/*
- * framer-motion useScroll({ target }) меряет смещение цели относительно корневого
- * контейнера и в dev-режиме предупреждает, что html — position: static.
- * relative ничего не сдвигает; правило действует только на странице с этой сценой.
- */
-html:has(.dir-ai) {
-  position: relative;
 }

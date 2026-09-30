@@ -1439,7 +1439,7 @@
 @media (max-width: 39.99rem) {
   .dir-content-grid {
     display: flex;
-    align-items: flex-start;
+    align-items: stretch;
     overflow-x: auto;
     gap: 0.75rem;
     margin-inline: -1.5rem;
@@ -1471,6 +1471,12 @@
   /* Кадр почти по форме выдачи: широкий — во всю ширину, вертикальный — не уже 4:5 */
   .dir-content-card-frame {
     aspect-ratio: max(var(--ar), 0.8);
+  }
+
+  /* Ячейки ленты одной высоты, как слоты контактного листа: кадр своей
+     пропорции стоит посередине, подпись внизу, лишнее поле — по краям кадра */
+  .dir-content-card > .dir-content-card-frame {
+    margin-block: auto;
   }
 
   .dir-content-own-body {

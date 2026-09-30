@@ -88,6 +88,14 @@ export interface CorporatePageProps {
 const pad = (value: number) => String(value).padStart(2, '0')
 const delay = (ms: number) => ({ '--dc-d': `${ms}ms` }) as CSSProperties
 
+/**
+ * Для узких ячеек крупного набора: короткое слово держится за следующим, но
+ * цепочка целиком не склеивается. typo() связала бы «о вашей компании» в один
+ * кусок шире ячейки, и он вылез бы за её границу.
+ */
+const tieShort = (text: string) =>
+  text.replace(/(^|\s)([A-Za-zА-Яа-яЁё]{1,3}) (?=\S)/g, '$1$2\u00A0')
+
 const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
 
 /**
@@ -581,7 +589,7 @@ function Hero({ chapters }: { chapters: Chapter[] }) {
               Фильм
             </span>{' '}
             <span
-              className="dir-corporate-rise block text-[clamp(2.4rem,11.2vw,4.5rem)] md:text-[clamp(4.5rem,9.4vw,9.75rem)]"
+              className="dir-corporate-rise block text-[clamp(1.9rem,10.8vw,4.5rem)] md:text-[clamp(4.5rem,9.4vw,9.75rem)]"
               style={delay(370)}
             >
               {typo('о компании')}
@@ -922,7 +930,7 @@ function Chapters({ chapters }: { chapters: Chapter[] }) {
 
                 <h3
                   data-reveal=""
-                  className="dir-corporate-panel-title mt-5 font-stage text-[clamp(2rem,3.15vw,3.4rem)] uppercase leading-[0.94] tracking-[-0.03em] text-balance"
+                  className="dir-corporate-panel-title mt-5 font-stage text-[clamp(1.7rem,8.6vw,2.6rem)] uppercase leading-[0.94] lg:text-[clamp(2rem,3.15vw,3.4rem)] tracking-[-0.03em] text-balance"
                 >
                   {setTitle(chapter.title)}
                 </h3>
@@ -1348,7 +1356,7 @@ function SlateCta({ hasWorks }: { hasWorks: boolean }) {
   return (
     <section
       aria-labelledby="dir-corporate-slate-title"
-      className="bg-black px-6 pb-24 pt-20 md:px-10 md:pb-32 md:pt-28 lg:px-20"
+      className="bg-black px-6 pb-20 pt-16 md:px-10 md:pb-32 md:pt-28 lg:px-20"
     >
       {/* Во весь ряд сетки: справа не остаётся мёртвой колонки. Плавающая кнопка сметы
           закрывала бы правый нижний угол, поэтому пока хлопушка на экране, она скрыта */}
@@ -1378,14 +1386,14 @@ function SlateCta({ hasWorks }: { hasWorks: boolean }) {
               <div
                 key={field.label}
                 className={cn(
-                  'flex flex-col justify-between gap-6 p-5 md:p-7',
+                  'flex flex-col justify-between gap-6 p-4 sm:p-5 md:p-7',
                   position % 2 === 1 && 'border-l border-white/50',
                   position > 1 && 'border-t border-white/50'
                 )}
               >
                 <dt className="dir-kit-meta font-mono uppercase text-white/65">{field.label}</dt>
-                <dd className="font-stage text-[clamp(1.05rem,2vw,1.75rem)] uppercase leading-[1.05] tracking-[-0.015em] text-white text-balance">
-                  {typo(field.value)}
+                <dd className="font-stage text-[clamp(0.95rem,4.6vw,1.4rem)] uppercase leading-[1.05] sm:text-[clamp(1.05rem,2.6vw,1.75rem)] lg:text-[clamp(1.05rem,1.55vw,1.75rem)] tracking-[-0.015em] text-white text-balance">
+                  {tieShort(field.value)}
                 </dd>
               </div>
             ))}

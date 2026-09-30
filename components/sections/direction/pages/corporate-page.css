@@ -1134,7 +1134,7 @@
   position: relative;
   display: grid;
   width: 100%;
-  min-height: 3.75rem;
+  min-height: 3.25rem;
   grid-template-columns: 2.25rem minmax(0, 1fr) 2rem;
   align-items: center;
   padding: 0.75rem 0;
@@ -1338,8 +1338,8 @@
   position: relative;
   isolation: isolate;
   display: grid;
-  gap: 1.25rem 2rem;
-  padding-block: 2rem;
+  gap: 1rem 2rem;
+  padding-block: 1.75rem;
 }
 
 @media (min-width: 48rem) {
@@ -1377,7 +1377,7 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.1rem;
 }
 
 .dir-corporate-work-media {
@@ -1399,7 +1399,7 @@
 
 .dir-corporate-work-name {
   display: block;
-  margin-top: 1rem;
+  margin-top: 0.6rem;
   overflow-wrap: break-word;
   font-size: clamp(1.85rem, 9vw, 3.1rem);
   line-height: 0.94;
@@ -1880,7 +1880,7 @@
   display: grid;
   margin: 0;
   padding: 0;
-  row-gap: 1.75rem;
+  row-gap: 1.5rem;
   list-style: none;
 }
 
@@ -2288,6 +2288,16 @@
   .dir-corporate-hero-light,
   .dir-corporate-slit {
     display: none;
+  }
+
+  /* Титр стоит: начало строки не прячем под маску, она нужна только бегущей ленте */
+  .dir-corporate-credits {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .dir-corporate-credits-run:first-child {
+    padding-left: var(--hud-x);
   }
 
   .dir-corporate-cell::before,

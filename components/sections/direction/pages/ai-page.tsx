@@ -20,8 +20,12 @@
  * Движение: только transform, clip-path и opacity декора. Текст — в разметке
  * и виден с первого кадра (вход — keyframes со сдвигом, без opacity:0).
  * Первый ход шва и все входы — CSS, поэтому работают до гидрации. Бесконечное
- * движение (качание шва, кольцо у ручки) стоит, пока первый экран вне кадра,
+ * движение (качание шва, кольцо у ручки, мини-шов) стоит, пока блок вне кадра,
  * и выключено при prefers-reduced-motion.
+ *
+ * Каркас (DirectionShell) даёт странице три вещи, своих обходов нет: светлая
+ * «плёнка» — .dir-paper-section, и шапка сама темнеет над ней; плавающая кнопка
+ * прячется по data-sticky-hide; кнопки — DirectionButton.
  *
  * Если работ из портфолио нет, страница остаётся целой: кадры заменяет
  * нарисованная сцена, секция работ уходит, CTA встаёт после «Где что».
@@ -40,9 +44,8 @@ import {
 } from 'react'
 import Link from 'next/link'
 import { motion, useMotionValueEvent, useScroll } from 'framer-motion'
-import { ArrowRight, ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 
-import { useMenu } from '@/components/ui/menu-context'
 import { DIRECTION_READING } from '@/lib/services/pages'
 import { AI_PAGE, type AiCta } from '@/lib/services/pages/content/ai'
 import {
@@ -55,7 +58,7 @@ import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
 import { DirectionEnd } from '../direction-end'
 import { DirectionFaq } from '../direction-faq'
-import { typo } from '../direction-kit'
+import { DirectionButton, KIT_KICKER, typo } from '../direction-kit'
 import { OtherDirections } from '../other-directions'
 import { Still } from '../still'
 import './ai-page.css'
@@ -77,45 +80,35 @@ const delay = (ms: number, extra?: CSSProperties) =>
 const vars = (values: Record<string, string | number>) => values as CSSProperties
 
 const NBSP = '\u00a0'
-// Короткое слово всегда держится за следующим. Общий typo() склеивает только первое слово
-// цепочки («а не разбор» оставляет «не» висеть), поэтому связку ведём по словам здесь
-const SHORT_WORD = /^[«("'—–]*[A-Za-zА-Яа-яЁё]{1,3},?$/
 
-/**
- * Дефис внутри слова не даёт переноса: на узкой кнопке «AI-проект» иначе рвётся на
- * «AI-» и «проект». Невидимые скрепки (U+2060) ставим при выводе, а не в контенте:
- * тексту для поиска и разметки они не нужны.
- */
-const keepHyphen = (text: string) =>
-  text.replace(/([A-Za-zА-Яа-яЁё])-(?=[A-Za-zА-Яа-яЁё])/g, '$1\u2060-\u2060')
-const CTA_LABEL = keepHyphen(AI_PAGE.ctaLabel)
+const CTA_LABEL = AI_PAGE.ctaLabel
 /** Вопросы идут на экран с набором, а в разметку поиска уходят из контента как есть */
 const FAQ_ITEMS = AI_PAGE.faq.map(item => ({
   question: tidy(item.question),
   answer: tidy(item.answer),
 }))
 
+/**
+ * Набор абзаца: предлоги и цепочки коротких слов связывает общий typo(). Сверх него —
+ * вдова: два последних слова не разъезжаются («…где пройдёт / шов.»). Склеивается только
+ * последняя пара слов, а не целые связки: иначе заголовок в три слова держался бы колонной.
+ */
 function tidy(text: string): string {
-  const words = text.split(' ')
-  const last = words.length - 1
-  const tied = words
-    .map((word, position) => {
-      if (position === last) return word
-      if (SHORT_WORD.test(word)) return `${word}${NBSP}`
-      // Вдова: последнее слово не остаётся в строке одно («…где пройдёт / шов.»)
-      if (position === last - 1 && words.length > 3 && word.length + words[last]!.length <= 16) {
-        return `${word}${NBSP}`
-      }
-      return `${word} `
-    })
-    .join('')
-  return typo(tied)
+  const tied = typo(text)
+  const cut = Math.max(tied.lastIndexOf(' '), tied.lastIndexOf(NBSP))
+  // Пробел перед последним словом уже неразрывный — склеивать нечего
+  if (cut < 0 || tied[cut] === NBSP) return tied
+  const head = tied.slice(0, cut)
+  const tail = tied.slice(cut + 1)
+  const previous = head.split(/[ \u00a0]/).pop() ?? ''
+  const words = tied.split(/[ \u00a0]/).length
+  return words > 3 && previous.length + tail.length <= 16 ? `${head}${NBSP}${tail}` : tied
 }
 
-/** Таймкод шва: положение 0…100 → 01:00:00:00…01:00:59:23, 24 кадра в секунде */
+/** Таймкод шва: положение 0…100 → 00:00:00:00…00:00:59:23, 24 кадра в секунде */
 function timecode(position: number): string {
   const frames = Math.round(clamp(position, 0, 100) * 14.39)
-  return `01:00:${pad2(Math.floor(frames / 24))}:${pad2(frames % 24)}`
+  return `00:00:${pad2(Math.floor(frames / 24))}:${pad2(frames % 24)}`
 }
 
 /**
@@ -135,47 +128,6 @@ function useReduced() {
   )
 }
 
-/**
- * Светлые плашки под шапкой: шапка сайта по умолчанию светлая, и над светлым
- * полем её не видно. Наблюдаем тонкую полоску на уровне центра шапки.
- */
-function usePaperHeader() {
-  const { setHeaderDark } = useMenu()
-
-  useEffect(() => {
-    if (typeof IntersectionObserver === 'undefined') return
-    const nodes = Array.from(document.querySelectorAll<HTMLElement>('[data-ai-paper]'))
-    if (nodes.length === 0) return
-    const inside = new Set<Element>()
-    let observer: IntersectionObserver | null = null
-
-    const build = () => {
-      observer?.disconnect()
-      inside.clear()
-      const bottom = Math.max(0, window.innerHeight - 37)
-      observer = new IntersectionObserver(
-        entries => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) inside.add(entry.target)
-            else inside.delete(entry.target)
-          }
-          setHeaderDark(inside.size > 0)
-        },
-        { rootMargin: `-36px 0px -${bottom}px 0px`, threshold: 0 }
-      )
-      nodes.forEach(node => observer?.observe(node))
-    }
-
-    build()
-    window.addEventListener('resize', build)
-    return () => {
-      observer?.disconnect()
-      window.removeEventListener('resize', build)
-      setHeaderDark(false)
-    }
-  }, [setHeaderDark])
-}
-
 /** Бесконечное движение декора стоит, пока блок вне кадра: data-live переключает CSS */
 function useLive<T extends HTMLElement>() {
   const ref = useRef<T>(null)
@@ -192,41 +144,30 @@ function useLive<T extends HTMLElement>() {
 }
 
 /**
- * Свои CTA страницы на экране: плавающая кнопка каркаса в это время только дублирует
- * их и закрывает текст. Скрываем её CSS-ом (html:has), каркас при этом не трогаем.
+ * Метка раздела: красная риска и «01 / Слои», как у всего семейства (KIT_KICKER).
+ * На светлой плёнке цвет — вторичный токен бумаги: белое на ней не читается.
  */
-function useOwnCta(rootRef: RefObject<HTMLElement | null>) {
-  useEffect(() => {
-    const root = rootRef.current
-    if (!root || typeof IntersectionObserver === 'undefined') return
-    const nodes = Array.from(root.querySelectorAll<HTMLElement>('[data-ai-cta]'))
-    if (nodes.length === 0) return
-    const seen = new Set<Element>()
-    const observer = new IntersectionObserver(
-      entries => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) seen.add(entry.target)
-          else seen.delete(entry.target)
-        }
-        root.dataset.ownCta = String(seen.size > 0)
-      },
-      { rootMargin: '-12% 0px -12% 0px' }
-    )
-    nodes.forEach(node => observer.observe(node))
-    return () => {
-      observer.disconnect()
-      delete root.dataset.ownCta
-    }
-  }, [rootRef])
-}
-
-function Kicker({ index, label, className }: { index: string; label: string; className?: string }) {
+function Kicker({
+  index,
+  label,
+  tone = 'dark',
+  className,
+}: {
+  index?: string
+  label: string
+  tone?: 'dark' | 'paper'
+  className?: string
+}) {
   return (
-    <p className={cn('dir-ai-kicker type-meta font-mono uppercase tabular-nums', className)}>
-      <span aria-hidden="true" className="dir-ai-kicker-rule" />
-      <span>
-        {index} / {label}
-      </span>
+    <p
+      className={cn(
+        KIT_KICKER,
+        tone === 'paper' && 'text-[color:var(--dir-paper-mute)]',
+        className
+      )}
+    >
+      <span aria-hidden="true" className="h-px w-8 shrink-0 bg-accent" />
+      <span>{index ? `${index} / ${label}` : label}</span>
     </p>
   )
 }
@@ -352,14 +293,28 @@ function Photo({ frame, tone, sizes, priority, quality, position, adaptive }: Ph
 
 /* ───────────────────────────── Технарская графика ───────────────────────────── */
 
+/**
+ * Метки трекинга: только кресты, без подписей. Лежат в верхней трети кадра, выше заголовка:
+ * заголовок растёт от ширины экрана, а кадр — от высоты, и на низком окне нижние кресты
+ * оказались бы на буквах.
+ */
 const CROSSES = [
-  { x: 14, y: 17, label: 'T01', hide: true },
-  { x: 27, y: 49, label: 'T02', hide: true },
-  { x: 44, y: 8, label: 'T03', hide: true },
-  { x: 58, y: 49, label: 'T04', hide: false },
-  { x: 73, y: 22, label: 'T05', hide: true },
-  { x: 86, y: 58, label: 'T06', hide: true },
+  { x: 24, y: 9, hide: true },
+  { x: 44, y: 8, hide: true },
+  { x: 73, y: 17, hide: true },
+  { x: 86, y: 13, hide: true },
 ]
+
+function Cross({ x, y, hide }: { x: number | string; y: number | string; hide?: boolean }) {
+  const at = (value: number | string) => (typeof value === 'number' ? `${value}%` : value)
+  return (
+    <span
+      className="dir-ai-cross"
+      data-hide={hide ? 'true' : undefined}
+      style={vars({ '--x': at(x), '--y': at(y) })}
+    />
+  )
+}
 
 /** Метки трекинга и сетка: живут только на плёнке, то есть левее шва */
 function PlateMarks() {
@@ -375,15 +330,21 @@ function PlateMarks() {
         <span className="dir-ai-safe" />
       </span>
       {CROSSES.map(cross => (
-        <span
-          key={cross.label}
-          className="dir-ai-cross type-meta-sm font-mono uppercase"
-          data-hide={cross.hide ? 'true' : undefined}
-          style={vars({ '--x': `${cross.x}%`, '--y': `${cross.y}%` })}
-        >
-          {cross.label}
-        </span>
+        <Cross key={`${cross.x}-${cross.y}`} x={cross.x} y={cross.y} hide={cross.hide} />
       ))}
+    </div>
+  )
+}
+
+/**
+ * Рамки «снять» и «генерация» лежат в потоке первого экрана, между строкой меток и
+ * заголовком, и занимают ровно то место, что осталось: заголовок растёт от ширины
+ * экрана, и на низком окне рамки сжимаются, а не наезжают на буквы. Срез швом тот же,
+ * что у плёнки: левее шва рамки есть, правее — нет.
+ */
+function PlateBoxes() {
+  return (
+    <div aria-hidden="true" className="dir-ai-boxzone">
       <span className="dir-ai-box dir-ai-box-keep">
         <span className="dir-ai-box-tag type-meta-sm font-mono uppercase">
           Снять<span>продукт · лицо · руки</span>
@@ -394,6 +355,8 @@ function PlateMarks() {
           Генерация<span>фон · метаморфоза</span>
         </span>
       </span>
+      <Cross x={30} y={92} hide />
+      <Cross x={64} y={84} />
     </div>
   )
 }
@@ -496,7 +459,6 @@ function useSeam(heroRef: RefObject<HTMLElement | null>, handleRef: RefObject<HT
 
     const reduced = window.matchMedia(REDUCED_QUERY).matches
     const tcNodes = hero.querySelectorAll<HTMLElement>('[data-seam-tc]')
-    const posNodes = hero.querySelectorAll<HTMLElement>('[data-seam-pos]')
 
     type Mode = 'intro' | 'ambient' | 'follow' | 'drag' | 'hold'
     let mode: Mode = reduced ? 'hold' : 'intro'
@@ -518,12 +480,8 @@ function useSeam(heroRef: RefObject<HTMLElement | null>, handleRef: RefObject<HT
     const write = () => {
       hero.style.setProperty('--dir-ai-seam', cur.toFixed(2))
       const tc = timecode(cur)
-      const pos = String(Math.round(cur)).padStart(3, '0')
       tcNodes.forEach(node => {
         if (node.textContent !== tc) node.textContent = tc
-      })
-      posNodes.forEach(node => {
-        if (node.textContent !== pos) node.textContent = pos
       })
     }
 
@@ -793,24 +751,30 @@ function Hero({ frame }: { frame: SceneFrame | null }) {
         </div>
       </div>
 
-      <p className="dir-ai-meta type-meta font-mono uppercase tabular-nums">
-        <span className="dir-ai-rise" style={delay(0)}>
+      {/* Три метки на весь экран: рубрика, таймкод шва и подписи «плёнка / финал» у самого шва */}
+      <div className="dir-ai-meta dir-kit-meta font-mono uppercase tabular-nums">
+        <p className="dir-ai-kicker dir-ai-rise" style={delay(0)}>
+          <span aria-hidden="true" className="dir-ai-kicker-rule" />
           <span className="dir-ai-meta-long">
             06 / AI · Санкт-Петербург · Москва · по&nbsp;России
           </span>
           <span className="dir-ai-meta-short">06 / AI · СПб · Москва · Россия</span>
-        </span>
-        <span className="dir-ai-meta-tc dir-ai-rise" style={delay(80)} aria-hidden="true">
+        </p>
+        <p className="dir-ai-meta-tc dir-ai-rise" style={delay(80)} aria-hidden="true">
           TC <span data-seam-tc="">{timecode(SEAM_REST)}</span>
-        </span>
-      </p>
+        </p>
+      </div>
 
       <div className="dir-ai-top">
+        <PlateBoxes />
         <div className="dir-ai-copy">
+          {/* H1 — название направления и уточнение через тире; лид лежит отдельным абзацем ниже.
+              Тире скрыто визуально (его роль играет красная риска), но остаётся в тексте заголовка */}
           <h1 id="ai-title" className="dir-ai-h1">
             <span className="dir-ai-h1-main dir-ai-rise" style={delay(140)}>
               AI<span className="dir-ai-hy">-</span>видео
-            </span>{' '}
+            </span>
+            <span className="sr-only"> — </span>
             <span className="dir-ai-h1-sub dir-ai-rise" style={delay(260)}>
               гибридный продакшн
             </span>
@@ -820,9 +784,6 @@ function Hero({ frame }: { frame: SceneFrame | null }) {
             <span className="dir-ai-ruler-ticks" />
             <span className="dir-ai-rider">
               <span className="dir-ai-rider-head" />
-            </span>
-            <span className="dir-ai-ruler-read type-meta-sm font-mono uppercase tabular-nums">
-              Шов <span data-seam-pos="">{String(SEAM_REST).padStart(3, '0')}</span>
             </span>
           </div>
         </div>
@@ -866,17 +827,13 @@ function Hero({ frame }: { frame: SceneFrame | null }) {
             'Живая съёмка, генерация и постпродакшн в одной работе — без пластиковой картинки.'
           )}
         </p>
-        <div className="dir-ai-rise" style={delay(460)}>
-          <button type="button" onClick={() => page.openBrief('hero')} className="dir-ai-btn">
-            <span>{CTA_LABEL}</span>
-            <span className="dir-ai-btn-ring" aria-hidden="true">
-              <ArrowRight className="h-4 w-4" />
-            </span>
-          </button>
+        <div className="dir-ai-hero-cta dir-ai-rise" style={delay(460)}>
+          <DirectionButton
+            label={CTA_LABEL}
+            onClick={() => page.openBrief('hero')}
+            className="w-full md:w-auto"
+          />
         </div>
-        <p className="dir-ai-legend type-meta font-mono uppercase dir-ai-rise" style={delay(540)}>
-          {tidy('Ведите шов: слева плёнка, справа финал.')}
-        </p>
       </div>
     </section>
   )
@@ -996,14 +953,7 @@ function LayerCard({
           <span className="dir-ai-grid" />
           <span className="dir-ai-safe" />
           {[0, 1, 2].map(n => (
-            <span
-              key={n}
-              className="dir-ai-cross type-meta-sm font-mono uppercase"
-              data-hide={n === 2 ? 'true' : undefined}
-              style={vars({ '--x': `${[16, 41, 68][n]}%`, '--y': `${[26, 62, 30][n]}%` })}
-            >
-              {CROSSES[n]?.label}
-            </span>
+            <Cross key={n} x={[16, 41, 68][n] ?? 16} y={[26, 62, 30][n] ?? 26} hide={n === 2} />
           ))}
         </>
       ) : null}
@@ -1037,7 +987,7 @@ function LayerCard({
           </span>
         </>
       ) : null}
-      <span className="dir-ai-card-tag type-meta-sm font-mono uppercase tabular-nums">{tag}</span>
+      <span className="dir-ai-card-tag font-mono uppercase tabular-nums">{tag}</span>
     </div>
   )
 }
@@ -1259,18 +1209,8 @@ function FitFrame({
         <>
           <span className="dir-ai-grid" />
           <span className="dir-ai-safe" />
-          <span
-            className="dir-ai-cross type-meta-sm font-mono uppercase"
-            style={vars({ '--x': '24%', '--y': '38%' })}
-          >
-            T01
-          </span>
-          <span
-            className="dir-ai-cross type-meta-sm font-mono uppercase"
-            style={vars({ '--x': '62%', '--y': '58%' })}
-          >
-            T02
-          </span>
+          <Cross x={24} y={38} />
+          <Cross x={62} y={58} />
         </>
       ) : (
         <span className="dir-ai-genring dir-ai-fit-ring" />
@@ -1293,7 +1233,7 @@ function Fit({ index, frame }: { index: string; frame: SceneFrame | null }) {
       aria-labelledby="ai-fit-title"
       className="dir-ai-fit dir-ai-pad relative"
     >
-      <header className="dir-ai-fit-head">
+      <header data-sticky-hide="desktop" className="dir-ai-fit-head">
         <Kicker index={index} label="Где что" />
         <h2 id="ai-fit-title" data-reveal="" className="dir-ai-fit-title">
           <span className="dir-ai-fit-a">{tidy('Где AI даёт преимущество,')}</span>{' '}
@@ -1416,8 +1356,17 @@ function Works({ works, index }: { works: DirectionPageWork[]; index: string }) 
                 </div>
 
                 <div className="dir-ai-work-info">
-                  <span aria-hidden="true" className="dir-ai-work-num">
-                    {pad2(position + 1)}
+                  {/* Строка тайм-кода вместо гигантской призрачной цифры: номер работы на линейке */}
+                  <span
+                    aria-hidden="true"
+                    className="dir-ai-work-idx type-meta font-mono tabular-nums"
+                  >
+                    <span className="dir-ai-work-idx-now">{pad2(position + 1)}</span>
+                    <span
+                      className="dir-ai-work-idx-ticks"
+                      style={vars({ '--at': works.length > 1 ? position / (works.length - 1) : 0 })}
+                    />
+                    <span>{pad2(works.length)}</span>
                   </span>
                   <div className="dir-ai-work-text">
                     <h3 className="dir-ai-work-client">{work.client}</h3>
@@ -1465,22 +1414,43 @@ function Works({ works, index }: { works: DirectionPageWork[]; index: string }) 
 
 /* ───────────────────────────── CTA: два смысловых ───────────────────────────── */
 
-/** После работ: плоская светлая «плёнка» — единственное светлое поле страницы */
-function PlateCta({ cta, where }: { cta: AiCta; where: string }) {
-  const page = useDirectionPage()
+/**
+ * Мини-шов: тот же жест, что на первом экране, только маленький и медленный.
+ * Ход стоит, пока блок вне кадра (useLive), и снимается при сниженном движении.
+ */
+function SeamMini({ className }: { className?: string }) {
   const liveRef = useLive<HTMLDivElement>()
   return (
+    <div ref={liveRef} data-live="true" aria-hidden="true" className={cn('dir-ai-mini', className)}>
+      <div className="dir-ai-mini-final">
+        <Scene tone="final" />
+      </div>
+      <div className="dir-ai-mini-plate">
+        <Scene tone="plate" />
+        <span className="dir-ai-grid" />
+        <Cross x={22} y={34} />
+        <Cross x={46} y={66} />
+      </div>
+      <span className="dir-ai-mini-seam">
+        <span />
+      </span>
+    </div>
+  )
+}
+
+/** После работ: светлая «плёнка» — единственная светлая секция страницы, общий токен бумаги */
+function PlateCta({ cta, where }: { cta: AiCta; where: string }) {
+  const page = useDirectionPage()
+  return (
     <section
-      data-ai-paper=""
-      data-ai-cta=""
+      data-sticky-hide="all"
       aria-labelledby="ai-cta-proof-title"
-      className="dir-ai-slab dir-ai-pad"
+      className="dir-ai-slab dir-paper-section dir-ai-pad"
     >
+      {/* Штриховка плёнки лежит своим слоем: у самой секции overflow не ставим, иначе обрежется кромка бумаги */}
+      <span aria-hidden="true" className="dir-ai-slab-hatch" />
       <div className="dir-ai-slab-main">
-        <p className="dir-ai-kicker dir-ai-kicker-ink type-meta font-mono uppercase tabular-nums">
-          <span aria-hidden="true" className="dir-ai-kicker-rule" />
-          <span>{cta.kicker}</span>
-        </p>
+        <Kicker tone="paper" label={cta.kicker} />
         <h2 id="ai-cta-proof-title" data-reveal="" className="dir-ai-slab-title">
           {tidy(cta.title)}
         </h2>
@@ -1488,45 +1458,16 @@ function PlateCta({ cta, where }: { cta: AiCta; where: string }) {
           {tidy(cta.text)}
         </p>
         <div data-reveal="" style={delay(160)}>
-          <button
-            type="button"
+          <DirectionButton
+            label={cta.label}
             onClick={() => page.openBrief(where)}
-            className="dir-ai-btn dir-ai-btn-ink"
-          >
-            <span>{tidy(cta.label)}</span>
-            <span className="dir-ai-btn-ring" aria-hidden="true">
-              <ArrowRight className="h-4 w-4" />
-            </span>
-          </button>
+            className="w-full sm:w-auto"
+          />
         </div>
       </div>
 
       <div className="dir-ai-slab-side">
-        <div ref={liveRef} data-live="true" aria-hidden="true" className="dir-ai-mini">
-          <div className="dir-ai-mini-final">
-            <Scene tone="final" />
-          </div>
-          <div className="dir-ai-mini-plate">
-            <Scene tone="plate" />
-            <span className="dir-ai-grid" />
-            <span
-              className="dir-ai-cross type-meta-sm font-mono uppercase"
-              style={vars({ '--x': '22%', '--y': '34%' })}
-            >
-              T01
-            </span>
-            <span
-              className="dir-ai-cross type-meta-sm font-mono uppercase"
-              style={vars({ '--x': '46%', '--y': '66%' })}
-            >
-              T02
-            </span>
-          </div>
-          <span className="dir-ai-mini-seam">
-            <span />
-          </span>
-          <span className="dir-ai-mini-tag type-meta-sm font-mono uppercase">Плёнка · Финал</span>
-        </div>
+        <SeamMini />
         <ol aria-hidden="true" className="dir-ai-slab-layers">
           {LAYERS.map((layer, position) => (
             <li key={layer.number} data-reveal="" style={delay(position * 70)}>
@@ -1541,20 +1482,17 @@ function PlateCta({ cta, where }: { cta: AiCta; where: string }) {
   )
 }
 
-/** После процесса: кнопка — монтажный клип между метками IN и OUT */
+/** После процесса: кнопка — клип на дорожке между метками IN и OUT, у красной головки */
 function ClipCta({ cta, where }: { cta: AiCta; where: string }) {
   const page = useDirectionPage()
   return (
     <section
-      data-ai-cta=""
+      data-sticky-hide="all"
       aria-labelledby="ai-cta-process-title"
       className="dir-ai-clipcta dir-ai-pad"
     >
       <div className="dir-ai-clipcta-head">
-        <p className="dir-ai-kicker type-meta font-mono uppercase tabular-nums">
-          <span aria-hidden="true" className="dir-ai-kicker-rule" />
-          <span>{cta.kicker}</span>
-        </p>
+        <Kicker label={cta.kicker} />
         <h2 id="ai-cta-process-title" data-reveal="" className="dir-ai-clipcta-title">
           {tidy(cta.title)}
         </h2>
@@ -1567,17 +1505,24 @@ function ClipCta({ cta, where }: { cta: AiCta; where: string }) {
         <span aria-hidden="true" className="dir-ai-clip-io type-meta-sm font-mono uppercase">
           IN
         </span>
-        <button type="button" onClick={() => page.openBrief(where)} className="dir-ai-clip">
-          <span aria-hidden="true" className="dir-ai-clip-keys">
-            <i />
-            <i />
-            <i />
-          </span>
-          <span className="dir-ai-clip-label">{tidy(cta.label)}</span>
-          <span className="dir-ai-btn-ring" aria-hidden="true">
-            <ArrowRight className="h-4 w-4" />
-          </span>
-        </button>
+        <div className="dir-ai-clip-lane">
+          {/* Пустые клипы дорожки: кнопка — первый в очереди, дальше место под ваши материалы */}
+          <span
+            aria-hidden="true"
+            className="dir-ai-clip-empty"
+            style={vars({ '--s': 0, '--w': 0.42 })}
+          />
+          <span
+            aria-hidden="true"
+            className="dir-ai-clip-empty"
+            style={vars({ '--s': 0.48, '--w': 0.52 })}
+          />
+          <DirectionButton
+            label={cta.label}
+            onClick={() => page.openBrief(where)}
+            className="w-full md:max-w-[26rem]"
+          />
+        </div>
         <span aria-hidden="true" className="dir-ai-clip-io type-meta-sm font-mono uppercase">
           OUT
         </span>
@@ -1689,7 +1634,12 @@ function Process({ index }: { index: string }) {
         </p>
       </header>
 
-      <div ref={wrapRef} className="dir-ai-tl" data-reduced={reduced ? 'true' : 'false'}>
+      <div
+        ref={wrapRef}
+        data-sticky-hide="desktop"
+        className="dir-ai-tl"
+        data-reduced={reduced ? 'true' : 'false'}
+      >
         <div aria-hidden="true" className="dir-ai-tl-ruler type-meta-sm font-mono uppercase">
           <span>IN</span>
           <span className="dir-ai-tl-ticks" />
@@ -1712,10 +1662,7 @@ function Process({ index }: { index: string }) {
                 className="dir-ai-track-row"
               >
                 <div className="dir-ai-track-text">
-                  <span
-                    aria-hidden="true"
-                    className="dir-ai-track-num font-brand-hero tabular-nums"
-                  >
+                  <span aria-hidden="true" className="dir-ai-track-num tabular-nums">
                     {step.number}
                   </span>
                   <div>
@@ -1749,9 +1696,6 @@ function Process({ index }: { index: string }) {
 /* ───────────────────────────── Страница ───────────────────────────── */
 
 export function AiPage({ works }: AiPageProps) {
-  const rootRef = useRef<HTMLDivElement>(null)
-  usePaperHeader()
-  useOwnCta(rootRef)
   const frames = interleaveFrames(works, 6)
   const heroFrame = frames[0] ?? null
   const layerFrame = frames[1] ?? heroFrame
@@ -1769,15 +1713,15 @@ export function AiPage({ works }: AiPageProps) {
   const faqIndex = next()
 
   return (
-    <DirectionShell id="ai" stickyLabel={keepHyphen(AI_PAGE.stickyLabel)}>
-      <div ref={rootRef} className="dir-ai">
+    <DirectionShell id="ai" stickyLabel={AI_PAGE.stickyLabel}>
+      <div className="dir-ai">
         <Hero frame={heroFrame} />
-        <Cut from="Склейка 01" to="01:00:08:12" />
+        <Cut from="Склейка 01" to="00:00:08:12" />
         <Layers frame={layerFrame} index={layersIndex} />
         <Fit index={fitIndex} frame={fitFrame} />
         {hasWorks ? (
           <>
-            <Cut from="Склейка 02" to="01:00:21:04" tone="deep" />
+            <Cut from="Склейка 02" to="00:00:21:04" tone="deep" />
             <Works works={works} index={worksIndex} />
           </>
         ) : null}
@@ -1791,6 +1735,7 @@ export function AiPage({ works }: AiPageProps) {
           ctaLabel={CTA_LABEL}
           note={tidy(AI_PAGE.end.note)}
           frame={closing ? { src: closing.src, alt: closing.client } : null}
+          aside={<SeamMini className="dir-ai-mini-end" />}
         />
       </div>
     </DirectionShell>

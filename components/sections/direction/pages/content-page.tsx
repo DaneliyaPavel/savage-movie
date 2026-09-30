@@ -487,7 +487,14 @@ function Hero({ frame }: { frame: Frame }) {
               <span aria-hidden="true" className="mx-2.5 text-accent">
                 /
               </span>
-              {hero.places}
+              {hero.places.split(' · ').map((place, index) => (
+                <span key={place}>
+                  {index > 0 ? ' · ' : ''}
+                  <span className={place.includes('-') ? 'whitespace-nowrap' : undefined}>
+                    {place}
+                  </span>
+                </span>
+              ))}
             </span>
           </p>
 
@@ -1006,7 +1013,7 @@ function Outputs({ frame, pool }: { frame: Frame; pool: SceneFrame[] }) {
           <h2
             id="dir-content-outputs-title"
             data-reveal=""
-            className={`${KIT_TITLE} mt-5 text-[clamp(2rem,5.4vw,5.25rem)]`}
+            className={`${KIT_TITLE} mt-5 text-[clamp(1.5rem,8.2vw,2rem)] sm:text-[clamp(2rem,5.4vw,5.25rem)]`}
           >
             {setTitle('Что получаете с одной съёмки')}
           </h2>
