@@ -106,16 +106,11 @@ describe('heroMontage', () => {
  * документе анонсирует маршрут, которого не существует.
  */
 describe('Что уезжает в браузер', () => {
-  it('путь неопубликованного направления обнулён', () => {
-    const pending = resolveDirections([]).filter(direction => !direction.route.published)
-
-    expect(pending.length).toBeGreaterThan(0)
-    expect(pending.every(direction => direction.route.path === '')).toBe(true)
-  })
-
   it('путь опубликованного направления сохраняется', () => {
     const published = resolveDirections([]).filter(direction => direction.route.published)
 
-    expect(published.map(direction => direction.route.path)).toEqual(['/reklamny-rolik'])
+    expect(published.map(direction => direction.route.path)).toEqual(
+      SERVICE_DIRECTIONS.map(direction => direction.route.path)
+    )
   })
 })

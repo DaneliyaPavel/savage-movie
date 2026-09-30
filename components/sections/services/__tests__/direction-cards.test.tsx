@@ -22,7 +22,6 @@ beforeAll(() => {
 
 const directions: ResolvedDirection[] = SERVICE_DIRECTIONS.map(direction => ({
   ...direction,
-  route: direction.route.published ? direction.route : { path: '', published: false },
   works: [],
 }))
 
@@ -60,10 +59,12 @@ describe('DirectionCards', () => {
     expect(cards[3]?.getAttribute('style')).toContain('3 * var(--deck)')
   })
 
-  it('CTA опубликованного направления — ссылка, остальных — кнопка в бриф', () => {
+  it('CTA каждого направления — ссылка на его собственную страницу', () => {
     setup()
-    const link = screen.getByRole('link', { name: /Как мы снимаем рекламу/ })
-    expect(link.getAttribute('href')).toBe('/reklamny-rolik')
-    expect(screen.getAllByRole('button', { name: /Обсудить съёмку коллекции/ })).toHaveLength(1)
+    for (const direction of directions) {
+      const link = screen.getByRole('link', { name: new RegExp(direction.ctaLabel) })
+      expect(link.getAttribute('href'), direction.id).toBe(direction.route.path)
+    }
+    expect(screen.queryAllByRole('button', { name: /Обсудить съёмку коллекции/ })).toHaveLength(0)
   })
 })

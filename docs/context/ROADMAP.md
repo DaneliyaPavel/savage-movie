@@ -21,4 +21,4 @@
 12. Дубль sensual (O-05); `/privacy`,`/terms` в sitemap.
 13. Backend-тесты (`backend/tests` нет).
 14. Подтянуть `/about`, `/courses`, `/booking`, блог к «монтажному» языку.
-15. Страницы направлений 02–07 — только когда есть материал и art direction.
+15. Страницы направлений 02–07 — **сделаны** (ветка `claude/project-thread-pnboet`, draft PR): `/fashion-video`, `/beauty-video`, `/content-production`, `/corporate-video`, `/ai-video`, `/music-video`. Дальше: проверить на live и в GSC/Вебмастере, заполнить credits кейсов.

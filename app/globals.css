@@ -1161,3 +1161,146 @@
     transform: none;
   }
 }
+
+/*
+ * Страницы направлений (/fashion-video, /beauty-video, /content-production,
+ * /corporate-video, /ai-video, /music-video).
+ *
+ * Общее здесь только то, что обязано совпадать: кривая и длительности берутся
+ * из шкалы раздела направлений (--ease-out-expo, --motion-*), а вход кадров и
+ * контурный набор одинаковы везде. Всё остальное движение живёт в самих
+ * сценах — у каждого направления свой жест.
+ *
+ * Вход кадра — clip-path, а не opacity: композитно, без перерисовки, и текст
+ * рядом остаётся видимым с первого кадра. Анимируется только декор.
+ */
+@keyframes dir-clip-up {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes dir-clip-left {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.dir-clip-up {
+  animation: dir-clip-up 900ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
+  animation-delay: var(--dir-delay, 0ms);
+}
+
+.dir-clip-left {
+  animation: dir-clip-left 900ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
+  animation-delay: var(--dir-delay, 0ms);
+}
+
+/*
+ * Приглушённый набор: слово остаётся читаемым, но не спорит с кадром за вес.
+ * Контурный текст (text-stroke) не годится: у Montserrat Black контуры букв
+ * перекрываются, и обводка показывает швы внутри «Д», «К» и «Я».
+ */
+.dir-outline {
+  color: rgb(255 255 255 / 0.26);
+}
+
+/* Эквалайзер /music-video: высота полосы — от --eq-peak, темп — от --eq-beat */
+@keyframes dir-eq {
+  0%,
+  100% {
+    transform: scaleY(0.12);
+  }
+  30% {
+    transform: scaleY(var(--eq-peak, 1));
+  }
+  55% {
+    transform: scaleY(calc(var(--eq-peak, 1) * 0.35));
+  }
+  80% {
+    transform: scaleY(calc(var(--eq-peak, 1) * 0.7));
+  }
+}
+
+.dir-eq-bar {
+  transform-origin: bottom;
+  transform: scaleY(0.12);
+  animation: dir-eq var(--eq-beat, 480ms) var(--ease-in-out-cubic, ease-in-out) infinite;
+  animation-delay: var(--eq-delay, 0ms);
+}
+
+/* Сканирующая линия /ai-video */
+@keyframes dir-scan {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.dir-scan {
+  animation: dir-scan 3200ms linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dir-clip-up,
+  .dir-clip-left {
+    animation: none;
+  }
+
+  .dir-eq-bar {
+    animation: none;
+    transform: scaleY(var(--eq-rest, 0.5));
+  }
+
+  .dir-scan {
+    animation: none;
+    display: none;
+  }
+}
+
+/* Линия на доле /music-video: появляется на долю и гаснет, без заливки экрана */
+@keyframes dir-beat-line {
+  from {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+.dir-beat-line {
+  animation: dir-beat-line 480ms linear both;
+}
+
+/*
+ * Бегущий титр финала страницы направления. Две одинаковые половины,
+ * сдвиг на 50% — шва не видно. Медленный: это фон, а не объявление.
+ */
+@keyframes dir-end-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.dir-end-marquee {
+  animation: dir-end-marquee 70s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dir-end-marquee {
+    animation: none;
+  }
+}
