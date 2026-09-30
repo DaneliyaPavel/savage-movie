@@ -5,7 +5,7 @@
  * зависит всё: как часто на первом экране склеиваются кадры, как бьёт
  * эквалайзер, с какой скоростью бежит метка на линейке, как отзываются
  * наведения. Темп лежит в одной CSS-переменной (--dm-beat) на корне страницы,
- * а JS-часы нужны только первому экрану — счёту и смене кадров.
+ * а JS-часы нужны только двум экранам-монтажам — первому и заставке работ.
  *
  * Композиция (у каждой секции свой масштаб и плотность):
  *   1. Первый экран — сцена: кадры режутся по доле, сверху качается свет,
@@ -14,12 +14,16 @@
  *   2. Принцип — строка-лирика размером с экран, слова «поются» от скролла.
  *   3. Этапы — волна-скраббер по структуре трека (интро, куплет, припев,
  *      бридж, аутро): липкая полоса, метка идёт по волне вместе со скроллом,
- *      по волне можно тянуть и нажимать — это навигация по этапам. У каждой
- *      части своя композиция; бридж — белая «дорожка тишины» на всю ширину.
+ *      по волне можно тянуть и нажимать — это навигация по этапам. На низком
+ *      экране полоса не липнет, этап показывает мини-индикатор в шапке. У каждой
+ *      части своя композиция; бридж — «дорожка тишины» на листе --dir-paper,
+ *      лист открывается шторкой (clip-path), как склейка на первом экране.
  *   4. Призыв после процесса — «плей-бар» во всю ширину.
- *   5. Кому нужен клип — три секвенсорных паттерна: колонки на широком
- *      экране, строки на узком.
- *   6. Работы, призыв после доказательства, вопросы — общий кит и свой CTA.
+ *   5. Кому нужен клип — три секвенсорных паттерна с подписью: колонки на
+ *      широком экране, строки на узком.
+ *   6. Заставка работ — экран целиком: кадры клипов режутся на такт, имя
+ *      работы крупно. Кульминация страницы, за ней — список работ кита.
+ *   7. Работы, призыв после доказательства, вопросы — общий кит и свой CTA.
  *
  * Безопасность движения. Вспышек на весь экран нет: склейка — быстрая
  * шторка по кадру с красной кромкой, не чаще одной за две доли (≤1,2 раза в
@@ -29,7 +33,7 @@
  * Контент (H1, абзацы, кнопки) виден с первого кадра, вход — сдвигом.
  *
  * Если портфолио не пришло, кадры заменяет «сцена» — свет и сетка; секции,
- * смысл и кнопки остаются.
+ * смысл и кнопки остаются, заставка работ не показывается.
  */
 'use client'
 
@@ -50,7 +54,8 @@ import {
   type PointerEvent,
   type RefObject,
 } from 'react'
-import { ArrowRight, AudioLines } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowUpRight, AudioLines } from 'lucide-react'
 
 import { MUSIC_PAGE, type MusicStage } from '@/lib/services/pages/content/music'
 import {
@@ -64,7 +69,7 @@ import { useDirectionPage } from '../direction-context'
 import { DirectionCredits } from '../direction-credits'
 import { DirectionEnd } from '../direction-end'
 import { DirectionFaq } from '../direction-faq'
-import { KIT_KICKER } from '../direction-kit'
+import { DirectionButton, KIT_KICKER, typo } from '../direction-kit'
 import { OtherDirections } from '../other-directions'
 import { Still } from '../still'
 import './music-page.css'
@@ -91,34 +96,6 @@ function useTempo(): TempoApi {
 const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
 
 const NBSP = '\u00a0'
-const LETTER = 'A-Za-zА-Яа-яЁё'
-const SHORT_WORD = new RegExp(`([${LETTER}]{1,3})(\\s+)(?=\\S)`, 'g')
-const NUMBER_UNIT = new RegExp(`(\\d)\\s+(?=[${LETTER}%])`, 'g')
-const WORD_EDGE = /[\s«("'—–]/
-// Местоимения не склеиваем со следующим словом: в цепочке «нужен ли у нас
-// готовый» привязка и к «нас» сделала бы из четырёх слов один неразрывный кусок
-const PRONOUN = /^(мы|вы|он|она|оно|они|нас|вас|нам|вам|его|её|их|ей|ему|им|ним|ней|них)$/i
-
-/**
- * Набор как в общем ките, но с цепочками: общий typo() съедает пробел перед
- * следующим словом вместе с совпадением, и в «нужен ли у нас» средний предлог
- * оставался без привязки и повисал в конце строки. Здесь каждое слово до трёх
- * букв проверяется по исходной строке. maxNext ограничивает длину слова, к
- * которому приклеиваем: в гигантских строках («не иллюстрируем») склейка
- * длиннее экрана вылезла бы за край.
- */
-function typo(text: string, maxNext = 40): string {
-  return text
-    .replace(/\s+—/g, `${NBSP}—`)
-    .replace(SHORT_WORD, (match, word: string, _gap: string, offset: number, whole: string) => {
-      const before = offset === 0 ? '' : (whole[offset - 1] ?? '')
-      if (before && !WORD_EDGE.test(before)) return match
-      if (PRONOUN.test(word)) return match
-      const next = /^\S+/.exec(whole.slice(offset + match.length))?.[0] ?? ''
-      return next.length > maxNext ? match : `${word}${NBSP}`
-    })
-    .replace(NUMBER_UNIT, `$1${NBSP}`)
-}
 
 /** Абзац: типографика плюс последние два слова вместе, чтобы не оставалась строка из одного слова */
 function prose(text: string): string {
@@ -156,15 +133,19 @@ function useReduced(): boolean {
   )
 }
 
-/** Часы доли: setTimeout с поправкой на дрейф; после паузы вкладки не нагоняют */
-function useBeatClock(bpm: number, running: boolean, onBeat: () => void) {
+/**
+ * Часы доли: setTimeout с поправкой на дрейф; после паузы вкладки не нагоняют.
+ * Обработчик получает длину доли в мс: по ней считается тайм-код, и смена темпа
+ * на ходу не заставляет его прыгать.
+ */
+function useBeatClock(bpm: number, running: boolean, onBeat: (period: number) => void) {
   useEffect(() => {
     if (!running) return
     const period = 60000 / bpm
     let next = performance.now() + period
     let id = 0
     const tick = () => {
-      onBeat()
+      onBeat(period)
       const now = performance.now()
       next += period
       if (next < now) next = now + period
@@ -175,8 +156,8 @@ function useBeatClock(bpm: number, running: boolean, onBeat: () => void) {
   }, [bpm, running, onBeat])
 }
 
-function useInView(ref: RefObject<Element | null>, margin = '0px') {
-  const [inView, setInView] = useState(true)
+function useInView(ref: RefObject<Element | null>, margin = '0px', initial = true) {
+  const [inView, setInView] = useState(initial)
   useEffect(() => {
     const node = ref.current
     if (!node || typeof IntersectionObserver === 'undefined') return
@@ -265,6 +246,29 @@ function useLiveZones(rootRef: RefObject<HTMLElement | null>) {
 /* ─────────────────────────── Мелочи ─────────────────────────── */
 
 const pad = (value: number) => String(value).padStart(2, '0')
+
+/** Тайм-код 25 кадров в секунду: на первом отрисованном кадре — 00:00:00:00 */
+function formatTimecode(ms: number): string {
+  const frames = Math.floor(ms / 40)
+  const seconds = Math.floor(frames / 25)
+  return `${pad(Math.floor(seconds / 3600))}:${pad(Math.floor(seconds / 60) % 60)}:${pad(seconds % 60)}:${pad(frames % 25)}`
+}
+
+/**
+ * Следующий уже загруженный кадр монтажа. Кадры ленивые: шторка на ещё не
+ * пришедший кадр открыла бы пустой прямоугольник, поэтому такие пропускаются.
+ * -1 — резать некуда, остаёмся на текущем.
+ */
+function nextLoaded(box: HTMLElement | null, from: number, count: number): number {
+  if (!box || count < 2) return -1
+  for (let step = 1; step < count; step += 1) {
+    const index = (from + step) % count
+    const image = box.children[index]?.querySelector('img')
+    if (image && image.complete && image.naturalWidth > 0) return index
+  }
+  return -1
+}
+
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
 const vars = (values: Record<string, string | number>) => values as CSSProperties
 
@@ -356,8 +360,15 @@ function TempoSwitch({ variant }: { variant: 'hero' | 'inline' }) {
   const labelId = useId()
 
   return (
-    <div role="group" aria-labelledby={labelId} className="dir-music-tempo" data-variant={variant}>
-      <p id={labelId} className="dir-music-tempo-label type-meta font-mono uppercase">
+    <div
+      role="group"
+      aria-labelledby={labelId}
+      className="dir-music-tempo"
+      data-variant={variant}
+      // Плавающая кнопка сметы закрывала бы переключатель на десктопе
+      data-sticky-hide={variant === 'inline' ? 'desktop' : undefined}
+    >
+      <p id={labelId} className="dir-music-tempo-label dir-kit-meta font-mono uppercase">
         {variant === 'hero' ? 'Темп склейки, уд/мин' : 'Темп страницы, уд/мин'}
       </p>
       <div className="dir-music-tempo-row">
@@ -393,7 +404,7 @@ function BeatRuler({ variant, label }: { variant: 'hero' | 'slim'; label?: strin
         ? [1, 2, 3, 4].map(bar => (
             <span
               key={bar}
-              className="dir-music-ruler-bar type-meta-sm font-mono uppercase tabular-nums"
+              className="dir-music-ruler-bar dir-kit-meta font-mono uppercase tabular-nums"
               style={vars({ '--at': (bar - 1) / 4 })}
             >
               {pad(bar)}
@@ -401,9 +412,9 @@ function BeatRuler({ variant, label }: { variant: 'hero' | 'slim'; label?: strin
           ))
         : null}
       {label ? (
-        <span className="dir-music-ruler-label type-meta font-mono uppercase">{label}</span>
+        <span className="dir-music-ruler-label dir-kit-meta font-mono uppercase">{label}</span>
       ) : null}
-      <span className="dir-music-ruler-bpm type-meta font-mono uppercase tabular-nums">
+      <span className="dir-music-ruler-bpm dir-kit-meta font-mono uppercase tabular-nums">
         {bpm} уд/мин
       </span>
     </div>
@@ -430,15 +441,23 @@ function eqLevels(i: number) {
 
 const EQ_STYLES = Array.from({ length: EQ_BARS }, (_, i) => eqLevels(i))
 
-interface HeroFramesProps {
+interface MontageProps {
   frames: SceneFrame[]
   cut: number
   prev: number
   fresh: boolean
+  /** Первый кадр грузится сразу: на первом экране он — LCP. У заставки работ все кадры ленивые */
+  priority?: boolean
 }
 
 /** Кадры монтажа. Перерисовывается только на склейке, а не на каждой доле */
-const HeroFrames = memo(function HeroFrames({ frames, cut, prev, fresh }: HeroFramesProps) {
+const Montage = memo(function Montage({
+  frames,
+  cut,
+  prev,
+  fresh,
+  priority = false,
+}: MontageProps) {
   if (frames.length === 0) return <span className="dir-music-plate" />
   return (
     <>
@@ -449,9 +468,9 @@ const HeroFrames = memo(function HeroFrames({ frames, cut, prev, fresh }: HeroFr
             <Still
               src={frame.src}
               alt=""
-              priority={index === 0}
+              priority={priority && index === 0}
               sizes="100vw"
-              quality={index === 0 ? 75 : 65}
+              quality={priority && index === 0 ? 75 : 65}
               className="h-full w-full"
             />
             {state === 'on' && fresh ? <span className="dir-music-edge" /> : null}
@@ -462,16 +481,24 @@ const HeroFrames = memo(function HeroFrames({ frames, cut, prev, fresh }: HeroFr
   )
 })
 
-const Transport = memo(function Transport({ bpm, beat }: { bpm: number; beat: number }) {
-  const bar = Math.floor(beat / 4) + 1
+/** Транспорт первого экрана: тайм-код с 00:00:00:00, темп и четыре доли такта */
+const Transport = memo(function Transport({
+  bpm,
+  beat,
+  ms,
+}: {
+  bpm: number
+  beat: number
+  ms: number
+}) {
   const inBar = beat % 4
   return (
     <p
       aria-hidden="true"
-      className="dir-music-transport type-meta font-mono uppercase tabular-nums"
+      className="dir-music-transport dir-kit-meta font-mono uppercase tabular-nums"
     >
+      <span>TC {formatTimecode(ms)}</span>
       <span>{bpm} уд/мин</span>
-      <span className="dir-music-transport-bar">такт {pad(bar % 100)}</span>
       <span className="dir-music-pips">
         {[0, 1, 2, 3].map(i => (
           <i key={i} data-on={i === inBar} data-down={i === 0} />
@@ -513,6 +540,9 @@ const LyricLine = memo(function LyricLine({ lines, beat }: { lines: string[]; be
   )
 })
 
+/** Метка раздела над заголовком: одна моно-строка с красной риской, как на соседних страницах */
+const HERO_KICKER = ['07 / Music', 'Санкт-Петербург', 'Москва', 'по России']
+
 function Hero({ frames }: { frames: SceneFrame[] }) {
   const page = useDirectionPage()
   const { bpm } = useTempo()
@@ -526,14 +556,16 @@ function Hero({ frames }: { frames: SceneFrame[] }) {
   const framesRef = useRef<HTMLDivElement>(null)
   const bumpRef = useRef<HTMLSpanElement>(null)
   const inView = useInView(rootRef)
-  const [beat, setBeat] = useState(0)
+  // Доля и время счёта лежат в одном состоянии: одна перерисовка на долю
+  const [clock, setClock] = useState({ beat: 0, ms: 0 })
   const [shift, setShift] = useState(0)
   const [scene, setScene] = useState({ index: 0, prev: 0, changes: 0 })
-  const beatRef = useRef(0)
+  const clockRef = useRef(clock)
   const sceneRef = useRef(scene)
   const armedRef = useRef(false)
 
   const count = frames.length
+  const beat = clock.beat
 
   /**
    * Склейка только на кадр, который уже загрузился: остальные кадры ленивые,
@@ -541,18 +573,12 @@ function Hero({ frames }: { frames: SceneFrame[] }) {
    * остаёмся на текущем.
    */
   const cutNext = useCallback(() => {
-    const box = framesRef.current
-    if (!box || count < 2) return
     const from = sceneRef.current.index
-    for (let step = 1; step < count; step += 1) {
-      const index = (from + step) % count
-      const image = box.children[index]?.querySelector('img')
-      if (!image || !image.complete || image.naturalWidth === 0) continue
-      const next = { index, prev: from, changes: sceneRef.current.changes + 1 }
-      sceneRef.current = next
-      setScene(next)
-      return
-    }
+    const index = nextLoaded(framesRef.current, from, count)
+    if (index < 0) return
+    const next = { index, prev: from, changes: sceneRef.current.changes + 1 }
+    sceneRef.current = next
+    setScene(next)
   }, [count])
 
   // Первые полторы секунды после load сцена «включается» сама (кадр оседает,
@@ -567,11 +593,15 @@ function Hero({ frames }: { frames: SceneFrame[] }) {
   }, [loaded])
 
   // Доля: счёт идёт всегда, кадр меняется на каждую вторую долю
-  const onBeat = useCallback(() => {
-    beatRef.current += 1
-    setBeat(beatRef.current)
-    if (beatRef.current % 2 === 0 && armedRef.current) cutNext()
-  }, [cutNext])
+  const onBeat = useCallback(
+    (period: number) => {
+      const next = { beat: clockRef.current.beat + 1, ms: clockRef.current.ms + period }
+      clockRef.current = next
+      setClock(next)
+      if (next.beat % 2 === 0 && armedRef.current) cutNext()
+    },
+    [cutNext]
+  )
   useBeatClock(bpm, inView && !reduced, onBeat)
 
   // Удар на первую долю такта: слово чуть подпрыгивает и садится. Анимация
@@ -644,7 +674,7 @@ function Hero({ frames }: { frames: SceneFrame[] }) {
       <div aria-hidden="true" className="dir-music-stage">
         <div ref={parallaxRef} className="dir-music-parallax">
           <div ref={framesRef} className="dir-music-frames">
-            <HeroFrames frames={frames} cut={scene.index} prev={scene.prev} fresh={fresh} />
+            <Montage frames={frames} cut={scene.index} prev={scene.prev} fresh={fresh} priority />
           </div>
         </div>
         <span className="dir-music-scrim" />
@@ -670,11 +700,21 @@ function Hero({ frames }: { frames: SceneFrame[] }) {
 
       <div ref={copyRef} className="dir-music-copy">
         <div className="dir-music-meta dir-music-in" style={vars({ '--in': 0 })}>
-          <p className="dir-music-geo type-meta font-mono uppercase">
-            <span>07 / MUSIC</span> <span>Санкт-Петербург</span> <span>Москва</span>{' '}
-            <span>по России</span>
+          <p className="dir-music-geo dir-kit-meta font-mono uppercase">
+            <span aria-hidden="true" className="dir-music-geo-dash" />
+            <span>
+              {HERO_KICKER.map((part, index) => (
+                <span key={part}>
+                  {index > 0 ? ' ' : null}
+                  <span className="whitespace-nowrap">
+                    {part}
+                    {index < HERO_KICKER.length - 1 ? ' ·' : null}
+                  </span>
+                </span>
+              ))}
+            </span>
           </p>
-          <Transport bpm={bpm} beat={beat} />
+          <Transport bpm={bpm} beat={beat} ms={clock.ms} />
         </div>
 
         <div className="dir-music-lock">
@@ -696,13 +736,13 @@ function Hero({ frames }: { frames: SceneFrame[] }) {
         <div className="dir-music-foot dir-music-in" style={vars({ '--in': 4 })}>
           <LyricLine lines={MUSIC_PAGE.tagline} beat={lineBeat} />
           <div className="dir-music-act">
-            <button type="button" onClick={() => page.openBrief('hero')} className="dir-music-cta">
-              <span className="dir-music-cta-curtain" aria-hidden="true" />
-              <span className="dir-music-cta-label">{MUSIC_PAGE.ctaLabel}</span>
-              <ArrowRight aria-hidden="true" className="dir-music-cta-arrow" />
-            </button>
+            <DirectionButton
+              label={MUSIC_PAGE.ctaLabel}
+              onClick={() => page.openBrief('hero')}
+              className="w-full lg:w-auto lg:min-w-[17.5rem]"
+            />
             {count > 1 ? (
-              <p aria-hidden="true" className="dir-music-hint type-meta font-mono uppercase">
+              <p aria-hidden="true" className="dir-music-hint dir-kit-meta font-mono uppercase">
                 <span className="dir-music-hint-pointer">Клик по кадру — склейка</span>
                 <span className="dir-music-hint-touch">Тап по кадру — склейка</span>
               </p>
@@ -720,7 +760,7 @@ function Manifesto() {
   const sectionRef = useRef<HTMLElement>(null)
   const lyricRef = useRef<HTMLParagraphElement>(null)
   const last = useRef(-2)
-  const words = useMemo(() => typo(MUSIC_PAGE.lyric, 10).split(' '), [])
+  const words = useMemo(() => typo(MUSIC_PAGE.lyric).split(' '), [])
 
   // Слова «поются» по мере скролла: ушло — белое, поётся сейчас — красное.
   // Состояние лежит в data-s: React на скролле не перерисовывается.
@@ -767,7 +807,7 @@ function Manifesto() {
 
       <div className="dir-music-lyric-foot" data-reveal="">
         <p className="dir-music-lyric-note">{prose(MUSIC_PAGE.lyricNote)}</p>
-        <p className="dir-music-lyric-source type-meta font-mono uppercase">
+        <p className="dir-music-lyric-source dir-kit-meta font-mono uppercase">
           <span aria-hidden="true" className="h-px w-6 bg-white/40" />
           {typo(MUSIC_PAGE.lyricSource)}
         </p>
@@ -790,6 +830,8 @@ function Tracks({ frames }: { frames: SceneFrame[] }) {
   const flagBoxRef = useRef<HTMLSpanElement>(null)
   const rowRefs = useRef<(HTMLLIElement | null)[]>([])
   const navRef = useRef<HTMLOListElement>(null)
+  const miniRef = useRef<HTMLDivElement>(null)
+  const gateRef = useRef<HTMLDivElement>(null)
   const current = useRef(0)
   const gesture = useRef({ id: -1, x: 0, moved: false, suppress: false })
   const [active, setActive] = useState(0)
@@ -844,6 +886,57 @@ function Tracks({ frames }: { frames: SceneFrame[] }) {
     }
   }, [])
   useScrollSync(sectionRef, sync, '400px 0px')
+
+  // Низкий экран: полоса-скраббер не липнет, и этап ведёт мини-индикатор в шапке.
+  // Он виден, пока секция на экране, а сама полоса уже уехала под шапку
+  useEffect(() => {
+    const section = sectionRef.current
+    const deck = deckRef.current
+    const mini = miniRef.current
+    if (!section || !deck || !mini || typeof IntersectionObserver === 'undefined') return
+    let sectionIn = false
+    let deckIn = true
+    const apply = () => {
+      mini.dataset.on = String(sectionIn && !deckIn)
+    }
+    const bySection = new IntersectionObserver(([entry]) => {
+      sectionIn = Boolean(entry?.isIntersecting)
+      apply()
+    })
+    const byDeck = new IntersectionObserver(
+      ([entry]) => {
+        deckIn = Boolean(entry?.isIntersecting)
+        apply()
+      },
+      { rootMargin: '-72px 0px 0px 0px' }
+    )
+    bySection.observe(section)
+    byDeck.observe(deck)
+    return () => {
+      bySection.disconnect()
+      byDeck.disconnect()
+    }
+  }, [])
+
+  // Лист бриджа открывается шторкой (clip-path), когда подходит к экрану. Без JS,
+  // при reduced-motion и когда лист уже на экране при загрузке он остаётся открытым
+  useEffect(() => {
+    const gate = gateRef.current
+    if (!gate || typeof IntersectionObserver === 'undefined') return
+    if (window.matchMedia(REDUCED_QUERY).matches) return
+    if (gate.getBoundingClientRect().top < window.innerHeight * 1.15) return
+    gate.dataset.gate = 'closed'
+    const observer = new IntersectionObserver(
+      entries => {
+        if (!entries.some(entry => entry.isIntersecting)) return
+        gate.dataset.gate = 'open'
+        observer.disconnect()
+      },
+      { rootMargin: '0px 0px 15% 0px' }
+    )
+    observer.observe(gate)
+    return () => observer.disconnect()
+  }, [])
 
   const scrollToPart = (index: number) => {
     const row = rowRefs.current[index]
@@ -946,7 +1039,7 @@ function Tracks({ frames }: { frames: SceneFrame[] }) {
         onPointerUp={onPointerEnd}
         onPointerCancel={onPointerEnd}
       >
-        <div className="dir-music-deck-strip dir-music-pad type-meta font-mono uppercase">
+        <div className="dir-music-deck-strip dir-music-pad dir-kit-meta font-mono uppercase">
           <span>Схема трека · {TOTAL_BARS} такта</span>
           <span className="tabular-nums">{bpm} уд/мин · 4/4</span>
         </div>
@@ -996,7 +1089,7 @@ function Tracks({ frames }: { frames: SceneFrame[] }) {
             <span ref={headRef} aria-hidden="true" className="dir-music-head">
               <span
                 ref={flagBoxRef}
-                className="dir-music-head-flag type-meta-sm font-mono tabular-nums"
+                className="dir-music-head-flag dir-kit-meta font-mono tabular-nums"
               >
                 <span ref={flagRef}>01</span>
               </span>
@@ -1013,7 +1106,7 @@ function Tracks({ frames }: { frames: SceneFrame[] }) {
                       aria-label={`${part.stage.partLabel}: ${part.stage.title}`}
                       className="dir-music-part"
                     >
-                      <span className="dir-music-part-label type-meta font-mono uppercase">
+                      <span className="dir-music-part-label dir-kit-meta font-mono uppercase">
                         {part.stage.partLabel}
                       </span>
                     </button>
@@ -1029,6 +1122,66 @@ function Tracks({ frames }: { frames: SceneFrame[] }) {
         {PARTS.map((part, index) => {
           const frame = frameAt(frames, frames.length > 6 ? 6 + index : index * 2 + 1)
           const { stage } = part
+          const isBridge = stage.part === 'bridge'
+
+          const monitor = (
+            <div aria-hidden="true" className="dir-music-monitor">
+              <div className="dir-music-monitor-img">
+                {frame ? (
+                  <Still
+                    src={frame.src}
+                    alt=""
+                    sizes={
+                      isBridge ? '100vw' : '(min-width: 1024px) 50vw, (min-width: 768px) 46vw, 92vw'
+                    }
+                    quality={isBridge ? 65 : 50}
+                    className="absolute inset-0 h-full w-full"
+                  />
+                ) : (
+                  <span className="dir-music-plate" />
+                )}
+              </div>
+              <span className="dir-music-monitor-scrim" />
+              <div className="dir-music-monitor-bars">
+                {part.heights.map((height, i) => (
+                  <span key={i} style={vars({ height: `${height * 100}%`, '--i': i })} />
+                ))}
+              </div>
+              <span className="dir-music-monitor-cap dir-kit-meta font-mono uppercase tabular-nums">
+                {stage.partLabel} · {pad(part.barFrom)}–{pad(part.barTo)}
+              </span>
+            </div>
+          )
+
+          const body = (
+            <div className="dir-music-row-body">
+              <p className="dir-music-row-kicker dir-kit-meta font-mono uppercase tabular-nums">
+                <span>{stage.number}</span>
+                <span aria-hidden="true" className="dir-music-row-dash" />
+                <span>{stage.partLabel}</span>
+                <span className="dir-music-row-bars">
+                  · такты {pad(part.barFrom)}–{pad(part.barTo)}
+                </span>
+              </p>
+              <span aria-hidden="true" className="dir-music-row-word">
+                {stage.partLabel}
+              </span>
+              <h3 className="dir-music-row-title">{typo(stage.title)}</h3>
+              <p className="dir-music-row-text">{prose(stage.text)}</p>
+              <ul className="dir-music-tags" role="list">
+                {stage.tags.map((tag, position) => (
+                  <li
+                    key={tag}
+                    className="dir-kit-meta font-mono uppercase"
+                    style={vars({ '--n': position })}
+                  >
+                    {typo(tag)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
+
           return (
             <li
               key={stage.part}
@@ -1040,74 +1193,49 @@ function Tracks({ frames }: { frames: SceneFrame[] }) {
               data-part={stage.part}
               data-active={active === index}
             >
-              <div className="dir-music-row-body">
-                <p className="dir-music-row-kicker type-meta font-mono uppercase tabular-nums">
-                  <span>{stage.number}</span>
-                  <span aria-hidden="true" className="dir-music-row-dash" />
-                  <span>{stage.partLabel}</span>
-                  <span className="text-white/55">
-                    · такты {pad(part.barFrom)}–{pad(part.barTo)}
-                  </span>
-                </p>
-                <span aria-hidden="true" className="dir-music-row-word">
-                  {stage.partLabel}
-                </span>
-                <h3 className="dir-music-row-title">{typo(stage.title)}</h3>
-                <p className="dir-music-row-text">{prose(stage.text)}</p>
-                <ul className="dir-music-tags" role="list">
-                  {stage.tags.map((tag, position) => (
-                    <li
-                      key={tag}
-                      className="type-meta font-mono uppercase"
-                      style={vars({ '--n': position })}
-                    >
-                      {typo(tag)}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {stage.part === 'bridge' ? (
-                <div aria-hidden="true" className="dir-music-bridge-count">
-                  <i className="type-meta font-mono uppercase">Вход · такт</i>
-                  <span className="tabular-nums">{pad(part.barFrom)}</span>
-                  <i className="type-meta font-mono uppercase">Выход · такт</i>
-                  <span className="tabular-nums">{pad(part.barTo)}</span>
-                </div>
-              ) : null}
-
-              <div aria-hidden="true" className="dir-music-monitor">
-                <div className="dir-music-monitor-img">
-                  {frame ? (
-                    <Still
-                      src={frame.src}
-                      alt=""
-                      sizes={
-                        stage.part === 'bridge'
-                          ? '100vw'
-                          : '(min-width: 1024px) 50vw, (min-width: 768px) 46vw, 92vw'
-                      }
-                      quality={stage.part === 'bridge' ? 65 : 50}
-                      className="absolute inset-0 h-full w-full"
-                    />
-                  ) : (
-                    <span className="dir-music-plate" />
-                  )}
-                </div>
-                <span className="dir-music-monitor-scrim" />
-                <div className="dir-music-monitor-bars">
-                  {part.heights.map((height, i) => (
-                    <span key={i} style={vars({ height: `${height * 100}%`, '--i': i })} />
-                  ))}
-                </div>
-                <span className="dir-music-monitor-cap type-meta-sm font-mono uppercase tabular-nums">
-                  {stage.partLabel} · {pad(part.barFrom)}–{pad(part.barTo)}
-                </span>
-              </div>
+              {isBridge ? (
+                <>
+                  {monitor}
+                  {/* Лист --dir-paper на общем классе: шапка сама переходит на тёмный знак */}
+                  <div ref={gateRef} className="dir-music-bridge dir-paper-section">
+                    <span aria-hidden="true" className="dir-music-bridge-sheet" />
+                    <span aria-hidden="true" className="dir-music-bridge-edge" />
+                    <div className="dir-music-bridge-grid dir-music-pad">
+                      {body}
+                      <div aria-hidden="true" className="dir-music-bridge-count">
+                        <i className="dir-kit-meta font-mono uppercase">Вход · такт</i>
+                        <span className="tabular-nums">{pad(part.barFrom)}</span>
+                        <i className="dir-kit-meta font-mono uppercase">Выход · такт</i>
+                        <span className="tabular-nums">{pad(part.barTo)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {body}
+                  {monitor}
+                </>
+              )}
             </li>
           )
         })}
       </ol>
+
+      <div ref={miniRef} aria-hidden="true" className="dir-music-mini" data-on="false">
+        <span className="dir-music-mini-bars">
+          {PARTS.map((part, index) => (
+            <i
+              key={part.stage.part}
+              data-state={index < active ? 'done' : index === active ? 'now' : 'next'}
+              style={{ flexGrow: part.stage.bars }}
+            />
+          ))}
+        </span>
+        <span className="dir-music-mini-label dir-kit-meta font-mono uppercase">
+          {PARTS[active]?.stage.partLabel}
+        </span>
+      </div>
     </section>
   )
 }
@@ -1125,7 +1253,12 @@ function PlayBar() {
   const page = useDirectionPage()
 
   return (
-    <section aria-label="Обсудить клип" className="dir-music-play dir-music-pad" data-live-zone>
+    <section
+      aria-label="Обсудить клип"
+      className="dir-music-play dir-music-pad"
+      data-live-zone
+      data-sticky-hide=""
+    >
       <div className="dir-music-play-card" data-reveal="">
         <div aria-hidden="true" className="dir-music-play-wave">
           {PLAY_BARS.map(bar => (
@@ -1139,14 +1272,11 @@ function PlayBar() {
           <AudioLines className="h-6 w-6 md:h-8 md:w-8" strokeWidth={2.25} />
         </span>
         <p className="dir-music-play-lead">{typo(MUSIC_PAGE.play.lead)}</p>
-        <button
-          type="button"
+        <DirectionButton
+          label={MUSIC_PAGE.play.ctaLabel}
           onClick={() => page.openBrief('process')}
-          className="dir-music-play-btn"
-        >
-          <span>{MUSIC_PAGE.play.ctaLabel}</span>
-          <ArrowRight aria-hidden="true" className="h-4 w-4 md:h-5 md:w-5" />
-        </button>
+          className="dir-music-play-btn w-full md:w-auto md:min-w-[16rem]"
+        />
       </div>
     </section>
   )
@@ -1209,6 +1339,9 @@ function Sequencer() {
           <h2 id="music-seq-title" data-reveal="" className="dir-music-h2">
             {typo('Кому нужен клип')}
           </h2>
+          <p className="dir-music-seq-note" data-reveal="">
+            {prose(MUSIC_PAGE.patternNote)}
+          </p>
         </div>
         <TempoSwitch variant="inline" />
       </div>
@@ -1216,28 +1349,34 @@ function Sequencer() {
       <ul ref={listRef} role="list" className="dir-music-seq-list">
         {MUSIC_PAGE.audiences.map((item, index) => (
           <li key={item.title} data-seq="" className="dir-music-seq-row" data-reveal="">
-            <span className="dir-music-seq-idx type-meta font-mono uppercase tabular-nums">
+            <span className="dir-music-seq-idx dir-kit-meta font-mono uppercase tabular-nums">
               {pad(index + 1)}
             </span>
             <div className="dir-music-seq-copy">
               <h3 className="dir-music-seq-title">{typo(item.title)}</h3>
               <p className="dir-music-seq-text">{prose(item.text)}</p>
             </div>
-            <div aria-hidden="true" className="dir-music-seq-grid">
-              {(PATTERNS[index % PATTERNS.length] ?? PATTERNS[0]).map((lane, laneIndex) => (
-                <div key={laneIndex} className="dir-music-seq-lane">
-                  {Array.from(lane).map((cell, step) => (
-                    <span
-                      key={step}
-                      className="dir-music-seq-cell"
-                      data-on={cell === 'x'}
-                      data-beat={step % 4 === 0}
-                      style={vars({ '--i': step })}
-                    />
-                  ))}
-                </div>
-              ))}
-              <span className="dir-music-seq-head-col" />
+            <div aria-hidden="true" className="dir-music-seq-pattern">
+              <div className="dir-music-seq-grid">
+                {(PATTERNS[index % PATTERNS.length] ?? PATTERNS[0]).map((lane, laneIndex) => (
+                  <div key={laneIndex} className="dir-music-seq-lane">
+                    {Array.from(lane).map((cell, step) => (
+                      <span
+                        key={step}
+                        className="dir-music-seq-cell"
+                        data-on={cell === 'x'}
+                        data-beat={step % 4 === 0}
+                        style={vars({ '--i': step })}
+                      />
+                    ))}
+                  </div>
+                ))}
+                <span className="dir-music-seq-head-col" />
+              </div>
+              <p className="dir-music-seq-cap dir-kit-meta font-mono uppercase">
+                <span>Паттерн {pad(index + 1)}</span>
+                <span>{item.rhythm}</span>
+              </p>
             </div>
           </li>
         ))}
@@ -1256,6 +1395,7 @@ function CueCta() {
       aria-labelledby="music-cue-title"
       className="dir-music-cue dir-music-pad"
       data-live-zone
+      data-sticky-hide=""
     >
       <h2 id="music-cue-title" className="dir-music-cue-title" data-reveal="">
         <span className="dir-music-cue-lead">{typo(MUSIC_PAGE.cue.lead)}</span>{' '}
@@ -1266,23 +1406,241 @@ function CueCta() {
         <ol className="dir-music-cue-list" role="list">
           {MUSIC_PAGE.cue.items.map((entry, index) => (
             <li key={entry} className="dir-music-cue-item">
-              <span className="type-meta font-mono uppercase tabular-nums">{pad(index + 1)}</span>
+              <span className="dir-kit-meta font-mono uppercase tabular-nums">
+                {pad(index + 1)}
+              </span>
               <span>{typo(entry)}</span>
             </li>
           ))}
         </ol>
-        <button
-          type="button"
+        <DirectionButton
+          label={MUSIC_PAGE.cue.ctaLabel}
           onClick={() => page.openBrief('proof')}
-          className="dir-music-cta dir-music-cta-wide"
-        >
-          <span className="dir-music-cta-curtain" aria-hidden="true" />
-          <span className="dir-music-cta-label">{MUSIC_PAGE.cue.ctaLabel}</span>
-          <ArrowRight aria-hidden="true" className="dir-music-cta-arrow" />
-        </button>
+          className="dir-music-cue-btn w-full"
+        />
         <p className="dir-music-cue-note">{prose(MUSIC_PAGE.cue.note)}</p>
       </div>
     </section>
+  )
+}
+
+/* ─────────────────────────── 7. Заставка работ ─────────────────────────── */
+
+interface ReelShot extends SceneFrame {
+  year: string | null
+}
+
+/** Один кадр на работу, не больше пяти. Второй кадр галереи, чтобы не повторять первый экран */
+function buildReel(works: DirectionPageWork[]): ReelShot[] {
+  const shots: ReelShot[] = []
+  for (const work of works) {
+    const src = work.stills[1] ?? work.posterUrl ?? work.stills[0]
+    if (!src) continue
+    shots.push({
+      key: `${work.slug}-reel`,
+      src,
+      slug: work.slug,
+      client: work.client,
+      title: work.title,
+      year: work.year,
+    })
+    if (shots.length === 5) break
+  }
+  return shots
+}
+
+/**
+ * Заставка перед списком работ: экран целиком, кадры клипов режутся на такт
+ * (каждая четвёртая доля), имя работы крупно. Кульминация нижней половины:
+ * до неё страница объясняла, здесь — показывает. Список с названиями и ссылками
+ * идёт сразу за ней, поэтому заставка — декор, а ссылка на кейс в ней —
+ * только для мыши и касания.
+ */
+function ClipsReel({ works }: { works: DirectionPageWork[] }) {
+  const page = useDirectionPage()
+  const { bpm } = useTempo()
+  const reduced = useReduced()
+  const shots = useMemo(() => buildReel(works), [works])
+  const rootRef = useRef<HTMLElement>(null)
+  const parallaxRef = useRef<HTMLDivElement>(null)
+  const framesRef = useRef<HTMLDivElement>(null)
+  const [live, setLive] = useState(false)
+  const [clock, setClock] = useState({ beat: 0, ms: 0 })
+  const [scene, setScene] = useState({ index: 0, prev: 0, changes: 0 })
+  const clockRef = useRef(clock)
+  const sceneRef = useRef(scene)
+  const count = shots.length
+
+  const cutNext = useCallback(() => {
+    const from = sceneRef.current.index
+    const index = nextLoaded(framesRef.current, from, count)
+    if (index < 0) return
+    const next = { index, prev: from, changes: sceneRef.current.changes + 1 }
+    sceneRef.current = next
+    setScene(next)
+  }, [count])
+
+  // Тайм-код каждый раз начинается с 00:00:00:00, когда заставка выходит на экран
+  useEffect(() => {
+    const node = rootRef.current
+    if (!node || count === 0 || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(([entry]) => {
+      const on = Boolean(entry?.isIntersecting)
+      if (on) {
+        clockRef.current = { beat: 0, ms: 0 }
+        setClock(clockRef.current)
+      }
+      setLive(on)
+    })
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [count])
+
+  const onBeat = useCallback(
+    (period: number) => {
+      const next = { beat: clockRef.current.beat + 1, ms: clockRef.current.ms + period }
+      clockRef.current = next
+      setClock(next)
+      if (next.beat % 4 === 0) cutNext()
+    },
+    [cutNext]
+  )
+  useBeatClock(bpm, live && !reduced && count > 1, onBeat)
+
+  // Кадр идёт вверх и медленно наезжает, пока заставка проходит экран
+  const syncScroll = useCallback(() => {
+    const node = rootRef.current
+    const layer = parallaxRef.current
+    if (!node || !layer || reduced) return
+    const box = node.getBoundingClientRect()
+    const progress = clamp01((window.innerHeight - box.top) / (window.innerHeight + box.height))
+    layer.style.transform = `translate3d(0, ${((0.5 - progress) * 80).toFixed(1)}px, 0) scale(${(1.06 + progress * 0.07).toFixed(3)})`
+  }, [reduced])
+  useScrollSync(rootRef, syncScroll, '0px')
+
+  const onCut = (event: MouseEvent<HTMLElement>) => {
+    if (reduced || count < 2) return
+    if ((event.target as HTMLElement).closest('a, button')) return
+    cutNext()
+  }
+
+  if (count === 0) return null
+  const shot = shots[scene.index] ?? shots[0]
+  if (!shot) return null
+
+  return (
+    // Список тех же работ с живыми ссылками идёт следом, поэтому заставка — декор
+    <section
+      ref={rootRef}
+      aria-hidden="true"
+      className="dir-music-reel dir-music-pad"
+      data-live-zone
+      data-sticky-hide=""
+      onClick={onCut}
+    >
+      <div ref={parallaxRef} className="dir-music-reel-stage">
+        <div ref={framesRef} className="dir-music-frames">
+          <Montage frames={shots} cut={scene.index} prev={scene.prev} fresh={scene.changes > 0} />
+        </div>
+      </div>
+      <span className="dir-music-reel-scrim" />
+
+      <p className="dir-music-reel-top dir-kit-meta font-mono uppercase">
+        <span className="dir-music-reel-label">
+          <span className="dir-music-geo-dash" />
+          Кадры из работ
+        </span>
+        <span className="tabular-nums">
+          TC {formatTimecode(clock.ms)} · {bpm} уд/мин
+        </span>
+      </p>
+
+      <div className="dir-music-reel-bottom">
+        <Link
+          key={`${shot.key}-${scene.changes}`}
+          href={`/projects/${shot.slug}`}
+          prefetch={false}
+          tabIndex={-1}
+          onClick={() => page.openCase(shot.slug)}
+          className="dir-music-reel-copy"
+        >
+          <span className="dir-music-reel-name">{shot.client}</span>
+          <span className="dir-music-reel-meta dir-kit-meta font-mono uppercase">
+            <span>{typo(shot.title)}</span>
+            {shot.year ? <span className="tabular-nums">{shot.year}</span> : null}
+            <span className="dir-music-reel-open">
+              Кейс
+              <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
+            </span>
+          </span>
+        </Link>
+
+        <div className="dir-music-reel-track">
+          {shots.map((item, index) => (
+            <span
+              key={item.key}
+              className="dir-music-reel-seg dir-kit-meta font-mono tabular-nums"
+              data-state={index === scene.index ? 'now' : 'idle'}
+            >
+              {pad(index + 1)}
+              <i key={index === scene.index ? `on-${scene.changes}` : 'off'} />
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────────── Знаки сцены в общих блоках ─────────────────────────── */
+
+const SIGN_PATTERN = ['x...x...x...x..x', '....x.......x...', 'x.x.x.x.x.x.x.xx'] as const
+
+/** Знак финала: три дорожки секвенсора крупно, красная метка шагает по долям */
+function EndSign() {
+  const { bpm } = useTempo()
+  return (
+    <div className="dir-music-sign" data-live-zone>
+      <p className="dir-music-sign-cap dir-kit-meta font-mono uppercase tabular-nums">
+        <span>4/4</span>
+        <span>{bpm} уд/мин</span>
+      </p>
+      <div className="dir-music-sign-grid">
+        {SIGN_PATTERN.map((lane, laneIndex) => (
+          <div key={laneIndex} className="dir-music-sign-lane">
+            {Array.from(lane).map((cell, step) => (
+              <span
+                key={step}
+                className="dir-music-sign-cell"
+                data-on={cell === 'x'}
+                data-beat={step % 4 === 0}
+              />
+            ))}
+          </div>
+        ))}
+        <span className="dir-music-sign-head" />
+      </div>
+    </div>
+  )
+}
+
+const FAQ_EQ_STYLES = EQ_STYLES.filter((_, index) => index % 2 === 0)
+
+/** Вклейка левой колонки вопросов: эквалайзер первого экрана, уменьшенный */
+function FaqSign() {
+  const { bpm } = useTempo()
+  return (
+    <div aria-hidden="true" className="dir-music-faq-sign" data-live-zone>
+      <div key={bpm} className="dir-music-faq-eq">
+        {FAQ_EQ_STYLES.map((style, index) => (
+          <span key={index} className="dir-music-eq-bar" style={style} />
+        ))}
+      </div>
+      <p className="dir-music-faq-cap dir-kit-meta font-mono uppercase tabular-nums">
+        <span>В темпе страницы</span>
+        <span className="whitespace-nowrap">{bpm} уд/мин</span>
+      </p>
+    </div>
   )
 }
 
@@ -1316,6 +1674,7 @@ export function MusicPage({ works }: MusicPageProps) {
           <Tracks frames={frames} />
           <PlayBar />
           <Sequencer />
+          <ClipsReel works={works} />
           <BeatRuler variant="slim" label="Клипы" />
           <DirectionCredits
             index="04"
@@ -1325,12 +1684,18 @@ export function MusicPage({ works }: MusicPageProps) {
           />
           <CueCta />
           <BeatRuler variant="slim" label="Вопросы" />
-          <DirectionFaq index="05" title="Вопросы о съёмке клипа" items={FAQ_ITEMS} />
+          <DirectionFaq
+            index="05"
+            title="Вопросы о съёмке клипа"
+            items={FAQ_ITEMS}
+            aside={<FaqSign />}
+          />
           <OtherDirections current="music" reading={DIRECTION_READING['music']} />
           <DirectionEnd
             lines={MUSIC_PAGE.end.lines}
             ctaLabel={MUSIC_PAGE.end.ctaLabel}
             note={prose(MUSIC_PAGE.end.note)}
+            aside={<EndSign />}
             frame={closing ? { src: closing.src, alt: closing.client } : null}
           />
         </div>

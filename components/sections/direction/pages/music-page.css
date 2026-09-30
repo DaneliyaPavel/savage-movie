@@ -9,6 +9,10 @@
  * .dir-music. От неё считаются эквалайзер, шаг метки на линейке, удар
  * заголовка и отклик наведений: выбрали другой BPM — сменился ритм всего.
  *
+ * Светлое только одно — лист бриджа на общем токене --dir-paper (класс
+ * .dir-paper-section из кита): шапка сама переходит на тёмный знак, а липкая
+ * полоса этапов, пока лист под шапкой, красится тем же токеном.
+ *
  * Правила движения. Анимируются transform, clip-path и opacity декора; текст
  * заголовка, абзацы и кнопки на первом кадре стоят на месте, вход — сдвиг
  * без opacity:0. Вспышек на весь экран нет: на доле бьёт тонкая красная
@@ -49,17 +53,6 @@
 }
 
 .dir-music :where(button, a):focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
-/*
- * Логотип в шапке, ссылки подвала и прочее общее без своего фокуса получали
- * серое кольцо браузера. Красим до акцента, но только пока на странице стоит
- * эта сцена (:has), и с нулевой специфичностью: собственные стили компонентов
- * сильнее.
- */
-:where(main:has(.dir-music)) :where(a[href], button, [tabindex='0']):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
@@ -496,6 +489,7 @@
 }
 
 .dir-music-meta {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -503,13 +497,26 @@
   gap: 0.6rem 1.5rem;
 }
 
+/* Мягкая тень под моно-строкой вместо плашек: затухает со всех сторон, жёстких краёв нет */
+.dir-music-meta::before {
+  content: '';
+  position: absolute;
+  inset: -1.1rem calc(var(--dm-pad) * -0.6);
+  z-index: -1;
+  background: linear-gradient(to bottom, transparent, rgb(0 0 0 / 0.42) 45%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  pointer-events: none;
+}
+
 .dir-music-transport {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 1.1rem;
-  background: rgb(0 0 0 / 0.72);
-  padding: 0.4rem 0.7rem;
+  gap: 0.35rem 1.1rem;
+  margin: 0;
   color: rgb(255 255 255 / 0.9);
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.7);
 }
 
 .dir-music-pips {
@@ -531,7 +538,7 @@
 
 .dir-music-lock {
   position: relative;
-  margin-top: 1.5rem;
+  margin-top: 1.25rem;
 }
 
 .dir-music-h1 {
@@ -544,6 +551,8 @@
   font-size: clamp(2rem, 9.9vw, 13rem);
   line-height: 0.86;
   letter-spacing: -0.04em;
+  /* Скобка над «Й» выходит за строку при интерлиньяже 0,86: запас держит её ниже моно-строки */
+  padding-top: 0.17em;
 }
 
 .dir-music-h1-b {
@@ -672,7 +681,8 @@
 @media (min-width: 64rem) {
   .dir-music-foot {
     flex-direction: row;
-    align-items: flex-end;
+    /* Кнопка на одной линии с лидом: её середина совпадает с серединой двух строк подписи */
+    align-items: center;
     justify-content: space-between;
     margin-top: 2.25rem;
   }
@@ -680,7 +690,7 @@
 
 .dir-music-tagline {
   margin: 0;
-  color: rgb(255 255 255 / 0.74);
+  color: rgb(255 255 255 / 0.78);
   font-size: clamp(1rem, 1.5vw, 1.35rem);
   font-weight: 300;
   line-height: 1.38;
@@ -711,6 +721,7 @@
 }
 
 .dir-music-act {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -720,12 +731,23 @@
 @media (min-width: 64rem) {
   .dir-music-act {
     align-items: flex-end;
+    gap: 0;
   }
 }
 
 .dir-music-hint {
   margin: 0;
   color: var(--dm-ink-2);
+}
+
+/* На широком экране подсказка не сдвигает кнопку: она лежит под ней и не участвует в высоте */
+@media (min-width: 64rem) {
+  .dir-music-hint {
+    position: absolute;
+    top: calc(100% + 0.7rem);
+    right: 0;
+    white-space: nowrap;
+  }
 }
 
 .dir-music-hint-touch {
@@ -740,86 +762,6 @@
   .dir-music-hint-touch {
     display: inline;
   }
-}
-
-/* Кнопка: белая плашка, красная шторка на наведении, стрелка бьёт в темпе */
-.dir-music-cta {
-  position: relative;
-  isolation: isolate;
-  display: inline-flex;
-  min-height: 3.5rem;
-  align-items: center;
-  justify-content: center;
-  gap: 0.85rem;
-  overflow: hidden;
-  border: 0;
-  border-radius: 2px;
-  background: #fff;
-  padding: 0 1.75rem;
-  color: #000;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--motion-press) var(--dm-ease);
-}
-
-.dir-music-cta:active {
-  transform: scale(0.98);
-}
-
-.dir-music-cta-curtain {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--accent);
-  transform: translateX(-101%);
-  transition: transform var(--motion-move) var(--dm-ease);
-}
-
-.dir-music-cta-arrow {
-  width: 1.1rem;
-  height: 1.1rem;
-  flex: none;
-}
-
-.dir-music-cta:focus-visible .dir-music-cta-curtain,
-.dir-music-cta:active .dir-music-cta-curtain {
-  transform: translateX(0);
-}
-
-.dir-music-cta:focus-visible .dir-music-cta-arrow,
-.dir-music-cta:active .dir-music-cta-arrow {
-  animation: dir-music-nudge var(--dm-beat) var(--dm-ease) infinite;
-}
-
-@media (hover: hover) {
-  .dir-music-cta:hover .dir-music-cta-curtain {
-    transform: translateX(0);
-  }
-
-  .dir-music-cta:hover .dir-music-cta-arrow {
-    animation: dir-music-nudge var(--dm-beat) var(--dm-ease) infinite;
-  }
-}
-
-@keyframes dir-music-nudge {
-  0% {
-    transform: translateX(0);
-  }
-  40% {
-    transform: translateX(6px);
-  }
-  100% {
-    transform: translateX(0);
-  }
-}
-
-.dir-music-cta-wide {
-  width: 100%;
-  min-height: 4rem;
-  justify-content: space-between;
-  font-size: 1.05rem;
 }
 
 /* ─────────────────────────── Линейка доли ─────────────────────────── */
@@ -1025,17 +967,42 @@
   text-wrap: pretty;
 }
 
-/* Липкая полоса: под шапкой сайта, чёрная, со своей тенью-градиентом */
+/*
+ * Липкая полоса: под шапкой сайта, чёрная, со своей тенью-градиентом. Пока лист
+ * бриджа под шапкой (каркас ставит main[data-header='light']), полоса красится
+ * тем же токеном --dir-paper: иначе тёмный знак шапки лёг бы на чёрное. Цвета
+ * полосы лежат в переменных --dk-*, светлый режим меняет только их.
+ */
 .dir-music-deck {
+  --dk-bg: #080808;
+  --dk-line: var(--dm-line);
+  --dk-mute: var(--dm-ink-2);
+  --dk-ink: var(--dm-ink);
+  --dk-strong: #fff;
+  --dk-bar: rgb(255 255 255 / 0.24);
+  --dk-press: rgb(255 255 255 / 0.08);
   position: sticky;
   top: 0;
   z-index: 30;
-  background: #080808;
-  border-bottom: 1px solid var(--dm-line);
+  background: var(--dk-bg);
+  border-bottom: 1px solid var(--dk-line);
   padding-top: 4.25rem;
   touch-action: pan-y;
   user-select: none;
   -webkit-user-select: none;
+  transition:
+    background-color var(--motion-move) ease,
+    border-color var(--motion-move) ease;
+}
+
+.dir-shell[data-header='light'] .dir-music-deck {
+  --dk-bg: var(--dir-paper);
+  --dk-line: var(--dir-paper-line);
+  --dk-mute: var(--dir-paper-mute);
+  --dk-ink: var(--dir-paper-mute);
+  --dk-strong: var(--dir-paper-ink);
+  --dk-bar: rgb(13 13 13 / 0.2);
+  --dk-press: rgb(13 13 13 / 0.07);
 }
 
 .dir-music-deck::after {
@@ -1043,7 +1010,7 @@
   position: absolute;
   inset: 100% 0 auto;
   height: 1.5rem;
-  background: linear-gradient(#080808, transparent);
+  background: linear-gradient(var(--dk-bg), transparent);
   pointer-events: none;
 }
 
@@ -1052,7 +1019,7 @@
   justify-content: space-between;
   gap: 1rem;
   padding-block: 0.25rem 0.1rem;
-  color: var(--dm-ink-2);
+  color: var(--dk-mute);
 }
 
 @media (min-width: 48rem) {
@@ -1117,7 +1084,7 @@
   flex: 1 1 0;
   min-width: 1px;
   border-radius: 1px;
-  background: rgb(255 255 255 / 0.24);
+  background: var(--dk-bar);
   transform-origin: 50% 50%;
 }
 
@@ -1159,8 +1126,8 @@
   inset: 0 auto;
   left: -1px;
   width: 2px;
-  background: #fff;
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.5);
+  background: var(--dk-strong);
+  box-shadow: 0 0 0 1px var(--dk-bg);
 }
 
 .dir-music-head-flag {
@@ -1213,7 +1180,7 @@
   display: flex;
   min-width: 0;
   flex-basis: 0;
-  border-left: 1px solid var(--dm-line);
+  border-left: 1px solid var(--dk-line);
 }
 
 .dir-music-nav li:first-child {
@@ -1228,7 +1195,7 @@
   border: 0;
   background: none;
   padding: 0 0.25rem 0.5rem 0.4rem;
-  color: var(--dm-ink);
+  color: var(--dk-ink);
   text-align: left;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -1247,17 +1214,17 @@
 }
 
 .dir-music-part[aria-current='step'] {
-  color: #fff;
+  color: var(--dk-strong);
 }
 
 .dir-music-part:active {
-  background: rgb(255 255 255 / 0.08);
+  background: var(--dk-press);
 }
 
 @media (hover: hover) {
   .dir-music-part:hover {
-    background: rgb(255 255 255 / 0.05);
-    color: #fff;
+    background: var(--dk-press);
+    color: var(--dk-strong);
   }
 }
 
@@ -1295,11 +1262,92 @@
   }
 }
 
-/* Низкий экран: полоса не липнет, иначе она съедала бы треть высоты */
+/*
+ * Низкий экран: полоса не липнет, иначе она съедала бы треть высоты. Этап тогда
+ * показывает мини-индикатор в шапке (см. ниже), а полная навигация остаётся у
+ * начала секции.
+ */
 @media (max-height: 40rem) {
   .dir-music-deck {
     position: relative;
   }
+}
+
+/* ---------- Мини-индикатор этапа в шапке (низкий экран) ---------- */
+
+.dir-music-mini {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 40;
+  display: none;
+  height: 4.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: rgb(255 255 255 / 0.88);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--motion-move) ease;
+}
+
+@media (max-height: 40rem) {
+  .dir-music-mini {
+    display: flex;
+  }
+}
+
+.dir-music-mini[data-on='true'] {
+  opacity: 1;
+}
+
+.dir-music-mini-bars {
+  display: flex;
+  width: 5.25rem;
+  gap: 3px;
+}
+
+.dir-music-mini-bars i {
+  display: block;
+  height: 4px;
+  min-width: 4px;
+  background: rgb(255 255 255 / 0.3);
+  transition: background-color var(--motion-state) ease;
+}
+
+.dir-music-mini-bars i[data-state='done'] {
+  background: var(--accent);
+}
+
+.dir-music-mini-bars i[data-state='now'] {
+  background: #fff;
+}
+
+.dir-music-mini-label {
+  min-width: 4.25rem;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.6);
+}
+
+/* Подпись — только там, где между знаком и «МЕНЮ» есть место */
+@media (max-width: 30rem) {
+  .dir-music-mini-label {
+    display: none;
+  }
+}
+
+.dir-shell[data-header='light'] .dir-music-mini {
+  color: var(--dir-paper-ink);
+}
+
+.dir-shell[data-header='light'] .dir-music-mini-bars i {
+  background: rgb(13 13 13 / 0.25);
+}
+
+.dir-shell[data-header='light'] .dir-music-mini-bars i[data-state='now'] {
+  background: var(--dir-paper-ink);
+}
+
+.dir-shell[data-header='light'] .dir-music-mini-label {
+  text-shadow: none;
 }
 
 /* На телефоне волна почти во всю ширину: узкие части (интро, бридж) остаются шире 44px */
@@ -1309,30 +1357,40 @@
   }
 }
 
-/* 360px: 12,5% от ширины — ровно на границе 44px, поэтому убираем и эти поля */
+/*
+ * 360px: 12,5% от ширины — ровно на границе 44px, поэтому убираем и эти поля.
+ * На 320px интро и бридж были бы по 40px: им задан минимум 44px, остальные
+ * части чуть уже (сдвиг границ — до 4px, метка идёт по той же волне).
+ */
 @media (max-width: 23.99rem) {
   .dir-music-wave-wrap {
     padding-inline: 0;
   }
+
+  .dir-music-nav li,
+  .dir-music-wave-part {
+    min-width: 2.85rem;
+  }
 }
 
-/* Подпись сцены набрана как субтитры: плашка под каждым словом, а не вуаль на весь кадр */
+/* Метка раздела: одна моно-строка с красной риской, как на соседних страницах */
 .dir-music-geo {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 0.75rem;
   margin: 0;
-  color: rgb(255 255 255 / 0.9);
+  color: rgb(255 255 255 / 0.85);
+  line-height: 1.6;
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.7);
 }
 
-.dir-music-geo > span {
-  background: rgb(0 0 0 / 0.72);
-  padding: 0.4rem 0.7rem;
-}
-
-.dir-music-geo > span:first-child {
-  border-left: 2px solid var(--accent);
-  color: #fff;
+.dir-music-geo-dash {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 1px;
+  /* Половина строки: риска на уровне первой строки, даже когда метка переносится */
+  margin-top: 0.8em;
+  background: var(--accent);
 }
 
 .dir-music-rows {
@@ -1343,11 +1401,14 @@
 
 /*
  * Каждая часть трека — своя композиция: интро и аутро — обычный монитор,
- * куплет — квадрат с другой стороны, припев — высокий кадр и самый крупный
- * заголовок, бридж — белая «дорожка тишины» на всю ширину. Переменные
- * --row-* переключают цвет текста, когда фон строки светлый.
+ * куплет — кадр с другой стороны, припев — высокий кадр и самый крупный
+ * заголовок, бридж — «дорожка тишины»: кадр на всю ширину и лист --dir-paper.
+ * Высоту строк держат svh-пределы: закреплённая полоса этапов живёт до конца
+ * секции, и вся секция укладывается в ~330svh. Переменные --row-* переключают
+ * цвет текста, когда фон строки светлый.
  */
 .dir-music-row {
+  --row-pad: clamp(2.25rem, min(5vw, 8svh), 4.5rem);
   --row-ink: #fff;
   --row-ink-2: var(--dm-ink);
   --row-line: rgb(255 255 255 / 0.24);
@@ -1355,10 +1416,10 @@
   --row-word: linear-gradient(180deg, rgb(255 255 255 / 0.26), rgb(255 255 255 / 0.03) 92%);
   position: relative;
   display: grid;
-  gap: 2.25rem;
+  gap: 1.75rem;
   overflow-x: clip;
   border-top: 1px solid var(--dm-line);
-  padding-block: clamp(3.5rem, 7vw, 6.5rem);
+  padding-block: var(--row-pad);
 }
 
 .dir-music-row::before {
@@ -1378,20 +1439,7 @@
 }
 
 .dir-music-row[data-part='chorus'] {
-  padding-block: clamp(5rem, 11vw, 9.5rem);
-}
-
-.dir-music-row[data-part='bridge'] {
-  --row-ink: #000;
-  --row-ink-2: rgb(0 0 0 / 0.74);
-  --row-line: rgb(0 0 0 / 0.32);
-  --row-tag: rgb(0 0 0 / 0.86);
-  --row-word: linear-gradient(180deg, rgb(0 0 0 / 0.16), rgb(0 0 0 / 0.02) 92%);
-  row-gap: 0;
-  border-top-color: transparent;
-  background: #fff;
-  padding-top: 0;
-  padding-bottom: clamp(3.5rem, 7vw, 6.5rem);
+  --row-pad: clamp(2.75rem, min(6.5vw, 10svh), 5.5rem);
 }
 
 @media (min-width: 48rem) {
@@ -1409,6 +1457,7 @@
   .dir-music-monitor {
     grid-column: 8 / -1;
     grid-row: 1;
+    max-height: 46svh;
   }
 
   .dir-music-row[data-part='verse'] .dir-music-row-body {
@@ -1417,7 +1466,8 @@
 
   .dir-music-row[data-part='verse'] .dir-music-monitor {
     grid-column: 1 / 6;
-    aspect-ratio: 1;
+    aspect-ratio: 5 / 4;
+    max-height: 50svh;
   }
 
   .dir-music-row[data-part='chorus'] .dir-music-row-body {
@@ -1435,16 +1485,7 @@
   .dir-music-row[data-part='outro'] .dir-music-monitor {
     grid-column: 1 / 7;
     aspect-ratio: 16 / 10;
-  }
-
-  .dir-music-row[data-part='bridge'] .dir-music-monitor {
-    grid-column: 1 / -1;
-    aspect-ratio: 21 / 9;
-  }
-
-  .dir-music-row[data-part='bridge'] .dir-music-row-body {
-    grid-column: 1 / 9;
-    grid-row: 2;
+    max-height: 42svh;
   }
 }
 
@@ -1454,10 +1495,15 @@
   }
 }
 
-/* Название части — громадная подпись над заголовком; заголовок заходит на её низ */
+/*
+ * Название части — громадная подпись над заголовком; заголовок заходит на её низ.
+ * Ширина по содержимому: заливка-градиент рисуется только в границах блока, и
+ * на ширине колонки «ПРИПЕВ» обрезался на последней букве.
+ */
 .dir-music-row-word {
   display: block;
-  margin: 0.9rem 0 -0.28em;
+  width: max-content;
+  margin: 0.75rem 0 -0.28em;
   color: transparent;
   background: var(--row-word);
   -webkit-background-clip: text;
@@ -1473,17 +1519,13 @@
 
 @media (min-width: 48rem) {
   .dir-music-row-word {
-    font-size: clamp(5rem, 11.2vw, 10.5rem);
+    font-size: clamp(5rem, min(11.2vw, 17svh), 10.5rem);
   }
 }
 
 .dir-music-row-body {
   position: relative;
   z-index: 1;
-}
-
-.dir-music-row[data-part='bridge'] .dir-music-row-body {
-  padding-top: clamp(2rem, 4.5vw, 4rem);
 }
 
 .dir-music-row-kicker {
@@ -1505,6 +1547,11 @@
 
 .dir-music-row[data-part='bridge'][data-active='true'] .dir-music-row-kicker > span:first-child {
   color: var(--row-ink);
+}
+
+/* Такты части — вторичная строка: на тёмном белый 55%, на листе тот же токен, что у вторичного текста */
+.dir-music-row-bars {
+  color: var(--row-ink-2);
 }
 
 /* Чёрточка у номера краснеет и утолщается, когда часть играет */
@@ -1538,17 +1585,12 @@
 
 .dir-music-row[data-part='chorus'] .dir-music-row-title {
   max-width: 11ch;
-  font-size: clamp(2.2rem, 5.6vw, 5.4rem);
-}
-
-.dir-music-row[data-part='bridge'] .dir-music-row-title {
-  max-width: 13ch;
-  font-size: clamp(2rem, 4.6vw, 4.4rem);
+  font-size: clamp(2.2rem, 5vw, 4.8rem);
 }
 
 .dir-music-row-text {
   max-width: 34rem;
-  margin: 1.25rem 0 0;
+  margin: 1.1rem 0 0;
   color: var(--row-ink-2);
   font-size: clamp(0.95rem, 1.15vw, 1.1rem);
   line-height: 1.6;
@@ -1559,7 +1601,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin: 1.75rem 0 0;
+  margin: 1.5rem 0 0;
   padding: 0;
   list-style: none;
 }
@@ -1602,13 +1644,19 @@
 .dir-music-row[data-part='chorus'] .dir-music-monitor {
   aspect-ratio: 4 / 5;
   /* Высокий кадр целиком помещается под липкой полосой */
-  max-height: calc(100svh - 13rem);
+  max-height: min(calc(100svh - 13rem), 58svh);
 }
 
-.dir-music-row[data-part='bridge'] .dir-music-monitor {
-  border: 0;
-  /* Во всю ширину окна: поля строки убираем */
-  margin-inline: calc(var(--dm-pad) * -1);
+/*
+ * Из-за предела высоты кадр уже колонки. Ширину считаем явно (высота × 4/5) и
+ * прижимаем кадр к правому полю страницы: у блока без своего размера
+ * justify-self: end схлопнул бы его до нуля.
+ */
+@media (min-width: 48rem) {
+  .dir-music-row[data-part='chorus'] .dir-music-monitor {
+    justify-self: end;
+    width: min(100%, calc(min(100svh - 13rem, 58svh) * 0.8));
+  }
 }
 
 .dir-music-monitor-img {
@@ -1660,11 +1708,6 @@
   height: 34%;
 }
 
-.dir-music-row[data-part='bridge'] .dir-music-monitor-bars {
-  inset-inline: var(--dm-pad);
-  height: 32%;
-}
-
 .dir-music-monitor-bars span {
   flex: none;
   width: 2px;
@@ -1692,8 +1735,123 @@
   color: rgb(255 255 255 / 0.9);
 }
 
+/*
+ * Бридж — «дорожка тишины». Кадр на всю ширину, под ним лист на общем токене
+ * --dir-paper. Лист рисует отдельный слой (.dir-music-bridge-sheet): так
+ * clip-path открывает только бумагу, а мягкая кромка кита (::before/::after
+ * самого .dir-paper-section, снаружи листа) остаётся целой. Пока лист закрыт
+ * (data-gate='closed', ставит JS только для листа ниже экрана), текст светлый
+ * и кромки не видны; по открытию шторка идёт слева направо с красной кромкой,
+ * как склейка на первом экране.
+ */
+.dir-music-row[data-part='bridge'] {
+  display: block;
+  border-top-color: transparent;
+  padding: 0;
+}
+
+.dir-music-row[data-part='bridge'] .dir-music-monitor {
+  aspect-ratio: auto;
+  height: clamp(11rem, 34svh, 26rem);
+  max-height: none;
+  border: 0;
+}
+
+.dir-music-row[data-part='bridge'] .dir-music-monitor-bars {
+  inset-inline: var(--dm-pad);
+  height: 32%;
+}
+
 .dir-music-row[data-part='bridge'] .dir-music-monitor-cap {
   left: var(--dm-pad);
+}
+
+.dir-music-bridge {
+  --row-ink: var(--dir-paper-ink);
+  --row-ink-2: var(--dir-paper-mute);
+  --row-line: rgb(13 13 13 / 0.34);
+  --row-tag: var(--dir-paper-ink);
+  --row-word: linear-gradient(180deg, rgb(13 13 13 / 0.16), rgb(13 13 13 / 0.02) 92%);
+  /* Фон рисует слой-лист, а не сам блок: иначе clip-path не на чем показать */
+  background: transparent;
+  color: var(--dir-paper-ink);
+}
+
+.dir-music-bridge[data-gate='closed'] {
+  --row-ink: #fff;
+  --row-ink-2: var(--dm-ink);
+  --row-line: rgb(255 255 255 / 0.24);
+  --row-tag: rgb(255 255 255 / 0.78);
+  --row-word: linear-gradient(180deg, rgb(255 255 255 / 0.26), rgb(255 255 255 / 0.03) 92%);
+}
+
+.dir-music-bridge::before,
+.dir-music-bridge::after {
+  transition: opacity var(--motion-move) ease 120ms;
+}
+
+.dir-music-bridge[data-gate='closed']::before,
+.dir-music-bridge[data-gate='closed']::after {
+  opacity: 0;
+}
+
+.dir-music-bridge-sheet {
+  position: absolute;
+  /* Заходит на 2px под кадр: при дробной высоте кадра на стыке не остаётся тёмного шва */
+  inset: -2px 0 0;
+  background: var(--dir-paper);
+}
+
+.dir-music-bridge[data-gate='closed'] .dir-music-bridge-sheet {
+  clip-path: inset(0 100% 0 0);
+}
+
+.dir-music-bridge[data-gate='open'] .dir-music-bridge-sheet {
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 700ms var(--dm-ease);
+}
+
+.dir-music-bridge-edge {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-right: 2px solid var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-100%);
+}
+
+.dir-music-bridge[data-gate='open'] .dir-music-bridge-edge {
+  animation: dir-music-edge 700ms var(--dm-ease) both;
+}
+
+/* Цвет текста листа переключается чуть позже кромки: шторка успевает закрыть его фоном */
+.dir-music-bridge .dir-music-row-title,
+.dir-music-bridge .dir-music-row-text,
+.dir-music-bridge .dir-music-row-kicker,
+.dir-music-bridge .dir-music-tags li {
+  transition: color var(--motion-state) ease 140ms;
+}
+
+.dir-music-bridge-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 1.75rem;
+  padding-block: clamp(2.25rem, 6svh, 3.5rem) clamp(2.5rem, 7svh, 4.5rem);
+}
+
+@media (min-width: 48rem) {
+  .dir-music-bridge-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: 2rem;
+    align-items: end;
+  }
+
+  .dir-music-bridge-grid .dir-music-row-body {
+    grid-column: 1 / 9;
+    grid-row: 1;
+  }
 }
 
 /* Бридж: точки входа и выхода крупно — пустое поле справа занимает монтажная терминология */
@@ -1705,19 +1863,19 @@
   .dir-music-bridge-count {
     display: flex;
     grid-column: 9 / -1;
-    grid-row: 2;
+    grid-row: 1;
     flex-direction: column;
     align-items: flex-end;
     gap: 0.25rem;
-    padding-top: clamp(2rem, 4.5vw, 4rem);
-    color: #000;
+    color: var(--row-ink);
     text-align: right;
+    transition: color var(--motion-state) ease 140ms;
   }
 
   .dir-music-bridge-count > span {
     display: block;
     font-family: var(--font-stage);
-    font-size: clamp(5rem, 11vw, 11rem);
+    font-size: clamp(4.5rem, min(9vw, 15svh), 9rem);
     font-weight: 900;
     line-height: 0.82;
     letter-spacing: -0.06em;
@@ -1725,7 +1883,7 @@
 
   .dir-music-bridge-count > span:nth-of-type(2) {
     color: transparent;
-    background: linear-gradient(180deg, rgb(0 0 0 / 0.22), rgb(0 0 0 / 0.04) 95%);
+    background: var(--row-word);
     -webkit-background-clip: text;
     background-clip: text;
   }
@@ -1734,7 +1892,7 @@
     display: block;
     margin-top: 0.75rem;
     font-style: normal;
-    color: rgb(0 0 0 / 0.72);
+    color: var(--row-ink-2);
   }
 
   .dir-music-bridge-count > i:first-child {
@@ -1742,18 +1900,41 @@
   }
 }
 
-/* Телефон: бридж идёт первым, картинка упирается в края экрана */
+/* Телефон: кадры и поля ниже, чтобы полоса этапов не закрепляла бесконечную ленту */
 @media (max-width: 47.99rem) {
-  .dir-music-row[data-part='bridge'] .dir-music-monitor {
-    order: -1;
+  .dir-music-row {
+    --row-pad: 1.5rem;
+    gap: 1.25rem;
+  }
+
+  .dir-music-row[data-part='chorus'] {
+    --row-pad: 2rem;
+  }
+
+  .dir-music-bridge-grid {
+    padding-block: 1.75rem 2rem;
+  }
+
+  .dir-music-tags {
+    margin-top: 1.25rem;
+  }
+
+  .dir-music-monitor {
+    aspect-ratio: 16 / 10;
   }
 
   .dir-music-row[data-part='chorus'] .dir-music-monitor {
-    aspect-ratio: 4 / 5;
+    aspect-ratio: 5 / 4;
+    max-height: 48svh;
   }
 
-  .dir-music-row[data-part='verse'] .dir-music-monitor {
-    aspect-ratio: 1;
+  .dir-music-row[data-part='verse'] .dir-music-monitor,
+  .dir-music-row[data-part='outro'] .dir-music-monitor {
+    aspect-ratio: 16 / 10;
+  }
+
+  .dir-music-row[data-part='bridge'] .dir-music-monitor {
+    height: clamp(8rem, 21svh, 12rem);
   }
 }
 
@@ -1843,25 +2024,9 @@
   text-wrap: balance;
 }
 
+/* Кнопка — общая DirectionButton: карточка откликается кольцом и волной, сама кнопка — своими состояниями */
 .dir-music-play-btn {
-  display: inline-flex;
   grid-column: 1 / -1;
-  min-height: 3.5rem;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.9rem;
-  border: 0;
-  border-radius: 2px;
-  background: #fff;
-  padding: 0 1.5rem;
-  color: #000;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition:
-    background-color var(--motion-state) ease,
-    transform var(--motion-press) var(--dm-ease);
 }
 
 @media (min-width: 48rem) {
@@ -1870,43 +2035,18 @@
   }
 }
 
-/* Вся плашка — одна кнопка: растягиваем её область нажатия на карточку */
-.dir-music-play-btn::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-}
-
-.dir-music-play-btn:focus-visible {
-  outline: none;
-}
-
-.dir-music-play-card:has(.dir-music-play-btn:focus-visible) {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-}
-
-.dir-music-play-card:active .dir-music-play-btn {
-  transform: scale(0.98);
-}
-
-.dir-music-play-card:active,
-.dir-music-play-card:has(.dir-music-play-btn:focus-visible) {
+.dir-music-play-card:has(.dir-btn:focus-visible),
+.dir-music-play-card:active {
   border-color: var(--accent);
 }
 
-.dir-music-play-card:active .dir-music-play-btn,
-.dir-music-play-card:has(.dir-music-play-btn:focus-visible) .dir-music-play-btn {
-  background: var(--accent);
-}
-
 .dir-music-play-card:active .dir-music-play-disc,
-.dir-music-play-card:has(.dir-music-play-btn:focus-visible) .dir-music-play-disc {
+.dir-music-play-card:has(.dir-btn:focus-visible) .dir-music-play-disc {
   transform: scale(1.08);
 }
 
 .dir-music-play-card:active .dir-music-play-wave span,
-.dir-music-play-card:has(.dir-music-play-btn:focus-visible) .dir-music-play-wave span {
+.dir-music-play-card:has(.dir-btn:focus-visible) .dir-music-play-wave span {
   background: rgb(255 41 54 / 0.5);
   animation: dir-music-bob calc(var(--dm-beat) * 2) ease-in-out infinite;
   animation-delay: calc(var(--i, 0) * -37ms);
@@ -1915,10 +2055,6 @@
 @media (hover: hover) {
   .dir-music-play-card:hover {
     border-color: var(--accent);
-  }
-
-  .dir-music-play-card:hover .dir-music-play-btn {
-    background: var(--accent);
   }
 
   .dir-music-play-card:hover .dir-music-play-disc {
@@ -2017,7 +2153,7 @@
 
 /* Номер дорожки крупно и бледной заливкой: подпись колонки, а не строка мелким шрифтом */
 @media (min-width: 64rem) {
-  .dir-music-seq-idx {
+  .dir-music .dir-music-seq-idx {
     margin-bottom: 1.25rem;
     font-family: var(--font-stage);
     font-size: clamp(4.5rem, 7.4vw, 8rem);
@@ -2061,20 +2197,66 @@
   text-wrap: pretty;
 }
 
+/* Паттерн и его подпись: одна колонка, на широком экране прижата к низу колонки */
+.dir-music-seq-pattern {
+  grid-column: 2;
+  min-width: 0;
+}
+
+@media (min-width: 64rem) {
+  .dir-music-seq-pattern {
+    grid-column: auto;
+    margin-top: auto;
+    padding-top: 2.5rem;
+  }
+}
+
 .dir-music-seq-grid {
   position: relative;
   display: grid;
-  grid-column: 2;
   gap: 4px;
 }
 
 @media (min-width: 64rem) {
   .dir-music-seq-grid {
-    grid-column: auto;
     gap: 3px;
-    margin-top: auto;
-    padding-top: 2.75rem;
   }
+}
+
+/* Подпись под паттерном: номер слева, смысл справа; не мельче 10px */
+.dir-music-seq-cap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin: 0.85rem 0 0;
+  color: var(--dm-ink);
+}
+
+.dir-music-seq-cap > span:first-child {
+  color: var(--dm-ink-2);
+  transition: color var(--motion-state) ease;
+}
+
+.dir-music-seq-row:active .dir-music-seq-cap > span:first-child,
+.dir-music-seq-row[data-focus='true'] .dir-music-seq-cap > span:first-child {
+  color: var(--accent);
+}
+
+@media (hover: hover) {
+  .dir-music-seq-row:hover .dir-music-seq-cap > span:first-child {
+    color: var(--accent);
+  }
+}
+
+/* Что значат три дорожки: строка под заголовком раздела */
+.dir-music-seq-note {
+  max-width: 28rem;
+  margin: 1rem 0 0;
+  color: var(--dm-ink);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  text-wrap: pretty;
 }
 
 .dir-music-seq-lane {
@@ -2115,7 +2297,7 @@
 
 @media (min-width: 64rem) {
   .dir-music-seq-head-col {
-    inset: calc(2.75rem - 4px) auto -4px -2px;
+    inset: -4px auto -4px -2px;
     width: calc((100% - 15 * 3px) / 16 + 3px);
   }
 }
@@ -2271,7 +2453,7 @@
   line-height: 1.3;
 }
 
-.dir-music-cue-item .type-meta {
+.dir-music-cue-item .dir-kit-meta {
   color: var(--dm-ink-2);
   transition: color var(--motion-state) ease;
 }
@@ -2298,7 +2480,7 @@
   }
 }
 
-.dir-music-cue-side .dir-music-cta-wide {
+.dir-music-cue-side .dir-music-cue-btn {
   margin-top: 1.75rem;
 }
 
@@ -2309,6 +2491,248 @@
   font-size: 0.9rem;
   line-height: 1.55;
   text-wrap: pretty;
+}
+
+/* ─────────────────────────── 6б. Заставка работ ─────────────────────────── */
+
+/*
+ * Экран целиком: кадры клипов режутся на такт, имя работы крупно внизу. Это
+ * кульминация нижней половины страницы. Сверху и снизу кадр закрыт вуалью,
+ * поэтому подписи читаются и на светлом кадре.
+ */
+.dir-music-reel {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: max(34rem, 100svh);
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  background: #000;
+  border-top: 1px solid var(--dm-line);
+  padding-block: clamp(5.25rem, 11svh, 6.5rem) clamp(1.5rem, 4svh, 3rem);
+  touch-action: pan-y;
+}
+
+/* Слой выше и ниже секции на 4%: параллакс не открывает край */
+.dir-music-reel-stage {
+  position: absolute;
+  inset: -4% 0;
+  z-index: 0;
+  will-change: transform;
+}
+
+.dir-music-reel .dir-music-frames {
+  animation: none;
+}
+
+.dir-music-reel-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to top,
+      #000 0%,
+      rgb(0 0 0 / 0.86) 20%,
+      rgb(0 0 0 / 0.42) 48%,
+      rgb(0 0 0 / 0.1) 70%,
+      rgb(0 0 0 / 0.5) 100%
+    ),
+    linear-gradient(90deg, rgb(0 0 0 / 0.45), transparent 62%);
+}
+
+.dir-music-reel-top {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  margin: 0;
+  color: rgb(255 255 255 / 0.88);
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.7);
+}
+
+.dir-music-reel-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  line-height: 1.6;
+}
+
+.dir-music-reel-bottom {
+  position: relative;
+  z-index: 2;
+  margin-top: 2rem;
+}
+
+.dir-music-reel-copy {
+  display: block;
+  color: #fff;
+  text-decoration: none;
+  animation: dir-music-in 620ms var(--dm-ease) both;
+}
+
+.dir-music-reel-name {
+  display: block;
+  max-width: 100%;
+  font-family: var(--font-stage);
+  font-size: clamp(2.6rem, 11.5vw, 11rem);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.dir-music-reel-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
+  margin-top: 1.1rem;
+  color: rgb(255 255 255 / 0.9);
+}
+
+.dir-music-reel-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #fff;
+}
+
+.dir-music-reel-open::before {
+  content: '';
+  width: 2rem;
+  height: 1px;
+  background: var(--accent);
+}
+
+.dir-music-reel-track {
+  display: flex;
+  gap: 6px;
+  margin-top: clamp(1.25rem, 3svh, 2rem);
+}
+
+/* Сегмент работы: линия сверху, красная заливка идёт ровно такт (четыре доли) */
+.dir-music-reel-seg {
+  position: relative;
+  flex: 1 1 0;
+  padding-top: 0.7rem;
+  color: rgb(255 255 255 / 0.65);
+  transition: color var(--motion-state) ease;
+}
+
+.dir-music-reel-seg::before,
+.dir-music-reel-seg i {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+}
+
+.dir-music-reel-seg::before {
+  background: rgb(255 255 255 / 0.28);
+}
+
+.dir-music-reel-seg i {
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.dir-music-reel-seg[data-state='now'] {
+  color: #fff;
+}
+
+.dir-music-reel-seg[data-state='now'] i {
+  animation: dir-music-fill calc(var(--dm-beat) * 4) linear both;
+}
+
+@keyframes dir-music-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ---------- Знаки сцены в общих блоках ---------- */
+
+.dir-music-sign {
+  width: min(100%, 24rem);
+}
+
+.dir-music-sign-cap {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 1rem;
+  color: rgb(255 255 255 / 0.7);
+}
+
+.dir-music-sign-grid {
+  position: relative;
+  display: grid;
+  gap: 4px;
+}
+
+.dir-music-sign-lane {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.dir-music-sign-cell {
+  aspect-ratio: 1;
+  background: rgb(255 255 255 / 0.08);
+}
+
+.dir-music-sign-cell[data-beat='true'] {
+  background: rgb(255 255 255 / 0.16);
+}
+
+.dir-music-sign-cell[data-on='true'] {
+  background: rgb(255 255 255 / 0.55);
+}
+
+.dir-music-sign-head {
+  position: absolute;
+  inset: -5px auto -5px -2px;
+  width: calc((100% - 15 * 4px) / 16 + 4px);
+  border: 1px solid rgb(255 41 54 / 0.9);
+  background: rgb(255 41 54 / 0.16);
+  animation: dir-music-step calc(var(--dm-beat) * 16) steps(16, jump-none) infinite;
+}
+
+.dir-music-faq-sign {
+  max-width: 20rem;
+  margin-top: 2.5rem;
+}
+
+.dir-music-faq-eq {
+  display: flex;
+  height: clamp(3.5rem, 9svh, 5rem);
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.dir-music-faq-eq .dir-music-eq-bar {
+  background: linear-gradient(to top, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.5));
+}
+
+.dir-music-faq-cap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin: 0.9rem 0 0;
+  color: var(--dm-ink-2);
 }
 
 /* ─────────────────────────── Сниженное движение ─────────────────────────── */
@@ -2330,7 +2754,10 @@
   .dir-music-ruler-head,
   .dir-music-seq-head-col,
   .dir-music-head::after,
-  .dir-music-cta-arrow,
+  .dir-music-reel-copy,
+  .dir-music-reel-seg[data-state='now'] i,
+  .dir-music-sign-head,
+  .dir-music-bridge-edge,
   .dir-music-wave-part[data-on='true'] .dir-music-wave-bar,
   .dir-music-row[data-active='true'] .dir-music-monitor-bars span,
   .dir-music-play-card .dir-music-play-wave span,
@@ -2347,7 +2774,8 @@
   .dir-music-tempo-slot,
   .dir-music-tempo,
   .dir-music-hint,
-  .dir-music-transport {
+  .dir-music-transport,
+  .dir-music-reel-top > span:last-child {
     display: none;
   }
 
@@ -2365,27 +2793,51 @@
   }
 
   .dir-music-parallax,
+  .dir-music-reel-stage,
   .dir-music-copy,
   .dir-music-eq-scroll {
     transform: none !important;
   }
 
-  .dir-music-cta,
-  .dir-music-cta-curtain,
+  /* Заставка стоит на первом кадре: сегмент целиком заполнен, режущего такта нет */
+  .dir-music-reel-seg[data-state='now'] i {
+    transform: scaleX(1);
+  }
+
+  /* Лист бриджа открыт сразу, без шторки */
+  .dir-music-bridge-sheet {
+    clip-path: none !important;
+    transition: none !important;
+  }
+
+  .dir-music-bridge::before,
+  .dir-music-bridge::after {
+    transition: none;
+  }
+
+  .dir-music-bridge .dir-music-row-title,
+  .dir-music-bridge .dir-music-row-text,
+  .dir-music-bridge .dir-music-row-kicker,
+  .dir-music-bridge .dir-music-tags li,
+  .dir-music-bridge-count {
+    transition: none;
+  }
+
+  .dir-music-deck {
+    transition: none;
+  }
+
   .dir-music-tempo-btn,
   .dir-music-tempo-btn::after,
   .dir-music-row::before,
   .dir-music-play-disc,
-  .dir-music-play-btn,
   .dir-music-seq-row::before,
   .dir-music-seq-title,
   .dir-music-cue-item > span:last-child {
     transition-property: color, background-color, border-color, opacity !important;
   }
 
-  .dir-music-tempo-btn:active,
-  .dir-music-cta:active,
-  .dir-music-play-card:active .dir-music-play-btn {
+  .dir-music-tempo-btn:active {
     transform: none;
   }
 
