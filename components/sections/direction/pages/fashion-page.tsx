@@ -69,6 +69,11 @@ const SCENE = FASHION_PAGE.scene
 const FORMATS = FASHION_PAGE.formats
 const SPREAD_ID = 'fashion-spread'
 
+/** Автолистание обложки: первый лист — сразу после загрузки кадров, дальше — в ритме */
+const FIRST_FLIP_MS = 1500
+const AUTO_FLIP_MS = 4300
+const TOUCH_HOLD_MS = 8000
+
 const pad = (value: number) => String(value).padStart(2, '0')
 /** Слово-заставка по кругу: список короткий, слотов больше */
 const plateWord = (index: number) => SCENE.plates[index % SCENE.plates.length] ?? ''
@@ -212,10 +217,13 @@ function usePaperHeader() {
 /** Колонтитул: бегущий заголовок слева, номер страницы справа, тонкая линия между */
 function Folio({
   left,
+  leftShort,
   right,
   tone = 'dark',
 }: {
   left: string
+  /** Короткая подпись для телефона: длинная там обрезалась бы многоточием */
+  leftShort?: string
   right: string
   tone?: 'dark' | 'paper'
 }) {
@@ -224,11 +232,20 @@ function Folio({
       aria-hidden="true"
       className={cn(
         'type-meta flex items-center gap-4 font-mono uppercase tabular-nums',
-        tone === 'paper' ? 'text-black/70' : 'text-white/60'
+        tone === 'paper' ? 'text-black/70 max-lg:pr-[calc(var(--fs-fold)-0.5rem)]' : 'text-white/60'
       )}
     >
       <span className="h-1.5 w-1.5 shrink-0 bg-accent" />
-      <span className="min-w-0 truncate">{left}</span>
+      <span className="min-w-0 truncate">
+        {leftShort ? (
+          <>
+            <span className="sm:hidden">{leftShort}</span>
+            <span className="hidden sm:inline">{left}</span>
+          </>
+        ) : (
+          left
+        )}
+      </span>
       <span className="h-px min-w-6 flex-1 bg-current opacity-30" />
       <span className="shrink-0">{right}</span>
     </div>
@@ -384,6 +401,10 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
   const [armed, setArmed] = useState(false)
   const [inView, setInView] = useState(true)
   const [held, setHeld] = useState(false)
+  // Перезапуск таймера, если вкладка была в фоне и листать было нельзя
+  const [beat, setBeat] = useState(0)
+  // Пауза до следующего автолистания: первое — быстро, чтобы жест считался сразу
+  const wait = useRef(FIRST_FLIP_MS)
   const tilt = useRef({ x: 0, y: 0, raf: 0 })
   const swipe = useRef<{ x: number; y: number; id: number } | null>(null)
 
@@ -411,8 +432,10 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
     return () => observer.disconnect()
   }, [])
 
+  // hold — сколько молчит автолистание после ручного жеста (на touch дольше: курсора нет)
   const go = useCallback(
-    (dir: 'fwd' | 'back') => {
+    (dir: 'fwd' | 'back', hold = AUTO_FLIP_MS) => {
+      wait.current = hold
       setState(prev => {
         if (prev.to !== null || count < 2) return prev
         const to = (prev.cur + (dir === 'fwd' ? 1 : count - 1)) % count
@@ -428,14 +451,17 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
     []
   )
 
-  // Автолистание: только когда обложку видно, её не трогают и движение разрешено
+  // Автолистание: только когда обложку видно, её не трогают и движение разрешено.
+  // Таймер живёт между листаниями и сбрасывается любым ручным жестом: смена кадра
+  // (state.to) отменяет ожидание, новое начинается после того, как лист лёг.
   useEffect(() => {
-    if (!armed || !inView || held || reduced || count < 2) return
-    const id = window.setInterval(() => {
-      if (!document.hidden) go('fwd')
-    }, 5200)
-    return () => window.clearInterval(id)
-  }, [armed, inView, held, reduced, count, go])
+    if (!armed || !inView || held || reduced || count < 2 || state.to !== null) return
+    const id = window.setTimeout(() => {
+      if (document.hidden) setBeat(value => value + 1)
+      else go('fwd')
+    }, wait.current)
+    return () => window.clearTimeout(id)
+  }, [armed, inView, held, reduced, count, go, state.cur, state.to, beat])
 
   // Запасной выход, если animationend не пришёл (вкладка в фоне)
   useEffect(() => {
@@ -480,8 +506,10 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
     if (!start || start.id !== event.pointerId) return
     const dx = event.clientX - start.x
     const dy = event.clientY - start.y
-    if (Math.abs(dx) >= 36 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 'fwd' : 'back')
-    else if (Math.abs(dx) < 8 && Math.abs(dy) < 8) go('fwd')
+    // Палец отпустили — пауза подольше, чтобы автолистание не перебило свайп назад
+    const hold = event.pointerType === 'mouse' ? AUTO_FLIP_MS : TOUCH_HOLD_MS
+    if (Math.abs(dx) >= 36 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 'fwd' : 'back', hold)
+    else if (Math.abs(dx) < 8 && Math.abs(dy) < 8) go('fwd', hold)
   }
 
   const shown = state.to ?? state.cur
@@ -494,11 +522,11 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
       aria-labelledby="fashion-title"
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
-      className="relative isolate flex min-h-[100svh] w-full flex-col overflow-hidden bg-black px-6 pb-10 pt-24 md:px-10 lg:px-20"
+      className="relative isolate flex min-h-[100svh] w-full flex-col overflow-hidden bg-black px-6 pb-8 pt-[5.25rem] md:px-10 md:pb-10 md:pt-24 lg:px-20"
     >
-      {/* Мастхед: название, номер выпуска, география */}
+      {/* Мастхед: название, номер выпуска, география; номер выпуска строго по центру */}
       <div className="relative z-20">
-        <div className="type-meta flex items-center justify-between gap-4 font-mono uppercase tabular-nums text-white/70">
+        <div className="type-meta grid grid-cols-[auto_auto] items-center justify-between gap-4 font-mono uppercase tabular-nums text-white/70 sm:grid-cols-[1fr_auto_1fr]">
           <span className="dir-fashion-rise flex items-center gap-3" style={delay(0)}>
             <span aria-hidden="true" className="h-1.5 w-1.5 bg-accent" />
             Savage Movie · Fashion
@@ -506,7 +534,7 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
           <span className="dir-fashion-rise hidden sm:inline" style={delay(80)}>
             Выпуск № {SCENE.issue}
           </span>
-          <span className="dir-fashion-rise text-right" style={delay(160)}>
+          <span className="dir-fashion-rise justify-self-end text-right" style={delay(160)}>
             <span className="hidden md:inline">{SCENE.place}</span>
             <span className="md:hidden">СПб · Москва</span>
           </span>
@@ -519,11 +547,110 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
       </div>
 
       <div className="relative z-10 mt-6 grid flex-1 grid-cols-1 gap-x-10 [--fs-cover-w:min(42vw,calc((100svh_-_17rem)*0.75))] md:mt-8 md:grid-cols-[minmax(0,1fr)_var(--fs-cover-w)] md:items-end lg:[--fs-cover-w:min(34vw,calc((100svh_-_17rem)*0.75))]">
+        {/* Заголовок наезжает на обложку: на телефоне — на нижний край кадра */}
+        {/* В DOM заголовок и CTA идут раньше обложки: Tab и скринридер встречают их первыми */}
+        <div className="relative z-20 order-2 -mt-10 md:order-none md:col-start-1 md:row-start-1 md:mt-0 md:flex md:flex-col md:justify-between md:self-stretch">
+          {/* «В номере»: кавер-линии в один ряд слева сверху, ведут к форматам */}
+          <nav aria-label="В номере" className="hidden w-full max-w-[44rem] pt-1 md:block">
+            <p
+              className="dir-fashion-rise type-meta mb-2 flex items-center gap-3 font-mono uppercase text-white/75"
+              style={delay(980)}
+            >
+              <span aria-hidden="true" className="h-px w-6 bg-accent" />В номере
+            </p>
+            <ul className="grid grid-cols-3 gap-x-5">
+              {FORMATS.map((format, i) => (
+                <li
+                  key={format.index}
+                  className="dir-fashion-rise border-t border-white/30"
+                  style={delay(1060 + i * 110, { '--fs-rise': '8px' } as CSSProperties)}
+                >
+                  <a
+                    href={`#${SPREAD_ID}`}
+                    onClick={event => {
+                      event.preventDefault()
+                      goToFormat(i)
+                    }}
+                    className="group block min-h-11 py-2.5 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
+                  >
+                    <span className="type-meta block font-mono tabular-nums text-white/75 transition-colors duration-[var(--motion-state)] group-hover:text-accent">
+                      Стр. {pad(3 + i * 2)}
+                    </span>
+                    <span className="mt-1 block font-stage text-[0.8rem] uppercase leading-[1.05] tracking-[-0.01em] text-white transition-transform duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-hover:translate-x-1 lg:text-[0.88rem]">
+                      {tidy(format.title)}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Сдвиг при прокрутке — у всего нижнего блока разом: строки не заезжают друг на друга */}
+          <motion.div style={{ y: titleY }} className="dir-fashion-tilt-title">
+            <div>
+              <h1 className="pointer-events-none text-white">
+                <span
+                  className="dir-fashion-rise block font-stage text-[clamp(3.4rem,17.5vw,6.5rem)] uppercase leading-[0.82] tracking-[-0.04em] md:text-[clamp(4rem,13.2vw,10rem)] xl:text-[clamp(6rem,min(15.2vw,23svh),19rem)]"
+                  style={delay(260, { '--fs-rise': '0.3em' } as CSSProperties)}
+                >
+                  Fashion
+                </span>{' '}
+                <span
+                  className="dir-fashion-rise -mt-[0.02em] ml-[10vw] block font-brand-hero text-[clamp(3.4rem,17.5vw,6.5rem)] uppercase leading-[0.82] tracking-[-0.04em] md:ml-[8vw] md:text-[clamp(4rem,13.2vw,10rem)] xl:ml-[10vw] xl:text-[clamp(6rem,min(15.2vw,23svh),19rem)]"
+                  style={delay(380, { '--fs-rise': '0.3em' } as CSSProperties)}
+                >
+                  видео
+                </span>{' '}
+                <span
+                  className="dir-fashion-rise mt-5 block max-w-md text-lg font-light leading-snug text-white/90 md:mt-8 md:text-xl"
+                  style={delay(560)}
+                >
+                  {tidy(SCENE.lead)}
+                </span>
+              </h1>
+
+              <p
+                className="dir-fashion-rise dir-fashion-lede mt-5 max-w-lg text-sm leading-relaxed text-white/80 text-pretty md:text-base"
+                style={delay(660)}
+              >
+                {tidy(SCENE.text)}
+              </p>
+
+              <div
+                className="dir-fashion-rise mt-6 flex flex-col gap-3 md:mt-8 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2"
+                style={delay(780)}
+              >
+                <BriefButton
+                  label={FASHION_PAGE.ctaLabel}
+                  location="hero"
+                  className="w-full sm:w-auto sm:shrink-0"
+                />
+                <a
+                  href={`#${SPREAD_ID}`}
+                  onClick={event => {
+                    event.preventDefault()
+                    goToFormat(0)
+                  }}
+                  className="group inline-flex min-h-11 items-center gap-2 px-1 text-base text-white/80 transition-colors duration-[var(--motion-state)] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                >
+                  <span className="border-b border-white/35 pb-0.5 transition-colors duration-[var(--motion-state)] group-hover:border-accent">
+                    Смотреть разворот
+                  </span>
+                  <ArrowDown
+                    aria-hidden="true"
+                    className="h-4 w-4 transition-transform duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-hover:translate-y-1"
+                  />
+                </a>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
         {/* Обложка: кадр в паспарту, подпись-кредит, листание */}
-        <div className="relative z-10 order-first md:order-none md:col-start-2 md:row-start-1">
+        <div className="relative z-10 order-1 md:order-none md:col-start-2 md:row-start-1">
           <motion.div style={{ y: coverY }}>
             <div className="dir-fashion-tilt-cover relative">
-              <div className="dir-fashion-mat relative h-[clamp(17rem,44svh,30rem)] w-full md:aspect-[3/4] md:h-auto">
+              <div className="dir-fashion-mat dir-fashion-cover-mat relative w-full md:aspect-[3/4]">
                 <div
                   className="dir-fashion-cover-in absolute inset-0 cursor-pointer touch-pan-y select-none overflow-hidden bg-[#0D0D0D]"
                   style={delay(120)}
@@ -537,7 +664,11 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
                   }}
                   onPointerLeave={() => setHeld(false)}
                 >
-                  <div aria-hidden="true" className="absolute inset-0">
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0"
+                    data-turning={state.to !== null ? '' : undefined}
+                  >
                     {Array.from({ length: layerCount }, (_, i) => (
                       <div
                         key={i}
@@ -594,20 +725,29 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
               </div>
 
               <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-3 px-3 pt-2 md:static md:mt-6 md:px-0 md:pt-0">
-                <p
-                  key={shown}
-                  className="dir-fashion-rise type-meta min-w-0 truncate font-mono uppercase tabular-nums text-white/70"
-                  style={{ '--fs-rise': '8px' } as CSSProperties}
+                {/* Живая область: озвучивает смену кадра, только пока листают руками;
+                    автолистание скринридеру не зачитывается */}
+                <div
+                  className="@container min-w-0 flex-1"
+                  aria-live={held ? 'polite' : 'off'}
+                  aria-atomic="true"
                 >
-                  {credit ? (
-                    <>
-                      <span className="text-white">{pad(shown + 1)}</span> / {pad(count)} —{' '}
-                      {credit.client} · {credit.title}
-                    </>
-                  ) : (
-                    <>Обложка · выпуск № {SCENE.issue}</>
-                  )}
-                </p>
+                  <p
+                    key={shown}
+                    className="dir-fashion-rise type-meta truncate font-mono uppercase tabular-nums text-white/70"
+                    style={{ '--fs-rise': '8px' } as CSSProperties}
+                  >
+                    {credit ? (
+                      <>
+                        <span className="text-white">{pad(shown + 1)}</span> / {pad(count)} —{' '}
+                        {credit.client}
+                        <span className="hidden @[21rem]:inline"> · {credit.title}</span>
+                      </>
+                    ) : (
+                      <>Обложка · выпуск № {SCENE.issue}</>
+                    )}
+                  </p>
+                </div>
                 {count > 1 ? (
                   <div className="flex shrink-0 items-center gap-1">
                     <RoundButton
@@ -631,103 +771,6 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
               </div>
             </div>
           </motion.div>
-        </div>
-
-        {/* Заголовок наезжает на обложку: на телефоне — на нижний край кадра */}
-        <div className="relative z-20 -mt-10 md:col-start-1 md:row-start-1 md:mt-0 md:flex md:flex-col md:justify-between md:self-stretch">
-          {/* «В номере»: кавер-линии в один ряд слева сверху, ведут к форматам */}
-          <nav aria-label="В номере" className="hidden w-full max-w-[44rem] pt-1 md:block">
-            <p
-              className="dir-fashion-rise type-meta mb-2 flex items-center gap-3 font-mono uppercase text-white/75"
-              style={delay(980)}
-            >
-              <span aria-hidden="true" className="h-px w-6 bg-accent" />В номере
-            </p>
-            <ul className="grid grid-cols-3 gap-x-5">
-              {FORMATS.map((format, i) => (
-                <li
-                  key={format.index}
-                  className="dir-fashion-rise border-t border-white/30"
-                  style={delay(1060 + i * 110, { '--fs-rise': '8px' } as CSSProperties)}
-                >
-                  <a
-                    href={`#${SPREAD_ID}`}
-                    onClick={event => {
-                      event.preventDefault()
-                      goToFormat(i)
-                    }}
-                    className="group block min-h-11 py-2.5 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
-                  >
-                    <span className="type-meta block font-mono tabular-nums text-white/75 transition-colors duration-[var(--motion-state)] group-hover:text-accent">
-                      Стр. {pad(3 + i * 2)}
-                    </span>
-                    <span className="mt-1 block font-stage text-[0.8rem] uppercase leading-[1.05] tracking-[-0.01em] text-white transition-transform duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-hover:translate-x-1 lg:text-[0.88rem]">
-                      {tidy(format.title)}
-                    </span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          <div>
-            <motion.div style={{ y: titleY }} className="dir-fashion-tilt-title">
-              <h1 className="pointer-events-none text-white">
-                <span
-                  className="dir-fashion-rise block font-stage text-[clamp(3.4rem,17.5vw,6.5rem)] uppercase leading-[0.82] tracking-[-0.04em] md:text-[clamp(4rem,13.2vw,10rem)] xl:text-[clamp(6rem,min(15.2vw,23svh),19rem)]"
-                  style={delay(260, { '--fs-rise': '0.3em' } as CSSProperties)}
-                >
-                  Fashion
-                </span>{' '}
-                <span
-                  className="dir-fashion-rise -mt-[0.02em] ml-[10vw] block font-brand-hero text-[clamp(3.4rem,17.5vw,6.5rem)] uppercase leading-[0.82] tracking-[-0.04em] md:ml-[8vw] md:text-[clamp(4rem,13.2vw,10rem)] xl:ml-[10vw] xl:text-[clamp(6rem,min(15.2vw,23svh),19rem)]"
-                  style={delay(380, { '--fs-rise': '0.3em' } as CSSProperties)}
-                >
-                  видео
-                </span>{' '}
-                <span
-                  className="dir-fashion-rise mt-6 block max-w-md text-lg font-light leading-snug text-white/90 md:mt-8 md:text-xl"
-                  style={delay(560)}
-                >
-                  {tidy(SCENE.lead)}
-                </span>
-              </h1>
-            </motion.div>
-
-            <p
-              className="dir-fashion-rise dir-fashion-lede mt-5 max-w-lg text-sm leading-relaxed text-white/80 text-pretty md:text-base"
-              style={delay(660)}
-            >
-              {tidy(SCENE.text)}
-            </p>
-
-            <div
-              className="dir-fashion-rise mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2"
-              style={delay(780)}
-            >
-              <BriefButton
-                label={FASHION_PAGE.ctaLabel}
-                location="hero"
-                className="w-full sm:w-auto sm:shrink-0"
-              />
-              <a
-                href={`#${SPREAD_ID}`}
-                onClick={event => {
-                  event.preventDefault()
-                  goToFormat(0)
-                }}
-                className="group inline-flex min-h-11 items-center gap-2 px-1 text-base text-white/80 transition-colors duration-[var(--motion-state)] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
-              >
-                <span className="border-b border-white/35 pb-0.5 transition-colors duration-[var(--motion-state)] group-hover:border-accent">
-                  Смотреть разворот
-                </span>
-                <ArrowDown
-                  aria-hidden="true"
-                  className="h-4 w-4 transition-transform duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-hover:translate-y-1"
-                />
-              </a>
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -759,9 +802,14 @@ function Contents({
       id="fashion-contents"
       data-fs-paper=""
       aria-labelledby="fashion-contents-title"
-      className="relative scroll-mt-[4.5rem] bg-[var(--fs-paper)] px-6 pb-16 pt-6 text-black md:px-10 md:pb-24 lg:px-20"
+      className="dir-fashion-paper relative scroll-mt-[4.5rem] bg-[var(--fs-paper)] px-6 pb-16 pt-6 text-black md:px-10 md:pb-24 lg:px-20"
     >
-      <Folio tone="paper" left={`Fashion-видео · выпуск № ${SCENE.issue}`} right="Стр. 02" />
+      <Folio
+        tone="paper"
+        left={`Fashion-видео · выпуск № ${SCENE.issue}`}
+        leftShort="Fashion-видео"
+        right="Стр. 02"
+      />
 
       <h2
         id="fashion-contents-title"
@@ -901,6 +949,30 @@ function ProgressSegment({
   )
 }
 
+/** Цифра формата: колонка 01/02/03 едет ступенями вслед за сгибом листа */
+function Numeral({ y, outline }: { y: MotionValue<string>; outline?: boolean }) {
+  return (
+    <div
+      aria-hidden="true"
+      data-fs-num={outline ? undefined : ''}
+      className={cn(
+        'dir-fashion-num pointer-events-none absolute text-white bottom-[-0.02em] left-[5vw] font-stage text-[clamp(7rem,30vw,9rem)] leading-none md:bottom-[-0.07em] md:left-0 md:-translate-x-[8%] md:text-[clamp(9rem,min(24vw,56svh),30rem)]',
+        outline ? 'dir-fashion-num-line z-30' : 'z-0'
+      )}
+    >
+      <div className="h-[0.8em] overflow-hidden">
+        <motion.div style={{ y }}>
+          {FORMATS.map(format => (
+            <span key={format.index} className="block h-[0.8em] leading-[0.8]">
+              {format.index}
+            </span>
+          ))}
+        </motion.div>
+      </div>
+    </div>
+  )
+}
+
 function Spread({ frames }: { frames: SceneFrame[] }) {
   const n = FORMATS.length
   const reduced = useReduced()
@@ -921,7 +993,13 @@ function Spread({ frames }: { frames: SceneFrame[] }) {
   }
   stops.push(1)
   offsets.push(`${(-(n - 1) * 100) / n}%`)
-  const numeralY = useTransform(scrollYProgress, stops, offsets)
+  const numeralSmooth = useTransform(scrollYProgress, stops, offsets)
+  // Без движения цифра меняется ступенью вместе с кадром, а не плывёт отдельно от него
+  const numeralStep = useTransform(
+    scrollYProgress,
+    value => `${(-Math.min(n - 1, Math.max(0, Math.floor(value * n))) * 100) / n}%`
+  )
+  const numeralY = reduced ? numeralStep : numeralSmooth
 
   const main = FORMATS.map((_, k) => pick(frames, 6 + k))
   const detail = FORMATS.map((_, k) => pick(frames, 9 + k))
@@ -938,8 +1016,10 @@ function Spread({ frames }: { frames: SceneFrame[] }) {
       <div className="sticky top-0 grid h-[100svh] grid-rows-[auto_1fr] overflow-hidden md:grid-cols-2 md:grid-rows-1">
         {/* Правая страница: кадры. На телефоне — над текстом */}
         <div className="relative order-1 flex items-start px-6 pt-20 md:order-2 md:items-center md:px-0 md:pt-0">
+          {/* Цифра формата, сплошная: лежит под отпечатком, кадр перекрывает её, как в вёрстке */}
+          <Numeral y={numeralY} />
           <div className="relative md:ml-[clamp(2.5rem,7vw,7rem)] md:w-[min(31vw,calc((100svh-13rem)*0.8))]">
-            <div className="dir-fashion-mat relative aspect-[4/5] h-[clamp(9rem,36svh,22rem)] md:h-auto md:w-full">
+            <div className="dir-fashion-mat dir-fashion-spread-mat relative aspect-[4/5] md:h-auto md:w-full">
               <div className="absolute inset-0 overflow-hidden bg-[#0D0D0D]">
                 {main.map((frame, k) => {
                   const plate = (
@@ -1005,7 +1085,14 @@ function Spread({ frames }: { frames: SceneFrame[] }) {
               style={{ '--fs-rise': '8px' } as CSSProperties}
             >
               <span className="min-w-0 truncate">
-                {credit ? `Кадр — ${credit.client} · ${credit.title}` : FORMATS[active]?.tag}
+                {credit ? (
+                  <>
+                    Кадр — {credit.client}
+                    <span className="hidden xl:inline"> · {credit.title}</span>
+                  </>
+                ) : (
+                  FORMATS[active]?.tag
+                )}
               </span>
               <span className="shrink-0 text-white">
                 {pad(active + 1)} / {pad(n)}
@@ -1013,47 +1100,34 @@ function Spread({ frames }: { frames: SceneFrame[] }) {
             </p>
           </div>
 
-          {/* Цифра формата: режет кадр и страницу, на кадре работает как негатив */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute bottom-[-0.02em] left-[5vw] z-30 font-stage text-[clamp(7rem,30vw,9rem)] leading-none md:bottom-[-0.07em] md:left-0 md:-translate-x-[24%] md:text-[clamp(14rem,27vw,30rem)]"
-            style={{ mixBlendMode: 'difference', color: '#fff' }}
-          >
-            <div className="h-[0.8em] overflow-hidden">
-              <motion.div style={{ y: numeralY }}>
-                {FORMATS.map(format => (
-                  <span key={format.index} className="block h-[0.8em] leading-[0.8]">
-                    {format.index}
-                  </span>
-                ))}
-              </motion.div>
-            </div>
-          </div>
+          {/* Та же цифра контуром поверх кадра: на фото читается, не меняя цвета кадра */}
+          <Numeral y={numeralY} outline />
         </div>
 
-        {/* Левая страница: оглавление форматов, активный раскрыт */}
-        <div className="relative z-10 order-2 flex min-h-0 flex-col bg-[#0a0a0a] px-6 pb-[4.5rem] pt-5 md:order-1 md:px-10 md:pb-10 md:pt-24 lg:px-16">
+        {/* Левая страница: оглавление форматов, активный раскрыт. Все размеры от высоты
+            окна, чтобы три формата и прогресс помещались и на ноутбуке 1366×657 */}
+        <div className="relative z-10 order-2 flex min-h-0 flex-col bg-black px-6 pb-[5rem] pt-5 md:order-1 md:px-10 md:pb-[clamp(3.25rem,8svh,5rem)] md:pt-[clamp(4.75rem,11svh,6rem)] lg:px-16">
           <Folio left="Разворот" right={`Стр. ${spreadPages(active)}`} />
           <h2
             id="fashion-spread-title"
-            className="mt-4 font-stage text-[0.95rem] uppercase leading-[1] tracking-[-0.01em] text-white md:mt-8 md:text-[clamp(1.7rem,3vw,2.9rem)] md:leading-[0.92] md:tracking-[-0.02em] md:text-balance"
+            className="mt-4 font-stage text-[0.95rem] uppercase leading-[1] tracking-[-0.01em] text-white md:mt-[clamp(0.75rem,3.2svh,2rem)] md:text-[clamp(1.6rem,min(3vw,5.2svh),3.6rem)] md:leading-[0.92] md:tracking-[-0.02em] md:text-balance"
           >
             Три формата fashion-видео
           </h2>
 
-          <ol className="mt-3 flex flex-col md:mt-8">
+          <ol className="mt-3 flex flex-col md:mt-[clamp(0.75rem,3.2svh,2rem)]">
             {FORMATS.map((format, i) => (
               <li
                 key={format.index}
                 data-active={active === i}
                 className="group relative border-t border-white/15 last:border-b"
               >
-                <div className="grid grid-cols-[2.25rem_1fr] gap-x-3 py-2.5 md:grid-cols-[3.5rem_1fr] md:py-5">
+                <div className="grid grid-cols-[2.25rem_1fr] gap-x-3 py-2.5 md:grid-cols-[3.5rem_1fr] md:py-[clamp(0.75rem,2.2svh,1.75rem)]">
                   <span className="type-meta pt-1 font-mono tabular-nums text-white/55 transition-colors duration-[var(--motion-state)] group-data-[active=true]:text-accent md:pt-1.5">
                     {format.index}
                   </span>
                   <div>
-                    <h3 className="font-stage text-[clamp(1.1rem,2.1vw,2.1rem)] uppercase leading-[0.98] tracking-[-0.02em] text-white/45 transition-colors duration-[var(--motion-state)] group-data-[active=true]:text-white">
+                    <h3 className="font-stage text-[clamp(1.1rem,min(2.1vw,3.6svh),2.6rem)] uppercase leading-[0.98] tracking-[-0.02em] text-white/45 transition-colors duration-[var(--motion-state)] group-hover:text-white/80 group-data-[active=true]:text-white group-data-[active=true]:group-hover:text-white">
                       <button
                         type="button"
                         onClick={() => goToFormat(i)}
@@ -1064,16 +1138,20 @@ function Spread({ frames }: { frames: SceneFrame[] }) {
                           }
                         }}
                         aria-current={active === i ? 'step' : undefined}
-                        className="text-left uppercase after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-accent"
+                        className="text-left uppercase after:absolute after:-inset-x-3 after:inset-y-0 after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-accent"
                       >
-                        {tidy(format.title)}
+                        {/* Сдвиг на внутреннем слое: transform на h3 сделал бы его опорным
+                            блоком для кольца фокуса, и оно сжалось бы при наведении */}
+                        <span className="inline-block transition-transform duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-hover:translate-x-1">
+                          {tidy(format.title)}
+                        </span>
                       </button>
                     </h3>
                     <p className="type-meta mt-1 hidden font-mono uppercase text-white/55 group-data-[active=true]:block md:block">
                       {format.tag}
                     </p>
-                    <div className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-data-[active=true]:grid-rows-[1fr] md:grid-rows-[1fr]">
-                      <p className="min-h-0 overflow-hidden pt-2 text-[0.8rem] leading-relaxed text-white/55 text-pretty transition-colors duration-[var(--motion-state)] group-data-[active=true]:text-white/85 md:max-w-md md:pt-3 md:text-base">
+                    <div className="dir-fashion-fmt grid grid-rows-[0fr] transition-[grid-template-rows] duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-data-[active=true]:grid-rows-[1fr]">
+                      <p className="min-h-0 overflow-hidden pt-2 text-[0.8rem] leading-relaxed text-white/55 text-pretty transition-colors duration-[var(--motion-state)] group-data-[active=true]:text-white/85 md:max-w-[min(30rem,calc(50vw-9.5rem))] md:pt-3 md:text-[clamp(1rem,1.1vw,1.2rem)] lg:max-w-[min(30rem,calc(50vw-12rem))]">
                         {tidy(format.text)}
                       </p>
                     </div>
@@ -1085,7 +1163,8 @@ function Spread({ frames }: { frames: SceneFrame[] }) {
 
           <div
             aria-hidden="true"
-            className="mt-auto flex items-center gap-3 pt-4 md:max-w-[22rem] md:pt-8"
+            data-fs-progress=""
+            className="mt-auto flex items-center gap-3 pt-4 md:absolute md:bottom-[clamp(1.25rem,3.4svh,2rem)] md:left-10 md:mt-0 md:w-[min(22rem,calc(50vw-5rem))] md:pt-0 lg:left-16"
           >
             {FORMATS.map((format, i) => (
               <ProgressSegment
@@ -1101,7 +1180,7 @@ function Spread({ frames }: { frames: SceneFrame[] }) {
         {/* Корешок: сгиб разворота по центру */}
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 left-1/2 z-20 hidden w-[9vw] -translate-x-1/2 bg-gradient-to-r from-transparent via-black/50 to-transparent md:block"
+          className="pointer-events-none absolute inset-y-0 left-1/2 z-20 hidden w-[9vw] -translate-x-1/2 bg-gradient-to-r from-transparent via-white/[0.045] to-transparent md:block"
         />
         <span
           aria-hidden="true"
@@ -1401,7 +1480,7 @@ function Lookbook({
 /* ─────────────────────────────── 05. Работы ─────────────────────────────── */
 
 const WORK_SLOTS = [
-  { col: 'lg:col-span-6 lg:col-start-1', ratio: 'aspect-[4/5]', drop: '' },
+  { col: 'lg:col-span-5 lg:col-start-1', ratio: 'aspect-[4/5]', drop: '' },
   { col: 'lg:col-span-4 lg:col-start-8', ratio: 'aspect-[3/4]', drop: 'lg:mt-44' },
   { col: 'lg:col-span-4 lg:col-start-2', ratio: 'aspect-[3/4]', drop: '' },
   { col: 'lg:col-span-5 lg:col-start-7', ratio: 'aspect-[4/5]', drop: 'lg:mt-28' },
@@ -1433,7 +1512,7 @@ function Works({ works, pages }: { works: DirectionPageWork[]; pages: Pages }) {
       id="fashion-works"
       data-fs-paper=""
       aria-labelledby="fashion-works-title"
-      className="relative scroll-mt-[4.5rem] bg-[var(--fs-paper)] px-6 pb-12 pt-6 text-black md:px-10 md:pb-16 lg:px-20"
+      className="dir-fashion-paper relative scroll-mt-[4.5rem] bg-[var(--fs-paper)] px-6 pb-12 pt-6 text-black md:px-10 md:pb-16 lg:px-20"
     >
       <Folio tone="paper" left="Работы" right={`Стр. ${pages.works?.label ?? ''}`} />
 
@@ -1476,7 +1555,12 @@ function Works({ works, pages }: { works: DirectionPageWork[]; pages: Pages }) {
                 onClick={() => page.openCase(work.slug)}
                 className="group block focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-accent"
               >
-                <span className={cn('relative block overflow-hidden bg-black', slot.ratio)}>
+                <span
+                  className={cn(
+                    'relative block overflow-hidden bg-black lg:max-h-[82svh]',
+                    slot.ratio
+                  )}
+                >
                   {first ? (
                     <Still
                       src={first}
@@ -1548,7 +1632,7 @@ function ProofCta() {
     <section
       data-fs-paper=""
       aria-label="Обсудить съёмку коллекции"
-      className="relative bg-[var(--fs-paper)] px-6 pb-16 pt-6 text-black md:px-10 md:pb-24 lg:px-20"
+      className="dir-fashion-paper relative bg-[var(--fs-paper)] px-6 pb-16 pt-10 text-black md:px-10 md:pb-24 lg:px-20"
     >
       <div className="relative border border-dashed border-black/50 px-5 py-9 md:px-10 md:py-14">
         <span
@@ -1558,9 +1642,11 @@ function ProofCta() {
           <Scissors className="h-4 w-4" />
           <span className="type-meta font-mono uppercase">{copy.kicker}</span>
         </span>
-        <div className="grid gap-8 lg:grid-cols-12 lg:items-end lg:gap-x-12">
-          <p className="font-brand-hero text-[clamp(2.1rem,5.6vw,5.8rem)] uppercase leading-[0.92] tracking-tighter text-balance lg:col-span-8">
-            {tidy(copy.lead)} <span className="text-black/55">{tidy(copy.tail)}</span>
+        <div className="grid gap-8 lg:grid-cols-12 lg:items-end lg:gap-x-10">
+          {/* Запас по высоте строки: точки над «Ё» не задевают строку выше */}
+          <p className="font-brand-hero text-[clamp(2.1rem,4.9vw,5.2rem)] uppercase leading-[1.02] tracking-tighter lg:col-span-8">
+            <span className="block">{tidy(copy.lead)}</span>
+            <span className="block text-black/55 text-balance">{tidy(copy.tail)}</span>
           </p>
           <div className="flex flex-col items-start gap-4 lg:col-span-4 lg:items-end">
             <BriefButton
@@ -1649,7 +1735,12 @@ function Process({ pages }: { pages: Pages }) {
               </span>
               <div className="mt-2 md:mt-0 xl:mt-4">
                 <p className="type-meta font-mono uppercase tabular-nums text-white/65">
-                  Шаг {step.number} · {SCENE.stepMarks[i]}
+                  <span className="xl:block">Шаг {step.number}</span>
+                  <span className="xl:hidden"> · </span>
+                  {/* На xl в колонке две строки: шапки пяти шагов одной высоты, без висячих предлогов */}
+                  <span className="xl:mt-1 xl:block xl:min-h-[2lh]">
+                    {tidy(SCENE.stepMarks[i] ?? '')}
+                  </span>
                 </p>
                 <h3 className="mt-3 font-stage text-[clamp(1.15rem,1.6vw,1.45rem)] uppercase leading-[1.02] tracking-[-0.01em] text-white xl:text-[clamp(1rem,1.4vw,1.35rem)]">
                   {tidy(step.title)}
@@ -1699,6 +1790,39 @@ function Process({ pages }: { pages: Pages }) {
   )
 }
 
+/* ─────────────────── Вопросы: вклейка в пустой левой колонке ─────────────────── */
+
+/**
+ * Левая колонка вопросов под заголовком пуста на 600 px. Кадр-вклейка стоит в ней
+ * и липнет под заголовком, пока читают ответы. Блок вопросов общий и слота не
+ * даёт, поэтому вклейка лежит поверх его сетки: ширина считается по тем же
+ * 12 колонкам (px-20, gap-16 на lg), сам блок не тронут.
+ */
+function FaqPlate({ frame, page }: { frame: SceneFrame | null; page: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-y-28 left-20 hidden w-[calc((100%-54rem)/12*5+16rem)] lg:block"
+    >
+      <figure className="sticky top-[16rem] mt-[9.5rem] w-[min(72%,calc((100svh-24rem)*0.8))]">
+        <div className="dir-fashion-mat relative aspect-[4/5] bg-black">
+          <Plate
+            frame={frame}
+            word={plateWord(2)}
+            index={2}
+            sizes="(min-width: 1024px) 20vw, 1px"
+            className="absolute inset-0"
+          />
+        </div>
+        <figcaption className="type-meta mt-7 flex justify-between gap-3 font-mono uppercase tabular-nums text-white/60">
+          <span className="min-w-0 truncate">{frame ? `Кадр — ${frame.client}` : 'Вклейка'}</span>
+          <span className="shrink-0">Стр. {page}</span>
+        </figcaption>
+      </figure>
+    </div>
+  )
+}
+
 /* ─────────────────────────────── Страница ─────────────────────────────── */
 
 export function FashionPage({ works }: FashionPageProps) {
@@ -1719,12 +1843,13 @@ export function FashionPage({ works }: FashionPageProps) {
         <ProofCta />
         <Process pages={pages} />
       </div>
-      <div id="fashion-faq">
+      <div id="fashion-faq" className="relative">
         <DirectionFaq
           index={pad(pages.faq.from)}
           title="Вопросы о fashion-видео"
           items={FASHION_PAGE.faq}
         />
+        <FaqPlate frame={pick(frames, 11)} page={pad(pages.faq.from)} />
       </div>
       <OtherDirections current="fashion" reading={DIRECTION_READING['fashion']} />
       <DirectionEnd

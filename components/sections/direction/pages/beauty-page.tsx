@@ -10,7 +10,9 @@
  *   2. Наезд — sticky-сцена: круг раскрывается до кадра, слова и шкала ×8 → ×1.
  *   3. Материалы — липкий видоискатель слева, крупные строки справа.
  *   4. Предмет — капсула в центре, свет обходит её по орбите.
- *   5. Работы, CTA, процесс, CTA, вопросы — общий кит + два смысловых CTA.
+ *   5. Работы и CTA — общий кит + смысловой CTA с диском-линзой.
+ *   6. Процесс — своя шкала ×1…×5: цифры растут, красная линия идёт за скроллом.
+ *   7. CTA-«билет», вопросы (фокус-прицел сбоку), отъезд к общему плану, финал.
  *
  * Производительность: всё, что движется каждый кадр (линза, свет у предмета),
  * пишет transform напрямую в узел, без состояния React; циклы стоят, пока
@@ -23,6 +25,7 @@
 'use client'
 
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -43,6 +46,7 @@ import {
 import { ArrowDown, ArrowRight } from 'lucide-react'
 
 import { BEAUTY_PAGE, type BeautyMaterial } from '@/lib/services/pages/content/beauty'
+import type { FaqItem, ProcessStep } from '@/lib/services/pages/types'
 import {
   interleaveFrames,
   type DirectionPageWork,
@@ -53,8 +57,7 @@ import { useDirectionPage } from '../direction-context'
 import { DirectionCredits } from '../direction-credits'
 import { DirectionEnd } from '../direction-end'
 import { DirectionFaq } from '../direction-faq'
-import { KIT_KICKER, setTitle, typo } from '../direction-kit'
-import { DirectionProcess } from '../direction-process'
+import { KIT_KICKER, KIT_TITLE, KIT_TITLE_SIZE, setTitle, typo } from '../direction-kit'
 import { DIRECTION_READING } from '@/lib/services/pages'
 import { OtherDirections } from '../other-directions'
 import { Still } from '../still'
@@ -66,6 +69,24 @@ export interface BeautyPageProps {
 
 /** Кадр сцены: у работы может не быть ни одного, тогда вместо него макро-поверхность */
 type Frame = SceneFrame | null
+
+/**
+ * typo() из кита связывает только первое короткое слово цепочки: второй
+ * проход не видит пробел, который съел первый («а не обрезаем» → «а␣не обрезаем»).
+ * Здесь цепочку добираем: короткое слово после неразрывного пробела тоже
+ * прикрепляется к следующему.
+ */
+const CHAIN = /( )([A-Za-zА-Яа-яЁё]{1,3}) (?=\S)/g
+
+function tie(text: string): string {
+  let out = typo(text)
+  for (let round = 0; round < 4; round += 1) {
+    const next = out.replace(CHAIN, '$1$2 ')
+    if (next === out) break
+    out = next
+  }
+  return out
+}
 
 const pad = (value: number) => String(value).padStart(2, '0')
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
@@ -177,7 +198,7 @@ function Plate({
 
 /* ───────────────────────────────── 1. Hero ───────────────────────────────── */
 
-function Hero({ frame }: { frame: Frame }) {
+function Hero({ frame, hasWorks }: { frame: Frame; hasWorks: boolean }) {
   const page = useDirectionPage()
   const reduced = useReducedMotion()
   const sectionRef = useRef<HTMLElement>(null)
@@ -188,6 +209,7 @@ function Hero({ frame }: { frame: Frame }) {
   const readoutRef = useRef<HTMLSpanElement>(null)
   const badgeRef = useRef<HTMLSpanElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
+  const zoneRef = useRef<HTMLDivElement>(null)
 
   useLive(sectionRef)
 
@@ -211,12 +233,17 @@ function Hero({ frame }: { frame: Frame }) {
     const readout = readoutRef.current
     const badge = badgeRef.current
     const content = contentRef.current
-    if (!section || !stage || !lens || !inner || !tag || !readout || !badge || !content) return
+    const zone = zoneRef.current
+    if (!section || !stage || !lens || !inner || !tag || !readout || !badge || !content || !zone) {
+      return
+    }
 
     let w = 1
     let h = 1
     let tagW = 140
-    // Середина свободной зоны над текстом: на телефоне линза живёт там, а не под заголовком
+    // Середина свободной зоны над текстом: на телефоне линза живёт там, а не под заголовком.
+    // Зона — настоящий элемент вёрстки с минимальной высотой, а не остаток экрана: на коротких
+    // телефонах hero становится чуть выше экрана, но линза не ложится на строки
     let zoneY = 0
     let zoneR = 0
     let r = 120
@@ -243,11 +270,12 @@ function Hero({ frame }: { frame: Frame }) {
       h = Math.max(1, rect.height)
       tagW = tag.offsetWidth
       if (compact()) {
-        const top = 84
-        const bottom = Math.max(top + 150, content.offsetTop - 18)
+        const area = zone.getBoundingClientRect()
+        const top = area.top - rect.top + 4
+        const bottom = area.bottom - rect.top - 6
         zoneY = (top + bottom) / 2
-        zoneR = (bottom - top) / 2
-        r = clamp(zoneR, 66, Math.min(w, h) * 0.27)
+        zoneR = Math.max(0, (bottom - top) / 2)
+        r = clamp(zoneR, 52, Math.min(w, h) * 0.27)
       } else {
         r = Math.max(84, Math.min(w, h) * 0.25)
       }
@@ -309,6 +337,7 @@ function Hero({ frame }: { frame: Frame }) {
       // Шрифт или перенос строк меняют высоту текста — свободная зона над ним тоже
       const fit = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(onResize)
       fit?.observe(content)
+      fit?.observe(zone)
       return () => {
         window.removeEventListener('resize', onResize)
         fit?.disconnect()
@@ -391,8 +420,18 @@ function Hero({ frame }: { frame: Frame }) {
     observer?.observe(section)
     const fit = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(onResize)
     fit?.observe(content)
+    fit?.observe(zone)
+
+    // Долгое нажатие пальцем — это жест «ближе», а не системное меню картинки или текста
+    const coarse = window.matchMedia('(pointer: coarse)')
+    const onMenu = (event: Event) => {
+      if (coarse.matches && !(event.target as HTMLElement).closest('a, button')) {
+        event.preventDefault()
+      }
+    }
 
     window.addEventListener('pointermove', onMove, { passive: true })
+    section.addEventListener('contextmenu', onMenu)
     section.addEventListener('pointerdown', onDown)
     window.addEventListener('pointerup', onUp)
     window.addEventListener('pointercancel', onUp)
@@ -406,6 +445,7 @@ function Hero({ frame }: { frame: Frame }) {
       fit?.disconnect()
       window.removeEventListener('pointermove', onMove)
       section.removeEventListener('pointerdown', onDown)
+      section.removeEventListener('contextmenu', onMenu)
       window.removeEventListener('pointerup', onUp)
       window.removeEventListener('pointercancel', onUp)
       document.documentElement.removeEventListener('pointerleave', onLeave)
@@ -419,7 +459,7 @@ function Hero({ frame }: { frame: Frame }) {
     <section
       ref={sectionRef}
       data-live="true"
-      className="dir-beauty-hero relative isolate flex min-h-[100svh] w-full items-end overflow-hidden bg-[#000000] px-6 pb-20 pt-28 md:px-10 md:pb-24 lg:px-20"
+      className="dir-beauty-hero relative isolate flex min-h-[100svh] w-full flex-col justify-end overflow-hidden bg-[#000000] px-6 pb-16 pt-[5.25rem] md:flex-row md:items-end md:px-10 md:pb-24 md:pt-28 lg:px-20"
     >
       <div ref={stageRef} aria-hidden="true" className="dir-beauty-stage absolute inset-0 z-0">
         {/* Расфокус: тот же кадр, размытый и притушенный; один статичный слой */}
@@ -453,7 +493,10 @@ function Hero({ frame }: { frame: Frame }) {
         <span className="dir-beauty-sweep" />
       </div>
 
-      <div ref={contentRef} className="relative z-10 w-full">
+      {/* Свободное место для линзы на телефоне: растёт вместе с экраном, но не меньше 7,25 rem */}
+      <div ref={zoneRef} aria-hidden="true" className="dir-beauty-zone md:hidden" />
+
+      <div ref={contentRef} className="dir-beauty-copy relative z-10 w-full">
         <p
           style={delay(140)}
           className="dir-beauty-rise type-meta font-mono uppercase text-white/70 [text-wrap:balance]"
@@ -462,7 +505,7 @@ function Hero({ frame }: { frame: Frame }) {
             <span key={part}>
               {position > 0 ? ' ' : null}
               <span className="whitespace-nowrap">
-                {typo(part)}
+                {tie(part)}
                 {position < parts.length - 1 ? ' ·' : null}
               </span>
             </span>
@@ -472,7 +515,7 @@ function Hero({ frame }: { frame: Frame }) {
         <h1 className="mt-5 font-stage uppercase text-white md:mt-9">
           <span
             style={delay(200)}
-            className="dir-beauty-focus block w-min text-[clamp(3.25rem,18vw,11rem)] leading-[0.86] tracking-[-0.04em]"
+            className="dir-beauty-focus block w-min text-[clamp(3.25rem,min(18vw,30svh),11rem)] leading-[0.86] tracking-[-0.01em]"
           >
             Beauty<span className="text-accent">-</span>
             {/* Без <wbr> Blink не рвёт строку после дефиса, стоящего в своём span */}
@@ -483,7 +526,7 @@ function Hero({ frame }: { frame: Frame }) {
             style={delay(520)}
             className="dir-beauty-rise mt-4 block max-w-[30rem] font-sans text-[1.0625rem] font-light normal-case leading-snug tracking-normal text-white/85 [text-wrap:balance] md:mt-8 md:text-[1.375rem]"
           >
-            {typo(hero.sub)}
+            {tie(hero.sub)}
           </span>
         </h1>
 
@@ -491,7 +534,7 @@ function Hero({ frame }: { frame: Frame }) {
           style={delay(640)}
           className="dir-beauty-rise mt-4 max-w-[34rem] text-[0.9375rem] leading-relaxed text-white/70 [text-wrap:pretty] md:mt-6 md:text-base"
         >
-          {typo(hero.lede)}
+          {tie(hero.lede)}
         </p>
 
         <div
@@ -513,10 +556,12 @@ function Hero({ frame }: { frame: Frame }) {
             <span aria-hidden="true" className="dir-beauty-btn-iris" />
           </button>
 
-          <a href="#beauty-works" className="dir-beauty-link type-meta font-mono uppercase">
-            Смотреть работы
-            <ArrowDown aria-hidden="true" className="h-3.5 w-3.5" />
-          </a>
+          {hasWorks ? (
+            <a href="#beauty-works" className="dir-beauty-link type-meta font-mono uppercase">
+              Смотреть работы
+              <ArrowDown aria-hidden="true" className="h-3.5 w-3.5" />
+            </a>
+          ) : null}
         </div>
 
         <p
@@ -602,22 +647,29 @@ function Zoom({ frame }: { frame: Frame }) {
   const level = calm.on ? 1 : scrolled
 
   return (
-    <section ref={ref} aria-hidden="true" className="dir-beauty-zoom relative bg-[#000000]">
+    <section
+      ref={ref}
+      aria-labelledby="beauty-zoom-title"
+      className="dir-beauty-zoom relative bg-[#000000]"
+    >
+      <h2 id="beauty-zoom-title" className="sr-only">
+        Наезд на продукт: текстура, свет, кожа, вода
+      </h2>
       <div ref={stageRef} className="dir-beauty-zoom-stage">
-        <div className="absolute inset-0 opacity-[0.16]">
+        <div aria-hidden="true" className="absolute inset-0 opacity-[0.16]">
           <Plate frame={frame} x={50} y={50} />
         </div>
 
-        <motion.div style={{ clipPath: clip }} className="absolute inset-0">
+        <motion.div aria-hidden="true" style={{ clipPath: clip }} className="absolute inset-0">
           <motion.div style={{ scale }} className="h-full w-full">
             <Plate frame={frame} x={50} y={50} />
           </motion.div>
           <span className="dir-beauty-zoom-veil" />
         </motion.div>
 
-        <span className="dir-beauty-zoom-scrim" />
+        <span aria-hidden="true" className="dir-beauty-zoom-scrim" />
 
-        <svg className="dir-beauty-zoom-ring" focusable="false">
+        <svg aria-hidden="true" className="dir-beauty-zoom-ring" focusable="false">
           <motion.circle cx="50%" cy="50%" r={radius} className="dir-beauty-zoom-ring-line" />
           <motion.circle
             cx="50%"
@@ -630,14 +682,17 @@ function Zoom({ frame }: { frame: Frame }) {
 
         <div className="dir-beauty-zoom-ui">
           <div className="flex items-start justify-between gap-6">
-            <p className={KIT_KICKER}>
+            <p aria-hidden="true" className={KIT_KICKER}>
               <span className="h-px w-8 bg-accent" />
               04 / Наезд
             </p>
-            <p className="dir-beauty-zoom-mobile-level type-meta font-mono uppercase tabular-nums text-white/70">
+            <p
+              aria-hidden="true"
+              className="dir-beauty-zoom-mobile-level type-meta font-mono uppercase tabular-nums"
+            >
               Макро ×{level}
             </p>
-            <ol className="dir-beauty-zoom-steps type-meta font-mono uppercase">
+            <ol aria-hidden="true" className="dir-beauty-zoom-steps type-meta font-mono uppercase">
               {ZOOM_WORDS.map((item, index) => (
                 <li key={item.word} data-state={index === word ? 'on' : 'off'}>
                   <span className="tabular-nums">{pad(index + 1)}</span> {item.word}
@@ -648,37 +703,32 @@ function Zoom({ frame }: { frame: Frame }) {
 
           <div className="flex items-end justify-between gap-6">
             <div>
-              <div className="dir-beauty-zoom-words">
+              {/* Слова лежат в разметке все: скринридер читает список, глаз видит одно слово за раз */}
+              <ul role="list" className="dir-beauty-zoom-copy">
                 {ZOOM_WORDS.map((item, index) => (
-                  <span
+                  <li
                     key={item.word}
                     data-pos={index < word ? 'past' : index === word ? 'now' : 'next'}
-                    className="dir-beauty-zoom-word font-stage uppercase"
+                    className="dir-beauty-zoom-item"
                   >
-                    {item.word}
-                  </span>
+                    <span className="dir-beauty-zoom-wordclip">
+                      <span className="dir-beauty-zoom-word font-stage uppercase">{item.word}</span>
+                    </span>
+                    <span className="dir-beauty-zoom-noteclip">
+                      <span className="dir-beauty-zoom-note">{tie(item.note)}</span>
+                    </span>
+                  </li>
                 ))}
-              </div>
-              <div className="dir-beauty-zoom-notes">
-                {ZOOM_WORDS.map((item, index) => (
-                  <span
-                    key={item.word}
-                    data-pos={index < word ? 'past' : index === word ? 'now' : 'next'}
-                    className="dir-beauty-zoom-note"
-                  >
-                    {typo(item.note)}
-                  </span>
-                ))}
-              </div>
-              <div className="dir-beauty-zoom-bar">
+              </ul>
+              <div aria-hidden="true" className="dir-beauty-zoom-bar">
                 {ZOOM_WORDS.map((item, index) => (
                   <span key={item.word} data-on={index <= word} />
                 ))}
               </div>
             </div>
 
-            <div className="dir-beauty-zoom-readout">
-              <p className="type-meta font-mono uppercase text-white/70">Макро</p>
+            <div aria-hidden="true" className="dir-beauty-zoom-readout">
+              <p className="type-meta font-mono uppercase text-white/85">Макро</p>
               <p className="font-brand-hero tabular-nums leading-[0.82] tracking-[-0.04em] text-white">
                 <span key={level}>×{level}</span>
               </p>
@@ -700,17 +750,20 @@ function Zoom({ frame }: { frame: Frame }) {
 /**
  * Линейка между секциями. Красная линия по ней идёт за скроллом, а отметка
  * справа считает крупность ×1…×8: переход между сценами — это смена кратности.
+ * Перед финалом (reverse) линия бежит справа налево, а кратность падает до ×1:
+ * камера отъезжает к общему плану, и страница возвращается к соседним направлениям.
  */
-function Seam({ label }: { label: string }) {
+function Seam({ label, reverse = false }: { label: string; reverse?: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start 92%', 'end 40%'] })
-  const [level, setLevel] = useState(1)
-  useMotionValueEvent(scrollYProgress, 'change', value =>
-    setLevel(clamp(Math.round(1 + value * (MACRO_MAX - 1)), 1, MACRO_MAX))
-  )
+  const [level, setLevel] = useState(reverse ? MACRO_MAX : 1)
+  useMotionValueEvent(scrollYProgress, 'change', value => {
+    const steps = Math.round(value * (MACRO_MAX - 1))
+    setLevel(clamp(reverse ? MACRO_MAX - steps : 1 + steps, 1, MACRO_MAX))
+  })
 
   return (
-    <div ref={ref} aria-hidden="true" className="dir-beauty-seam relative">
+    <div ref={ref} aria-hidden="true" data-reverse={reverse} className="dir-beauty-seam relative">
       <div className="dir-beauty-seam-row type-meta font-mono uppercase">
         <span>{label}</span>
         <span className="tabular-nums">Макро ×{level}</span>
@@ -875,7 +928,7 @@ function Materials({ frames }: { frames: Frame[] }) {
     >
       <p className={KIT_KICKER}>
         <span aria-hidden="true" className="h-px w-8 bg-accent" />
-        04 / Материалы 01–04
+        05 / Материалы 01–04
       </p>
       <h2
         id="beauty-materials-title"
@@ -911,10 +964,10 @@ function Materials({ frames }: { frames: Frame[] }) {
                 </span>
               </div>
               <h3 className="dir-beauty-row-title font-stage text-[clamp(1.6rem,3.6vw,3.25rem)] uppercase leading-[0.95] tracking-[-0.025em] text-balance">
-                {typo(material.title)}
+                {tie(material.title)}
               </h3>
               <p className="dir-beauty-row-text max-w-[34rem] text-[0.9375rem] leading-[1.65] [text-wrap:pretty] md:text-base">
-                {typo(material.text)}
+                {tie(material.text)}
               </p>
             </li>
           ))}
@@ -1111,11 +1164,12 @@ function ObjectScene() {
       aria-labelledby="beauty-object-title"
       className="dir-beauty-object relative isolate overflow-hidden px-6 py-20 md:px-10 md:py-28 lg:px-20"
     >
-      <div className="relative z-10 flex flex-wrap items-end justify-between gap-x-10 gap-y-6">
+      {/* Абзац стоит наверху, рядом с заголовком: справа снизу экрана живёт плавающая кнопка */}
+      <div className="relative z-10 grid gap-x-16 gap-y-6 md:grid-cols-[minmax(0,1fr)_minmax(0,27rem)] md:items-end">
         <div>
           <p className={KIT_KICKER}>
             <span aria-hidden="true" className="h-px w-8 bg-accent" />
-            04 / Материал {scene.index}
+            06 / Предмет · материал {scene.index}
           </p>
           <h2
             id="beauty-object-title"
@@ -1125,8 +1179,12 @@ function ObjectScene() {
             {setTitle(scene.title)}
           </h2>
         </div>
-        <p className="type-meta hidden max-w-[16rem] font-mono uppercase leading-relaxed text-white/60 md:block">
-          Свет обходит предмет по орбите
+        <p
+          data-reveal=""
+          style={{ '--reveal-delay': '90ms' } as CSSProperties}
+          className="max-w-[27rem] text-base leading-[1.65] text-white/80 [text-wrap:pretty] md:pb-2 md:text-lg"
+        >
+          {tie(scene.text)}
         </p>
       </div>
 
@@ -1174,16 +1232,13 @@ function ObjectScene() {
         ))}
       </ul>
 
-      <div className="relative z-10 mt-10 flex flex-wrap items-end justify-between gap-x-12 gap-y-6 md:mt-14">
-        <p className="dir-beauty-hint type-meta max-w-[15rem] font-mono uppercase text-white/60">
+      <div className="relative z-10 mt-10 flex flex-wrap items-baseline gap-x-12 gap-y-3 md:mt-14">
+        <p className="dir-beauty-hint type-meta max-w-[15rem] font-mono uppercase text-white/70">
           <span className="dir-beauty-hint-pointer">Ведите курсором — свет идёт следом</span>
           <span className="dir-beauty-hint-touch">Свет обходит предмет сам</span>
         </p>
-        <p
-          data-reveal=""
-          className="max-w-[30rem] text-base leading-[1.65] text-white/75 [text-wrap:pretty] md:text-lg"
-        >
-          {typo(scene.text)}
+        <p className="type-meta hidden max-w-[17rem] font-mono uppercase leading-relaxed text-white/60 md:block">
+          {tie('Свет обходит предмет по орбите')}
         </p>
       </div>
     </section>
@@ -1205,7 +1260,7 @@ function ProofCta({ frame }: { frame: Frame }) {
       data-live="true"
       data-hot={hot}
       aria-labelledby="beauty-proof-cta-title"
-      className="dir-beauty-proof relative isolate overflow-hidden border-t border-white/10 bg-[#000000] px-6 py-24 md:px-10 md:py-32 lg:px-20"
+      className="dir-beauty-proof relative isolate overflow-hidden border-t border-white/10 bg-[#000000] px-6 pb-[calc(var(--pd)*0.8+2.5rem)] pt-24 md:px-10 md:pt-32 lg:px-20 lg:pb-32"
     >
       <div aria-hidden="true" className="dir-beauty-proof-lens">
         <div className="dir-beauty-proof-disc">
@@ -1228,7 +1283,8 @@ function ProofCta({ frame }: { frame: Frame }) {
         </p>
       </div>
 
-      <div className="relative z-10 max-w-[38rem] lg:max-w-[46rem]">
+      {/* Колонка не заходит под диск: ширина экрана минус диск, его отступ и поля */}
+      <div className="relative z-10 max-w-[38rem] lg:max-w-[min(46rem,calc(100vw-min(40rem,42vw)-5vw-9rem))]">
         <p className={KIT_KICKER}>
           <span aria-hidden="true" className="h-px w-8 bg-accent" />
           {cta.kicker}
@@ -1245,7 +1301,7 @@ function ProofCta({ frame }: { frame: Frame }) {
           style={{ '--reveal-delay': '90ms' } as CSSProperties}
           className="mt-6 max-w-[30rem] text-base leading-[1.65] text-white/75 [text-wrap:pretty] md:text-lg"
         >
-          {typo(cta.text)}
+          {tie(cta.text)}
         </p>
         <button
           type="button"
@@ -1265,6 +1321,157 @@ function ProofCta({ frame }: { frame: Frame }) {
           />
           <span aria-hidden="true" className="dir-beauty-btn-iris" />
         </button>
+      </div>
+    </section>
+  )
+}
+
+/* ──────────────────────────── Процесс: шкала крупности ×1…×5 ──────────────────────────── */
+
+/** Формат версии: один и тот же кадр, по-разному скадрированный */
+function Format({ frame, ratio, tag }: { frame: Frame; ratio: '9:16' | '16:9'; tag: string }) {
+  return (
+    <div aria-hidden="true" data-ratio={ratio} className="dir-beauty-format">
+      <span className="dir-beauty-format-frame">
+        <span className="absolute inset-0 block">
+          <Plate frame={frame} x={58} y={40} sizes="10rem" quality={50} />
+        </span>
+        <span className="dir-beauty-format-shade" />
+      </span>
+      <span className="dir-beauty-format-cap type-meta font-mono uppercase tabular-nums">
+        {ratio}
+        <span>{tag}</span>
+      </span>
+    </div>
+  )
+}
+
+/**
+ * Шаги как наезд: цифра шага — это кратность, ×1 → ×5, и каждая следующая
+ * крупнее предыдущей. На широком экране шаги стоят в ряд «лестницей», на
+ * телефоне — столбцом вдоль вертикальной линейки; красная линия идёт за
+ * скроллом и зажигает шаг, до которого дошла. Без движения все шаги горят.
+ */
+function Process({
+  title,
+  lead,
+  steps,
+  frame,
+}: {
+  title: string
+  lead: string
+  steps: ProcessStep[]
+  frame: Frame
+}) {
+  const calm = useCalm()
+  const listRef = useRef<HTMLDivElement>(null)
+  // Положение каждого маркера вдоль шкалы, доля 0…1: меряем при изменении размера, не на скролле
+  const marks = useRef<number[]>([])
+  // -1 — линия ещё не дошла до первого шага
+  const [active, setActive] = useState(-1)
+  const { scrollYProgress } = useScroll({ target: listRef, offset: ['start 72%', 'end 58%'] })
+
+  const activeAt = useCallback((progress: number) => {
+    if (progress <= 0) return -1
+    let found = 0
+    marks.current.forEach((mark, position) => {
+      if (mark <= progress) found = position
+    })
+    return found
+  }, [])
+
+  useMotionValueEvent(scrollYProgress, 'change', value => setActive(activeAt(value)))
+
+  useEffect(() => {
+    const list = listRef.current
+    if (!list || typeof ResizeObserver === 'undefined') return
+    const wide = window.matchMedia('(min-width: 80rem)')
+    const measure = () => {
+      const nodes = list.querySelectorAll<HTMLElement>('[data-step]')
+      const row = wide.matches
+      const size = Math.max(1, row ? list.offsetWidth : list.offsetHeight)
+      // Маркер стоит у левой кромки шага в ряду и на 28px ниже верхней кромки в столбце
+      marks.current = Array.from(nodes, node =>
+        row ? node.offsetLeft / size : (node.offsetTop + 28) / size
+      )
+      setActive(activeAt(scrollYProgress.get()))
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(list)
+    wide.addEventListener('change', measure)
+    return () => {
+      observer.disconnect()
+      wide.removeEventListener('change', measure)
+    }
+  }, [activeAt, scrollYProgress])
+
+  const current = calm.on ? steps.length : active
+  const stateOf = (position: number) =>
+    position < current ? 'done' : position === current ? 'active' : 'todo'
+
+  return (
+    <section
+      aria-labelledby="beauty-process-title"
+      className="dir-beauty-process relative isolate overflow-hidden border-t border-white/10 bg-[#0d0d0d] px-6 py-20 md:px-10 md:py-28 lg:px-20"
+    >
+      <span aria-hidden="true" className="dir-beauty-process-rings" />
+
+      <div className="relative max-w-3xl">
+        <p className={KIT_KICKER}>
+          <span aria-hidden="true" className="h-px w-8 bg-accent" />
+          08 / Процесс
+        </p>
+        <h2
+          id="beauty-process-title"
+          data-reveal=""
+          className={`${KIT_TITLE} ${KIT_TITLE_SIZE} mt-5`}
+        >
+          {setTitle(title)}
+        </h2>
+        <p className="mt-6 max-w-xl text-base leading-relaxed text-white/70 [text-wrap:pretty] md:text-lg">
+          {tie(lead)}
+        </p>
+      </div>
+
+      <div ref={listRef} data-calm={calm.on} className="dir-beauty-steps relative mt-14 md:mt-20">
+        <span aria-hidden="true" className="dir-beauty-steps-rail" data-axis="y">
+          <motion.span className="dir-beauty-steps-fill" style={{ scaleY: scrollYProgress }} />
+        </span>
+        <span aria-hidden="true" className="dir-beauty-steps-rail" data-axis="x">
+          <motion.span className="dir-beauty-steps-fill" style={{ scaleX: scrollYProgress }} />
+        </span>
+
+        <ol role="list" className="dir-beauty-steps-list">
+          {steps.map((step, index) => (
+            <li
+              key={step.number}
+              data-step=""
+              data-state={stateOf(index)}
+              style={{ '--i': index } as CSSProperties}
+              className="dir-beauty-step"
+            >
+              <span aria-hidden="true" className="dir-beauty-step-num font-brand-hero tabular-nums">
+                ×{index + 1}
+              </span>
+              <span aria-hidden="true" className="dir-beauty-step-node" />
+              <div className="dir-beauty-step-body">
+                <p className="dir-beauty-step-label type-meta font-mono uppercase tabular-nums">
+                  Шаг {step.number}
+                </p>
+                <h3 className="dir-beauty-step-title font-stage uppercase">{tie(step.title)}</h3>
+                <p className="dir-beauty-step-text">{tie(step.text)}</p>
+                {/* Шаг про версии показывает их: вертикаль и горизонталь из одного кадра */}
+                {/верси/i.test(step.title) ? (
+                  <div aria-hidden="true" className="dir-beauty-formats">
+                    <Format frame={frame} ratio="9:16" tag="Вертикаль" />
+                    <Format frame={frame} ratio="16:9" tag="Горизонталь" />
+                  </div>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   )
@@ -1301,7 +1508,7 @@ function ProcessCta() {
             {setTitle(cta.title)}
           </h2>
           <p className="mt-4 max-w-[32rem] text-[0.9375rem] leading-[1.6] [text-wrap:pretty] md:text-base">
-            {typo(cta.text)}
+            {tie(cta.text)}
           </p>
         </div>
 
@@ -1317,6 +1524,55 @@ function ProcessCta() {
         </button>
       </div>
     </section>
+  )
+}
+
+/* ───────────────────────────────── Вопросы: прицел сбоку ─────────────────────────────── */
+
+// Набор применяется на выходе: разметка FAQPage строится из исходных строк, без неразрывных пробелов
+const FAQ_ITEMS: FaqItem[] = BEAUTY_PAGE.faq.map(item => ({
+  question: tie(item.question),
+  answer: tie(item.answer),
+}))
+
+/**
+ * Аккордеон кита стоит как есть; сбоку, в пустой половине под липким заголовком,
+ * висит прицел: кольцо с делениями поворачивается за скроллом, кратность растёт.
+ * Только на широком и высоком экране, где есть где ему висеть.
+ */
+function FaqBlock() {
+  const calm = useCalm()
+  const ref = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 85%', 'end 35%'] })
+  // Конец блока подходит к низу экрана: липкий заголовок слева уже доехал до своего конца,
+  // прицел гаснет раньше, чем поравняется с ним
+  const { scrollYProgress: leaving } = useScroll({ target: ref, offset: ['end 92%', 'end 70%'] })
+  const fade = useTransform(leaving, value => 1 - value)
+  const turn = useTransform([scrollYProgress, calm.value], ([p, still]: number[]) =>
+    still ? 0 : (p ?? 0) * 140
+  )
+  const [level, setLevel] = useState(1)
+  useMotionValueEvent(scrollYProgress, 'change', value =>
+    setLevel(clamp(Math.round(1 + value * (MACRO_MAX - 1)), 1, MACRO_MAX))
+  )
+
+  return (
+    <div ref={ref} className="dir-beauty-faq relative">
+      <div aria-hidden="true" className="dir-beauty-faq-deco">
+        <div className="dir-beauty-faq-stick">
+          <motion.div className="dir-beauty-faq-dial" style={{ opacity: fade }}>
+            <motion.span className="dir-beauty-faq-ticks" style={{ rotate: turn }} />
+            <span className="dir-beauty-faq-ring" />
+            <span className="dir-beauty-faq-cross" />
+            <span className="dir-beauty-faq-glint" />
+            <p className="dir-beauty-faq-mark type-meta font-mono uppercase tabular-nums">
+              Макро ×{level}
+            </p>
+          </motion.div>
+        </div>
+      </div>
+      <DirectionFaq index="09" title="Вопросы о beauty-видео" items={FAQ_ITEMS} />
+    </div>
   )
 }
 
@@ -1351,6 +1607,7 @@ function sceneFrames(works: DirectionPageWork[]): SceneFrame[] {
 
 export function BeautyPage({ works }: BeautyPageProps) {
   const pool = sceneFrames(works)
+  const hasWorks = works.length > 0
   const at = (index: number): Frame =>
     pool.length > 0 ? (pool[index % pool.length] ?? null) : null
   // Материалы берут кадры из второй половины набора: hero и наезд уже заняли первые
@@ -1364,30 +1621,39 @@ export function BeautyPage({ works }: BeautyPageProps) {
       stickyLabel={BEAUTY_PAGE.stickyLabel}
       className="dir-beauty min-h-screen bg-[#000000] pb-20 md:pb-0"
     >
-      <Hero frame={at(0)} />
+      <Hero frame={at(0)} hasWorks={hasWorks} />
       <Zoom frame={at(3)} />
       <Seam label="Шкала крупности" />
       <Materials frames={materialFrames} />
       <ObjectScene />
-      <Seam label="Кадр — доказательство" />
-      <div id="beauty-works" className="scroll-mt-0">
-        <DirectionCredits
-          index="05"
-          title="Крупный план в работах"
-          works={works}
-          note="Beauty-работы студии"
-        />
-      </div>
+      {/* Без работ «доказательства» нет: ни склейки, ни якоря «Смотреть работы» */}
+      {hasWorks ? (
+        <>
+          <Seam label="Кадр — доказательство" />
+          <div id="beauty-works" className="scroll-mt-0">
+            <DirectionCredits
+              index="07"
+              title="Крупный план в работах"
+              works={works}
+              note="Beauty-работы студии"
+            />
+          </div>
+        </>
+      ) : null}
       <ProofCta frame={at(2)} />
-      <DirectionProcess
-        index="06"
+      <Process
         title="От продукта до версий"
         lead="Пять шагов: что в продукте видит камера и как это превратить в ролик."
         steps={BEAUTY_PAGE.process}
+        frame={at(5)}
       />
       <ProcessCta />
-      <DirectionFaq index="07" title="Вопросы о beauty-видео" items={BEAUTY_PAGE.faq} />
-      <OtherDirections current="beauty" reading={DIRECTION_READING['beauty']} />
+      <Seam label="Вопросы — в фокусе" />
+      <FaqBlock />
+      <Seam label="Отъезд — общий план" reverse />
+      <div className="dir-beauty-others">
+        <OtherDirections current="beauty" reading={DIRECTION_READING['beauty']} />
+      </div>
       <DirectionEnd
         // Блочные строки финала склеились бы в textContent («продуктснимаем»): пробел в конце
         // строки ничего не меняет в вёрстке, но оставляет заголовок читаемым
@@ -1395,7 +1661,7 @@ export function BeautyPage({ works }: BeautyPageProps) {
           index < all.length - 1 ? `${line} ` : line
         )}
         ctaLabel={BEAUTY_PAGE.ctaLabel}
-        note={BEAUTY_PAGE.end.note}
+        note={tie(BEAUTY_PAGE.end.note)}
         frame={closing ? { src: closing.src, alt: closing.client } : null}
       />
     </DirectionShell>

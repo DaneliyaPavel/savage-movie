@@ -156,7 +156,12 @@
   min-height: 2.75rem;
   align-items: center;
   gap: 0.5rem;
+  border: 0;
+  background: none;
+  padding: 0;
   color: var(--dc-ink-2);
+  cursor: pointer;
+  text-align: left;
   text-decoration: underline;
   text-decoration-color: rgb(255 255 255 / 0.3);
   text-decoration-thickness: 1px;
@@ -176,6 +181,11 @@
   transition: transform var(--motion-move) var(--dc-ease);
 }
 
+.dir-content-link:active {
+  color: #ffffff;
+  text-decoration-color: var(--accent);
+}
+
 @media (hover: hover) {
   .dir-content-link:hover {
     color: #ffffff;
@@ -187,18 +197,87 @@
   }
 }
 
+/* Стрелка вправо у ссылок-кнопок едет вправо, а не вниз */
+.dir-content-own .dir-content-link:hover svg {
+  transform: translateX(4px);
+}
+
+/* ─────────────────────────── Склейка между секциями ─────────────────────────── */
+
 /*
- * Появление декора при скролле. Без JS и до гидрации — конечное состояние;
- * JS взводит data-armed только у блоков ниже экрана и снимает его вместе с
- * data-in. Текст сюда не входит: он стоит на месте всегда.
+ * Склейка: линия, красная риска реза с засечками и номера секций по краям.
+ * Без JS и до гидрации линии нарисованы; JS взводит data-armed только у
+ * склеек ниже экрана и снимает его вместе с data-in.
  */
+.dir-content-splice {
+  display: flex;
+  height: 3.5rem;
+  align-items: center;
+  gap: 1rem;
+  border-block: 1px solid rgb(255 255 255 / 0.1);
+  background: #000000;
+  padding-inline: 1.5rem;
+}
+
+@media (min-width: 48rem) {
+  .dir-content-splice {
+    padding-inline: 2.5rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .dir-content-splice {
+    height: 4rem;
+    padding-inline: 5rem;
+  }
+}
+
 .dir-content-splice-line {
+  height: 1px;
+  flex: 1 1 0;
+  background: rgb(255 255 255 / 0.25);
   transform-origin: left;
   transition: transform 900ms var(--dc-ease);
 }
 
+.dir-content-splice-line:last-of-type {
+  transform-origin: right;
+}
+
+.dir-content-splice-mark {
+  position: relative;
+  width: 1px;
+  height: 1.5rem;
+  flex: none;
+  background: var(--accent);
+  transition: transform 700ms var(--dc-ease) 300ms;
+}
+
+/* Засечки на концах риски, как у маркера реза на дорожке */
+.dir-content-splice-mark::before,
+.dir-content-splice-mark::after {
+  content: '';
+  position: absolute;
+  left: -3px;
+  width: 7px;
+  height: 1px;
+  background: var(--accent);
+}
+
+.dir-content-splice-mark::before {
+  top: 0;
+}
+
+.dir-content-splice-mark::after {
+  bottom: 0;
+}
+
 [data-armed='true']:not([data-in='true']) .dir-content-splice-line {
   transform: scaleX(0);
+}
+
+[data-armed='true']:not([data-in='true']) .dir-content-splice-mark {
+  transform: scaleY(0);
 }
 
 /* ─────────────────────────── Первый экран ─────────────────────────── */
@@ -223,6 +302,20 @@
   }
   to {
     clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Низкий ноутбук: текст помещается в экран вместе с кнопкой, а не уезжает под сгиб */
+@media (min-width: 64rem) and (max-height: 760px) {
+  .dir-content-herogrid {
+    padding-top: 5.25rem;
+    padding-bottom: 1.5rem;
+    row-gap: 1.5rem;
+  }
+
+  .dir-content-lead {
+    margin-top: 1.25rem;
+    font-size: 1.0625rem;
   }
 }
 
@@ -276,10 +369,19 @@
 }
 
 .dir-content-stage {
+  /* Во сколько раз скролл усиливает распад; на телефоне нет курсора, и скролл
+     остаётся единственным жестом, поэтому там он втрое сильнее */
+  --dc-k: 1.4;
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
   container-type: inline-size;
+}
+
+@media (pointer: coarse) {
+  .dir-content-stage {
+    --dc-k: 3.8;
+  }
 }
 
 /* Остаток мастер-кадра после распада: тёмная копия под нарезками */
@@ -351,10 +453,12 @@
 .dir-content-cut {
   position: absolute;
   translate: calc(
-      (var(--dx) * (1 + var(--dc-spread, 0) * 1.4) + var(--dc-px, 0) * var(--dc-depth, 1)) * 1cqw
+      (var(--dx) * (1 + var(--dc-spread, 0) * var(--dc-k)) + var(--dc-px, 0) * var(--dc-depth, 1)) *
+        1cqw
     )
     calc(
-      (var(--dy) * (1 + var(--dc-spread, 0) * 1.4) + var(--dc-py, 0) * var(--dc-depth, 1)) * 1cqw
+      (var(--dy) * (1 + var(--dc-spread, 0) * var(--dc-k)) + var(--dc-py, 0) * var(--dc-depth, 1)) *
+        1cqw
     );
   animation: dir-content-split 820ms var(--dc-ease) backwards;
   animation-delay: calc(980ms + var(--i, 0) * 90ms);
@@ -497,12 +601,13 @@
   }
 }
 
+/* backwards: до старта (первые две секунды) линия стоит в начале цикла и невидима,
+   а не торчит у правого края рамки */
 .dir-content-sweep {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  animation: dir-content-sweep 9s linear infinite;
-  animation-delay: 2000ms;
+  animation: dir-content-sweep 9s linear 2000ms infinite backwards;
 }
 
 .dir-content-sweep::before {
@@ -557,6 +662,191 @@
 
 /* ─────────────────────────── Монтажная линейка ─────────────────────────── */
 
+/*
+ * Сцена закреплена на экране, пока скролл ведёт линию по кварталу. Она
+ * рассчитана на высоту окна: заголовок, монитор, подпись выдачи и линейка
+ * делят 100svh, а размеры шрифтов считаются и от ширины, и от высоты. Если
+ * окно слишком низкое для монитора, сцена не закрепляется (блок flow ниже):
+ * те же элементы идут по потоку, а линию двигает нажатие на блок.
+ */
+.dir-content-nle {
+  position: relative;
+  height: 340svh;
+  background: #060606;
+}
+
+.dir-content-nle-stage {
+  position: sticky;
+  top: 0;
+  display: flex;
+  height: 100svh;
+  flex-direction: column;
+  overflow: hidden;
+  /* Снизу место под sticky-полосу каркаса, она закрывает нижние 70px */
+  padding: 4.75rem 1.5rem 5rem;
+}
+
+@media (min-width: 48rem) {
+  .dir-content-nle-stage {
+    padding: 6rem 2.5rem 3.5rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  /* Снизу 4rem: справа лежит sticky-кнопка каркаса, линейка не должна под неё заезжать */
+  .dir-content-nle-stage {
+    padding: 6rem 5rem 4rem;
+  }
+}
+
+.dir-content-nle-main {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dir-content-nle-title {
+  margin-top: 0.75rem;
+  max-width: 34ch;
+  font-size: clamp(1.3rem, min(2.9vw, 4.8svh), 2.75rem);
+}
+
+@media (min-width: 48rem) {
+  .dir-content-nle-title {
+    margin-top: 1rem;
+  }
+}
+
+.dir-content-nle-lead {
+  display: none;
+  max-width: 30rem;
+  margin-top: 1rem;
+}
+
+.dir-content-nle-mon {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0;
+  flex-direction: column;
+}
+
+.dir-content-nle-cap {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.dir-content-cap-label {
+  margin-top: 0.5rem;
+  font-size: clamp(1.75rem, min(5.4vw, 9svh), 4.75rem);
+}
+
+.dir-content-cap-text {
+  max-width: 34ch;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.375;
+}
+
+@media (min-width: 48rem) {
+  .dir-content-cap-text {
+    margin-top: 1rem;
+    font-size: 1.125rem;
+  }
+}
+
+/* Узкое низкое окно: описание выдачи уступает место монитору, название остаётся */
+@media (max-width: 63.99rem) and (max-height: 780px) {
+  .dir-content-cap-text {
+    display: none;
+  }
+}
+
+@media (min-width: 64rem) {
+  .dir-content-nle-main {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 3rem;
+    row-gap: 1.5rem;
+  }
+
+  .dir-content-nle-head {
+    grid-column: 8 / span 5;
+    grid-row: 1;
+  }
+
+  .dir-content-nle-mon {
+    grid-column: 1 / span 7;
+    grid-row: 1 / span 2;
+  }
+
+  .dir-content-nle-cap {
+    grid-column: 8 / span 5;
+    grid-row: 2;
+  }
+
+  .dir-content-nle-lead {
+    display: block;
+  }
+
+  .dir-content-cap-label {
+    margin-top: 1rem;
+  }
+}
+
+/* Ноутбук с панелью браузера: нет места ни подводке, ни большим зазорам */
+@media (min-width: 64rem) and (max-height: 820px) {
+  .dir-content-nle-stage {
+    padding-top: 4.75rem;
+  }
+
+  .dir-content-nle-lead {
+    display: none;
+  }
+
+  .dir-content-nle-main {
+    row-gap: 1rem;
+  }
+
+  /* Монитор здесь ужат высотой окна: текст подъезжает к нему, а не висит у края */
+  .dir-content-nle-head,
+  .dir-content-nle-cap {
+    grid-column: 7 / span 6;
+  }
+
+  .dir-content-nle-mon {
+    grid-column: 1 / span 6;
+  }
+
+  .dir-content-cap-label {
+    margin-top: 0.5rem;
+  }
+
+  .dir-content-cap-text {
+    margin-top: 0.5rem;
+    font-size: 1rem;
+  }
+}
+
+.dir-content-nle-foot {
+  position: relative;
+  z-index: 10;
+  flex: none;
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 48rem) {
+  .dir-content-nle-foot {
+    margin-top: 1rem;
+  }
+}
+
 .dir-content-mon-wrap {
   position: relative;
   min-height: 0;
@@ -574,10 +864,14 @@
 
 .dir-content-mon {
   position: relative;
-  width: min(100cqw, calc(100cqh * 1.3333));
+  width: 100%;
   aspect-ratio: 4 / 3;
   background: #050505;
   box-shadow: 0 0 0 1px var(--dc-line-2);
+}
+
+.dir-content-mon-wrap .dir-content-mon {
+  width: min(100cqw, calc(100cqh * 1.3333));
 }
 
 .dir-content-mon-dim {
@@ -614,8 +908,12 @@
   font-weight: 600;
 }
 
+/* Линейка: одна сетка, блоки лежат в порядке выхода, чтобы Tab шёл по времени */
 .dir-content-tl {
-  --dc-lw: 2.5rem;
+  --dc-lw: 2.75rem;
+  --dc-weeks-h: 1.75rem;
+  --dc-row-h: 3.25rem;
+  --dc-arow-h: 1.75rem;
   position: relative;
   background: #060606;
   box-shadow: 0 0 0 1px var(--dc-line-2);
@@ -624,25 +922,88 @@
 @media (min-width: 48rem) {
   .dir-content-tl {
     --dc-lw: 7.5rem;
+    --dc-row-h: 3.5rem;
+    --dc-arow-h: 2rem;
   }
 }
 
-.dir-content-tl-row {
-  display: grid;
-  grid-template-columns: var(--dc-lw) minmax(0, 1fr);
-  border-top: 1px solid var(--dc-line);
+/* Низкий ноутбук: линейка ниже, но блок остаётся кнопкой в 44px */
+@media (min-width: 64rem) and (max-height: 820px) {
+  .dir-content-tl {
+    --dc-weeks-h: 1.5rem;
+    --dc-row-h: 2.75rem;
+    --dc-arow-h: 1.5rem;
+  }
 }
 
-.dir-content-tl-row:first-child {
-  border-top: 0;
+.dir-content-tl-head {
+  display: grid;
+  grid-template-columns: var(--dc-lw) minmax(0, 1fr);
+}
+
+.dir-content-tl-corner {
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  border-right: 1px solid var(--dc-line-2);
+  color: var(--dc-ink-2);
+}
+
+@media (min-width: 48rem) {
+  .dir-content-tl-corner {
+    padding: 0 0.875rem;
+  }
+}
+
+.dir-content-tl-weeks,
+.dir-content-tl-lane {
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--dc-line) 0,
+    var(--dc-line) 1px,
+    transparent 1px,
+    transparent calc(100% / var(--dc-week))
+  );
+}
+
+.dir-content-tl-weeks {
+  display: grid;
+  grid-template-columns: repeat(var(--dc-week), minmax(0, 1fr));
+}
+
+.dir-content-tl-weeks span {
+  display: grid;
+  height: var(--dc-weeks-h);
+  place-items: center;
+  color: rgb(255 255 255 / 0.5);
+  transition: color var(--motion-state) ease;
+}
+
+.dir-content-tl-weeks span[data-state='past'] {
+  color: rgb(255 255 255 / 0.78);
+}
+
+/* Текущая неделя: на телефоне красная с подчёркиванием, на широком — её заменяет флажок */
+.dir-content-tl-weeks span[data-state='now'] {
+  color: var(--accent);
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.dir-content-tl-body {
+  display: grid;
+  grid-template-columns: var(--dc-lw) repeat(var(--dc-week), minmax(0, 1fr));
+  grid-template-rows: var(--dc-row-h) var(--dc-row-h) var(--dc-arow-h);
 }
 
 .dir-content-tl-label {
   display: flex;
   min-width: 0;
+  grid-column: 1;
   flex-direction: column;
   justify-content: center;
   padding: 0 0.5rem;
+  border-top: 1px solid var(--dc-line);
   border-right: 1px solid var(--dc-line-2);
   color: var(--dc-ink-2);
 }
@@ -668,58 +1029,9 @@
   }
 }
 
-.dir-content-tl-weeks,
 .dir-content-tl-lane {
-  display: grid;
-  grid-template-columns: repeat(var(--dc-week), minmax(0, 1fr));
-  background-image: repeating-linear-gradient(
-    90deg,
-    var(--dc-line) 0,
-    var(--dc-line) 1px,
-    transparent 1px,
-    transparent calc(100% / var(--dc-week))
-  );
-}
-
-.dir-content-tl-weeks span {
-  display: grid;
-  height: 1.75rem;
-  place-items: center;
-  color: rgb(255 255 255 / 0.5);
-  transition: color var(--motion-state) ease;
-}
-
-.dir-content-tl-weeks span[data-state='past'] {
-  color: rgb(255 255 255 / 0.78);
-}
-
-.dir-content-tl-weeks span[data-state='now'] {
-  color: var(--accent);
-}
-
-/* На телефоне блок выдачи — 44 px по высоте: это кнопка */
-.dir-content-tl-lane {
-  align-items: stretch;
-  height: 3.25rem;
-  padding: 0.25rem 0;
-}
-
-@media (min-width: 48rem) {
-  .dir-content-tl-lane {
-    height: 3.5rem;
-    padding: 0.3125rem 0;
-  }
-}
-
-.dir-content-tl-lane[data-track='A1'] {
-  height: 1.75rem;
-  padding: 0.25rem 0;
-}
-
-@media (min-width: 48rem) {
-  .dir-content-tl-lane[data-track='A1'] {
-    height: 2rem;
-  }
+  grid-column: 2 / -1;
+  border-top: 1px solid var(--dc-line);
 }
 
 /* Блок выдачи на дорожке: кнопка, по нажатию линейка переходит к выдаче */
@@ -729,9 +1041,8 @@
   min-width: 0;
   align-items: center;
   gap: 0.4rem;
-  overflow: hidden;
-  margin: 0 1px;
-  padding: 0 0.35rem 0 0.6rem;
+  margin: 4px 1px;
+  padding: 0 0.3rem 0 0.55rem;
   border: 1px solid rgb(255 255 255 / 0.22);
   background: rgb(255 255 255 / 0.05);
   color: var(--dc-ink-2);
@@ -742,6 +1053,17 @@
     background-color var(--motion-state) ease,
     border-color var(--motion-state) ease,
     color var(--motion-state) ease;
+}
+
+/* Зона нажатия на пару пикселей шире блока: на телефоне двухнедельный блок уже 44px */
+.dir-content-clip::after {
+  content: '';
+  position: absolute;
+  inset: 0 -2px;
+}
+
+.dir-content-clip > span:first-child {
+  flex: none;
 }
 
 /* Ручка начала блока, как у клипа в монтажной программе */
@@ -806,9 +1128,9 @@
   }
 }
 
-/* Звуковая дорожка: волна под основными роликами, декор */
+/* Звуковая дорожка: волна под основными роликами со звуком, декор */
 .dir-content-aclip {
-  margin: 0 1px;
+  margin: 4px 1px;
   overflow: hidden;
   border: 1px solid rgb(255 255 255 / 0.14);
   background: rgb(255 255 255 / 0.03);
@@ -852,16 +1174,53 @@
   background: var(--accent);
 }
 
+/* Флажок с неделей только на широком экране: на телефоне он закрыл бы соседние цифры */
 .dir-content-ph-flag {
   position: absolute;
   left: 0;
-  top: 0.25rem;
+  top: 0;
+  display: none;
+  height: var(--dc-weeks-h);
+  align-items: center;
   transform: translateX(-50%);
-  padding: 0.15rem 0.35rem;
+  padding: 0 0.4rem;
   background: var(--accent);
   color: #000000;
   font-weight: 600;
   white-space: nowrap;
+}
+
+@media (min-width: 64rem) {
+  .dir-content-ph-flag {
+    display: flex;
+  }
+
+  /* Цифру текущей недели заменяет флажок: рядом не торчит вторая */
+  .dir-content-tl-weeks span[data-state='now'] {
+    color: transparent;
+    box-shadow: none;
+  }
+}
+
+.dir-content-tl-note {
+  max-width: 46rem;
+  margin-top: 0.75rem;
+  color: rgb(255 255 255 / 0.68);
+  line-height: 1.5;
+}
+
+@media (min-width: 48rem) {
+  /* Справа внизу стоит sticky-кнопка каркаса (211px + 32px от края): подпись под неё не заезжает */
+  .dir-content-tl-note {
+    max-width: min(46rem, calc(100% - 15.5rem));
+    margin-top: 0.875rem;
+  }
+}
+
+@media (min-width: 64rem) and (max-height: 820px) {
+  .dir-content-tl-note {
+    margin-top: 0.5rem;
+  }
 }
 
 /* Подсказка «листайте»: гаснет, когда линейка поехала */
@@ -890,6 +1249,65 @@
 
 .dir-content-hint[data-live='false'] i {
   animation-play-state: paused;
+}
+
+/*
+ * Свободная сцена. Окно слишком низкое, чтобы закрепить всё сразу: на
+ * ноутбуке без панели браузера ниже 560px, на телефоне ниже 790px, на
+ * планшете в портрете ниже 830px монитор сжался бы в полоску (меньше 190px). Сцена идёт по
+ * потоку: заголовок, монитор, подпись выдачи, линейка. Линию ведёт нажатие на
+ * блок. Строка та же, что FLOW_QUERY в content-page.tsx.
+ */
+@media (max-height: 559px),
+  (max-width: 39.99rem) and (max-height: 789px),
+  (min-width: 40rem) and (max-width: 63.99rem) and (max-height: 829px) {
+  .dir-content-nle {
+    height: auto;
+  }
+
+  .dir-content-nle-stage {
+    position: relative;
+    height: auto;
+    overflow: visible;
+    padding-top: 5.5rem;
+    padding-bottom: 4.5rem;
+  }
+
+  .dir-content-nle-main,
+  .dir-content-nle-mon {
+    flex: none;
+  }
+
+  .dir-content-nle-main {
+    row-gap: 1.5rem;
+  }
+
+  .dir-content-mon-wrap {
+    flex: none;
+    width: min(100%, 36rem);
+    margin-inline: auto;
+    aspect-ratio: 4 / 3;
+  }
+
+  .dir-content-nle-lead {
+    display: block;
+  }
+
+  .dir-content-cap-text {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 1rem;
+  }
+
+  .dir-content-nle-foot {
+    margin-top: 1.75rem;
+  }
+}
+
+@media (min-width: 64rem) and (max-height: 559px) {
+  .dir-content-mon-wrap {
+    margin-inline: 0;
+  }
 }
 
 /* ─────────────────────────── Состав выдачи ─────────────────────────── */
@@ -923,11 +1341,13 @@
   transition: transform var(--motion-move) var(--dc-ease);
 }
 
+/* Слот — лист с сеткой; кадр вписан по ширине слота, а не по его высоте */
 .dir-content-card-slot {
   position: relative;
   container-type: size;
   display: grid;
-  aspect-ratio: 4 / 3;
+  flex: 1 1 auto;
+  aspect-ratio: var(--ar);
   place-items: center;
   margin: 0.875rem 0 1rem;
   background-color: rgb(255 255 255 / 0.025);
@@ -941,7 +1361,7 @@
 
 .dir-content-card-frame {
   position: relative;
-  width: min(94cqw, calc(88cqh * var(--ar)));
+  width: min(100cqw, calc(100cqh * var(--ar)));
   aspect-ratio: var(--ar);
   overflow: hidden;
   background: #0d0d0d;
@@ -953,6 +1373,14 @@
   position: absolute;
   inset: 0;
   transition: scale var(--motion-cut) var(--dc-ease);
+}
+
+.dir-content-card-copy {
+  margin-top: auto;
+}
+
+.dir-content-card-title {
+  font-size: clamp(1.3rem, 2vw, 1.85rem);
 }
 
 .dir-content-card-idx {
@@ -986,6 +1414,29 @@
   }
 }
 
+/* Ячейка «ваш формат»: пунктирная рамка вместо кадра, зовёт собрать свой набор */
+.dir-content-own-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin: 0.875rem 0 0;
+  padding: 1.25rem;
+  border: 1px dashed rgb(255 255 255 / 0.3);
+  background-image:
+    linear-gradient(90deg, rgb(255 255 255 / 0.04) 1px, transparent 1px),
+    linear-gradient(rgb(255 255 255 / 0.04) 1px, transparent 1px);
+  background-size: 1.5rem 1.5rem;
+}
+
+.dir-content-own-plus {
+  font-size: clamp(3.5rem, 7vw, 6.5rem);
+  line-height: 0.8;
+  color: var(--accent);
+}
+
 /* Телефон: карточки идут лентой, которую листают пальцем; следующая всегда выглядывает */
 @media (max-width: 39.99rem) {
   .dir-content-grid {
@@ -1013,83 +1464,95 @@
   }
 
   .dir-content-card {
-    flex: 0 0 78%;
+    flex: 0 0 82%;
     scroll-snap-align: start;
     box-shadow: 0 0 0 1px var(--dc-line);
   }
+
+  /* Слот почти по форме кадра: широкий — во всю ширину, вертикальный — не уже 4:5 */
+  .dir-content-card-slot {
+    flex: none;
+    aspect-ratio: max(var(--ar), 0.8);
+  }
+
+  .dir-content-own-body {
+    min-height: 16rem;
+  }
 }
 
-/* Планшет: две колонки, крупные выдачи на всю ширину */
+/* Планшет: две колонки, широкие выдачи на всю ширину */
 @media (min-width: 40rem) and (max-width: 63.99rem) {
   .dir-content-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .dir-content-card[data-k='a'],
-  .dir-content-card[data-k='f'],
-  .dir-content-card[data-k='g'],
-  .dir-content-card[data-k='h'] {
+  .dir-content-card[data-wide='true'],
+  .dir-content-card[data-k='i'] {
     grid-column: 1 / -1;
   }
 
-  .dir-content-card[data-k='a'] .dir-content-card-slot,
-  .dir-content-card[data-k='f'] .dir-content-card-slot,
-  .dir-content-card[data-k='g'] .dir-content-card-slot,
-  .dir-content-card[data-k='h'] .dir-content-card-slot {
+  .dir-content-card[data-wide='true'] .dir-content-card-slot {
     aspect-ratio: 21 / 9;
+  }
+
+  .dir-content-own-body {
+    min-height: 12rem;
   }
 }
 
-/* Рабочий стол: мозаика 4 × 4, а не стена одинаковых плиток */
+/*
+ * Рабочий стол: мозаика 4 × 4, а не стена одинаковых плиток. Слева две
+ * широкие выдачи друг под другом, справа две вертикали во всю высоту,
+ * ниже нарезки в порядке выхода (номера идут слева направо).
+ */
 @media (min-width: 64rem) {
   .dir-content-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-auto-rows: minmax(22rem, auto);
-  }
-
-  .dir-content-card-slot {
-    flex: 1 1 0;
-    min-height: 0;
-    aspect-ratio: auto;
+    grid-auto-rows: auto;
   }
 
   .dir-content-card[data-k='a'] {
     grid-column: 1 / span 2;
-    grid-row: 1 / span 2;
+    grid-row: 1;
   }
 
   .dir-content-card[data-k='b'] {
+    grid-column: 1 / span 2;
+    grid-row: 2;
+  }
+
+  .dir-content-card[data-k='c'] {
     grid-column: 3;
     grid-row: 1 / span 2;
   }
 
-  .dir-content-card[data-k='c'] {
+  .dir-content-card[data-k='d'] {
     grid-column: 4;
     grid-row: 1 / span 2;
   }
 
-  .dir-content-card[data-k='d'] {
+  .dir-content-card[data-k='e'] {
     grid-column: 1;
     grid-row: 3;
   }
 
-  .dir-content-card[data-k='e'] {
-    grid-column: 2;
-    grid-row: 3;
-  }
-
   .dir-content-card[data-k='f'] {
-    grid-column: 3 / span 2;
+    grid-column: 2 / span 2;
     grid-row: 3;
   }
 
   .dir-content-card[data-k='g'] {
-    grid-column: 1 / span 3;
-    grid-row: 4;
+    grid-column: 4;
+    grid-row: 3;
   }
 
   .dir-content-card[data-k='h'] {
-    grid-column: 4;
+    grid-column: 1 / span 2;
+    grid-row: 4;
+  }
+
+  .dir-content-card[data-k='i'] {
+    grid-column: 3 / span 2;
     grid-row: 4;
   }
 }
@@ -1246,6 +1709,231 @@
   );
 }
 
+/* ─────────────────────────── Кадры из работ ─────────────────────────── */
+
+.dir-content-reel {
+  display: grid;
+  gap: 2.75rem 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 48rem) {
+  .dir-content-reel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dir-content-reel > li:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .dir-content-reel > li[data-count='1'],
+  .dir-content-reel > li[data-count='2']:last-child {
+    grid-column: auto;
+  }
+}
+
+@media (min-width: 64rem) {
+  .dir-content-reel {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: 2rem;
+    row-gap: 2.5rem;
+  }
+
+  .dir-content-reel > li:first-child {
+    grid-column: 1 / span 8;
+    grid-row: 1 / span 2;
+  }
+
+  .dir-content-reel > li:nth-child(2),
+  .dir-content-reel > li:nth-child(3) {
+    grid-column: 9 / span 4;
+  }
+
+  .dir-content-reel > li:nth-child(n + 4) {
+    grid-column: span 4;
+  }
+
+  .dir-content-reel > li[data-count='1']:first-child {
+    grid-row: auto;
+  }
+
+  .dir-content-reel > li[data-count='2']:first-child {
+    grid-row: auto;
+  }
+}
+
+/* Карточка работы: ссылка целиком, внутри кадр, клиент крупно и название */
+.dir-content-rc {
+  position: relative;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  color: #ffffff;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dir-content-rc:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+}
+
+.dir-content-rc-meta {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--dc-line-2);
+  color: var(--dc-ink-2);
+}
+
+/* Красная линия по верху прорисовывается, когда карточка «зажглась» */
+.dir-content-rc-meta::before {
+  content: '';
+  position: absolute;
+  inset: -1px 0 auto;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--motion-move) var(--dc-ease);
+}
+
+.dir-content-rc-frame {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  margin: 0.875rem 0 1.125rem;
+  overflow: hidden;
+  background: #0d0d0d;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.3);
+  transition: box-shadow var(--motion-state) ease;
+}
+
+@media (min-width: 64rem) {
+  .dir-content-reel > li:first-child .dir-content-rc-frame {
+    aspect-ratio: 3 / 2;
+  }
+
+  .dir-content-reel > li[data-count='1']:first-child .dir-content-rc-frame,
+  .dir-content-reel > li[data-count='2']:first-child .dir-content-rc-frame {
+    aspect-ratio: 16 / 9;
+  }
+}
+
+.dir-content-rc-frame > div {
+  transition: scale var(--motion-cut) var(--dc-ease);
+}
+
+.dir-content-rc-dim {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.42);
+  transition: opacity var(--motion-move) ease;
+}
+
+/* Плашка «открыть»: выезжает снизу; чёрный текст на белом держит контраст на любом кадре */
+.dir-content-rc-open {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  background: #ffffff;
+  color: #000000;
+  transform: translateY(101%);
+  transition: transform var(--motion-move) var(--dc-ease);
+}
+
+.dir-content-rc-name {
+  font-size: clamp(1.6rem, 3.1vw, 2.75rem);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.dir-content-reel > li:first-child .dir-content-rc-name {
+  font-size: clamp(2rem, 5.2vw, 4.75rem);
+}
+
+.dir-content-rc-title {
+  margin-top: 0.75rem;
+  max-width: 34rem;
+  color: rgb(255 255 255 / 0.78);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+@media (min-width: 48rem) {
+  .dir-content-rc-title {
+    font-size: 1rem;
+  }
+}
+
+.dir-content-rc-note {
+  display: none;
+  max-width: 34rem;
+  margin-top: 0.5rem;
+  color: rgb(255 255 255 / 0.62);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+@media (min-width: 64rem) {
+  .dir-content-rc-note {
+    display: block;
+  }
+}
+
+.dir-content-rc:focus-visible .dir-content-rc-meta::before,
+.dir-content-rc[data-lit='true'] .dir-content-rc-meta::before {
+  transform: scaleX(1);
+}
+
+.dir-content-rc:focus-visible .dir-content-rc-dim,
+.dir-content-rc[data-lit='true'] .dir-content-rc-dim {
+  opacity: 0;
+}
+
+.dir-content-rc:focus-visible .dir-content-rc-open,
+.dir-content-rc[data-lit='true'] .dir-content-rc-open {
+  transform: translateY(0);
+}
+
+.dir-content-rc:focus-visible .dir-content-rc-frame,
+.dir-content-rc[data-lit='true'] .dir-content-rc-frame {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.dir-content-rc:active .dir-content-rc-dim {
+  opacity: 0;
+}
+
+@media (hover: hover) {
+  .dir-content-rc:hover .dir-content-rc-meta::before {
+    transform: scaleX(1);
+  }
+
+  .dir-content-rc:hover .dir-content-rc-dim {
+    opacity: 0;
+  }
+
+  .dir-content-rc:hover .dir-content-rc-open {
+    transform: translateY(0);
+  }
+
+  .dir-content-rc:hover .dir-content-rc-frame {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+
+  .dir-content-rc:hover .dir-content-rc-frame > div {
+    scale: 1.045;
+  }
+}
+
 /* ─────────────────────────── Смысловые призывы ─────────────────────────── */
 
 .dir-content-render-row {
@@ -1292,64 +1980,326 @@
   }
 }
 
-/* Лента этапов: красная линия доходит от первого этапа до последнего вместе с кнопкой */
-.dir-content-ribbon-rail {
+/* Призыв процесса: крупная нарезка мастер-кадра в рамке с метками, то же жесты, что у кнопки */
+.dir-content-pcta-frame {
   position: relative;
-  height: 1px;
-  background: var(--dc-line-2);
+  /* 72% × 62% мастера 4:3: пропорция рамки равна пропорции нарезки, кадр не искажён */
+  aspect-ratio: 1.548;
+  overflow: hidden;
+  background: #0d0d0d;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.3);
+  transition: clip-path 1000ms var(--dc-ease);
+  clip-path: inset(0);
 }
 
-.dir-content-ribbon-rail::after {
-  content: '';
+[data-armed='true']:not([data-in='true']) .dir-content-pcta-frame {
+  clip-path: inset(0 0 100% 0);
+}
+
+.dir-content-pcta-shade {
   position: absolute;
   inset: 0;
-  background: var(--accent);
-  transform: scaleX(0.04);
-  transform-origin: left;
-  transition: transform var(--motion-cut) var(--dc-ease);
+  background: linear-gradient(180deg, transparent 55%, rgb(0 0 0 / 0.6));
+  transition: opacity var(--motion-cut) ease;
 }
 
-.dir-content-ribbon:has(.dir-content-btn:active) .dir-content-ribbon-rail::after,
-.dir-content-ribbon:has(.dir-content-btn:focus-visible) .dir-content-ribbon-rail::after {
-  transform: scaleX(1);
+.dir-content-pcta-corners i {
+  position: absolute;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 0 solid var(--accent);
+}
+
+.dir-content-pcta-corners i:nth-child(1) {
+  left: 0.75rem;
+  top: 0.75rem;
+  border-width: 2px 0 0 2px;
+}
+
+.dir-content-pcta-corners i:nth-child(2) {
+  right: 0.75rem;
+  top: 0.75rem;
+  border-width: 2px 2px 0 0;
+}
+
+.dir-content-pcta-corners i:nth-child(3) {
+  right: 0.75rem;
+  bottom: 0.75rem;
+  border-width: 0 2px 2px 0;
+}
+
+.dir-content-pcta-corners i:nth-child(4) {
+  left: 0.75rem;
+  bottom: 0.75rem;
+  border-width: 0 0 2px 2px;
+}
+
+.dir-content-pcta-tag {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.4rem 0.65rem;
+  background: #000000;
+  color: #ffffff;
+}
+
+.dir-content-pcta-tag b {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.dir-content-pcta-frame .dir-content-reg {
+  transition: scale var(--motion-cut) var(--dc-ease);
+}
+
+.dir-content-pcta:has(.dir-content-btn:active) .dir-content-pcta-frame .dir-content-reg,
+.dir-content-pcta:has(.dir-content-btn:focus-visible) .dir-content-pcta-frame .dir-content-reg {
+  scale: 1.05;
 }
 
 @media (hover: hover) {
-  .dir-content-ribbon:has(.dir-content-btn:hover) .dir-content-ribbon-rail::after {
-    transform: scaleX(1);
+  .dir-content-pcta:has(.dir-content-btn:hover) .dir-content-pcta-frame .dir-content-reg {
+    scale: 1.05;
   }
 }
 
-.dir-content-ribbon-dot {
-  position: absolute;
-  top: 0;
-  width: 0.75rem;
-  height: 0.75rem;
-  margin: -0.375rem 0 0 -0.375rem;
-  border: 1px solid rgb(255 255 255 / 0.55);
-  background: #0d0d0d;
-  transform: rotate(45deg);
+/* ─────────────────────────── Процесс: этапы на дорожках ─────────────────────────── */
+
+.dir-content-seq {
+  --dc-lh: 3.25rem;
+  position: relative;
+  container-type: inline-size;
+}
+
+.dir-content-seq-lanes,
+.dir-content-seq-ph {
+  display: none;
+}
+
+.dir-content-seq-list {
+  display: grid;
+  gap: 2.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Телефон и планшет: ступенчатый список, блок каждого этапа съезжает на дорожку ниже */
+.dir-content-seq-clip {
+  display: flex;
+  width: 68%;
+  height: 2.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: calc(var(--lane) * 10.5%);
+  padding: 0 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  background: rgb(255 255 255 / 0.06);
+  color: var(--dc-ink-2);
   transition:
     background-color var(--motion-move) ease,
-    border-color var(--motion-move) ease;
+    border-color var(--motion-move) ease,
+    color var(--motion-move) ease;
 }
 
-.dir-content-ribbon-dot[data-first='true'] {
+.dir-content-seq-clip b {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.dir-content-seq-clip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dir-content-seq-title {
+  margin-top: 1rem;
+  color: rgb(255 255 255 / 0.82);
+  font-size: clamp(1.45rem, 5.6vw, 2rem);
+  font-weight: 300;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+  transition: color var(--motion-move) ease;
+}
+
+.dir-content-seq-text {
+  max-width: 34rem;
+  margin-top: 0.6rem;
+  color: rgb(255 255 255 / 0.68);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  transition: color var(--motion-move) ease;
+}
+
+.dir-content-seq-step[data-state='now'] .dir-content-seq-clip {
   border-color: var(--accent);
-  background: var(--accent);
+  background: color-mix(in oklab, var(--accent) 24%, #060606);
+  color: #ffffff;
 }
 
-.dir-content-ribbon:has(.dir-content-btn:active) .dir-content-ribbon-dot,
-.dir-content-ribbon:has(.dir-content-btn:focus-visible) .dir-content-ribbon-dot {
-  border-color: var(--accent);
-  background: var(--accent);
+.dir-content-seq-step[data-state='now'] .dir-content-seq-title {
+  color: #ffffff;
 }
 
-@media (hover: hover) {
-  .dir-content-ribbon:has(.dir-content-btn:hover) .dir-content-ribbon-dot {
-    border-color: var(--accent);
+.dir-content-seq-step[data-state='now'] .dir-content-seq-text {
+  color: rgb(255 255 255 / 0.84);
+}
+
+.dir-content-seq-step[data-state='done'] .dir-content-seq-clip {
+  border-color: rgb(255 255 255 / 0.4);
+  background: rgb(255 255 255 / 0.1);
+}
+
+@media (min-width: 48rem) {
+  .dir-content-seq-list {
+    gap: 3rem;
+  }
+
+  .dir-content-seq-title {
+    font-size: 2rem;
+  }
+
+  .dir-content-seq-text {
+    font-size: 1rem;
+  }
+}
+
+/* Рабочий стол: пять колонок, блоки на четырёх дорожках, красная линия идёт по ним */
+@media (min-width: 64rem) {
+  .dir-content-seq-lanes {
+    position: absolute;
+    inset: 0 0 auto;
+    display: block;
+    height: calc(var(--dc-lh) * 4);
+    border-top: 1px solid var(--dc-line-2);
+    border-bottom: 1px solid var(--dc-line-2);
+    background: rgb(255 255 255 / 0.018);
+  }
+
+  .dir-content-seq-lanes i {
+    display: block;
+    height: var(--dc-lh);
+    border-bottom: 1px solid var(--dc-line);
+  }
+
+  .dir-content-seq-lanes i:last-child {
+    border-bottom: 0;
+  }
+
+  .dir-content-seq-ph {
+    position: absolute;
+    inset: -0.75rem 0 auto;
+    z-index: 3;
+    display: block;
+    height: calc(var(--dc-lh) * 4 + 1.5rem);
+    pointer-events: none;
+  }
+
+  .dir-content-seq-ph i {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 1px;
+    background: var(--accent);
+    translate: calc(var(--p, 0) * 100cqw) 0;
+    will-change: translate;
+  }
+
+  .dir-content-seq-ph i::before {
+    content: '';
+    position: absolute;
+    left: -3px;
+    top: 0;
+    width: 7px;
+    height: 7px;
     background: var(--accent);
   }
+
+  .dir-content-seq-list {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  .dir-content-seq-step {
+    position: relative;
+    padding: calc(var(--dc-lh) * 4 + 1.75rem) 1.5rem 0 1.25rem;
+  }
+
+  /* Вертикаль колонки гаснет к низу, а не обрывается на середине текста */
+  .dir-content-seq-step::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 1px;
+    background: var(--dc-line);
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent);
+    mask-image: linear-gradient(to bottom, #000 62%, transparent);
+  }
+
+  .dir-content-seq-step:first-child::before {
+    background: var(--dc-line-2);
+  }
+
+  .dir-content-seq-clip {
+    position: absolute;
+    left: 0;
+    right: 0.3rem;
+    top: calc(var(--lane) * var(--dc-lh) + 5px);
+    width: auto;
+    height: calc(var(--dc-lh) - 10px);
+    margin: 0;
+  }
+
+  .dir-content-seq-title {
+    margin-top: 0;
+    font-size: clamp(1.25rem, 1.7vw, 1.65rem);
+  }
+
+  .dir-content-seq-text {
+    font-size: 0.9375rem;
+  }
+}
+
+/* ─────────────────────────── Вопросы: мини-монитор ─────────────────────────── */
+
+.dir-content-faqmon {
+  display: none;
+  margin-top: 2.5rem;
+}
+
+@media (min-width: 64rem) {
+  .dir-content-faqmon {
+    display: block;
+    /* Залипающая колонка не выше экрана: на низком окне монитор ужимается */
+    max-width: min(28rem, calc((100svh - 23rem) * 1.3333));
+  }
+}
+
+.dir-content-faqmon .dir-content-mon {
+  width: 100%;
+}
+
+/* ─────────────────────────── Sticky-полоса каркаса ─────────────────────────── */
+
+/*
+ * Пока на экране призыв страницы, sticky-полоса каркаса (прямой потомок main:
+ * мобильная полоса снизу и десктопная кнопка справа; шапку не трогаем) скрыта: две белые кнопки подряд мешают друг другу, а
+ * нижние 70px страницы закрывала бы полоса. Скрыта и от фокуса: visibility.
+ */
+main:has(> .dir-content[data-cta-zone='true']) > div.fixed.bottom-0.z-40,
+main:has(> .dir-content[data-cta-zone='true']) > button.fixed.bottom-8 {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 200ms ease,
+    visibility 0s linear 200ms;
 }
 
 /* ─────────────────────────── Сниженное движение ─────────────────────────── */
@@ -1400,12 +2350,20 @@
   .dir-content-card::before,
   .dir-content-card-zoom,
   .dir-content-render-bar::after,
-  .dir-content-ribbon-rail::after {
+  .dir-content-rc-meta::before,
+  .dir-content-rc-open,
+  .dir-content-rc-frame > div,
+  .dir-content-pcta-frame,
+  .dir-content-pcta-frame .dir-content-reg,
+  .dir-content-splice-line,
+  .dir-content-splice-mark {
     transition: none;
   }
 
   .dir-content-btn:active,
-  .dir-content-card:hover .dir-content-card-zoom {
+  .dir-content-card:hover .dir-content-card-zoom,
+  .dir-content-rc:hover .dir-content-rc-frame > div,
+  .dir-content-pcta:has(.dir-content-btn:hover) .dir-content-pcta-frame .dir-content-reg {
     scale: none;
   }
 
@@ -1415,18 +2373,29 @@
     transform: none;
   }
 
+  .dir-content-seq-ph i {
+    will-change: auto;
+  }
+
   [data-armed='true'] .dir-content-splice-line,
+  [data-armed='true'] .dir-content-splice-mark,
   [data-armed='true'] .dir-content-dg-bracket,
   [data-armed='true'] .dir-content-dg-weeks span,
   [data-armed='true'] .dir-content-dg-lines path,
   [data-armed='true'] .dir-content-dg-out,
-  [data-armed='true'] .dir-content-dg-tiles span {
+  [data-armed='true'] .dir-content-dg-tiles span,
+  [data-armed='true'] .dir-content-pcta-frame {
     transition: none;
   }
 
   [data-armed='true']:not([data-in='true']) .dir-content-splice-line,
+  [data-armed='true']:not([data-in='true']) .dir-content-splice-mark,
   [data-armed='true']:not([data-in='true']) .dir-content-dg-bracket {
     transform: none;
+  }
+
+  [data-armed='true']:not([data-in='true']) .dir-content-pcta-frame {
+    clip-path: inset(0);
   }
 
   [data-armed='true']:not([data-in='true']) .dir-content-dg-weeks span {

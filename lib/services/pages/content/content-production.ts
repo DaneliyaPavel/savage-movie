@@ -58,7 +58,7 @@ export const CONTENT_HERO_CUTS: readonly [HeroCut, ...HeroCut[]] = [
     name: 'Вертикаль',
     text: 'Вертикальная версия для соцсетей и сторис.',
     rect: cropRect(9 / 16, 94, 2, 3),
-    drift: { x: -2.4, y: 0.4 },
+    drift: { x: -2, y: 0.4 },
     depth: 1.5,
   },
   {
@@ -106,6 +106,10 @@ export interface OutputPlan {
   span: number
   /** Пометка рядом с названием, когда у двух выдач одно имя */
   note?: string
+  /** Под блоком дорожки A1 рисуется волна: у выдачи со звуком */
+  sound?: boolean
+  /** Место карточки в мозаике «Состав выдачи» на широком экране */
+  slot: 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h'
 }
 
 /** В квартале тринадцать недель: линейка и календарь считают от этого числа */
@@ -114,33 +118,89 @@ export const CONTENT_WEEKS = 13
 /**
  * Схема квартала. Это порядок выхода материалов, а не график: состав,
  * пропорции и даты фиксируются до съёмки по календарю заказчика. На странице
- * это прямо сказано под линейкой.
+ * это прямо сказано рядом с линейкой и в мозаике.
+ *
+ * Выдачи лежат в порядке выхода: номер в карточке, на мониторе и на линейке
+ * один и тот же, а индекс в outputs совпадает с индексом здесь.
  */
 export const CONTENT_PLAN: readonly [OutputPlan, ...OutputPlan[]] = [
-  { output: 0, rect: cropRect(16 / 9, 54, 3, 8), aspect: 16 / 9, track: 'V1', week: 1, span: 2 },
+  {
+    output: 0,
+    rect: cropRect(16 / 9, 54, 3, 8),
+    aspect: 16 / 9,
+    track: 'V1',
+    week: 1,
+    span: 2,
+    sound: true,
+    slot: 'a',
+  },
   {
     output: 1,
+    rect: cropRect(21 / 9, 34, 20, 52),
+    aspect: 21 / 9,
+    track: 'V1',
+    week: 3,
+    span: 3,
+    slot: 'b',
+  },
+  {
+    output: 2,
     rect: cropRect(9 / 16, 88, 58, 6),
     aspect: 9 / 16,
     track: 'V2',
-    week: 2,
+    week: 4,
     span: 2,
     note: 'монтаж А',
+    slot: 'c',
   },
-  { output: 6, rect: cropRect(21 / 9, 34, 20, 52), aspect: 21 / 9, track: 'V1', week: 3, span: 2 },
   {
-    output: 2,
+    output: 3,
     rect: cropRect(9 / 16, 88, 12, 6),
     aspect: 9 / 16,
     track: 'V2',
-    week: 5,
+    week: 6,
     span: 2,
     note: 'монтаж Б',
+    slot: 'd',
   },
-  { output: 5, rect: cropRect(16 / 9, 48, 30, 30), aspect: 16 / 9, track: 'V1', week: 6, span: 3 },
-  { output: 4, rect: cropRect(4 / 5, 64, 8, 20), aspect: 4 / 5, track: 'V2', week: 8, span: 2 },
-  { output: 3, rect: cropRect(1, 50, 50, 10), aspect: 1, track: 'V2', week: 10, span: 3 },
-  { output: 7, rect: cropRect(16 / 9, 40, 40, 56), aspect: 16 / 9, track: 'V1', week: 11, span: 3 },
+  {
+    output: 4,
+    rect: cropRect(1, 50, 50, 10),
+    aspect: 1,
+    track: 'V2',
+    week: 8,
+    span: 2,
+    slot: 'e',
+  },
+  {
+    output: 5,
+    rect: cropRect(16 / 9, 48, 30, 30),
+    aspect: 16 / 9,
+    track: 'V1',
+    week: 9,
+    span: 3,
+    sound: true,
+    slot: 'f',
+  },
+  {
+    output: 6,
+    rect: cropRect(4 / 5, 64, 8, 20),
+    aspect: 4 / 5,
+    track: 'V2',
+    week: 10,
+    span: 2,
+    slot: 'g',
+  },
+  {
+    output: 7,
+    rect: cropRect(16 / 9, 40, 40, 56),
+    aspect: 16 / 9,
+    track: 'V1',
+    week: 12,
+    span: 2,
+    sound: true,
+    slot: 'h',
+  },
 ]
 
 /** Дорожки линейки: подпись и смысл одной строкой */
@@ -149,6 +209,13 @@ export const CONTENT_TRACKS = [
   { id: 'V1', note: 'Основные ролики' },
   { id: 'A1', note: 'Звук' },
 ] as const
+
+/**
+ * Дорожка каждого этапа процесса: подготовка делит одну дорожку, дальше
+ * каждый этап спускается на свою. Порядок, не сроки: длительности на
+ * странице не названы.
+ */
+export const CONTENT_STAGE_LANES = [0, 0, 1, 2, 3] as const
 
 export const CONTENT_PAGE: DirectionPageBase & {
   hero: { meta: string; places: string; lead: string }
@@ -189,7 +256,7 @@ export const CONTENT_PAGE: DirectionPageBase & {
   scene: {
     title: 'Одна съёмка — материалы на весь квартал',
     lead: 'Порядок выхода строим под ваш календарь запусков: что нужно к старту, что позже.',
-    note: 'Схема порядка выдачи. Состав, пропорции и даты фиксируем до съёмки.',
+    note: 'Схема порядка выдачи, не график. Состав, пропорции и даты фиксируем до съёмки.',
   },
   spec: [
     { label: 'Съёмка', value: '×1' },
@@ -199,12 +266,12 @@ export const CONTENT_PAGE: DirectionPageBase & {
   ],
   outputs: [
     { label: 'HERO', text: 'Главный ролик съёмки: сайт, презентации, экраны.' },
+    { label: 'WEBSITE', text: 'Широкий фоновый ролик для первого экрана сайта.' },
     { label: '9:16', text: 'Вертикальная версия для соцсетей и сторис.' },
     { label: '9:16', text: 'Вторая вертикаль с другим монтажом: не повторять один ролик дважды.' },
     { label: 'LOOP', text: 'Короткая петля без звука для баннеров и экранов.' },
-    { label: 'PRODUCT', text: 'Продуктовая вставка: деталь, применение, упаковка.' },
     { label: 'STORY', text: 'Сюжетная версия: история бренда или продукта в нескольких планах.' },
-    { label: 'WEBSITE', text: 'Широкий фоновый ролик для первого экрана сайта.' },
+    { label: 'PRODUCT', text: 'Продуктовая вставка: деталь, применение, упаковка.' },
     { label: 'RETAIL', text: 'Материал для экранов в магазине и на точках продаж.' },
   ],
   audiences: [

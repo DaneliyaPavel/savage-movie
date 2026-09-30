@@ -6,15 +6,18 @@
  * десять секунд понимает, что получит. Самая «инженерная» из шести страниц:
  * сетка, метки, тайм-коды, дорожки V1/V2/A1.
  *
- * Композиция (у каждой секции свой масштаб и плотность):
+ * Композиция (у каждой секции свой масштаб и плотность, а язык листа идёт
+ * до самого низа):
  *   1. Первый экран — мастер-кадр распадается на нарезки 9:16, 16:9, 1:1 и
  *      4:5; линия развёртки идёт по кадру сама, нарезки реагируют на курсор и
  *      на скролл, а нажатие выбирает нарезку (то же на телефоне).
  *   2. Линейка квартала — sticky-сцена: скролл ведёт линию воспроизведения по
  *      13 неделям, монитор показывает, какой кусок мастер-кадра выходит сейчас.
+ *      На низком окне сцена не закрепляется: те же блоки, но нажатием.
  *   3. Состав выдачи — мозаика карточек с настоящими нарезками.
  *   4. Кому подходит — три схемы: каталог, площадки, ритм.
- *   5. Работы, призыв, процесс, призыв, вопросы — общий кит и два смысловых CTA.
+ *   5. Кадры из работ — контактный лист; призыв; процесс — этапы, спускающиеся
+ *      по дорожкам; призыв с нарезкой мастер-кадра; вопросы с мини-монитором.
  *
  * Все нарезки — один и тот же мастер-кадр, сдвинутый в окне нарезки
  * (registered crop): картинка грузится один раз, нарезки не расходятся с
@@ -27,32 +30,43 @@
  */
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
-import { motion, useMotionValue, useMotionValueEvent, useTransform } from 'framer-motion'
-import { ArrowDown, ArrowRight } from 'lucide-react'
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type ReactNode,
+  type RefObject,
+} from 'react'
+import Link from 'next/link'
+import { animate, motion, useMotionValue, useMotionValueEvent, useTransform } from 'framer-motion'
+import { ArrowDown, ArrowRight, ArrowUpRight } from 'lucide-react'
 
 import {
   CONTENT_HERO_CUTS,
   CONTENT_PAGE,
   CONTENT_PLAN,
+  CONTENT_STAGE_LANES,
   CONTENT_TRACKS,
   CONTENT_WEEKS,
   type CropRect,
   type OutputPlan,
 } from '@/lib/services/pages/content/content-production'
 import {
+  firstSentence,
   interleaveFrames,
   type DirectionPageWork,
   type SceneFrame,
 } from '@/lib/services/pages/resolve'
-import { cn } from '@/lib/utils'
+import type { FaqItem, ProcessStep } from '@/lib/services/pages/types'
 import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
-import { DirectionCredits } from '../direction-credits'
 import { DirectionEnd } from '../direction-end'
-import { DirectionFaq } from '../direction-faq'
-import { KIT_KICKER, KIT_TITLE, KIT_TITLE_SIZE, setTitle, typo } from '../direction-kit'
-import { DirectionProcess } from '../direction-process'
+import { KIT_KICKER, KIT_TITLE, KIT_TITLE_SIZE, typo } from '../direction-kit'
 import { DIRECTION_READING } from '@/lib/services/pages'
 import { OtherDirections } from '../other-directions'
 import { Still } from '../still'
@@ -72,8 +86,36 @@ type Frame = SceneFrame | null
 const MASTER_SIZES = '(min-width: 1024px) 58vw, 100vw'
 const FULL_RECT: CropRect = { x: 0, y: 0, w: 100, h: 100 }
 
+const NBSP = ' '
 const pad = (value: number) => String(value).padStart(2, '0')
 const delay = (ms: number) => ({ '--dc-d': `${ms}ms` }) as CSSProperties
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
+
+/**
+ * typo() кита связывает только каждое второе короткое слово цепочки («и на
+ * точках»: «и» держится, «на» остаётся последним в строке). Досвязываем
+ * оставшиеся обычные пробелы после слов до трёх букв.
+ */
+const SHORT_TAIL = /([\s«("'—–])([A-Za-zА-Яа-яЁё]{1,3}) (?=\S)/g
+
+function tight(text: string): string {
+  return typo(text).replace(SHORT_TAIL, `$1$2${NBSP}`).replace(SHORT_TAIL, `$1$2${NBSP}`)
+}
+
+/**
+ * Заголовок раздела: слова с дефисом не рвутся («контент-план» целиком), а
+ * неразрывные пробелы ставятся по полному правилу страницы.
+ */
+function head(title: string): ReactNode {
+  return tight(title)
+    .split(' ')
+    .map((word, position) => (
+      <span key={`${word}-${position}`}>
+        {position > 0 ? ' ' : ''}
+        {word.includes('-') ? <span className="whitespace-nowrap">{word}</span> : word}
+      </span>
+    ))
+}
 
 /** Тайм-код на 24 кадрах в секунду: ЧЧ:ММ:СС:КК */
 function timecode(frames: number) {
@@ -93,14 +135,34 @@ const weekRange = (plan: OutputPlan) =>
 const clipOf = (rect: CropRect) =>
   `inset(${rect.y}% ${100 - rect.x - rect.w}% ${100 - rect.y - rect.h}% ${rect.x}%)`
 
-/** Выдачи в порядке выхода: по ним линейка находит, что показывает монитор */
-const ORDER = [...CONTENT_PLAN].sort((a, b) => a.week - b.week) as [OutputPlan, ...OutputPlan[]]
+/** Выдачи уже лежат в порядке выхода: по ним линейка находит, что показывает монитор */
+const ORDER = CONTENT_PLAN
 const EMPTY_OUTPUT = { label: '', text: '' }
 const outputAt = (index: number) => CONTENT_PAGE.outputs[index] ?? EMPTY_OUTPUT
 const WEEK_NUMBERS = Array.from({ length: CONTENT_WEEKS }, (_, index) => index + 1)
+const trackRow = (id: string) => CONTENT_TRACKS.findIndex(track => track.id === id) + 1
 /** Доля скролла сцены, на которой линия стоит в начале и в конце квартала */
 const PHASE_FROM = 0.05
 const PHASE_TO = 0.95
+
+/**
+ * Окна, в которых sticky-сцена не помещается: монитор ужался бы до полоски.
+ * Строка та же, что в @media content-page.css (.dir-content-nle).
+ */
+const FLOW_QUERY =
+  '(max-height: 559px), (max-width: 39.99rem) and (max-height: 789px), (min-width: 40rem) and (max-width: 63.99rem) and (max-height: 829px)'
+
+function useMatch(query: string) {
+  const [match, setMatch] = useState(false)
+  useEffect(() => {
+    const list = window.matchMedia(query)
+    const sync = () => setMatch(list.matches)
+    sync()
+    list.addEventListener('change', sync)
+    return () => list.removeEventListener('change', sync)
+  }, [query])
+  return match
+}
 
 /**
  * Круг, пока секция на экране: data-live снимает паузу с CSS-анимаций,
@@ -149,10 +211,15 @@ function useArrival<T extends HTMLElement>(ref: RefObject<T | null>) {
  * тот в режиме разработки ругается на статичный <html> как на контейнер
  * прокрутки. Читаем один раз на кадр и только пока секция рядом с экраном.
  *
- * pinned — секция с sticky-сценой: 0, когда её верх у верха экрана, и 1, когда
- * низ у низа. Без pinned — «уход»: 0 у верха экрана, 1, когда секция ушла вверх.
+ * 0 — верх секции на высоте `from` экрана (доля высоты), 1 — низ секции на
+ * высоте `to`. Пары: (0, 0) — «уход» с первого экрана; (0, 1) — sticky-сцена,
+ * верх у верха, низ у низа; (0.86, 0.46) — секция проходит «линию чтения».
  */
-function useSectionProgress<T extends HTMLElement>(ref: RefObject<T | null>, pinned: boolean) {
+function useSectionProgress<T extends HTMLElement>(
+  ref: RefObject<T | null>,
+  from: number,
+  to: number
+) {
   const progress = useMotionValue(0)
   useEffect(() => {
     const node = ref.current
@@ -162,9 +229,9 @@ function useSectionProgress<T extends HTMLElement>(ref: RefObject<T | null>, pin
     const read = () => {
       raf = 0
       const rect = node.getBoundingClientRect()
-      const range = pinned ? rect.height - window.innerHeight : rect.height
-      const value = range > 0 ? -rect.top / range : 0
-      progress.set(Math.min(1, Math.max(0, value)))
+      const vh = window.innerHeight
+      const range = vh * (from - to) + rect.height
+      progress.set(range > 0 ? clamp01((vh * from - rect.top) / range) : 0)
     }
     const schedule = () => {
       if (near && !raf) raf = requestAnimationFrame(read)
@@ -189,8 +256,45 @@ function useSectionProgress<T extends HTMLElement>(ref: RefObject<T | null>, pin
       window.removeEventListener('resize', schedule)
       if (raf) cancelAnimationFrame(raf)
     }
-  }, [ref, pinned, progress])
+  }, [ref, from, to, progress])
   return progress
+}
+
+/**
+ * Без курсора строку или карточку зажигает положение на экране. Состояние
+ * лежит в data-lit, а не в React: карточки не перерисовываются на каждом скролле.
+ */
+function useTouchLit<T extends HTMLElement>(ref: RefObject<T | null>, count: number) {
+  useEffect(() => {
+    const list = ref.current
+    if (!list || typeof IntersectionObserver === 'undefined') return
+    const touch = window.matchMedia('(hover: none)')
+    let observer: IntersectionObserver | null = null
+
+    const connect = () => {
+      observer?.disconnect()
+      observer = null
+      const items = list.querySelectorAll<HTMLElement>('[data-lit-item]')
+      items.forEach(item => item.removeAttribute('data-lit'))
+      if (!touch.matches) return
+      observer = new IntersectionObserver(
+        entries => {
+          for (const entry of entries) {
+            ;(entry.target as HTMLElement).dataset.lit = String(entry.isIntersecting)
+          }
+        },
+        { rootMargin: '-34% 0px -34% 0px', threshold: 0 }
+      )
+      items.forEach(item => observer?.observe(item))
+    }
+
+    connect()
+    touch.addEventListener('change', connect)
+    return () => {
+      touch.removeEventListener('change', connect)
+      observer?.disconnect()
+    }
+  }, [ref, count])
 }
 
 function Plate({ lit = false }: { lit?: boolean }) {
@@ -235,6 +339,36 @@ function Registered({
   )
 }
 
+/**
+ * Монитор: мастер-кадр затемнён, текущая нарезка светлая и в красной рамке с
+ * меткой. Размер задаёт обёртка: у сцены — высота окна, у вопросов — колонка.
+ */
+function MonitorView({ frame, rect, tag }: { frame: Frame; rect: CropRect; tag: string }) {
+  return (
+    <div className="dir-content-mon">
+      <Registered frame={frame} rect={FULL_RECT} />
+      <span aria-hidden="true" className="dir-content-mon-dim" />
+      <div aria-hidden="true" className="dir-content-mon-lit" style={{ clipPath: clipOf(rect) }}>
+        <Registered frame={frame} rect={FULL_RECT} lit />
+      </div>
+      <span
+        aria-hidden="true"
+        className="dir-content-mon-box"
+        style={{
+          left: `${rect.x}%`,
+          top: `${rect.y}%`,
+          width: `${rect.w}%`,
+          height: `${rect.h}%`,
+        }}
+      >
+        <span className="dir-content-mon-tag type-meta-sm font-mono uppercase tabular-nums">
+          {tag}
+        </span>
+      </span>
+    </div>
+  )
+}
+
 /* ─────────────────────────── 1. Первый экран ─────────────────────────── */
 
 function Hero({ frame }: { frame: Frame }) {
@@ -248,10 +382,12 @@ function Hero({ frame }: { frame: Frame }) {
   useLive(stageRef)
 
   // Скролл продолжает распад: нарезки расходятся дальше, пока экран уезжает.
-  // Работает и с пальцем, и с колесом; в CSS при сниженном движении переменная игнорируется
-  const scrollYProgress = useSectionProgress(heroRef, false)
+  // Работает и с пальцем, и с колесом; распад заканчивается на ~60% ухода экрана,
+  // чтобы на телефоне он был виден за первые же сотни пикселей. В CSS при
+  // сниженном движении переменная игнорируется
+  const scrollYProgress = useSectionProgress(heroRef, 0, 0)
   useMotionValueEvent(scrollYProgress, 'change', value => {
-    stageRef.current?.style.setProperty('--dc-spread', value.toFixed(3))
+    stageRef.current?.style.setProperty('--dc-spread', clamp01(value * 1.7).toFixed(3))
   })
 
   // Живой тайм-код развёртки: один rAF, запись прямо в узел, пауза вне экрана
@@ -355,8 +491,8 @@ function Hero({ frame }: { frame: Frame }) {
     >
       <div aria-hidden="true" className="dir-content-paper" />
 
-      <div className="grid flex-1 items-center gap-x-10 gap-y-9 px-6 pb-10 pt-24 md:px-10 lg:grid-cols-12 lg:px-20 lg:pb-12 lg:pt-28">
-        <div className="lg:col-span-5">
+      <div className="dir-content-herogrid grid flex-1 items-center gap-x-10 gap-y-9 px-6 pb-10 pt-24 md:px-10 lg:grid-cols-12 lg:px-20 lg:pb-12 lg:pt-28">
+        <div className="lg:col-span-6 xl:col-span-5">
           <p
             className="dir-content-rise type-meta font-mono uppercase tabular-nums text-white/60"
             style={delay(0)}
@@ -368,55 +504,55 @@ function Hero({ frame }: { frame: Frame }) {
             {hero.places}
           </p>
 
-          <h1 className="mt-6 font-stage text-[clamp(2.1rem,9.3vw,5.25rem)] uppercase leading-[0.94] tracking-[-0.04em] text-white md:mt-8 lg:text-[clamp(3.4rem,6.3vw,7.75rem)]">
+          <h1 className="dir-content-h1 mt-6 font-stage text-[clamp(2.6rem,14.6vw,5.25rem)] uppercase leading-[0.94] tracking-[-0.04em] text-white sm:text-[clamp(2.1rem,9.3vw,5.25rem)] md:mt-8 lg:text-[clamp(3.4rem,min(6.3vw,11svh),7.75rem)]">
             <span className="block">
-              <span className="dir-content-rise inline-block lg:block" style={delay(80)}>
+              <span className="dir-content-rise block sm:inline-block lg:block" style={delay(80)}>
                 Одна
               </span>{' '}
-              <span className="dir-content-rise inline-block lg:block" style={delay(160)}>
+              <span className="dir-content-rise block sm:inline-block lg:block" style={delay(160)}>
                 съёмка
               </span>
               <span className="sr-only">,</span>
             </span>{' '}
             <span className="block font-brand-hero">
               <span
-                className="dir-content-rise inline-block text-accent lg:block"
+                className="dir-content-rise block text-accent sm:inline-block lg:block"
                 style={delay(240)}
               >
                 восемь
               </span>{' '}
-              <span className="dir-content-rise inline-block lg:block" style={delay(320)}>
+              <span className="dir-content-rise block sm:inline-block lg:block" style={delay(320)}>
                 выдач
               </span>
             </span>{' '}
             <span
-              className="dir-content-rise mt-6 block max-w-[27rem] font-sans text-base font-light normal-case leading-snug tracking-normal text-white/80 [text-wrap:pretty] md:mt-8 md:text-xl"
+              className="dir-content-lead dir-content-rise mt-6 block max-w-[27rem] font-sans text-base font-light normal-case leading-snug tracking-normal text-white/80 [text-wrap:pretty] md:mt-8 md:text-xl"
               style={delay(420)}
             >
-              {typo(hero.lead)}
+              {tight(hero.lead)}
             </span>
           </h1>
 
           <div
-            className="dir-content-rise mt-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-8 md:mt-10"
+            className="dir-content-rise mt-8 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-1 md:mt-10"
             style={delay(520)}
           >
             <button
               type="button"
               onClick={() => page.openBrief('hero')}
-              className="dir-content-btn w-full px-7 py-4 text-base font-medium sm:w-auto"
+              className="dir-content-btn w-full whitespace-nowrap px-7 py-4 text-base font-medium sm:w-auto"
             >
               <span>{CONTENT_PAGE.ctaLabel}</span>
               <ArrowRight aria-hidden="true" className="h-4 w-4" />
             </button>
-            <a href="#sheet" className="dir-content-link text-base">
+            <a href="#sheet" className="dir-content-link whitespace-nowrap text-base">
               Как это работает
               <ArrowDown aria-hidden="true" className="h-4 w-4" />
             </a>
           </div>
         </div>
 
-        <div className="lg:col-span-7">
+        <div className="lg:col-span-6 xl:col-span-7">
           <div className="dir-content-stagebox">
             <div
               aria-hidden="true"
@@ -467,7 +603,11 @@ function Hero({ frame }: { frame: Frame }) {
                         '--dy': item.drift.y,
                         '--dc-depth': item.depth,
                         '--i': index,
-                        '--t': `${((item.rect.x / 100) * 9).toFixed(2)}s`,
+                        // Вспышка в момент, когда линия развёртки доходит до левого края
+                        // нарезки — уже со сдвигом распада, а не по месту в мастере
+                        '--t': `${Math.max(0.12, ((item.rect.x + item.drift.x) / 100) * 9).toFixed(
+                          2
+                        )}s`,
                       } as CSSProperties
                     }
                   >
@@ -510,7 +650,7 @@ function Hero({ frame }: { frame: Frame }) {
                 key={cut.key}
                 className="dir-content-swap text-sm leading-snug text-white/80 md:text-base"
               >
-                {typo(cut.text)}
+                {tight(cut.text)}
               </span>
             </div>
           </div>
@@ -557,12 +697,25 @@ function Nle({ frame }: { frame: Frame }) {
   const hintRef = useRef<HTMLSpanElement>(null)
   const [active, setActive] = useState(0)
   const [week, setWeek] = useState(1)
+  const flow = useMatch(FLOW_QUERY)
+  const flowRef = useRef(false)
   useLive(hintRef)
 
-  const scrollYProgress = useSectionProgress(sectionRef, true)
-  // Линия воспроизведения: 0 — начало первой недели, 1 — конец тринадцатой
-  const phase = useTransform(scrollYProgress, [PHASE_FROM, PHASE_TO], [0, 1])
+  const progress = useSectionProgress(sectionRef, 0, 1)
+  // Линия воспроизведения: 0 — начало первой недели, 1 — конец тринадцатой.
+  // В закреплённой сцене её ведёт скролл, в свободной (низкое окно) — выбор блока
+  const phase = useMotionValue(0)
   const playheadX = useTransform(phase, value => `${(value * 100).toFixed(2)}%`)
+
+  useEffect(() => {
+    flowRef.current = flow
+    phase.set(flow ? 0 : clamp01((progress.get() - PHASE_FROM) / (PHASE_TO - PHASE_FROM)))
+  }, [flow, phase, progress])
+
+  useMotionValueEvent(progress, 'change', value => {
+    if (flowRef.current) return
+    phase.set(clamp01((value - PHASE_FROM) / (PHASE_TO - PHASE_FROM)))
+  })
 
   // React видит только смену недели и выдачи — не каждый кадр скролла
   useMotionValueEvent(phase, 'change', value => {
@@ -577,20 +730,29 @@ function Nle({ frame }: { frame: Frame }) {
     if (hint) hint.style.opacity = value > 0.02 ? '0' : '1'
   })
 
-  // Нажатие на блок прокручивает сцену к началу этой выдачи: клавиатура и палец
-  // получают то же, что колесо
-  const jumpTo = useCallback((plan: OutputPlan) => {
-    const section = sectionRef.current
-    if (!section) return
-    const range = section.offsetHeight - window.innerHeight
-    const target = (plan.week - 1 + 0.35) / CONTENT_WEEKS
-    const top =
-      section.getBoundingClientRect().top +
-      window.scrollY +
-      (PHASE_FROM + target * (PHASE_TO - PHASE_FROM)) * range
-    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    window.scrollTo({ top, behavior: calm ? 'auto' : 'smooth' })
-  }, [])
+  // Нажатие на блок ведёт линию к началу этой выдачи: в закреплённой сцене
+  // прокручивает её, в свободной двигает линию. Клавиатура и палец получают
+  // то же, что колесо
+  const select = useCallback(
+    (plan: OutputPlan, instant = false) => {
+      const section = sectionRef.current
+      if (!section) return
+      const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      const target = (plan.week - 1 + 0.35) / CONTENT_WEEKS
+      if (flowRef.current) {
+        if (calm || instant) phase.set(target)
+        else animate(phase, target, { duration: 0.6, ease: [0.16, 1, 0.3, 1] })
+        return
+      }
+      const range = section.offsetHeight - window.innerHeight
+      const top =
+        section.getBoundingClientRect().top +
+        window.scrollY +
+        (PHASE_FROM + target * (PHASE_TO - PHASE_FROM)) * range
+      window.scrollTo({ top, behavior: calm || instant ? 'auto' : 'smooth' })
+    },
+    [phase]
+  )
 
   const current = ORDER[active] ?? ORDER[0]
   const output = outputAt(current.output)
@@ -601,29 +763,26 @@ function Nle({ frame }: { frame: Frame }) {
       id="sheet"
       ref={sectionRef}
       aria-labelledby="dir-content-scene-title"
-      className="relative h-[340svh] bg-[#060606]"
+      className="dir-content-nle"
     >
-      <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-6 pb-20 pt-[4.75rem] md:px-10 md:pb-14 md:pt-24 lg:px-20">
+      <div className="dir-content-nle-stage">
         <div aria-hidden="true" className="dir-content-paper" />
 
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-3 lg:grid lg:grid-cols-12 lg:grid-rows-[auto_minmax(0,1fr)] lg:gap-x-12 lg:gap-y-6">
-          <header className="lg:col-span-5 lg:col-start-8 lg:row-start-1">
+        <div className="dir-content-nle-main">
+          <header className="dir-content-nle-head">
             <p className={KIT_KICKER}>
               <span aria-hidden="true" className="h-px w-8 bg-accent" />
               01 / Монтажный лист
             </p>
-            <h2
-              id="dir-content-scene-title"
-              className={`${KIT_TITLE} mt-3 max-w-[34ch] text-[clamp(1.3rem,2.9vw,2.75rem)] md:mt-4`}
-            >
-              {setTitle(scene.title)}
+            <h2 id="dir-content-scene-title" className={`${KIT_TITLE} dir-content-nle-title`}>
+              {head(scene.title)}
             </h2>
-            <p className="type-meta mt-4 hidden max-w-[30rem] font-mono uppercase leading-relaxed tabular-nums text-white/60 md:block">
-              {typo(scene.lead)}
+            <p className="dir-content-nle-lead type-meta font-mono uppercase leading-relaxed tabular-nums text-white/60">
+              {tight(scene.lead)}
             </p>
           </header>
 
-          <div className="flex min-h-0 flex-1 flex-col lg:col-span-7 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+          <div className="dir-content-nle-mon">
             <p
               aria-hidden="true"
               className="type-meta mb-3 flex shrink-0 items-center justify-between gap-4 font-mono uppercase tabular-nums text-white/60"
@@ -638,66 +797,47 @@ function Nle({ frame }: { frame: Frame }) {
                 className="dir-content-hint whitespace-nowrap text-white/80 transition-opacity duration-[var(--motion-move)]"
               >
                 <i />
-                Листайте
+                {flow ? 'Нажмите на блок' : 'Листайте'}
               </span>
             </p>
             <div className="dir-content-mon-wrap">
-              <div className="dir-content-mon">
-                <Registered frame={frame} rect={FULL_RECT} />
-                <span aria-hidden="true" className="dir-content-mon-dim" />
-                <div
-                  aria-hidden="true"
-                  className="dir-content-mon-lit"
-                  style={{ clipPath: clipOf(current.rect) }}
-                >
-                  <Registered frame={frame} rect={FULL_RECT} lit />
-                </div>
-                <span
-                  aria-hidden="true"
-                  className="dir-content-mon-box"
-                  style={{
-                    left: `${current.rect.x}%`,
-                    top: `${current.rect.y}%`,
-                    width: `${current.rect.w}%`,
-                    height: `${current.rect.h}%`,
-                  }}
-                >
-                  <span className="dir-content-mon-tag type-meta-sm font-mono uppercase tabular-nums">
-                    {pad(current.output + 1)} {output.label}
-                  </span>
-                </span>
-              </div>
+              <MonitorView
+                frame={frame}
+                rect={current.rect}
+                tag={`${pad(current.output + 1)} ${output.label}`}
+              />
             </div>
           </div>
 
-          <div
-            aria-hidden="true"
-            className="flex flex-col justify-end lg:col-span-5 lg:col-start-8 lg:row-start-2"
-          >
+          <div aria-hidden="true" className="dir-content-nle-cap" data-cap="">
             <div key={current.output} className="dir-content-swap">
-              <p className="type-meta font-mono uppercase tabular-nums text-white/60">
+              <p
+                className="type-meta font-mono uppercase tabular-nums text-white/60"
+                data-cap-meta=""
+              >
                 <span className="text-accent">{pad(current.output + 1)}</span>
                 {` / ${pad(CONTENT_PAGE.outputs.length)} · ${current.track} · Н${weekRange(current)}`}
                 {current.note ? ` · ${current.note}` : ''}
               </p>
-              <p className="mt-2 font-stage text-[clamp(1.75rem,5.4vw,4.75rem)] uppercase leading-[0.92] tracking-[-0.03em] text-white lg:mt-4">
+              <p
+                className="dir-content-cap-label font-stage uppercase leading-[0.92] tracking-[-0.03em] text-white"
+                data-cap-label=""
+              >
                 {output.label}
               </p>
-              <p className="mt-2 max-w-[34ch] text-sm leading-snug text-white/75 [text-wrap:pretty] md:mt-4 md:text-lg">
-                {typo(output.text)}
+              <p className="dir-content-cap-text text-white/75 [text-wrap:pretty]" data-cap-text="">
+                {tight(output.text)}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="relative z-10 mt-4 md:mt-6">
+        <div className="dir-content-nle-foot">
           <div className="dir-content-tl" style={{ '--dc-week': CONTENT_WEEKS } as CSSProperties}>
-            <div aria-hidden="true" className="dir-content-tl-row">
-              <span className="dir-content-tl-label">
-                <span className="type-meta-sm font-mono uppercase">
-                  <span className="md:hidden">Н</span>
-                  <span className="hidden md:inline">Неделя</span>
-                </span>
+            <div aria-hidden="true" className="dir-content-tl-head">
+              <span className="dir-content-tl-corner type-meta-sm font-mono uppercase">
+                <span className="md:hidden">Нед.</span>
+                <span className="hidden md:inline">Неделя</span>
               </span>
               <div className="dir-content-tl-weeks type-meta-sm font-mono tabular-nums">
                 {WEEK_NUMBERS.map(number => (
@@ -711,53 +851,76 @@ function Nle({ frame }: { frame: Frame }) {
               </div>
             </div>
 
-            {CONTENT_TRACKS.map(track => (
-              <div key={track.id} className="dir-content-tl-row">
-                <span className="dir-content-tl-label">
-                  <b className="type-meta font-mono">{track.id}</b>
-                  <i className="type-meta-sm font-mono uppercase">{track.note}</i>
-                </span>
-                <div className="dir-content-tl-lane" data-track={track.id}>
-                  {track.id === 'A1'
-                    ? ORDER.map((plan, index) =>
-                        plan.track === 'V1' ? (
-                          <div
-                            key={plan.output}
-                            aria-hidden="true"
-                            className="dir-content-aclip"
-                            data-state={stateOf(index)}
-                            style={{ gridColumn: `${plan.week} / span ${plan.span}` }}
-                          >
-                            <Wave seed={plan.output + 1} />
-                          </div>
-                        ) : null
-                      )
-                    : ORDER.map((plan, index) =>
-                        plan.track === track.id ? (
-                          <button
-                            key={plan.output}
-                            type="button"
-                            className="dir-content-clip"
-                            data-state={stateOf(index)}
-                            aria-current={index === active ? 'true' : undefined}
-                            aria-label={`${outputAt(plan.output).label}${
-                              plan.note ? `, ${plan.note}` : ''
-                            }: выдача ${plan.output + 1}, недели ${weekRange(plan)}`}
-                            style={{ gridColumn: `${plan.week} / span ${plan.span}` }}
-                            onClick={() => jumpTo(plan)}
-                          >
-                            <span className="type-meta-sm font-mono tabular-nums">
-                              {pad(plan.output + 1)}
-                            </span>
-                            <span className="dir-content-clip-name type-meta font-mono uppercase">
-                              {outputAt(plan.output).label}
-                            </span>
-                          </button>
-                        ) : null
-                      )}
-                </div>
-              </div>
-            ))}
+            {/* Блоки идут в порядке выхода, а не по дорожкам: так Tab ведёт по времени */}
+            <div className="dir-content-tl-body">
+              {CONTENT_TRACKS.map((track, row) => (
+                <Fragment key={track.id}>
+                  <span
+                    aria-hidden="true"
+                    className="dir-content-tl-label"
+                    style={{ gridRow: row + 1 }}
+                  >
+                    <b className="type-meta font-mono">{track.id}</b>
+                    <i className="type-meta-sm font-mono uppercase">{track.note}</i>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="dir-content-tl-lane"
+                    data-track={track.id}
+                    style={{ gridRow: row + 1 }}
+                  />
+                </Fragment>
+              ))}
+
+              {ORDER.map((plan, index) =>
+                plan.sound ? (
+                  <div
+                    key={`a-${plan.output}`}
+                    aria-hidden="true"
+                    className="dir-content-aclip"
+                    data-state={stateOf(index)}
+                    style={{ gridColumn: `${plan.week + 1} / span ${plan.span}`, gridRow: 3 }}
+                  >
+                    <Wave seed={plan.output + 1} />
+                  </div>
+                ) : null
+              )}
+
+              {ORDER.map((plan, index) => (
+                <button
+                  key={plan.output}
+                  type="button"
+                  className="dir-content-clip"
+                  data-state={stateOf(index)}
+                  aria-current={index === active ? 'true' : undefined}
+                  aria-label={`${outputAt(plan.output).label}${
+                    plan.note ? `, ${plan.note}` : ''
+                  }: выдача ${plan.output + 1}, недели ${weekRange(plan)}`}
+                  style={{
+                    gridColumn: `${plan.week + 1} / span ${plan.span}`,
+                    gridRow: trackRow(plan.track),
+                  }}
+                  onClick={() => select(plan)}
+                  onFocus={event => {
+                    // Фокус с клавиатуры двигает монитор сразу, не дожидаясь Enter
+                    let keyboard = false
+                    try {
+                      keyboard = event.currentTarget.matches(':focus-visible')
+                    } catch {
+                      keyboard = false
+                    }
+                    if (keyboard) select(plan, true)
+                  }}
+                >
+                  <span className="type-meta-sm font-mono tabular-nums">
+                    {pad(plan.output + 1)}
+                  </span>
+                  <span className="dir-content-clip-name type-meta font-mono uppercase">
+                    {outputAt(plan.output).label}
+                  </span>
+                </button>
+              ))}
+            </div>
 
             <div aria-hidden="true" className="dir-content-ph-rail">
               <motion.div className="dir-content-ph" style={{ x: playheadX }}>
@@ -768,8 +931,8 @@ function Nle({ frame }: { frame: Frame }) {
             </div>
           </div>
 
-          <p className="type-meta mt-3 font-mono uppercase leading-relaxed text-white/55">
-            {typo(scene.note)}
+          <p data-scene-note="" className="dir-content-tl-note type-meta font-mono uppercase">
+            {tight(scene.note)}
           </p>
         </div>
       </div>
@@ -787,15 +950,11 @@ function Splice({ from, to }: { from: string; to: string }) {
   const ref = useRef<HTMLDivElement>(null)
   useArrival(ref)
   return (
-    <div
-      ref={ref}
-      aria-hidden="true"
-      className="flex h-14 items-center gap-4 border-y border-white/10 bg-[#000000] px-6 md:px-10 lg:px-20"
-    >
+    <div ref={ref} aria-hidden="true" className="dir-content-splice">
       <span className="type-meta font-mono uppercase tabular-nums text-white/55">CUT {from}</span>
-      <span className="dir-content-splice-line h-px flex-1 bg-white/25" />
-      <span className="h-5 w-px bg-accent" />
-      <span className="dir-content-splice-line h-px flex-1 bg-white/25" />
+      <span className="dir-content-splice-line" />
+      <span className="dir-content-splice-mark" />
+      <span className="dir-content-splice-line" />
       <span className="type-meta font-mono uppercase tabular-nums text-white/55">{to}</span>
     </div>
   )
@@ -803,10 +962,8 @@ function Splice({ from, to }: { from: string; to: string }) {
 
 /* ─────────────────────────── 3. Состав выдачи ─────────────────────────── */
 
-/** Место карточки в мозаике: a…h по порядку выдач */
-const SLOTS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const
-
 function Outputs({ frame }: { frame: Frame }) {
+  const page = useDirectionPage()
   const outputs = CONTENT_PAGE.outputs
   return (
     <section
@@ -824,14 +981,14 @@ function Outputs({ frame }: { frame: Frame }) {
             data-reveal=""
             className={`${KIT_TITLE} mt-5 text-[clamp(2rem,5.4vw,5.25rem)]`}
           >
-            {setTitle('Что получаете с одной съёмки')}
+            {head('Что получаете с одной съёмки')}
           </h2>
         </div>
         <p
           data-reveal=""
           className="max-w-md text-base leading-relaxed text-white/70 [text-wrap:pretty] lg:col-span-4 md:text-lg"
         >
-          {typo(
+          {tight(
             'Стандартный набор — восемь материалов. Состав меняем под ваш контент-план: что-то убираем, что-то добавляем.'
           )}
         </p>
@@ -839,7 +996,7 @@ function Outputs({ frame }: { frame: Frame }) {
 
       <p
         aria-hidden="true"
-        className="type-meta mt-12 flex items-center justify-between gap-6 border-t border-white/15 pt-4 font-mono uppercase tabular-nums text-white/55 md:mt-16"
+        className="type-meta mt-12 flex items-center justify-between gap-6 border-t border-white/15 pt-4 font-mono uppercase tabular-nums text-white/60 md:mt-16"
       >
         <span className="whitespace-nowrap">
           Лист 01<span className="mx-2.5 text-accent">/</span>
@@ -856,10 +1013,15 @@ function Outputs({ frame }: { frame: Frame }) {
           const plan = CONTENT_PLAN.find(item => item.output === index)
           if (!plan) return null
           return (
-            <li key={`${output.label}-${index}`} className="dir-content-card" data-k={SLOTS[index]}>
+            <li
+              key={`${output.label}-${index}`}
+              className="dir-content-card"
+              data-k={plan.slot}
+              data-wide={plan.aspect > 1.5}
+            >
               <div className="type-meta flex items-baseline justify-between gap-3 font-mono uppercase tabular-nums">
                 <span className="dir-content-card-idx">{pad(index + 1)}</span>
-                <span className="text-white/55">
+                <span className="text-white/60">
                   {plan.track} · Н{weekRange(plan)}
                 </span>
               </div>
@@ -876,21 +1038,50 @@ function Outputs({ frame }: { frame: Frame }) {
                 </div>
               </div>
 
-              <h3 className="flex flex-wrap items-baseline gap-x-3 font-stage text-[clamp(1.3rem,2vw,1.85rem)] uppercase leading-none tracking-[-0.02em] text-white">
-                {output.label}{' '}
-                {plan.note ? (
-                  <span className="type-meta font-mono font-normal normal-case tracking-[0.08em] text-white/55">
-                    {plan.note}
-                  </span>
-                ) : null}
-              </h3>
-              <p className="mt-3 max-w-[32ch] text-sm leading-relaxed text-white/70 [text-wrap:pretty] md:text-[0.9375rem]">
-                {typo(output.text)}
-              </p>
+              <div className="dir-content-card-copy">
+                <h3 className="dir-content-card-title flex flex-wrap items-baseline gap-x-3 font-stage uppercase leading-none tracking-[-0.02em] text-white">
+                  {output.label}{' '}
+                  {plan.note ? (
+                    <span className="type-meta font-mono font-normal normal-case tracking-[0.08em] text-white/60">
+                      {plan.note}
+                    </span>
+                  ) : null}
+                </h3>
+                <p className="mt-3 max-w-[32ch] text-sm leading-relaxed text-white/70 [text-wrap:pretty] md:text-[0.9375rem]">
+                  {tight(output.text)}
+                </p>
+              </div>
             </li>
           )
         })}
+
+        <li className="dir-content-card dir-content-own" data-k="i">
+          <div className="type-meta flex items-baseline justify-between gap-3 font-mono uppercase tabular-nums">
+            <span className="dir-content-card-idx">{pad(outputs.length + 1)}</span>
+            <span className="text-white/60">Ваш формат</span>
+          </div>
+          <div className="dir-content-own-body">
+            <p className="dir-content-own-plus font-stage" aria-hidden="true">
+              +
+            </p>
+            <p className="max-w-[26ch] text-base leading-snug text-white/75 [text-wrap:pretty] md:text-lg">
+              {tight('Другая пропорция, длина или площадка: соберём набор под ваш план.')}
+            </p>
+            <button
+              type="button"
+              onClick={() => page.openBrief('outputs')}
+              className="dir-content-link text-base"
+            >
+              Собрать набор
+              <ArrowRight aria-hidden="true" className="h-4 w-4" />
+            </button>
+          </div>
+        </li>
       </ul>
+
+      <p className="type-meta mt-5 max-w-2xl font-mono uppercase leading-relaxed text-white/60">
+        {tight('Недели в карточках — схема порядка выдачи, не график. Даты фиксируем до съёмки.')}
+      </p>
     </section>
   )
 }
@@ -1030,28 +1221,115 @@ function Audiences() {
           data-reveal=""
           className={`${KIT_TITLE} ${KIT_TITLE_SIZE} mt-5`}
         >
-          {setTitle('Когда один ролик — мало')}
+          {head('Когда один ролик — мало')}
         </h2>
       </div>
 
-      <ul role="list" className="mt-12 grid gap-14 md:mt-16 md:grid-cols-3 md:gap-x-8 lg:gap-x-14">
+      <ul role="list" className="mt-12 grid gap-14 md:mt-16 md:grid-cols-3 md:gap-x-6 lg:gap-x-14">
         {CONTENT_PAGE.audiences.map((item, index) => (
           <li key={item.title} data-reveal="" className={steps[index]}>
             <Diagram kind={item.kind} />
             <p
               aria-hidden="true"
-              className="type-meta mt-3 font-mono uppercase tabular-nums text-white/55"
+              className="type-meta mt-3 font-mono uppercase tabular-nums text-white/60"
             >
               {DIAGRAM_CAPTIONS[item.kind]}
             </p>
-            <h3 className="mt-6 font-stage text-[clamp(1.35rem,2vw,1.85rem)] uppercase leading-[1.04] tracking-[-0.02em] text-white [text-wrap:balance]">
-              {typo(item.title)}
+            <h3 className="mt-6 font-stage text-[1.35rem] uppercase md:text-[clamp(1.125rem,1.95vw,1.85rem)] leading-[1.04] tracking-[-0.02em] text-white [text-wrap:balance]">
+              {head(item.title)}
             </h3>
             <p className="mt-4 max-w-[36ch] text-[0.9375rem] leading-relaxed text-white/70 [text-wrap:pretty] md:text-base">
-              {typo(item.text)}
+              {tight(item.text)}
             </p>
           </li>
         ))}
+      </ul>
+    </section>
+  )
+}
+
+/* ─────────────────────────── 5. Кадры из работ ─────────────────────────── */
+
+/**
+ * Работы студии контактным листом: у каждой свой кадр, клиент крупно, номер
+ * клипа. Кадр приглушён и «зажигается» у карточки под курсором или фокусом, а
+ * на телефоне — у карточки, которая проходит через середину экрана.
+ */
+function Reel({ index, works }: { index: string; works: DirectionPageWork[] }) {
+  const page = useDirectionPage()
+  const listRef = useRef<HTMLUListElement>(null)
+  useTouchLit(listRef, works.length)
+
+  return (
+    <section
+      aria-labelledby="dir-content-reel-title"
+      className="relative overflow-hidden border-t border-white/10 bg-[#000000] px-6 py-20 md:px-10 md:py-28 lg:px-20"
+    >
+      <div aria-hidden="true" className="dir-content-paper" />
+      <div className="relative flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
+        <div>
+          <p className={KIT_KICKER}>
+            <span aria-hidden="true" className="h-px w-8 bg-accent" />
+            {index} / Работы
+          </p>
+          <h2
+            id="dir-content-reel-title"
+            data-reveal=""
+            className={`${KIT_TITLE} ${KIT_TITLE_SIZE} mt-5`}
+          >
+            {head('Кадры из работ')}
+          </h2>
+        </div>
+        <p className="type-meta max-w-xs font-mono uppercase leading-relaxed text-white/60">
+          Работы студии
+        </p>
+      </div>
+
+      <ul ref={listRef} role="list" className="dir-content-reel relative mt-10 md:mt-14">
+        {works.map((work, position) => {
+          const excerpt = firstSentence(work.description)
+          return (
+            <li key={work.slug} data-reveal="" data-count={works.length}>
+              <Link
+                href={`/projects/${work.slug}`}
+                prefetch={false}
+                data-lit-item=""
+                onClick={() => page.openCase(work.slug)}
+                className="dir-content-rc"
+              >
+                <span
+                  aria-hidden="true"
+                  className="dir-content-rc-meta type-meta font-mono uppercase tabular-nums"
+                >
+                  <span>Клип {pad(position + 1)}</span>
+                  <span>{work.year ?? ''}</span>
+                </span>
+                <span aria-hidden="true" className="dir-content-rc-frame">
+                  {work.posterUrl ? (
+                    <Still
+                      src={work.posterUrl}
+                      alt=""
+                      sizes={position === 0 ? MASTER_SIZES : '(min-width: 1024px) 34vw, 100vw'}
+                      className="absolute inset-0 h-full w-full"
+                    />
+                  ) : (
+                    <Plate lit />
+                  )}
+                  <span className="dir-content-rc-dim" />
+                  <span className="dir-content-rc-open type-meta font-mono uppercase">
+                    Открыть проект
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </span>
+                </span>
+                <span className="dir-content-rc-name font-stage uppercase">{work.client}</span>
+                <span className="dir-content-rc-title">{tight(work.title)}</span>
+                {excerpt ? (
+                  <span className="dir-content-rc-note [text-wrap:pretty]">{tight(excerpt)}</span>
+                ) : null}
+              </Link>
+            </li>
+          )
+        })}
       </ul>
     </section>
   )
@@ -1066,6 +1344,7 @@ function ProofCta() {
   return (
     <section
       aria-labelledby="dir-content-proof-title"
+      data-cta-zone-target=""
       className="relative overflow-hidden border-t border-white/10 bg-[#000000] px-6 py-20 md:px-10 md:py-28 lg:px-20"
     >
       <div aria-hidden="true" className="dir-content-paper" />
@@ -1078,12 +1357,12 @@ function ProofCta() {
           <h2
             id="dir-content-proof-title"
             data-reveal=""
-            className={`${KIT_TITLE} mt-5 text-[clamp(1.85rem,4vw,3.9rem)]`}
+            className={`${KIT_TITLE} mt-5 text-[clamp(1.4rem,7.2vw,3.9rem)] lg:text-[clamp(2.2rem,4vw,3.9rem)]`}
           >
-            {setTitle(cta.title)}
+            {head(cta.title)}
           </h2>
           <p className="mt-6 max-w-md text-base leading-relaxed text-white/70 [text-wrap:pretty] md:text-lg">
-            {typo(cta.text)}
+            {tight(cta.text)}
           </p>
         </div>
 
@@ -1103,7 +1382,7 @@ function ProofCta() {
                   <div key={label} className="dir-content-render-row">
                     <dt className="type-meta font-mono uppercase text-white/60">{label}</dt>
                     <i aria-hidden="true" />
-                    <dd className="text-right text-sm text-white md:text-base">{typo(value)}</dd>
+                    <dd className="text-right text-sm text-white md:text-base">{tight(value)}</dd>
                   </div>
                 ))}
               </dl>
@@ -1124,18 +1403,25 @@ function ProofCta() {
   )
 }
 
-/** После процесса: лента этапов, первый — красный, и кнопка «начнём с него» */
-function ProcessCta() {
+/** Нарезка мастер-кадра под призывом процесса: крупная, в рамке с метками */
+const PCTA_RECT: CropRect = { x: 14, y: 12, w: 72, h: 62 }
+
+/** После процесса: крупная нарезка мастер-кадра и кнопка «начнём с плана» */
+function ProcessCta({ frame }: { frame: Frame }) {
   const page = useDirectionPage()
   const cta = CONTENT_PAGE.cta.process
-  const last = cta.stops.length - 1
+  const ref = useRef<HTMLElement>(null)
+  useArrival(ref)
   return (
     <section
+      ref={ref}
       aria-labelledby="dir-content-process-cta-title"
-      className="dir-content-ribbon border-t border-white/10 bg-[#000000] px-6 py-16 md:px-10 md:py-24 lg:px-20"
+      data-cta-zone-target=""
+      className="dir-content-pcta relative overflow-hidden border-t border-white/10 bg-[#000000] px-6 py-16 md:px-10 md:py-24 lg:px-20"
     >
-      <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between lg:gap-16">
-        <div className="max-w-[44rem]">
+      <div aria-hidden="true" className="dir-content-paper" />
+      <div className="relative grid items-center gap-10 lg:grid-cols-12 lg:gap-x-16">
+        <div className="lg:col-span-7">
           <p className={KIT_KICKER}>
             <span aria-hidden="true" className="h-px w-8 bg-accent" />
             {cta.kicker}
@@ -1145,49 +1431,312 @@ function ProcessCta() {
             data-reveal=""
             className="mt-5 font-brand-hero text-[clamp(2rem,5.6vw,5.25rem)] uppercase leading-[0.92] tracking-[-0.035em] text-white [text-wrap:balance]"
           >
-            {typo(cta.title)}
+            {tight(cta.title)}
           </h2>
           <p className="mt-5 max-w-md text-base leading-relaxed text-white/70 [text-wrap:pretty] md:text-lg">
-            {typo(cta.text)}
+            {tight(cta.text)}
           </p>
+          <button
+            type="button"
+            onClick={() => page.openBrief('process')}
+            className="dir-content-btn mt-8 w-full shrink-0 px-7 py-4 text-base font-medium md:mt-10 lg:w-auto lg:min-w-[19rem]"
+          >
+            <span>{cta.label}</span>
+            <ArrowRight aria-hidden="true" className="h-4 w-4" />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => page.openBrief('process')}
-          className="dir-content-btn w-full shrink-0 px-7 py-4 text-base font-medium lg:w-auto lg:min-w-[19rem]"
+
+        <div
+          aria-hidden="true"
+          className="dir-content-pcta-crop order-first lg:order-none lg:col-span-5"
         >
-          <span>{cta.label}</span>
-          <ArrowRight aria-hidden="true" className="h-4 w-4" />
-        </button>
+          <div className="dir-content-pcta-frame">
+            <Registered frame={frame} rect={PCTA_RECT} lit />
+            <span className="dir-content-pcta-shade" />
+            <span className="dir-content-pcta-corners">
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
+            <span className="dir-content-pcta-tag type-meta-sm font-mono uppercase tabular-nums">
+              Мастер-кадр
+              <b>{CONTENT_PAGE.outputs.length} нарезок</b>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────────── 6. Процесс ─────────────────────────── */
+
+/**
+ * Этапы процесса на дорожках: подготовка делит одну дорожку, дальше каждый
+ * этап спускается ниже, как блоки на линейке. Красная линия идёт по этапам
+ * вместе со скроллом, текущий этап зажигается. Это порядок, не сроки.
+ * На узком экране дорожки складываются в ступенчатый список.
+ */
+function Sequence({ steps, stops }: { steps: ProcessStep[]; stops: string[] }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const lastIndex = useRef(-2)
+  const progress = useSectionProgress(ref, 0.86, 0.46)
+
+  const apply = useCallback(
+    (value: number) => {
+      const node = ref.current
+      if (!node) return
+      const count = steps.length
+      const index = value <= 0.001 ? -1 : Math.min(count - 1, Math.floor(value * count))
+      const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      // Сниженное движение: линия не ползёт, а встаёт на середину текущего этапа
+      const place = calm ? Math.max(0, (index + 0.5) / count) : value
+      node.style.setProperty('--p', place.toFixed(4))
+      if (index === lastIndex.current) return
+      lastIndex.current = index
+      node.querySelectorAll<HTMLElement>('[data-step]').forEach((item, position) => {
+        item.dataset.state = position < index ? 'done' : position === index ? 'now' : 'todo'
+      })
+    },
+    [steps.length]
+  )
+
+  useMotionValueEvent(progress, 'change', apply)
+  useEffect(() => apply(progress.get()), [apply, progress])
+
+  return (
+    <div ref={ref} className="dir-content-seq" style={{ '--n': steps.length } as CSSProperties}>
+      <div aria-hidden="true" className="dir-content-seq-lanes">
+        <i />
+        <i />
+        <i />
+        <i />
+      </div>
+      <div aria-hidden="true" className="dir-content-seq-ph">
+        <i />
+      </div>
+      <ol role="list" className="dir-content-seq-list">
+        {steps.map((step, position) => (
+          <li
+            key={step.number}
+            data-step=""
+            className="dir-content-seq-step"
+            style={
+              { '--lane': CONTENT_STAGE_LANES[position] ?? 0, '--i': position } as CSSProperties
+            }
+          >
+            <span
+              aria-hidden="true"
+              className="dir-content-seq-clip type-meta font-mono uppercase tabular-nums"
+            >
+              <b>{step.number}</b>
+              <span>{stops[position] ?? ''}</span>
+            </span>
+            <h3 className="dir-content-seq-title">{tight(step.title)}</h3>
+            <p className="dir-content-seq-text [text-wrap:pretty]">{tight(step.text)}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+}
+
+function Process({ index, title, lead }: { index: string; title: string; lead: string }) {
+  return (
+    <section
+      aria-labelledby="dir-content-process-title"
+      className="relative overflow-hidden border-t border-white/10 bg-[#060606] px-6 py-20 md:px-10 md:py-28 lg:px-20"
+    >
+      <div aria-hidden="true" className="dir-content-paper" />
+      <div className="relative grid gap-x-16 gap-y-6 lg:grid-cols-12 lg:items-end">
+        <div className="lg:col-span-7">
+          <p className={KIT_KICKER}>
+            <span aria-hidden="true" className="h-px w-8 bg-accent" />
+            {index} / Процесс
+          </p>
+          <h2
+            id="dir-content-process-title"
+            data-reveal=""
+            className={`${KIT_TITLE} ${KIT_TITLE_SIZE} mt-5`}
+          >
+            {head(title)}
+          </h2>
+        </div>
+        <p
+          data-reveal=""
+          className="max-w-md text-base leading-relaxed text-white/70 [text-wrap:pretty] md:text-lg lg:col-span-5"
+        >
+          {tight(lead)}
+        </p>
       </div>
 
-      <div aria-hidden="true" className="mx-1.5 mb-10 mt-14 md:mt-16">
-        <div className="dir-content-ribbon-rail">
-          {cta.stops.map((stop, index) => (
-            <span
-              key={stop}
-              className="dir-content-ribbon-dot"
-              data-first={index === 0}
-              style={{ left: `${(index / last) * 100}%` }}
-            />
-          ))}
-        </div>
-        <div className="relative mt-5 h-5">
-          {cta.stops.map((stop, index) => (
-            <span
-              key={stop}
-              className={cn(
-                'type-meta absolute top-0 whitespace-nowrap font-mono uppercase tabular-nums text-white/60',
-                index === 0 && 'text-white',
-                index === last && '-translate-x-full',
-                index > 0 && index < last && '-translate-x-1/2'
-              )}
-              style={{ left: `${(index / last) * 100}%` }}
+      <div className="relative mt-12 md:mt-16">
+        <Sequence steps={CONTENT_PAGE.process} stops={CONTENT_PAGE.cta.process.stops} />
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────────── 7. Вопросы ─────────────────────────── */
+
+/**
+ * Вопросы с мини-монитором: открытый вопрос подсвечивает свой кусок мастер-кадра.
+ * Аккордеон по APG (стрелки, Home, End), ответы лежат в DOM целиком. Классы
+ * разметки общие с китом направлений, тот же текст уходит в FAQPage.
+ */
+function Faq({
+  index,
+  title,
+  items,
+  frame,
+}: {
+  index: string
+  title: string
+  items: FaqItem[]
+  frame: Frame
+}) {
+  const page = useDirectionPage()
+  const baseId = useId()
+  const listRef = useRef<HTMLDivElement>(null)
+  const [open, setOpen] = useState<ReadonlySet<number>>(() => new Set([0]))
+  const [focused, setFocused] = useState(0)
+
+  const toggle = (position: number) => {
+    setOpen(prev => {
+      const next = new Set(prev)
+      if (next.has(position)) next.delete(position)
+      else next.add(position)
+      return next
+    })
+    setFocused(position)
+  }
+
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>, position: number) => {
+    const triggers = listRef.current?.querySelectorAll<HTMLButtonElement>('[data-faq-trigger]')
+    if (!triggers || triggers.length === 0) return
+    const last = triggers.length - 1
+    const target =
+      event.key === 'ArrowDown'
+        ? position === last
+          ? 0
+          : position + 1
+        : event.key === 'ArrowUp'
+          ? position === 0
+            ? last
+            : position - 1
+          : event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? last
+              : null
+    if (target === null) return
+    event.preventDefault()
+    triggers[target]?.focus()
+  }
+
+  const plan = CONTENT_PLAN[focused % CONTENT_PLAN.length] ?? CONTENT_PLAN[0]
+
+  return (
+    <section
+      aria-labelledby="dir-content-faq-title"
+      className="relative overflow-hidden border-t border-white/10 bg-[#000000] px-6 py-20 md:px-10 md:py-28 lg:px-20"
+    >
+      <div className="relative grid gap-10 lg:grid-cols-12 lg:gap-16">
+        <div className="lg:col-span-5">
+          <div className="lg:sticky lg:top-28">
+            <p className={KIT_KICKER}>
+              <span aria-hidden="true" className="h-px w-8 bg-accent" />
+              {index} / Вопросы
+            </p>
+            <h2
+              id="dir-content-faq-title"
+              data-reveal=""
+              className={`${KIT_TITLE} mt-5 text-[clamp(1.5rem,2.7vw,2.75rem)]`}
             >
-              {pad(index + 1)}
-              <span className="hidden sm:inline"> {stop}</span>
-            </span>
-          ))}
+              {head(title)}
+            </h2>
+
+            <div aria-hidden="true" className="dir-content-faqmon">
+              <p className="type-meta mb-3 flex items-center justify-between gap-4 font-mono uppercase tabular-nums text-white/60">
+                <span>
+                  Вопрос {pad(focused + 1)}
+                  <span className="mx-2.5 text-accent">/</span>
+                  {pad(items.length)}
+                </span>
+                <span>Мастер-кадр</span>
+              </p>
+              <MonitorView frame={frame} rect={plan.rect} tag={`Q${pad(focused + 1)}`} />
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-7">
+          <div ref={listRef}>
+            {items.map((item, position) => {
+              const isOpen = open.has(position)
+              const triggerId = `${baseId}-q${position}`
+              const panelId = `${baseId}-a${position}`
+              return (
+                <div key={item.question} data-open={isOpen} className="dir-kit-faq-item">
+                  <h3 className="m-0 text-inherit font-inherit">
+                    <button
+                      type="button"
+                      id={triggerId}
+                      data-faq-trigger=""
+                      aria-expanded={isOpen}
+                      aria-controls={panelId}
+                      onClick={() => toggle(position)}
+                      onKeyDown={event => onKeyDown(event, position)}
+                      className="dir-kit-faq-trigger"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="dir-kit-faq-idx type-meta font-mono uppercase tabular-nums"
+                      >
+                        {pad(position + 1)}
+                      </span>
+                      <span className="dir-kit-faq-q text-[clamp(1.125rem,1.7vw,1.5rem)] leading-[1.25] tracking-[-0.005em] [text-wrap:balance]">
+                        {tight(item.question)}
+                      </span>
+                      <span aria-hidden="true" className="dir-kit-faq-icon">
+                        <span className="dir-kit-faq-glyph" />
+                      </span>
+                    </button>
+                  </h3>
+                  <div
+                    id={panelId}
+                    role="region"
+                    aria-labelledby={triggerId}
+                    className="dir-kit-faq-panel"
+                  >
+                    <div>
+                      <p className="max-w-[40rem] pb-8 pl-[2.5rem] pr-12 text-[clamp(1rem,1.25vw,1.1875rem)] leading-[1.65] text-white/75 [text-wrap:pretty] md:pb-10 md:pl-[3.75rem] md:pr-16">
+                        {tight(item.answer)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 md:mt-10 md:pl-[3.75rem]">
+            <p className="text-sm text-white/60 md:text-base">
+              {tight('Нет вашего вопроса? Задайте его в брифе.')}
+            </p>
+            <button
+              type="button"
+              onClick={() => page.openBrief('faq')}
+              className="group type-meta inline-flex min-h-11 items-center gap-3 font-mono uppercase text-white underline decoration-white/30 underline-offset-[6px] transition-colors duration-[var(--motion-state)] hover:text-accent hover:decoration-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+            >
+              К брифу
+              <ArrowRight
+                aria-hidden="true"
+                className="h-3.5 w-3.5 transition-transform duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-hover:translate-x-1 motion-reduce:transition-none"
+              />
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -1196,7 +1745,35 @@ function ProcessCta() {
 
 /* ─────────────────────────── Страница ─────────────────────────── */
 
+/**
+ * Пока на экране один из смысловых призывов страницы, sticky-полоса каркаса
+ * уступает ему место: две белые кнопки подряд только мешают друг другу.
+ * Полосу каркаса скрывает CSS по data-cta-zone на корне страницы.
+ */
+function useCtaZone(ref: RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const root = ref.current
+    if (!root || typeof IntersectionObserver === 'undefined') return
+    const targets = root.querySelectorAll<HTMLElement>('[data-cta-zone-target]')
+    const visible = new Set<Element>()
+    const observer = new IntersectionObserver(
+      entries => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) visible.add(entry.target)
+          else visible.delete(entry.target)
+        }
+        root.dataset.ctaZone = String(visible.size > 0)
+      },
+      { rootMargin: '-12% 0px -12% 0px' }
+    )
+    targets.forEach(node => observer.observe(node))
+    return () => observer.disconnect()
+  }, [ref])
+}
+
 export function ContentPage({ works }: ContentPageProps) {
+  const rootRef = useRef<HTMLDivElement>(null)
+  useCtaZone(rootRef)
   const frames = interleaveFrames(works, 6)
   // Мастер-кадр — тот план ведущей работы, который выбран в раскадровке направления
   // (SERVICE_FRAMES), а не просто первый кадр галереи
@@ -1214,10 +1791,17 @@ export function ContentPage({ works }: ContentPageProps) {
   // Без работ раздел «Работы» не рисуется, номера следующих разделов сдвигаются
   const hasWorks = works.length > 0
   const end = CONTENT_PAGE.end
+  const processNo = hasWorks ? '05' : '04'
+  const faqNo = hasWorks ? '06' : '05'
+  // Строки вопроса склеиваются в textContent через пробел: блочные span без него
+  // читаются слитно, а пробел в конце блочной строки визуально схлопывается
+  const endLines = end.lines.map((line, position) =>
+    position < end.lines.length - 1 ? `${line} ` : line
+  )
 
   return (
     <DirectionShell id="content-production" stickyLabel={CONTENT_PAGE.stickyLabel}>
-      <div className="dir-content">
+      <div ref={rootRef} className="dir-content">
         <Hero frame={master} />
         <Nle frame={master} />
         <Splice from="01" to="02" />
@@ -1225,34 +1809,34 @@ export function ContentPage({ works }: ContentPageProps) {
         <Splice from="02" to="03" />
         <Audiences />
         {hasWorks ? (
-          <DirectionCredits
-            index="04"
-            title="Съёмки под поток материалов"
-            works={works}
-            note="Работы, из которых идёт регулярный контент"
-          />
+          <>
+            <Splice from="03" to="04" />
+            <Reel index="04" works={works} />
+          </>
         ) : null}
         <ProofCta />
-        <DirectionProcess
-          index={hasWorks ? '05' : '04'}
+        <Splice from={hasWorks ? '04' : '03'} to={processNo} />
+        <Process
+          index={processNo}
           title="Как планируем квартал"
           lead="Главное решение принимается до съёмки: какие материалы нужны и где они будут жить."
-          steps={CONTENT_PAGE.process}
         />
-        <ProcessCta />
-        <DirectionFaq
-          index={hasWorks ? '06' : '05'}
+        <ProcessCta frame={master} />
+        <Splice from={processNo} to={faqNo} />
+        <Faq
+          index={faqNo}
           title="Вопросы о регулярном продакшне"
           items={CONTENT_PAGE.faq}
+          frame={master}
         />
         <OtherDirections
           current="content-production"
           reading={DIRECTION_READING['content-production']}
         />
         <DirectionEnd
-          lines={end.lines}
+          lines={endLines}
           ctaLabel={end.ctaLabel}
-          note={end.note}
+          note={tight(end.note)}
           frame={closing ? { src: closing.src, alt: closing.client } : null}
         />
       </div>
