@@ -3,6 +3,7 @@
  */
 import { MetadataRoute } from 'next'
 import { apiGet } from '@/lib/api/server'
+import { SERVICE_DIRECTIONS } from '@/lib/services/directions'
 
 interface SitemapItem {
   slug: string
@@ -72,6 +73,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 0.9,
     },
+    /*
+     * Страницы направлений. Берутся из конфигурации и попадают в sitemap только
+     * когда направление опубликовано: коммерческое уже перечислено выше, а
+     * пустой индексируемый маршрут хуже его отсутствия.
+     */
+    ...SERVICE_DIRECTIONS.filter(
+      direction => direction.route.published && direction.id !== 'commercial'
+    ).map(direction => ({
+      url: `${baseUrl}${direction.route.path}`,
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    })),
     {
       url: `${baseUrl}/about`,
       changeFrequency: 'monthly',

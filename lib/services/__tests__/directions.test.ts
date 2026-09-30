@@ -4,6 +4,8 @@
  * она тихо уводит человека на несуществующий маршрут или теряет разметку
  * заявки, поэтому проверяется отдельно.
  */
+import { existsSync } from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -14,6 +16,8 @@ import {
   directionHref,
   getServiceDirection,
 } from '../directions'
+
+const ROOT = path.resolve(__dirname, '../../..')
 
 describe('Конфигурация направлений', () => {
   it('идентификаторы уникальны: по ним сводится аналитика и CRM', () => {
@@ -34,9 +38,20 @@ describe('Конфигурация направлений', () => {
     }
   })
 
-  it('ровно одно направление опубликовано — коммерческое', () => {
+  it('у каждого опубликованного направления есть страница маршрута', () => {
     const published = SERVICE_DIRECTIONS.filter(direction => direction.route.published)
-    expect(published.map(direction => direction.id)).toEqual(['commercial'])
+    expect(published).toHaveLength(SERVICE_DIRECTIONS.length)
+
+    for (const direction of published) {
+      const file = path.join(ROOT, 'app', '(marketing)', direction.route.path.slice(1), 'page.tsx')
+      expect(existsSync(file), `${direction.id}: нет ${file}`).toBe(true)
+    }
+  })
+
+  it('пути направлений уникальны и не совпадают с разделом услуг', () => {
+    const paths = SERVICE_DIRECTIONS.map(direction => direction.route.path)
+    expect(new Set(paths).size).toBe(paths.length)
+    expect(paths).not.toContain(SERVICES_PATH)
   })
 })
 
@@ -47,18 +62,23 @@ describe('directionHref', () => {
   })
 
   /**
-   * Главная защита спринта: пока страницы направления не существует, её путь
-   * не должен попасть в разметку ни при каких условиях. Иначе поиск получает
-   * набор 404, а человек — ссылку в никуда.
+   * Главная защита: пока страницы направления не существует, её путь не должен
+   * попасть в разметку ни при каких условиях. Иначе поиск получает набор 404,
+   * а человек — ссылку в никуда.
    */
   it('неопубликованное направление уводит в бриф, а не на будущий маршрут', () => {
-    const pending = SERVICE_DIRECTIONS.filter(direction => !direction.route.published)
-    expect(pending.length).toBeGreaterThan(0)
+    const pending = {
+      ...getServiceDirection('fashion')!,
+      route: { path: '/fashion-video', published: false },
+    }
+    const href = directionHref(pending)
+    expect(href).toBe(`${SERVICES_PATH}#${SERVICES_BRIEF_ANCHOR}`)
+    expect(href).not.toContain(pending.route.path)
+  })
 
-    for (const direction of pending) {
-      const href = directionHref(direction)
-      expect(href, direction.id).toBe(`${SERVICES_PATH}#${SERVICES_BRIEF_ANCHOR}`)
-      expect(href, direction.id).not.toContain(direction.route.path)
+  it('каждое опубликованное направление ведёт на свою страницу', () => {
+    for (const direction of SERVICE_DIRECTIONS) {
+      expect(directionHref(direction), direction.id).toBe(direction.route.path)
     }
   })
 })

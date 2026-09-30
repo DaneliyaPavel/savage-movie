@@ -14,7 +14,10 @@
  * route.published — публикуемость собственного маршрута. Пока false, ссылки
  * на path в разметке не появляется вовсе: пустой индексируемый лендинг хуже,
  * чем его отсутствие. CTA такого направления открывает бриф с предвыбранным
- * направлением, и заявка всё равно приходит размеченной.
+ * направлением, и заявка всё равно приходит размеченной. Сейчас у всех семи
+ * направлений есть собственная страница (app/(marketing)/<path>), у каждой
+ * своя композиция: reklamny-rolik собирается из CMS, остальные шесть — из
+ * lib/services/pages.
  */
 
 /** Идентификатор направления. Он же значение service_direction в заявке и в целях */
@@ -84,7 +87,7 @@ export const SERVICE_DIRECTIONS: readonly ServiceDirection[] = [
     index: '02',
     label: 'FASHION',
     title: 'Fashion-видео',
-    route: { path: '/fashion-video', published: false },
+    route: { path: '/fashion-video', published: true },
     meta: 'ZARINA / MAVIN / SENSUAL / NAUMI',
     ctaLabel: 'Обсудить съёмку коллекции',
     proofSlugs: ['zarina', 'mavin', 'sensual', 'naumi'],
@@ -96,7 +99,7 @@ export const SERVICE_DIRECTIONS: readonly ServiceDirection[] = [
     index: '03',
     label: 'BEAUTY',
     title: 'Beauty и предметная съёмка',
-    route: { path: '/beauty-video', published: false },
+    route: { path: '/beauty-video', published: true },
     meta: 'BIOTHERM / UNNA / YADAH / VERNEL',
     ctaLabel: 'Обсудить beauty-съёмку',
     proofSlugs: ['unna', 'yadah', 'vernel', 'biotherm'],
@@ -108,7 +111,7 @@ export const SERVICE_DIRECTIONS: readonly ServiceDirection[] = [
     index: '04',
     label: 'CONTENT',
     title: 'Регулярный продакшн',
-    route: { path: '/content-production', published: false },
+    route: { path: '/content-production', published: true },
     meta: 'НА КВАРТАЛ / ОТ 900 ТЫС. ₽',
     ctaLabel: 'Спланировать съёмки',
     proofSlugs: ['wellery', 'zarina', 'cherry'],
@@ -120,7 +123,7 @@ export const SERVICE_DIRECTIONS: readonly ServiceDirection[] = [
     index: '05',
     label: 'CORPORATE',
     title: 'Корпоративное видео',
-    route: { path: '/corporate-video', published: false },
+    route: { path: '/corporate-video', published: true },
     meta: 'WELLERY / СОВКОМБАНК / BEST WESTERN',
     ctaLabel: 'Обсудить фильм о компании',
     proofSlugs: ['sovkombank', 'wellery', 'best-western'],
@@ -132,7 +135,7 @@ export const SERVICE_DIRECTIONS: readonly ServiceDirection[] = [
     index: '06',
     label: 'AI',
     title: 'AI-видео',
-    route: { path: '/ai-video', published: false },
+    route: { path: '/ai-video', published: true },
     meta: 'AI + LIVE ACTION',
     ctaLabel: 'Обсудить AI-проект',
     proofSlugs: ['biotherm', 'wellery'],
@@ -144,7 +147,7 @@ export const SERVICE_DIRECTIONS: readonly ServiceDirection[] = [
     index: '07',
     label: 'MUSIC',
     title: 'Музыкальные клипы',
-    route: { path: '/music-video', published: false },
+    route: { path: '/music-video', published: true },
     meta: 'SOLDATOV / DRALO / СОВКОМБАНК',
     ctaLabel: 'Обсудить клип',
     proofSlugs: ['t9-soldatov', 'dralo', 'sovkombank'],
