@@ -309,13 +309,13 @@ export function MusicPage({ works }: MusicPageProps) {
       <Stages />
       <DirectionCredits index="04" title="Клипы" works={works} note="Музыкальные работы студии" />
       <DirectionFaq index="05" title="Вопросы о съёмке клипа" items={MUSIC_PAGE.faq} />
+      <OtherDirections current="music" reading={DIRECTION_READING['music']} />
       <DirectionEnd
         lines={['Какой', 'трек', 'снимаем?']}
         ctaLabel={MUSIC_PAGE.ctaLabel}
         note="Пришлите трек или идею — вернёмся с концепцией, форматом съёмки и предварительной оценкой."
         frame={closing ? { src: closing.src, alt: closing.client } : null}
       />
-      <OtherDirections current="music" reading={DIRECTION_READING['music']} />
     </DirectionShell>
   )
 }

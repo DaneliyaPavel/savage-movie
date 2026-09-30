@@ -299,15 +299,15 @@ export function ContentPage({ works }: ContentPageProps) {
         steps={CONTENT_PAGE.process}
       />
       <DirectionFaq index="09" title="Вопросы о регулярном продакшне" items={CONTENT_PAGE.faq} />
+      <OtherDirections
+        current="content-production"
+        reading={DIRECTION_READING['content-production']}
+      />
       <DirectionEnd
         lines={['Сколько', 'материалов', 'нужно?']}
         ctaLabel={CONTENT_PAGE.ctaLabel}
         note="Расскажите про контент-план и площадки — вернёмся с форматом съёмки и предварительной оценкой."
         frame={closing ? { src: closing.src, alt: closing.client } : null}
-      />
-      <OtherDirections
-        current="content-production"
-        reading={DIRECTION_READING['content-production']}
       />
     </DirectionShell>
   )

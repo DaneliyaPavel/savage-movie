@@ -327,13 +327,13 @@ export function FashionPage({ works }: FashionPageProps) {
         steps={FASHION_PAGE.process}
       />
       <DirectionFaq index="06" title="Вопросы о fashion-видео" items={FASHION_PAGE.faq} />
+      <OtherDirections current="fashion" reading={DIRECTION_READING['fashion']} />
       <DirectionEnd
         lines={['Какая', 'коллекция', 'следующая?']}
         ctaLabel={FASHION_PAGE.ctaLabel}
         note="Расскажите про коллекцию и площадки — вернёмся с форматом съёмки и ориентиром по бюджету."
         frame={closing ? { src: closing.src, alt: closing.client } : null}
       />
-      <OtherDirections current="fashion" reading={DIRECTION_READING['fashion']} />
     </DirectionShell>
   )
 }

@@ -293,13 +293,13 @@ export function BeautyPage({ works }: BeautyPageProps) {
         steps={BEAUTY_PAGE.process}
       />
       <DirectionFaq index="07" title="Вопросы о beauty-видео" items={BEAUTY_PAGE.faq} />
+      <OtherDirections current="beauty" reading={DIRECTION_READING['beauty']} />
       <DirectionEnd
         lines={['Какой продукт', 'снимаем?']}
         ctaLabel={BEAUTY_PAGE.ctaLabel}
         note="Расскажите про продукт и площадки — вернёмся с форматом съёмки и ориентиром по бюджету."
         frame={closing ? { src: closing.src, alt: closing.client } : null}
       />
-      <OtherDirections current="beauty" reading={DIRECTION_READING['beauty']} />
     </DirectionShell>
   )
 }

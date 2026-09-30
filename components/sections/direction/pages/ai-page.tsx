@@ -353,13 +353,13 @@ export function AiPage({ works }: AiPageProps) {
         steps={AI_PAGE.process}
       />
       <DirectionFaq index="06" title="Вопросы об AI-видео" items={AI_PAGE.faq} />
+      <OtherDirections current="ai" reading={DIRECTION_READING['ai']} />
       <DirectionEnd
         lines={['Что нельзя', 'снять камерой?']}
         ctaLabel={AI_PAGE.ctaLabel}
         note="Расскажите задачу — скажем, где нужна генерация, а где лучше снять."
         frame={closing ? { src: closing.src, alt: closing.client } : null}
       />
-      <OtherDirections current="ai" reading={DIRECTION_READING['ai']} />
     </DirectionShell>
   )
 }

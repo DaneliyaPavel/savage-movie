@@ -352,13 +352,13 @@ export function CorporatePage({ works }: CorporatePageProps) {
         steps={CORPORATE_PAGE.process}
       />
       <DirectionFaq index="06" title="Вопросы о корпоративном видео" items={CORPORATE_PAGE.faq} />
+      <OtherDirections current="corporate" reading={DIRECTION_READING['corporate']} />
       <DirectionEnd
         lines={['О чём', 'расскажем', 'про вас?']}
         ctaLabel={CORPORATE_PAGE.ctaLabel}
         note="Расскажите, кому и где будете показывать фильм — вернёмся с форматом, этапами и предварительной оценкой."
         frame={closing ? { src: closing.src, alt: closing.client } : null}
       />
-      <OtherDirections current="corporate" reading={DIRECTION_READING['corporate']} />
     </DirectionShell>
   )
 }
