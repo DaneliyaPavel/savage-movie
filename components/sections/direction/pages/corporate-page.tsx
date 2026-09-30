@@ -5,27 +5,28 @@
  * самый медленный и спокойный язык из шести страниц: корпоративный заказчик
  * покупает ясность и предсказуемость, а не эффект.
  *
- * Первый экран — открывающие титры. Кадр раскрывается из линии леттербокса,
- * строки названия приходят ступенями, по нижней линейке сам идёт плейхед с
- * тайм-кодом и на границах глав жёстко меняет кадр. Курсор над главой (или
- * фокус с клавиатуры) перематывает кадр, касание ведёт к главе; колёсико и
- * палец двигают кадр по скроллу.
+ * Первый экран — открывающие титры. На чёрном проводится красная линия, из неё
+ * раскрывается кадр (леттербокс), и только тогда идёт тайм-код с 00:00:00:00;
+ * по нижней кромке кадра тонкой строкой бежит титр, по линейке сам идёт плейхед
+ * и на границах глав жёстко меняет кадр. Курсор над главой (или фокус с
+ * клавиатуры) перематывает кадр, касание ведёт к главе; при прокрутке полосы
+ * леттербокса сходятся, как перед финальными титрами.
  *
  * Дальше: вступление, которое «проявляется» слово за словом; главы на
- * закреплённой сцене (кадр, крупный номер и линейка меняются с прокруткой,
- * текст читается всегда); переключатель «для кого фильм» с живой сменой
- * кадра, текста и монтажной дорожки; работы тремя разными разворотами;
- * призыв-«хлопушка»; лист согласований на бумаге; этапы на одной дорожке,
- * которая дорисовывается до кнопки; плёнка из стопкадров; вопросы с кадром.
+ * закреплённой сцене (кадр, титр-карта с номером и тайм-кодом меняются с
+ * прокруткой, справа — только название, абзац и «В кадре»); переключатель «для
+ * кого фильм» с живой сменой кадра, текста и монтажной дорожки; работы тремя
+ * разными разворотами; призыв-«хлопушка»; один светлый лист «Этапы и
+ * согласования» с дорожкой до конца и списком того, что нужно от компании;
+ * плёнка из стопкадров; вопросы с кадром.
  *
  * Движение: только transform, clip-path и opacity декора. Текст физически
  * в разметке и виден с первого кадра (вход — сдвиг на десяток пикселей).
- * Бесконечные вещи — наезд кадра и ход плейхеда — стоят, пока первый экран
- * вне экрана, и выключены при prefers-reduced-motion; бегущий титр финала
- * общего блока ждёт своего появления на экране (см. EndGuard).
+ * Бесконечные вещи — наезд кадра, бегущий титр и ход плейхеда — стоят, пока
+ * первый экран вне экрана, и выключены при prefers-reduced-motion.
  *
  * Если работ из портфолио нет, каждая секция остаётся целой: вместо кадров —
- * чертёжная плашка с сеткой и крупным номером главы.
+ * чертёжная плашка с сеткой.
  */
 'use client'
 
@@ -55,7 +56,6 @@ import {
 } from 'framer-motion'
 import { ArrowDown, ArrowRight, ArrowUpRight } from 'lucide-react'
 
-import { useMenu } from '@/components/ui/menu-context'
 import { cn } from '@/lib/utils'
 import { DIRECTION_READING } from '@/lib/services/pages'
 import { CORPORATE_PAGE } from '@/lib/services/pages/content/corporate'
@@ -67,7 +67,15 @@ import {
 import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
 import { DirectionEnd } from '../direction-end'
-import { KIT_TITLE, KIT_TITLE_SIZE, typo } from '../direction-kit'
+import { DirectionFaq } from '../direction-faq'
+import {
+  DirectionButton,
+  KIT_KICKER,
+  KIT_TITLE,
+  KIT_TITLE_SIZE,
+  setTitle,
+  typo,
+} from '../direction-kit'
 import { OtherDirections } from '../other-directions'
 import { Still } from '../still'
 import '../direction-kit.css'
@@ -79,35 +87,6 @@ export interface CorporatePageProps {
 
 const pad = (value: number) => String(value).padStart(2, '0')
 const delay = (ms: number) => ({ '--dc-d': `${ms}ms` }) as CSSProperties
-
-const NBSP = '\u00A0'
-// Слово до трёх букв не остаётся последним в строке. typo() из кита склеивает
-// только каждое второе слово цепочки («тон и состав» — «и» повисает), поэтому
-// связка идёт по словам: короткое всегда держится за следующим
-const SHORT_WORD = /^[«("'—–]*[A-Za-zА-Яа-яЁё]{1,3},?$/
-
-function tidy(text: string): string {
-  const words = text.split(' ')
-  const tied = words
-    .map((word, position) => {
-      if (position === words.length - 1) return word
-      return SHORT_WORD.test(word) ? `${word}${NBSP}` : `${word} `
-    })
-    .join('')
-  return typo(tied)
-}
-
-/** Заголовок раздела: слова с дефисом не рвутся, короткие слова держатся за соседом */
-function headline(text: string): ReactNode {
-  return tidy(text)
-    .split(' ')
-    .map((word, position) => (
-      <span key={`${word}-${position}`}>
-        {position > 0 ? ' ' : ''}
-        {word.includes('-') ? <span className="whitespace-nowrap">{word}</span> : word}
-      </span>
-    ))
-}
 
 const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
 
@@ -229,14 +208,9 @@ function Reframe({ crop, children }: { crop: number; children: ReactNode }) {
 /* ───────────────────────────── Мелочи набора ───────────────────────────── */
 
 /** Строка-метка раздела: красная риска, номер и название, как в остальном киту */
-function Kicker({ children, light = false }: { children: ReactNode; light?: boolean }) {
+function Kicker({ children, paper = false }: { children: ReactNode; paper?: boolean }) {
   return (
-    <p
-      className={cn(
-        'type-meta flex items-center gap-3 font-mono uppercase tabular-nums',
-        light ? 'text-black/70' : 'text-white/70'
-      )}
-    >
+    <p className={cn(KIT_KICKER, paper && 'dir-corporate-kicker-paper')}>
       <span aria-hidden="true" className="h-px w-8 bg-accent" />
       {children}
     </p>
@@ -244,14 +218,14 @@ function Kicker({ children, light = false }: { children: ReactNode; light?: bool
 }
 
 /** Угловые засечки рамки кадра, как на визире камеры */
-function Marks() {
+function Marks({ cross = true }: { cross?: boolean }) {
   return (
     <>
       <span aria-hidden="true" className="dir-corporate-mark" data-c="tl" />
       <span aria-hidden="true" className="dir-corporate-mark" data-c="tr" />
       <span aria-hidden="true" className="dir-corporate-mark" data-c="bl" />
       <span aria-hidden="true" className="dir-corporate-mark" data-c="br" />
-      <span aria-hidden="true" className="dir-corporate-cross" />
+      {cross ? <span aria-hidden="true" className="dir-corporate-cross" /> : null}
     </>
   )
 }
@@ -266,7 +240,7 @@ function Splice({ label }: { label: string }) {
     >
       <span className="dir-corporate-splice-line" />
       <span className="dir-corporate-splice-node" />
-      <span className="type-meta font-mono uppercase text-white/65">{label}</span>
+      <span className="dir-kit-meta font-mono uppercase text-white/65">{label}</span>
     </div>
   )
 }
@@ -276,8 +250,6 @@ function Splice({ label }: { label: string }) {
 interface RulerProps {
   chapters: Chapter[]
   active: number
-  /** Метка тайм-кода над головкой: на первом экране есть, в закреплённой сцене нет */
-  timecode?: boolean
   onEnter?: (index: number) => void
   onLeave?: () => void
   rulerRef?: React.RefObject<HTMLDivElement | null>
@@ -289,17 +261,9 @@ interface RulerProps {
  * и головка воспроизведения. Главы — настоящие ссылки на якоря: Enter ведёт к
  * главе, фокус и наведение мыши только перематывают кадр.
  */
-function Ruler({
-  chapters,
-  active,
-  timecode = false,
-  onEnter,
-  onLeave,
-  rulerRef,
-  children,
-}: RulerProps) {
+function Ruler({ chapters, active, onEnter, onLeave, rulerRef, children }: RulerProps) {
   return (
-    <div ref={rulerRef} className="dir-corporate-ruler" data-label={timecode ? 'tc' : 'none'}>
+    <div ref={rulerRef} className="dir-corporate-ruler">
       <span aria-hidden="true" className="dir-corporate-ruler-ticks" />
       <ol role="list" className="dir-corporate-ruler-cells">
         {chapters.map((chapter, index) => (
@@ -318,10 +282,10 @@ function Ruler({
                 if (event.currentTarget.matches(':focus-visible')) onEnter?.(index)
               }}
               onBlur={() => onLeave?.()}
-              className="dir-corporate-cell type-meta font-mono uppercase"
+              className="dir-corporate-cell dir-kit-meta font-mono uppercase"
             >
               <span className="dir-corporate-cell-idx">{chapter.number}</span>{' '}
-              <span className="dir-corporate-cell-name">{tidy(chapter.title)}</span>
+              <span className="dir-corporate-cell-name">{typo(chapter.title)}</span>
             </a>
           </li>
         ))}
@@ -335,6 +299,10 @@ function Ruler({
 
 /** Секунд на главу: медленный ход, цикл из четырёх глав — 26 секунд */
 const REEL_SECONDS = 6.5
+/** Счёт идёт после раскрытия кадра: первый видимый кадр показывает 00:00:00:00 */
+const REEL_START_MS = 900
+/** Полосы леттербокса сходятся с прокруткой: до какой доли высоты кадр закрывается */
+const LETTERBOX_CLOSE = '12%'
 
 function reelTimecode(seconds: number): string {
   const whole = Math.floor(seconds)
@@ -345,6 +313,7 @@ function reelTimecode(seconds: number): string {
 function Hero({ chapters }: { chapters: Chapter[] }) {
   const page = useDirectionPage()
   const reduced = useReduced()
+  const hero = CORPORATE_PAGE.hero
   const count = chapters.length
   const rootRef = useRef<HTMLElement>(null)
   const rulerRef = useRef<HTMLDivElement>(null)
@@ -354,7 +323,7 @@ function Hero({ chapters }: { chapters: Chapter[] }) {
   const [armed, setArmed] = useState(false)
   const [live, setLive] = useState(true)
   // Состояние хода живёт в ref: головка и тайм-код двигаются без перерисовки React
-  const reel = useRef({ pos: 0, hold: false, visible: true, raf: 0, last: 0, index: 0 })
+  const reel = useRef({ pos: 0, hold: false, visible: true, raf: 0, last: 0, index: 0, from: 0 })
   const controls = useRef<{ start: () => void; stop: () => void }>({
     start: () => {},
     stop: () => {},
@@ -363,10 +332,7 @@ function Hero({ chapters }: { chapters: Chapter[] }) {
   const paint = useCallback(() => {
     const { pos } = reel.current
     const head = headRef.current
-    if (head) {
-      head.style.transform = `translate3d(${pos * 100}%, 0, 0)`
-      head.dataset.flip = String(pos > 0.84)
-    }
+    if (head) head.style.transform = `translate3d(${pos * 100}%, 0, 0)`
     if (tcRef.current) tcRef.current.textContent = reelTimecode(pos * REEL_SECONDS * count)
   }, [count])
 
@@ -411,7 +377,14 @@ function Hero({ chapters }: { chapters: Chapter[] }) {
   // вкладке, под курсором и при сниженном движении
   useEffect(() => {
     const r = reel.current
+    r.from = performance.now() + REEL_START_MS
     const step = (now: number) => {
+      // Пока кадр раскрывается, тайм-код стоит на нуле
+      if (now < r.from) {
+        r.last = now
+        r.raf = requestAnimationFrame(step)
+        return
+      }
       const dt = r.last ? Math.min(now - r.last, 80) : 0
       r.last = now
       r.pos = (r.pos + dt / 1000 / (REEL_SECONDS * count)) % 1
@@ -487,6 +460,10 @@ function Hero({ chapters }: { chapters: Chapter[] }) {
     values => (values[0] as number) + (values[1] as number)
   )
   const scale = useTransform(scrollY, [0, 800], reduced ? [1, 1] : [1.1, 1.16])
+  // Полосы леттербокса сходятся к центру, пока первый экран уходит: как перед финальными титрами
+  const open = 'inset(0% 0% 0% 0%)'
+  const closed = `inset(${LETTERBOX_CLOSE} 0% ${LETTERBOX_CLOSE} 0%)`
+  const clipPath = useTransform(scrollY, [0, 700], reduced ? [open, open] : [open, closed])
 
   const onPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
     if (reduced || event.pointerType !== 'mouse') return
@@ -510,56 +487,92 @@ function Hero({ chapters }: { chapters: Chapter[] }) {
       className="dir-corporate-hero"
     >
       <div aria-hidden="true" className="dir-corporate-hero-frame">
-        <motion.div style={{ x: springX, y, scale }} className="absolute inset-0">
-          <div className="dir-corporate-hero-push">
-            {chapters.some(chapter => chapter.src) ? (
-              chapters.map((chapter, index) =>
-                chapter.src && (index === 0 || armed) ? (
-                  <div
-                    key={chapter.number}
-                    className="dir-corporate-hero-still"
-                    data-on={index === active}
-                  >
-                    <Still
-                      src={chapter.src}
-                      alt=""
-                      priority={index === 0}
-                      sizes="100vw"
-                      className="h-full w-full"
-                    />
-                  </div>
-                ) : null
-              )
-            ) : (
-              <div className="dir-corporate-stage-plate" />
-            )}
-          </div>
+        <motion.div style={{ clipPath }} className="absolute inset-0">
+          <motion.div style={{ x: springX, y, scale }} className="absolute inset-0">
+            <div className="dir-corporate-hero-push">
+              {chapters.some(chapter => chapter.src) ? (
+                chapters.map((chapter, index) =>
+                  chapter.src && (index === 0 || armed) ? (
+                    <div
+                      key={chapter.number}
+                      className="dir-corporate-hero-still"
+                      data-on={index === active}
+                    >
+                      <Still
+                        src={chapter.src}
+                        alt=""
+                        priority={index === 0}
+                        sizes="100vw"
+                        className="h-full w-full"
+                      />
+                    </div>
+                  ) : null
+                )
+              ) : (
+                <div className="dir-corporate-stage-plate" />
+              )}
+            </div>
+          </motion.div>
         </motion.div>
         <span className="dir-corporate-hero-light" />
         <span className="dir-corporate-hero-scrim" />
+        {/* Красная линия-щель: из неё раскрывается кадр */}
+        <span className="dir-corporate-slit" />
+        <Marks cross={false} />
+        {/* Окно визира: запись и тайм-код, счёт пошёл после раскрытия кадра */}
+        <div className="dir-corporate-hud">
+          <span className="dir-corporate-hud-dot" />
+          <span className="dir-kit-meta font-mono uppercase">TC</span>
+          <span ref={tcRef} className="dir-kit-meta font-mono tabular-nums">
+            00:00:00:00
+          </span>
+        </div>
+        {current?.client ? (
+          <p className="dir-corporate-hud-credit dir-kit-meta font-mono uppercase">
+            Кадр из портфолио · {current.client}
+          </p>
+        ) : null}
       </div>
       <span aria-hidden="true" className="dir-corporate-hero-edge" data-side="top" />
       <span aria-hidden="true" className="dir-corporate-hero-edge" data-side="bottom" />
 
+      {/* Тонкий бегущий титр по нижней кромке кадра: только то, что уже есть на странице */}
+      <div aria-hidden="true" className="dir-corporate-credits">
+        <div className="dir-corporate-credits-track">
+          {[0, 1, 2, 3].map(half => (
+            <span key={half} className="dir-corporate-credits-run">
+              {CORPORATE_PAGE.credits.map(item => (
+                <span key={item} className="dir-corporate-credits-item dir-kit-meta font-mono">
+                  {item}
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
+      </div>
+
       <div className="dir-corporate-hero-body">
         <div>
-          <div
-            className="dir-corporate-rise type-meta flex items-center justify-between gap-6 font-mono uppercase text-white/75"
-            style={delay(620)}
-          >
-            <span className="flex items-center gap-3">
-              <span
-                aria-hidden="true"
-                className="dir-corporate-draw h-px w-8 bg-accent"
-                style={delay(520)}
-              />
-              Savage Movie представляет
+          <p className={cn('dir-corporate-rise', KIT_KICKER, 'text-white/75')} style={delay(520)}>
+            <span
+              aria-hidden="true"
+              className="dir-corporate-draw h-px w-8 bg-accent"
+              style={delay(420)}
+            />
+            <span className="[text-wrap:balance]">
+              {hero.kicker.split(' · ').map((part, position, parts) => (
+                <span key={part}>
+                  {position > 0 ? ' ' : null}
+                  <span className="whitespace-nowrap">
+                    {typo(part)}
+                    {position < parts.length - 1 ? ' ·' : null}
+                  </span>
+                </span>
+              ))}
             </span>
-            <span className="dir-corporate-plate hidden lg:inline">
-              05 / Corporate · Санкт-Петербург · Москва · по России
-            </span>
-          </div>
+          </p>
 
+          {/* H1 — только название: лид лежит отдельным абзацем и не попадает в заголовок */}
           <h1 className="mt-6 font-stage uppercase leading-[0.86] tracking-[-0.04em] text-white md:mt-8">
             <span
               className="dir-corporate-rise block text-[min(20vw,5.4rem)] md:text-[clamp(4.5rem,9.4vw,9.75rem)]"
@@ -571,7 +584,7 @@ function Hero({ chapters }: { chapters: Chapter[] }) {
               className="dir-corporate-rise block text-[clamp(2.4rem,11.2vw,4.5rem)] md:text-[clamp(4.5rem,9.4vw,9.75rem)]"
               style={delay(370)}
             >
-              {tidy('о компании')}
+              {typo('о компании')}
             </span>
           </h1>
 
@@ -579,24 +592,18 @@ function Hero({ chapters }: { chapters: Chapter[] }) {
             className="dir-corporate-rise mt-6 max-w-[32rem] text-[1.0625rem] font-light leading-snug text-white/85 [text-wrap:pretty] md:mt-8 md:text-xl"
             style={delay(560)}
           >
-            {tidy(
-              'Корпоративное видео о производстве, технологиях и людях — для клиентов, партнёров и будущих сотрудников'
-            )}
+            {typo(hero.lead)}
           </p>
 
           <div
             className="dir-corporate-rise mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8"
             style={delay(700)}
           >
-            <button
-              type="button"
+            <DirectionButton
+              label={CORPORATE_PAGE.ctaLabel}
               onClick={() => page.openBrief('hero')}
-              className="dir-corporate-cta inline-flex min-h-14 w-full items-center justify-between gap-6 rounded-sm bg-white px-7 py-4 text-left text-base font-medium text-black sm:w-auto sm:justify-center"
-            >
-              <span className="dir-corporate-cta-label">{CORPORATE_PAGE.ctaLabel}</span>
-              <ArrowRight aria-hidden="true" className="dir-corporate-cta-arrow h-4 w-4 shrink-0" />
-              <span aria-hidden="true" className="dir-corporate-cta-curtain" />
-            </button>
+              className="w-full sm:w-auto sm:min-w-[19rem]"
+            />
             <a href="#chapters" className="dir-corporate-link text-base">
               Четыре главы фильма
               <ArrowDown aria-hidden="true" className="dir-corporate-link-icon h-4 w-4" />
@@ -605,36 +612,23 @@ function Hero({ chapters }: { chapters: Chapter[] }) {
         </div>
       </div>
 
-      <div aria-hidden="true" className="dir-corporate-hero-caption">
-        <p className="dir-corporate-plate hidden md:block">
-          Глава {current?.number} · {tidy(current?.title ?? '')}
-        </p>
-        {current?.client ? (
-          <p className="dir-corporate-plate hidden lg:block">
-            Кадр из портфолио · {current.client}
-          </p>
-        ) : null}
-      </div>
-
       <div className="dir-corporate-hero-bar">
-        <p aria-hidden="true" className="dir-corporate-now type-meta font-mono uppercase md:hidden">
+        <p
+          aria-hidden="true"
+          className="dir-corporate-now dir-kit-meta font-mono uppercase md:hidden"
+        >
           <span className="text-accent">Глава {current?.number}</span>
-          <span> · {tidy(current?.title ?? '')}</span>
+          <span> · {typo(current?.title ?? '')}</span>
         </p>
         <nav aria-label="Главы фильма">
           <Ruler
             chapters={chapters}
             active={active}
-            timecode
             onEnter={hold}
             onLeave={release}
             rulerRef={rulerRef}
           >
-            <span ref={headRef} aria-hidden="true" className="dir-corporate-ruler-head">
-              <span ref={tcRef} className="dir-corporate-ruler-tc type-meta font-mono">
-                00:00:00:00
-              </span>
-            </span>
+            <span ref={headRef} aria-hidden="true" className="dir-corporate-ruler-head" />
           </Ruler>
         </nav>
       </div>
@@ -670,8 +664,8 @@ function Statement() {
   const ref = useRef<HTMLElement>(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.85', 'end 0.5'] })
   const ruleScale = useTransform(scrollYProgress, [0, 1], [0, 1])
-  const lead = tidy(CORPORATE_PAGE.statement.lead).split(' ')
-  const tail = tidy(CORPORATE_PAGE.statement.tail).split(' ')
+  const lead = typo(CORPORATE_PAGE.statement.lead).split(' ')
+  const tail = typo(CORPORATE_PAGE.statement.tail).split(' ')
   const total = lead.length + tail.length
 
   const words = (list: string[], offset: number) =>
@@ -691,7 +685,7 @@ function Statement() {
     <section
       ref={ref}
       aria-label="Принцип работы"
-      className="relative bg-black px-6 pb-24 pt-28 md:px-10 md:pb-36 md:pt-44 lg:px-20"
+      className="relative bg-black px-6 pb-16 pt-20 md:px-10 md:pb-36 md:pt-44 lg:px-20"
     >
       <div className="grid gap-x-10 gap-y-8 lg:grid-cols-12">
         <div className="lg:col-span-2">
@@ -718,92 +712,10 @@ function Statement() {
 
 /* ───────────────────────────── Главы ───────────────────────────── */
 
-/** Схемы глав — тонкая производственная графика; контур 1px при любом масштабе */
-const diamond = (cx: number, cy: number, r: number) =>
-  `M${cx} ${cy - r} L${cx + r} ${cy} L${cx} ${cy + r} L${cx - r} ${cy} Z`
-
-function Schematic({ index }: { index: number }) {
-  let body: ReactNode
-  if (index === 0) {
-    // Производство: конвейер, упаковки на ленте, готовая — красная
-    const ticks = Array.from({ length: 21 }, (_, i) => `M${i * 24} 98 v6`).join(' ')
-    body = (
-      <>
-        <path data-stroke d="M0 84 H480 M0 92 H480" />
-        <path data-stroke d={ticks} />
-        <circle data-fill cx="10" cy="88" r="5" />
-        <circle data-fill cx="470" cy="88" r="5" />
-        <rect data-fill x="36" y="50" width="40" height="34" />
-        <rect data-fill x="132" y="50" width="40" height="34" />
-        <rect data-accent x="228" y="50" width="40" height="34" />
-        <path
-          data-stroke
-          d="M82 67 H124 M118 63 L124 67 L118 71 M178 67 H220 M214 63 L220 67 L214 71"
-        />
-        <path data-stroke d="M276 67 H316" strokeDasharray="3 4" />
-        <rect data-stroke x="324" y="36" width="60" height="48" strokeDasharray="4 4" />
-      </>
-    )
-  } else if (index === 1) {
-    // Технологии: схема с узлами; один узел — точка внимания
-    body = (
-      <>
-        <path data-stroke d="M20 88 H84 V34 H150 H222 V88 H290 H354 V34 H440 M440 34 V88 H468" />
-        <path data-stroke d="M84 34 V12 H150 M354 34 V12 H396" strokeDasharray="3 4" />
-        <rect data-fill x="14" y="82" width="12" height="12" />
-        <rect data-fill x="144" y="28" width="12" height="12" />
-        <rect data-accent x="284" y="82" width="12" height="12" />
-        <rect data-fill x="434" y="28" width="12" height="12" />
-        <circle data-fill cx="84" cy="34" r="3.5" />
-        <circle data-fill cx="222" cy="88" r="3.5" />
-        <circle data-fill cx="354" cy="34" r="3.5" />
-      </>
-    )
-  } else if (index === 2) {
-    // Люди: кадрирование интервью — треть, линия глаз, контур плеч
-    body = (
-      <>
-        <path data-stroke d="M0 60 H140 M340 60 H480" />
-        <rect data-stroke x="150" y="8" width="180" height="104" />
-        <path
-          data-stroke
-          d="M210 8 V112 M270 8 V112 M150 43 H330 M150 77 H330"
-          strokeDasharray="2 5"
-        />
-        <ellipse data-stroke cx="210" cy="56" rx="15" ry="19" />
-        <path data-stroke d="M174 112 C174 90 190 80 210 80 C230 80 246 90 246 112" />
-        <path data-accent d="M196 43 H224" />
-        <circle data-accent cx="162" cy="20" r="3" />
-      </>
-    )
-  } else {
-    // История: отметки на шкале времени, каждая крупнее предыдущей
-    body = (
-      <>
-        <path data-stroke d="M0 76 H480" />
-        <path data-stroke d="M40 76 V96 M140 76 V96 M240 76 V96 M340 76 V96 M440 76 V96" />
-        <path data-fill d={diamond(40, 76, 6)} />
-        <path data-fill d={diamond(140, 76, 8)} />
-        <path data-fill d={diamond(240, 76, 10)} />
-        <path data-fill d={diamond(340, 76, 12)} />
-        <path data-accent d={diamond(440, 76, 15)} />
-        <path data-stroke d="M440 61 V20 H480" />
-      </>
-    )
-  }
-
-  return (
-    <div data-reveal="" className="dir-corporate-schematic" aria-hidden="true">
-      <svg viewBox="0 0 480 120" focusable="false">
-        {body}
-      </svg>
-    </div>
-  )
-}
-
 function Chapters({ chapters }: { chapters: Chapter[] }) {
   const trackRef = useRef<HTMLDivElement>(null)
   const panelRefs = useRef<(HTMLLIElement | null)[]>([])
+  const tcRef = useRef<HTMLSpanElement>(null)
   const activeRef = useRef(0)
   const [active, setActive] = useState(0)
   const [previous, setPrevious] = useState(-1)
@@ -842,10 +754,15 @@ function Chapters({ chapters }: { chapters: Chapter[] }) {
   })
 
   // Прыжок мимо всей секции (End, перетаскивание ползунка) не задевает ни одну панель:
-  // на краях дорожки выбираем крайнюю главу по прогрессу, чтобы линейка не врала
+  // на краях дорожки выбираем крайнюю главу по прогрессу, чтобы линейка не врала.
+  // Тайм-код титр-карты идёт с прокруткой и пишется в узел напрямую, без перерисовки
   useMotionValueEvent(scrollYProgress, 'change', value => {
     if (value >= 0.995) choose(count - 1)
     else if (value <= 0.005) choose(0)
+    if (tcRef.current) {
+      const clamped = Math.min(1, Math.max(0, value))
+      tcRef.current.textContent = reelTimecode(clamped * REEL_SECONDS * count)
+    }
   })
 
   const current = chapters[active] ?? chapters[0]
@@ -856,7 +773,7 @@ function Chapters({ chapters }: { chapters: Chapter[] }) {
       aria-labelledby="dir-corporate-chapters-title"
       className="dir-corporate-chapters"
     >
-      <div className="relative z-[1] px-6 pb-14 pt-24 md:px-10 md:pb-20 md:pt-32 lg:px-20">
+      <div className="relative z-[1] px-6 pb-10 pt-16 md:px-10 md:pb-20 md:pt-32 lg:px-20">
         <Kicker>02 / Структура фильма</Kicker>
         <h2
           id="dir-corporate-chapters-title"
@@ -866,12 +783,15 @@ function Chapters({ chapters }: { chapters: Chapter[] }) {
             'mt-5 max-w-[14ch] text-[clamp(2.1rem,5.6vw,5.25rem)] leading-[0.94]'
           )}
         >
-          {headline('Фильм из четырёх глав')}
+          {setTitle('Фильм из четырёх глав')}
         </h2>
       </div>
 
+      {/* Закреплённая сцена занимает экран целиком, плавающая кнопка сметы на десктопе
+          легла бы на правую колонку: пока сцена на экране, она скрыта */}
       <div
         ref={trackRef}
+        data-sticky-hide="desktop"
         className="relative z-[1] lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]"
       >
         {/* Закреплённая сцена: только на широком экране, на телефоне кадры в самих главах */}
@@ -903,12 +823,6 @@ function Chapters({ chapters }: { chapters: Chapter[] }) {
               <span aria-hidden="true" className="dir-corporate-stage-shade" />
               <Marks />
 
-              <p
-                aria-hidden="true"
-                className="dir-corporate-plate absolute left-6 top-6 z-[5] lg:left-20"
-              >
-                Глава {current?.number} / {pad(count)}
-              </p>
               {current?.client ? (
                 <p
                   aria-hidden="true"
@@ -918,14 +832,27 @@ function Chapters({ chapters }: { chapters: Chapter[] }) {
                 </p>
               ) : null}
 
-              <div aria-hidden="true" className="dir-corporate-roll">
-                <span className="block h-[1em] flex-none">0</span>
-                <span className="dir-corporate-roll-col" style={{ '--i': active } as CSSProperties}>
-                  {chapters.map(chapter => (
-                    <span key={chapter.number}>{chapter.number.slice(-1)}</span>
-                  ))}
-                </span>
-                <span className="dir-corporate-roll-of">/ {pad(count)}</span>
+              {/* Титр-карта: номер главы прокручивается колонкой, рядом тайм-код идёт с прокруткой */}
+              <div aria-hidden="true" className="dir-corporate-card">
+                <div className="dir-corporate-roll">
+                  <span className="block h-[1em] flex-none">0</span>
+                  <span
+                    className="dir-corporate-roll-col"
+                    style={{ '--i': active } as CSSProperties}
+                  >
+                    {chapters.map(chapter => (
+                      <span key={chapter.number}>{chapter.number.slice(-1)}</span>
+                    ))}
+                  </span>
+                </div>
+                <div className="dir-corporate-card-side">
+                  <span className="dir-kit-meta font-mono uppercase text-white/75">
+                    Глава / {pad(count)}
+                  </span>
+                  <span ref={tcRef} className="dir-kit-meta font-mono tabular-nums text-white">
+                    00:00:00:00
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -953,12 +880,12 @@ function Chapters({ chapters }: { chapters: Chapter[] }) {
               }}
               className="dir-corporate-panel"
             >
-              {/* Кадр главы на телефоне: на всю ширину, номер накладывается на нижнюю кромку */}
+              {/* Кадр главы на телефоне: на всю ширину, титр-карта накладывается на нижнюю кромку */}
               <div
                 aria-hidden="true"
                 data-reveal=""
                 data-plate={chapter.src ? undefined : 'true'}
-                className="dir-corporate-mframe relative -mx-6 aspect-[4/5] overflow-hidden bg-[#0b0b0b] sm:aspect-[16/11] md:-mx-10 lg:hidden"
+                className="dir-corporate-mframe relative -mx-6 aspect-[16/9] overflow-hidden bg-[#0b0b0b] sm:aspect-[16/10] md:-mx-10 lg:hidden"
               >
                 {chapter.src ? (
                   <Still
@@ -973,12 +900,17 @@ function Chapters({ chapters }: { chapters: Chapter[] }) {
                 )}
                 <span className="dir-corporate-stage-shade" />
                 <span className="dir-corporate-mark" data-c="tl" />
-                <span className="dir-corporate-mark" data-c="br" />
-                <span className="dir-corporate-mroll">{chapter.number}</span>
+                <span className="dir-corporate-mark" data-c="tr" />
+                <div className="dir-corporate-card dir-corporate-card-m">
+                  <span className="dir-corporate-mnum">{chapter.number}</span>
+                  <span className="dir-kit-meta font-mono uppercase text-white/75">
+                    Глава / {pad(count)}
+                  </span>
+                </div>
               </div>
 
-              <div className="mt-7 lg:mt-0 lg:flex lg:flex-1 lg:flex-col">
-                <div className="type-meta flex items-center gap-4 font-mono uppercase tabular-nums">
+              <div className="mt-6 lg:mt-0 lg:flex lg:flex-1 lg:flex-col lg:justify-center">
+                <div className="dir-kit-meta flex items-center gap-4 font-mono uppercase tabular-nums">
                   <span className="dir-corporate-panel-label text-accent">
                     Глава {chapter.number}
                   </span>
@@ -992,15 +924,15 @@ function Chapters({ chapters }: { chapters: Chapter[] }) {
                   data-reveal=""
                   className="dir-corporate-panel-title mt-5 font-stage text-[clamp(2rem,3.15vw,3.4rem)] uppercase leading-[0.94] tracking-[-0.03em] text-balance"
                 >
-                  {headline(chapter.title)}
+                  {setTitle(chapter.title)}
                 </h3>
 
                 <p className="dir-corporate-panel-text dir-corporate-measure mt-6 text-base leading-relaxed md:text-[1.0625rem] [text-wrap:pretty]">
-                  {tidy(chapter.text)}
+                  {typo(chapter.text)}
                 </p>
 
                 <div className="dir-corporate-shotlist dir-corporate-measure">
-                  <p className="dir-corporate-shotlist-label type-meta font-mono uppercase text-white">
+                  <p className="dir-corporate-shotlist-label dir-kit-meta font-mono uppercase text-white">
                     В кадре
                   </p>
                   <ul role="list" className="dir-corporate-shotlist-items">
@@ -1013,27 +945,6 @@ function Chapters({ chapters }: { chapters: Chapter[] }) {
                       </li>
                     ))}
                   </ul>
-                </div>
-
-                <div className="dir-corporate-measure mt-5 flex items-stretch border border-white/25">
-                  <span className="type-meta flex shrink-0 items-center bg-white px-3.5 font-mono uppercase text-black">
-                    От вас
-                  </span>
-                  <p className="py-3.5 pl-4 pr-4 text-sm leading-snug text-white/85 md:text-[0.9375rem]">
-                    {tidy(chapter.ask)}
-                  </p>
-                </div>
-
-                <div className="mt-10 w-full max-w-[34rem] lg:mt-auto lg:max-w-none lg:pt-10">
-                  <p
-                    aria-hidden="true"
-                    className="type-meta mb-4 flex items-center gap-4 font-mono uppercase tabular-nums text-white/70"
-                  >
-                    <span>Схема главы</span>
-                    <span className="h-px flex-1 bg-white/15" />
-                    <span>{chapter.number}</span>
-                  </p>
-                  <Schematic index={index} />
                 </div>
               </div>
             </li>
@@ -1092,9 +1003,9 @@ function Audiences({ chapters, frames }: { chapters: Chapter[]; frames: Shot[] }
     <section
       id="audiences"
       aria-labelledby="dir-corporate-aud-title"
-      className="bg-black px-6 py-20 md:px-10 md:py-28 lg:px-20"
+      className="bg-black px-6 py-16 md:px-10 md:py-28 lg:px-20"
     >
-      <div className="grid gap-x-12 gap-y-14 lg:grid-cols-12">
+      <div className="grid gap-x-12 gap-y-12 lg:grid-cols-12">
         <div className="lg:col-span-5">
           <Kicker>03 / Для кого фильм</Kicker>
           <h2
@@ -1102,7 +1013,7 @@ function Audiences({ chapters, frames }: { chapters: Chapter[]; frames: Shot[] }
             data-reveal=""
             className={cn(KIT_TITLE, KIT_TITLE_SIZE, 'mt-5 max-w-[16ch] leading-[0.94]')}
           >
-            {headline('Один материал — три аудитории')}
+            {setTitle('Один материал — три аудитории')}
           </h2>
 
           <div
@@ -1127,7 +1038,7 @@ function Audiences({ chapters, frames }: { chapters: Chapter[]; frames: Shot[] }
                 onKeyDown={event => onKeyDown(event, position)}
                 className="dir-corporate-tab"
               >
-                <span aria-hidden="true" className="dir-corporate-tab-idx type-meta font-mono">
+                <span aria-hidden="true" className="dir-corporate-tab-idx dir-kit-meta font-mono">
                   {pad(position + 1)}
                 </span>
                 <span className="dir-corporate-tab-label font-stage text-[clamp(1.45rem,2.4vw,2.35rem)] uppercase leading-none tracking-[-0.02em]">
@@ -1139,7 +1050,7 @@ function Audiences({ chapters, frames }: { chapters: Chapter[]; frames: Shot[] }
           </div>
 
           <p className="mt-8 max-w-sm text-sm leading-relaxed text-white/65 [text-wrap:pretty] md:text-base">
-            {tidy(CORPORATE_PAGE.audiencesNote)}
+            {typo(CORPORATE_PAGE.audiencesNote)}
           </p>
         </div>
 
@@ -1197,12 +1108,12 @@ function Audiences({ chapters, frames }: { chapters: Chapter[]; frames: Shot[] }
                 className="dir-corporate-aud-panel"
               >
                 <h3 className="font-stage text-[clamp(1.6rem,3vw,2.75rem)] uppercase leading-[0.98] tracking-[-0.025em] text-white text-balance">
-                  {headline(item.title)}
+                  {setTitle(item.title)}
                 </h3>
                 <p className="mt-5 max-w-xl text-base leading-relaxed text-white/80 [text-wrap:pretty] md:text-lg">
-                  {tidy(item.text)}
+                  {typo(item.text)}
                 </p>
-                <p className="type-meta mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono uppercase text-white/65">
+                <p className="dir-kit-meta mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono uppercase text-white/65">
                   <span className="text-white">Где идёт</span>
                   <span aria-hidden="true" className="text-accent">
                     /
@@ -1213,8 +1124,8 @@ function Audiences({ chapters, frames }: { chapters: Chapter[]; frames: Shot[] }
             ))}
           </div>
 
-          <div className="mt-12 border-t border-white/15 pt-6">
-            <div className="type-meta flex items-center justify-between gap-6 font-mono uppercase text-white/60">
+          <div data-sticky-hide="desktop" className="mt-12 border-t border-white/15 pt-6">
+            <div className="dir-kit-meta flex items-center justify-between gap-6 font-mono uppercase text-white/60">
               <span>Монтаж под аудиторию</span>
               <span aria-hidden="true" className="hidden sm:inline">
                 Вес главы
@@ -1226,16 +1137,16 @@ function Audiences({ chapters, frames }: { chapters: Chapter[]; frames: Shot[] }
                 return (
                   <li
                     key={chapter.number}
-                    className="grid grid-cols-[1.75rem_minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-2 border-b border-white/10 py-4 sm:grid-cols-[2rem_minmax(0,11rem)_minmax(0,1fr)_5.5rem] sm:items-center sm:gap-x-5"
+                    className="grid grid-cols-[1.75rem_minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-2 border-b border-white/10 py-3 sm:grid-cols-[2rem_minmax(0,11rem)_minmax(0,1fr)_5.5rem] sm:items-center sm:gap-x-5"
                   >
                     <span
                       aria-hidden="true"
-                      className="type-meta font-mono tabular-nums text-white/55"
+                      className="dir-kit-meta font-mono tabular-nums text-white/55"
                     >
                       {chapter.number}
                     </span>
                     <span className="text-base text-white md:text-[1.0625rem]">
-                      {tidy(chapter.title)}
+                      {typo(chapter.title)}
                     </span>
                     <span
                       aria-hidden="true"
@@ -1247,7 +1158,7 @@ function Audiences({ chapters, frames }: { chapters: Chapter[]; frames: Shot[] }
                     </span>
                     <span
                       className={cn(
-                        'dir-corporate-weight type-meta text-right font-mono uppercase',
+                        'dir-corporate-weight dir-kit-meta text-right font-mono uppercase',
                         weight === 3 ? 'text-accent' : 'text-white/65'
                       )}
                     >
@@ -1317,7 +1228,7 @@ function Works({ works, rows }: { works: DirectionPageWork[]; rows: Shot[][] }) 
   return (
     <section
       aria-labelledby="dir-corporate-works-title"
-      className="bg-black px-6 pb-16 pt-6 md:px-10 md:pb-24 lg:px-20"
+      className="bg-black px-6 pb-12 pt-6 md:px-10 md:pb-24 lg:px-20"
     >
       <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5 border-b border-white/15 pb-6">
         <div>
@@ -1327,15 +1238,15 @@ function Works({ works, rows }: { works: DirectionPageWork[]; rows: Shot[][] }) 
             data-reveal=""
             className={cn(KIT_TITLE, KIT_TITLE_SIZE, 'mt-5 leading-[0.94]')}
           >
-            {headline('Корпоративные работы')}
+            {setTitle('Корпоративные работы')}
           </h2>
         </div>
-        <p className="type-meta max-w-xs font-mono uppercase leading-relaxed text-white/70">
-          {tidy('Работы для компаний и брендов')}
+        <p className="dir-kit-meta max-w-xs font-mono uppercase leading-relaxed text-white/70">
+          {typo('Работы для компаний и брендов')}
         </p>
       </div>
 
-      <ul ref={listRef} role="list">
+      <ul ref={listRef} role="list" data-sticky-hide="desktop">
         {works.map((work, position) => {
           const layout = WORK_LAYOUTS[position % WORK_LAYOUTS.length] ?? 'trio'
           const shots = rows[position] ?? []
@@ -1351,7 +1262,7 @@ function Works({ works, rows }: { works: DirectionPageWork[]; rows: Shot[][] }) 
                 className="dir-corporate-work"
               >
                 <div className="dir-corporate-work-head">
-                  <span className="dir-corporate-work-idx type-meta font-mono tabular-nums uppercase">
+                  <span className="dir-corporate-work-idx dir-kit-meta font-mono tabular-nums uppercase">
                     {pad(position + 1)} / {pad(works.length)}
                   </span>
                   <span className="dir-corporate-work-name font-stage uppercase text-white">
@@ -1383,7 +1294,7 @@ function Works({ works, rows }: { works: DirectionPageWork[]; rows: Shot[][] }) 
                               />
                             </Reframe>
                           </div>
-                          <span className="dir-corporate-shot-code type-meta-sm font-mono uppercase">
+                          <span className="dir-corporate-shot-code font-mono uppercase">
                             {pad(position + 1)}
                             {'ABC'[index]}
                           </span>
@@ -1398,19 +1309,19 @@ function Works({ works, rows }: { works: DirectionPageWork[]; rows: Shot[][] }) 
                 <div className="dir-corporate-work-body">
                   <div className="min-w-0">
                     <span className="block text-base text-white/90 md:text-lg">
-                      {tidy(work.title)}
+                      {typo(work.title)}
                     </span>
                     {excerpt ? (
                       <span className="mt-3 block max-w-md text-sm leading-relaxed text-white/70 [text-wrap:pretty] md:text-base">
-                        {tidy(excerpt)}
+                        {typo(excerpt)}
                       </span>
                     ) : null}
                   </div>
                   <span className="dir-corporate-work-go flex items-center gap-3">
-                    <span className="type-meta font-mono uppercase tabular-nums text-white/70">
+                    <span className="dir-kit-meta font-mono uppercase tabular-nums text-white/70">
                       {work.year ?? ' '}
                     </span>
-                    <span className="type-meta font-mono uppercase text-white">
+                    <span className="dir-kit-meta font-mono uppercase text-white">
                       Смотреть работу
                     </span>
                     <ArrowUpRight
@@ -1437,31 +1348,29 @@ function SlateCta({ hasWorks }: { hasWorks: boolean }) {
   return (
     <section
       aria-labelledby="dir-corporate-slate-title"
-      className="bg-black px-6 pb-24 pt-20 md:px-10 md:pb-32 md:pt-24 lg:px-20"
+      className="bg-black px-6 pb-24 pt-20 md:px-10 md:pb-32 md:pt-28 lg:px-20"
     >
-      <div data-reveal="" className="dir-corporate-slate max-w-[72rem]">
+      {/* Во весь ряд сетки: справа не остаётся мёртвой колонки. Плавающая кнопка сметы
+          закрывала бы правый нижний угол, поэтому пока хлопушка на экране, она скрыта */}
+      <div data-reveal="" data-sticky-hide="" className="dir-corporate-slate">
         <div aria-hidden="true" className="dir-corporate-slate-arm" />
         <div className="dir-corporate-slate-board grid lg:grid-cols-12">
           <div className="p-6 md:p-10 lg:col-span-7 lg:border-r lg:border-white/50">
             <Kicker>{hasWorks ? 'Следующая работа' : 'Бриф'}</Kicker>
             <h2
               id="dir-corporate-slate-title"
-              className="mt-5 font-stage text-[clamp(1.9rem,4.4vw,4.1rem)] uppercase leading-[0.94] tracking-[-0.03em] text-white text-balance"
+              className="mt-5 font-stage text-[clamp(1.9rem,4.4vw,4.1rem)] uppercase leading-[0.96] tracking-[-0.03em] text-white text-balance"
             >
-              {headline(cta.title)}
+              {setTitle(cta.title)}
             </h2>
             <p className="mt-6 max-w-md text-base leading-relaxed text-white/80 [text-wrap:pretty] md:text-lg">
-              {tidy(cta.text)}
+              {typo(cta.text)}
             </p>
-            <button
-              type="button"
+            <DirectionButton
+              label={CORPORATE_PAGE.ctaLabel}
               onClick={() => page.openBrief('proof')}
-              className="dir-corporate-slate-cta mt-9 inline-flex min-h-14 w-full items-center justify-between gap-4 rounded-sm bg-white px-5 py-4 text-left text-base font-medium text-black sm:w-auto sm:justify-center sm:gap-6 sm:px-7"
-            >
-              <span className="dir-corporate-slate-label">{CORPORATE_PAGE.ctaLabel}</span>
-              <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0" />
-              <span aria-hidden="true" className="dir-corporate-slate-curtain" />
-            </button>
+              className="mt-9 w-full sm:w-auto sm:min-w-[19rem]"
+            />
           </div>
 
           <dl className="grid grid-cols-2 border-t border-white/50 lg:col-span-5 lg:border-t-0">
@@ -1474,9 +1383,9 @@ function SlateCta({ hasWorks }: { hasWorks: boolean }) {
                   position > 1 && 'border-t border-white/50'
                 )}
               >
-                <dt className="type-meta font-mono uppercase text-white/65">{field.label}</dt>
+                <dt className="dir-kit-meta font-mono uppercase text-white/65">{field.label}</dt>
                 <dd className="font-stage text-[clamp(1.05rem,2vw,1.75rem)] uppercase leading-[1.05] tracking-[-0.015em] text-white text-balance">
-                  {tidy(field.value)}
+                  {typo(field.value)}
                 </dd>
               </div>
             ))}
@@ -1487,116 +1396,14 @@ function SlateCta({ hasWorks }: { hasWorks: boolean }) {
   )
 }
 
-/* ───────────────────────────── Лист согласований ───────────────────────────── */
+/* ───────────────────────────── Этапы и согласования: один светлый лист ───────────────────────────── */
 
-/**
- * Белая страница под шапкой: шапка сайта по умолчанию светлая, и над бумагой
- * её не видно. Наблюдаем тонкую полоску на уровне центра шапки.
- */
-function usePaperHeader() {
-  const { setHeaderDark } = useMenu()
+/** Буквы вместо цифр у «что нужно от компании»: рядом идёт нумерация этапов, две цифровых путались бы */
+const ASK_MARKS = ['А', 'Б', 'В', 'Г']
 
-  useEffect(() => {
-    if (typeof IntersectionObserver === 'undefined') return
-    const nodes = Array.from(document.querySelectorAll<HTMLElement>('[data-corp-paper]'))
-    if (nodes.length === 0) return
-    const inside = new Set<Element>()
-    let observer: IntersectionObserver | null = null
-
-    const build = () => {
-      observer?.disconnect()
-      inside.clear()
-      // Полоска в 1px на уровне центра шапки: цвет меняется ровно на кромке бумаги
-      const bottom = Math.max(0, window.innerHeight - 37)
-      observer = new IntersectionObserver(
-        entries => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) inside.add(entry.target)
-            else inside.delete(entry.target)
-          }
-          setHeaderDark(inside.size > 0)
-        },
-        { rootMargin: `-36px 0px -${bottom}px 0px`, threshold: 0 }
-      )
-      nodes.forEach(node => observer?.observe(node))
-    }
-
-    build()
-    window.addEventListener('resize', build)
-    return () => {
-      observer?.disconnect()
-      window.removeEventListener('resize', build)
-      setHeaderDark(false)
-    }
-  }, [setHeaderDark])
-}
-
-function Sheet() {
-  usePaperHeader()
-
-  return (
-    <section
-      data-corp-paper=""
-      aria-labelledby="dir-corporate-sheet-title"
-      className="dir-corporate-sheet px-6 py-20 md:px-10 md:py-32 lg:px-20"
-    >
-      <span aria-hidden="true" className="dir-corporate-sheet-mark" data-c="tl" />
-      <span aria-hidden="true" className="dir-corporate-sheet-mark" data-c="tr" />
-      <span aria-hidden="true" className="dir-corporate-sheet-mark" data-c="bl" />
-      <span aria-hidden="true" className="dir-corporate-sheet-mark" data-c="br" />
-      <span aria-hidden="true" className="dir-corporate-sheet-tear" />
-
-      <div className="grid gap-x-16 gap-y-12 lg:grid-cols-12">
-        <div className="lg:col-span-5">
-          <Kicker light>05 / Лист согласований</Kicker>
-          <h2
-            id="dir-corporate-sheet-title"
-            data-reveal=""
-            className="mt-5 max-w-[12ch] font-stage text-[clamp(2rem,3.9vw,3.9rem)] uppercase leading-[0.94] tracking-[-0.03em] text-black text-balance"
-          >
-            {headline('Что нужно от компании')}
-          </h2>
-          <p className="mt-6 max-w-sm text-base leading-relaxed text-black/75 [text-wrap:pretty] md:text-lg">
-            {tidy(CORPORATE_PAGE.asksLead)}
-          </p>
-        </div>
-
-        <ol role="list" className="lg:col-span-7">
-          {CORPORATE_PAGE.asks.map((ask, position) => (
-            <li
-              key={ask.title}
-              data-reveal=""
-              className="dir-corporate-sheet-row grid grid-cols-[3.5rem_minmax(0,1fr)] gap-x-4 py-7 md:grid-cols-[6.5rem_minmax(0,1fr)] md:py-10"
-            >
-              <span
-                aria-hidden="true"
-                className="font-stage text-[clamp(2.5rem,5.2vw,4.6rem)] leading-[0.85] tracking-[-0.05em] tabular-nums text-black"
-              >
-                {pad(position + 1)}
-              </span>
-              <div>
-                <h3 className="font-stage text-[clamp(1.35rem,2.3vw,2.1rem)] uppercase leading-none tracking-[-0.02em] text-black">
-                  {headline(ask.title)}
-                </h3>
-                <p className="mt-3 max-w-md text-base leading-relaxed text-black/75 [text-wrap:pretty]">
-                  {tidy(ask.text)}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </div>
-    </section>
-  )
-}
-
-/* ───────────────────────────── Этапы: одна дорожка до кнопки ───────────────────────────── */
-
-function Stages() {
-  const page = useDirectionPage()
+function Process() {
   const reduced = useReduced()
   const steps = CORPORATE_PAGE.process
-  const cta = CORPORATE_PAGE.processCta
   const count = steps.length
   const trackRef = useRef<HTMLOListElement>(null)
   const [reached, setReached] = useState(0)
@@ -1613,25 +1420,27 @@ function Stages() {
   return (
     <section
       id="stages"
-      aria-labelledby="dir-corporate-stages-title"
-      className="dir-corporate-stages px-6 pb-20 pt-24 md:px-10 md:pb-28 md:pt-32 lg:px-20"
+      aria-labelledby="dir-corporate-process-title"
+      className="dir-corporate-process dir-paper-section px-6 pb-16 pt-16 md:px-10 md:pb-28 md:pt-28 lg:px-20"
     >
+      <span aria-hidden="true" className="dir-corporate-sheet-mark" data-c="tl" />
+      <span aria-hidden="true" className="dir-corporate-sheet-mark" data-c="tr" />
+      <span aria-hidden="true" className="dir-corporate-sheet-mark" data-c="bl" />
+      <span aria-hidden="true" className="dir-corporate-sheet-mark" data-c="br" />
+
       <div className="grid gap-x-12 gap-y-6 lg:grid-cols-12 lg:items-end">
-        <div className="lg:col-span-7">
-          <Kicker>06 / Этапы</Kicker>
+        <div className="lg:col-span-12">
+          <Kicker paper>05 / Этапы и согласования</Kicker>
           <h2
-            id="dir-corporate-stages-title"
+            id="dir-corporate-process-title"
             data-reveal=""
-            className={cn(
-              KIT_TITLE,
-              'mt-5 max-w-[16ch] text-[clamp(2.1rem,5.6vw,5.25rem)] leading-[0.94]'
-            )}
+            className="dir-corporate-process-title mt-5 font-stage uppercase"
           >
-            {headline(CORPORATE_PAGE.processTitle)}
+            {setTitle(CORPORATE_PAGE.processTitle)}
           </h2>
         </div>
-        <p className="max-w-md text-base leading-relaxed text-white/75 [text-wrap:pretty] md:text-lg lg:col-span-4 lg:col-start-9">
-          {tidy(CORPORATE_PAGE.processLead)}
+        <p className="max-w-md text-base leading-relaxed dir-corporate-mute [text-wrap:pretty] md:text-lg lg:col-span-5">
+          {typo(CORPORATE_PAGE.processLead)}
         </p>
       </div>
 
@@ -1667,42 +1476,56 @@ function Stages() {
                 {step.number}
               </span>
               <h3 className="dir-corporate-step-title font-stage uppercase">
-                {headline(step.title)}
+                {setTitle(step.title)}
               </h3>
-              <p className="dir-corporate-step-text [text-wrap:pretty]">{tidy(step.text)}</p>
+              <p className="dir-corporate-step-text [text-wrap:pretty]">{typo(step.text)}</p>
             </li>
           ))}
         </ol>
       </div>
 
-      <div className="dir-corporate-next grid gap-x-12 gap-y-10 lg:grid-cols-12 lg:items-end">
-        <div className="lg:col-span-6">
-          <Kicker>Шаг 01 из {pad(count)}</Kicker>
+      <div className="dir-corporate-asks grid grid-cols-[minmax(0,1fr)] gap-x-16 gap-y-8 lg:grid-cols-12">
+        <div className="lg:col-span-5">
           <h3
             data-reveal=""
-            className="mt-5 font-stage text-[clamp(2rem,5vw,4.75rem)] uppercase leading-[0.94] tracking-[-0.03em] text-white text-balance"
+            className="dir-corporate-asks-title font-stage uppercase leading-[0.96] tracking-[-0.03em] text-balance"
           >
-            {headline(cta.title)}
+            {CORPORATE_PAGE.asksTitle.map((line, position) => (
+              <Fragment key={line}>
+                {position > 0 ? ' ' : null}
+                <span className="block">{typo(line)}</span>
+              </Fragment>
+            ))}
           </h3>
-          <p className="mt-6 max-w-lg text-base leading-relaxed text-white/75 [text-wrap:pretty] md:text-lg">
-            {tidy(cta.text)}
+          <p className="mt-5 max-w-sm text-base leading-relaxed dir-corporate-mute [text-wrap:pretty] md:text-lg">
+            {typo(CORPORATE_PAGE.asksLead)}
           </p>
         </div>
-        <div className="lg:col-span-6">
-          <button
-            type="button"
-            onClick={() => page.openBrief('process')}
-            className="dir-corporate-rail-btn"
-          >
-            <span aria-hidden="true" className="dir-corporate-rail-curtain" />
-            <span className="dir-corporate-rail-label font-stage uppercase">
-              {tidy(cta.ctaLabel)}
-            </span>
-            <span aria-hidden="true" className="dir-corporate-rail-ring">
-              <ArrowRight className="h-5 w-5" />
-            </span>
-          </button>
-        </div>
+
+        <ol role="list" className="lg:col-span-7">
+          {CORPORATE_PAGE.asks.map((ask, position) => (
+            <li
+              key={ask.title}
+              data-reveal=""
+              className="dir-corporate-sheet-row grid grid-cols-[2.75rem_minmax(0,1fr)] gap-x-4 py-5 md:grid-cols-[5.5rem_minmax(0,1fr)] md:py-8"
+            >
+              <span
+                aria-hidden="true"
+                className="font-stage text-[clamp(1.9rem,4.2vw,3.6rem)] leading-[0.9] tracking-[-0.04em]"
+              >
+                {ASK_MARKS[position]}
+              </span>
+              <div>
+                <h4 className="font-stage text-[clamp(1.25rem,2.1vw,1.9rem)] uppercase leading-none tracking-[-0.02em]">
+                  {setTitle(ask.title)}
+                </h4>
+                <p className="mt-3 max-w-md text-base leading-relaxed dir-corporate-mute [text-wrap:pretty]">
+                  {typo(ask.text)}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   )
@@ -1744,7 +1567,7 @@ function FilmBandTrack({ frames }: { frames: Shot[] }) {
                 />
               </Reframe>
             </div>
-            <p className="dir-corporate-band-code type-meta font-mono uppercase tabular-nums">
+            <p className="dir-corporate-band-code dir-kit-meta font-mono uppercase tabular-nums">
               <span>Кадр {pad(index + 1)}</span>
               <span>{shot.client}</span>
             </p>
@@ -1755,180 +1578,86 @@ function FilmBandTrack({ frames }: { frames: Shot[] }) {
   )
 }
 
-/* ───────────────────────────── Вопросы: заголовок держится рядом с кадром ───────────────────────────── */
+/* ───────────────────────────── Вопросы и финал: знаки сцены ───────────────────────────── */
 
-/**
- * Тот же аккордеон APG, что и в общем блоке, но слева под заголовком стоит
- * кадр: без него левая половина раздела пустая. Ответы лежат в DOM целиком,
- * первый раскрыт с сервера; индекс вопроса спрятан от скринридера, чтобы он не
- * склеивался с текстом вопроса.
- */
-function Faq({ frame }: { frame: Shot | null }) {
-  const page = useDirectionPage()
-  const baseId = useId()
-  const listRef = useRef<HTMLDivElement>(null)
-  const items = CORPORATE_PAGE.faq
-  const [open, setOpen] = useState<ReadonlySet<number>>(() => new Set([0]))
-
-  const toggle = (position: number) =>
-    setOpen(prev => {
-      const next = new Set(prev)
-      if (next.has(position)) next.delete(position)
-      else next.add(position)
-      return next
-    })
-
-  const onKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, position: number) => {
-    const triggers = listRef.current?.querySelectorAll<HTMLButtonElement>('[data-faq-trigger]')
-    if (!triggers || triggers.length === 0) return
-    const last = triggers.length - 1
-    const target =
-      event.key === 'ArrowDown'
-        ? position === last
-          ? 0
-          : position + 1
-        : event.key === 'ArrowUp'
-          ? position === 0
-            ? last
-            : position - 1
-          : event.key === 'Home'
-            ? 0
-            : event.key === 'End'
-              ? last
-              : null
-    if (target === null) return
-    event.preventDefault()
-    triggers[target]?.focus()
-  }
-
+/** Кадр в левой липкой колонке вопросов: без него левая половина раздела пустая */
+function FaqFrame({ frame }: { frame: Shot }) {
   return (
-    <section
-      aria-labelledby="dir-corporate-faq-title"
-      className="border-t border-white/10 bg-[#000000] px-6 py-20 md:px-10 md:py-28 lg:px-20"
-    >
-      <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
-        <div className="lg:col-span-5">
-          <div className="lg:sticky lg:top-28">
-            <Kicker>07 / Вопросы</Kicker>
-            <h2
-              id="dir-corporate-faq-title"
-              data-reveal=""
-              className={cn(
-                KIT_TITLE,
-                'mt-5 max-w-[14ch] text-[clamp(1.6rem,2.9vw,2.9rem)] leading-[0.94]'
-              )}
-            >
-              {headline('Вопросы о корпоративном видео')}
-            </h2>
-            {frame ? (
-              <div aria-hidden="true" className="dir-corporate-faqframe">
-                <Reframe crop={frame.crop}>
-                  <Still
-                    src={frame.src}
-                    alt=""
-                    sizes="(min-width: 1024px) 34vw, 100vw"
-                    quality={65}
-                    className="h-full w-full"
-                  />
-                </Reframe>
-                <span className="dir-corporate-stage-shade" />
-                <span className="dir-corporate-mark" data-c="tl" />
-                <span className="dir-corporate-mark" data-c="br" />
-                <p className="dir-corporate-plate absolute bottom-3 left-3 z-[5]">
-                  Кадр из портфолио · {frame.client}
-                </p>
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="lg:col-span-7">
-          <div ref={listRef}>
-            {items.map((item, position) => {
-              const isOpen = open.has(position)
-              const triggerId = `${baseId}-q${position}`
-              const panelId = `${baseId}-a${position}`
-              return (
-                <div key={item.question} data-open={isOpen} className="dir-kit-faq-item">
-                  <h3 className="m-0 text-inherit font-inherit">
-                    <button
-                      type="button"
-                      id={triggerId}
-                      data-faq-trigger=""
-                      aria-expanded={isOpen}
-                      aria-controls={panelId}
-                      onClick={() => toggle(position)}
-                      onKeyDown={event => onKeyDown(event, position)}
-                      className="dir-kit-faq-trigger"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="dir-kit-faq-idx type-meta font-mono uppercase tabular-nums"
-                      >
-                        {pad(position + 1)}
-                      </span>{' '}
-                      <span className="dir-kit-faq-q text-[clamp(1.125rem,1.7vw,1.5rem)] leading-[1.25] tracking-[-0.005em] [text-wrap:balance]">
-                        {tidy(item.question)}
-                      </span>
-                      <span aria-hidden="true" className="dir-kit-faq-icon">
-                        <span className="dir-kit-faq-glyph" />
-                      </span>
-                    </button>
-                  </h3>
-                  <div
-                    id={panelId}
-                    role="region"
-                    aria-labelledby={triggerId}
-                    className="dir-kit-faq-panel"
-                  >
-                    <div>
-                      <p className="max-w-[40rem] pb-8 pl-[2.5rem] pr-12 text-[clamp(1rem,1.25vw,1.1875rem)] leading-[1.65] text-white/80 [text-wrap:pretty] md:pb-10 md:pl-[3.75rem] md:pr-16">
-                        {tidy(item.answer)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 md:mt-10 md:pl-[3.75rem]">
-            <p className="text-sm text-white/70 md:text-base">
-              {tidy('Нет вашего вопроса? Задайте его в брифе.')}
-            </p>
-            <button
-              type="button"
-              onClick={() => page.openBrief('faq')}
-              className="dir-corporate-faq-link type-meta inline-flex items-center gap-3 font-mono uppercase text-white"
-            >
-              К брифу
-              <ArrowRight aria-hidden="true" className="dir-corporate-faq-arrow h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
+    <div aria-hidden="true" className="dir-corporate-faqframe">
+      <Reframe crop={frame.crop}>
+        <Still
+          src={frame.src}
+          alt=""
+          sizes="(min-width: 1024px) 34vw, 1px"
+          quality={65}
+          className="h-full w-full"
+        />
+      </Reframe>
+      <span className="dir-corporate-stage-shade" />
+      <span className="dir-corporate-mark" data-c="tl" />
+      <span className="dir-corporate-mark" data-c="br" />
+      <p className="dir-corporate-plate absolute bottom-3 left-3 z-[5]">
+        Кадр из портфолио · {frame.client}
+      </p>
+    </div>
   )
 }
 
 /**
- * Бегущий титр финала — общий блок, и его анимация не знает про экран. Здесь
- * она ждёт: пока финал вне кадра, титр стоит на паузе (правило в CSS страницы).
+ * Знак сцены для финала: ракорд, как перед началом фильма. Круг, перекрестие и
+ * цифра «01» — первый шаг. Статичная линия в один пиксель; красная точка — метка
+ * начала. Декор: слот End сам ставит aria-hidden.
  */
-function EndGuard() {
-  useEffect(() => {
-    const end = document.getElementById('direction-end')
-    if (!end || typeof IntersectionObserver === 'undefined') return
-    const observer = new IntersectionObserver(([entry]) => {
-      end.dataset.live = String(Boolean(entry?.isIntersecting))
-    })
-    observer.observe(end)
-    return () => {
-      observer.disconnect()
-      delete end.dataset.live
-    }
-  }, [])
-  return null
+function Leader() {
+  // Координаты округлены: в последних знаках Math.sin на сервере и в браузере расходится,
+  // и гидрация видит другую строку пути
+  const at = (angle: number, radius: number) =>
+    `${(140 + Math.sin(angle) * radius).toFixed(2)} ${(140 - Math.cos(angle) * radius).toFixed(2)}`
+  const ticks = Array.from({ length: 24 }, (_, index) => {
+    const angle = (index / 24) * Math.PI * 2
+    return `M${at(angle, index % 6 === 0 ? 112 : 120)} L${at(angle, 130)}`
+  }).join(' ')
+  return (
+    <svg
+      viewBox="0 0 280 280"
+      focusable="false"
+      className="dir-corporate-leader"
+      fill="none"
+      strokeWidth="1"
+    >
+      <circle
+        cx="140"
+        cy="140"
+        r="130"
+        stroke="rgb(255 255 255 / 0.38)"
+        vectorEffect="non-scaling-stroke"
+      />
+      <circle
+        cx="140"
+        cy="140"
+        r="96"
+        stroke="rgb(255 255 255 / 0.2)"
+        vectorEffect="non-scaling-stroke"
+      />
+      <path d={ticks} stroke="rgb(255 255 255 / 0.5)" vectorEffect="non-scaling-stroke" />
+      <path
+        d="M0 140 H60 M220 140 H280 M140 0 V60 M140 220 V280"
+        stroke="rgb(255 255 255 / 0.3)"
+        vectorEffect="non-scaling-stroke"
+      />
+      <path d="M140 140 L140 44 A96 96 0 0 1 236 140 Z" fill="rgb(255 255 255 / 0.05)" />
+      <circle cx="140" cy="10" r="4" fill="#ff2936" />
+      <text
+        x="140"
+        y="176"
+        textAnchor="middle"
+        fill="rgb(255 255 255 / 0.92)"
+        style={{ fontFamily: 'var(--font-stage)', fontSize: 112, letterSpacing: '-0.05em' }}
+      >
+        01
+      </text>
+    </svg>
+  )
 }
 
 /* ───────────────────────────── Страница ───────────────────────────── */
@@ -1953,7 +1682,6 @@ export function CorporatePage({ works }: CorporatePageProps) {
   const frames = interleaveFrames(works, 6)
   const closing = frames[frames.length - 1]
   const end = CORPORATE_PAGE.end
-  const endLines = end.lines.map(line => tidy(line))
 
   return (
     <DirectionShell
@@ -1969,22 +1697,22 @@ export function CorporatePage({ works }: CorporatePageProps) {
       {hasWorks ? <Splice label="Далее — работы" /> : null}
       <Works works={works} rows={plan.rows} />
       <SlateCta hasWorks={hasWorks} />
-      <Sheet />
-      <Stages />
+      <Process />
       <FilmBand frames={plan.band} />
-      <Faq frame={plan.faq} />
+      <DirectionFaq
+        index="06"
+        title="Вопросы о корпоративном видео"
+        items={CORPORATE_PAGE.faq}
+        aside={plan.faq ? <FaqFrame frame={plan.faq} /> : undefined}
+      />
       <OtherDirections current="corporate" reading={DIRECTION_READING['corporate']} />
       <DirectionEnd
-        // Пробел в конце строки не виден, но попадает в textContent заголовка:
-        // иначе строки склеиваются в «С чегоначнётсяваш фильм?» для скринридера и поиска
-        lines={endLines.map((line, position) =>
-          position < endLines.length - 1 ? `${line} ` : line
-        )}
-        ctaLabel={tidy(end.ctaLabel)}
-        note={tidy(end.note)}
+        lines={end.lines}
+        ctaLabel={end.ctaLabel}
+        note={end.note}
         frame={closing ? { src: closing.src, alt: closing.client } : null}
+        aside={<Leader />}
       />
-      <EndGuard />
     </DirectionShell>
   )
 }

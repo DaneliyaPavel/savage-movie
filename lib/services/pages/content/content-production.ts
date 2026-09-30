@@ -217,8 +217,46 @@ export const CONTENT_TRACKS = [
  */
 export const CONTENT_STAGE_LANES = [0, 0, 1, 2, 3] as const
 
+/**
+ * Вид карточки в мозаике «Состав выдачи». Все восемь выдач раньше показывали
+ * один мастер-кадр под разным углом, и мозаика читалась обоями. Теперь у каждой
+ * свой кадр из работ страницы, своя точка кадрирования, масштаб и мягкий тон:
+ * версии одной съёмки отличаются планом и характером, а не только рамкой.
+ *
+ * `pick` — номер кадра в наборе работ (по кругу, если кадров меньше); у HERO
+ * мастер-кадр, тот же, что на первом экране.
+ */
+export type OutputTone = 'natural' | 'mono' | 'punch' | 'soft'
+
+export interface OutputLook {
+  pick: number | 'master'
+  /** object-position кадра и точка, вокруг которой он приближается */
+  pos: string
+  zoom: number
+  tone: OutputTone
+}
+
+export const CONTENT_LOOKS: readonly OutputLook[] = [
+  { pick: 'master', pos: '50% 50%', zoom: 1, tone: 'natural' },
+  { pick: 1, pos: '50% 42%', zoom: 1, tone: 'natural' },
+  { pick: 2, pos: '42% 50%', zoom: 1.08, tone: 'natural' },
+  { pick: 4, pos: '70% 30%', zoom: 1.5, tone: 'punch' },
+  { pick: 3, pos: '28% 66%', zoom: 1.7, tone: 'mono' },
+  { pick: 5, pos: '56% 50%', zoom: 1.05, tone: 'soft' },
+  { pick: 0, pos: '50% 38%', zoom: 1.9, tone: 'punch' },
+  { pick: 6, pos: '22% 64%', zoom: 1.3, tone: 'natural' },
+]
+
 export const CONTENT_PAGE: DirectionPageBase & {
-  hero: { meta: string; places: string; lead: string }
+  hero: {
+    meta: string
+    places: string
+    /** H1: название направления, без лида */
+    title: string
+    /** Хук первого экрана двумя строками: визуальная строка, не заголовок */
+    hook: readonly [readonly [string, string], readonly [string, string]]
+    lead: string
+  }
   scene: { title: string; lead: string; note: string }
   spec: { label: string; value: string }[]
   outputs: { label: string; text: string }[]
@@ -227,6 +265,7 @@ export const CONTENT_PAGE: DirectionPageBase & {
     proof: { kicker: string; title: string; text: string; rows: [string, string][]; label: string }
     process: { kicker: string; title: string; text: string; label: string; stops: string[] }
   }
+  thesis: { kicker: string; lines: [string, string]; text: string }
   end: { lines: string[]; ctaLabel: string; note: string }
 } = {
   id: 'content-production',
@@ -251,7 +290,12 @@ export const CONTENT_PAGE: DirectionPageBase & {
   hero: {
     meta: '04 / CONTENT',
     places: 'Санкт-Петербург · Москва · по России',
-    lead: 'Регулярный видеопродакшн: материалы на квартал для сайта, соцсетей и магазинов',
+    title: 'Регулярный видеопродакшн',
+    hook: [
+      ['Одна', 'съёмка'],
+      ['восемь', 'выдач'],
+    ],
+    lead: 'Материалы на квартал для сайта, соцсетей и магазинов: главный ролик, вертикальные версии и вставки из одной съёмки.',
   },
   scene: {
     title: 'Одна съёмка — материалы на весь квартал',
@@ -311,6 +355,11 @@ export const CONTENT_PAGE: DirectionPageBase & {
       label: 'Обсудить контент-план',
       stops: ['План', 'Раскадровка', 'Съёмка', 'Монтаж', 'Передача'],
     },
+  },
+  thesis: {
+    kicker: 'Принцип съёмки',
+    lines: ['Группа, свет и локация — один раз.', 'Кадров — на весь квартал.'],
+    text: 'Снимаем с запасом: общие планы, детали, вертикальные кадры и вставки. Повторный выезд группы не нужен.',
   },
   end: {
     lines: ['Что снимем', 'на весь', 'квартал?'],

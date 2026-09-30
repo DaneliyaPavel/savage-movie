@@ -3,7 +3,7 @@
  *
  * Самый медленный язык из шести страниц: кинематографичный документальный
  * фильм о компании. Открывающие титры, линейка с тайм-кодом, главы, которые
- * меняются жёсткой склейкой, и один лист согласований на бумаге.
+ * меняются жёсткой склейкой, и один светлый лист «Этапы и согласования».
  *
  * Правила движения те же, что у всего раздела направлений: анимируются только
  * transform, clip-path и opacity декора, а текст виден с первого кадра (вход —
@@ -11,30 +11,29 @@
  * (--motion-press/state/move/cut, --ease-out-expo). Наведение — только там,
  * где оно есть (hover: hover): на телефоне то же состояние даёт нажатие,
  * положение на экране или автоматический ход.
+ *
+ * Все правила ограничены корнем страницы или собственными классами
+ * .dir-corporate-*: общие блоки (End, Others, FAQ) страница не задевает.
+ * Светлый лист берёт токены кита (--dir-paper*), а не свой оттенок.
  */
 
 .dir-corporate {
   --dc-hair: rgb(255 255 255 / 0.14);
   --dc-hair-strong: rgb(255 255 255 / 0.3);
-  --dc-paper: #e9e6df;
-  --dc-ink: #0b0b0b;
-}
-
-/* Моно-метки несут смысл (кикеры, линейка, кредиты), а на чёрном 9–11px читались
-   на грани: на странице они на полступени крупнее общего размера */
-.dir-corporate .type-meta {
-  font-size: 0.66rem;
-}
-
-@media (min-width: 48rem) {
-  .dir-corporate .type-meta {
-    font-size: 0.74rem;
-  }
 }
 
 .dir-corporate ::selection {
   background: var(--accent);
   color: #000000;
+}
+
+/* Вторичный текст на бумаге: 5,4:1 по токену кита */
+.dir-corporate-mute {
+  color: var(--dir-paper-mute);
+}
+
+.dir-corporate-kicker-paper {
+  color: var(--dir-paper-mute);
 }
 
 /* Титровая плашка: подпись к кадру, которая читается на любом кадре */
@@ -80,10 +79,30 @@
 /* Кадр раскрывается из линии — «открытие» леттербокса */
 @keyframes dir-corporate-open {
   from {
-    clip-path: inset(49.5% 0 49.5% 0);
+    clip-path: inset(49.6% 0 49.6% 0);
   }
   to {
     clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Красная щель: проводится слева направо, держится и гаснет, пока кадр раскрывается */
+@keyframes dir-corporate-slit {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  28% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  52% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
   }
 }
 
@@ -104,6 +123,16 @@
   }
   to {
     transform: scale(1.07);
+  }
+}
+
+/* Бегущий титр: четыре одинаковых отрезка, сдвиг на два — шов не виден и на широком экране */
+@keyframes dir-corporate-credits {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
   }
 }
 
@@ -142,6 +171,7 @@
 .dir-corporate-hero {
   --lb-t: 4.25rem;
   --lb-b: 7.25rem;
+  --hud-x: 1.5rem;
   position: relative;
   isolation: isolate;
   min-height: 100svh;
@@ -153,17 +183,35 @@
   .dir-corporate-hero {
     --lb-t: 6rem;
     --lb-b: 7.5rem;
+    --hud-x: 2.5rem;
   }
 }
 
-/* Кадр лежит между двумя чёрными полосами леттербокса */
+@media (min-width: 64rem) {
+  .dir-corporate-hero {
+    --hud-x: 5rem;
+  }
+}
+
+/* Кадр лежит между двумя чёрными полосами леттербокса и раскрывается из красной щели */
 .dir-corporate-hero-frame {
   position: absolute;
   inset: var(--lb-t) 0 var(--lb-b);
   z-index: 0;
   overflow: hidden;
   background: #0a0a0a;
-  animation: dir-corporate-open 1300ms var(--ease-out-expo) 150ms both;
+  animation: dir-corporate-open 1400ms var(--ease-out-expo) 420ms both;
+}
+
+.dir-corporate-slit {
+  position: absolute;
+  inset: 50% 0 auto;
+  z-index: 7;
+  height: 1px;
+  background: var(--accent);
+  transform-origin: left;
+  pointer-events: none;
+  animation: dir-corporate-slit 1500ms var(--ease-out-expo) both;
 }
 
 .dir-corporate-hero-push {
@@ -173,8 +221,9 @@
   animation: dir-corporate-push 36s ease-in-out infinite alternate;
 }
 
-/* Вне экрана наезд стоит: бесконечная анимация не тратит кадры впустую */
-.dir-corporate-hero[data-live='false'] .dir-corporate-hero-push {
+/* Вне экрана наезд и титр стоят: бесконечная анимация не тратит кадры впустую */
+.dir-corporate-hero[data-live='false'] .dir-corporate-hero-push,
+.dir-corporate-hero[data-live='false'] .dir-corporate-credits-track {
   animation-play-state: paused;
 }
 
@@ -198,7 +247,7 @@
     rgb(255 255 255 / 0.09) 50%,
     transparent 62%
   );
-  animation: dir-corporate-light 3400ms var(--ease-out-expo) 500ms both;
+  animation: dir-corporate-light 3400ms var(--ease-out-expo) 900ms both;
 }
 
 /* Скримы: слева и снизу почти глухо, чтобы белый текст держал контраст на любом кадре */
@@ -233,6 +282,72 @@
   }
 }
 
+/* Визир: засечки по углам кадра на полях страницы, снизу — над бегущим титром */
+.dir-corporate-hero-frame .dir-corporate-mark {
+  z-index: 6;
+}
+
+.dir-corporate-hero-frame .dir-corporate-mark[data-c='tl'],
+.dir-corporate-hero-frame .dir-corporate-mark[data-c='bl'] {
+  left: var(--hud-x);
+}
+
+.dir-corporate-hero-frame .dir-corporate-mark[data-c='tr'],
+.dir-corporate-hero-frame .dir-corporate-mark[data-c='br'] {
+  right: var(--hud-x);
+}
+
+.dir-corporate-hero-frame .dir-corporate-mark[data-c='bl'],
+.dir-corporate-hero-frame .dir-corporate-mark[data-c='br'] {
+  bottom: 2.75rem;
+  display: none;
+}
+
+@media (min-width: 48rem) {
+  .dir-corporate-hero-frame .dir-corporate-mark[data-c='bl'],
+  .dir-corporate-hero-frame .dir-corporate-mark[data-c='br'] {
+    display: block;
+  }
+}
+
+/* Запись и тайм-код: счёт стартует после раскрытия кадра, с 00:00:00:00 */
+.dir-corporate-hud {
+  position: absolute;
+  top: 1.15rem;
+  left: calc(var(--hud-x) + 2rem);
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.75);
+}
+
+.dir-corporate-hud-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: none;
+  border-radius: 9999px;
+  background: var(--accent);
+}
+
+.dir-corporate-hud-credit {
+  position: absolute;
+  top: 1.15rem;
+  right: calc(var(--hud-x) + 2rem);
+  z-index: 6;
+  display: none;
+  margin: 0;
+  color: rgb(255 255 255 / 0.85);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.75);
+}
+
+@media (min-width: 48rem) {
+  .dir-corporate-hud-credit {
+    display: block;
+  }
+}
+
 /* Тонкие линии по кромкам кадра: рисуются слева направо вместе с открытием */
 .dir-corporate-hero-edge {
   position: absolute;
@@ -253,6 +368,52 @@
   bottom: var(--lb-b);
 }
 
+/* Бегущий титр: тонкая строка над нижней линией кадра, края гаснут */
+.dir-corporate-credits {
+  position: absolute;
+  inset: auto 0 var(--lb-b);
+  z-index: 5;
+  height: 2rem;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+}
+
+.dir-corporate-credits-track {
+  display: flex;
+  width: max-content;
+  height: 100%;
+  align-items: center;
+  will-change: transform;
+  animation: dir-corporate-credits 120s linear infinite;
+}
+
+.dir-corporate-credits-run {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
+.dir-corporate-credits-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-right: 1.5rem;
+  color: rgb(255 255 255 / 0.72);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dir-corporate-credits-item::after {
+  content: '';
+  width: 0.3125rem;
+  height: 0.3125rem;
+  flex: none;
+  background: var(--accent);
+  transform: rotate(45deg);
+}
+
 .dir-corporate-hero-body {
   position: relative;
   z-index: 5;
@@ -260,12 +421,12 @@
   min-height: 100svh;
   flex-direction: column;
   justify-content: flex-end;
-  padding: calc(var(--lb-t) + 1.5rem) 1.5rem calc(var(--lb-b) + 1.75rem);
+  padding: calc(var(--lb-t) + 1.5rem) 1.5rem calc(var(--lb-b) + 3.5rem);
 }
 
 @media (min-width: 48rem) {
   .dir-corporate-hero-body {
-    padding: calc(var(--lb-t) + 2rem) 2.5rem calc(var(--lb-b) + 2.25rem);
+    padding: calc(var(--lb-t) + 2rem) 2.5rem calc(var(--lb-b) + 4.25rem);
   }
 }
 
@@ -312,32 +473,6 @@
   letter-spacing: 0.18em;
 }
 
-/* Подписи текущего кадра: планшет — сверху справа, широкий экран — у нижней кромки кадра */
-.dir-corporate-hero-caption {
-  position: absolute;
-  z-index: 6;
-  top: calc(var(--lb-t) + 0.75rem);
-  right: 2.5rem;
-  display: none;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.375rem;
-}
-
-@media (min-width: 48rem) {
-  .dir-corporate-hero-caption {
-    display: flex;
-  }
-}
-
-@media (min-width: 64rem) {
-  .dir-corporate-hero-caption {
-    top: auto;
-    right: 5rem;
-    bottom: calc(var(--lb-b) + 1rem);
-  }
-}
-
 /* ---------- Линейка глав (первый экран и закреплённая сцена) ---------- */
 
 /*
@@ -349,12 +484,8 @@
   position: relative;
   margin-inline: -6px;
   padding-inline: 6px;
-  padding-top: 1.4rem;
-  overflow-x: clip;
-}
-
-.dir-corporate-ruler[data-label='none'] {
   padding-top: 0.6rem;
+  overflow-x: clip;
 }
 
 /* Шкала: короткие деления каждые 10px, длинные каждые 50px */
@@ -460,13 +591,13 @@
 }
 
 @media (max-width: 89.999rem) {
-  .dir-corporate-ruler[data-label='none'] .dir-corporate-cell {
+  .dir-corporate-stage-nav .dir-corporate-cell {
     flex-direction: column;
     gap: 0.1rem;
     padding-left: 0.6rem;
   }
 
-  .dir-corporate-ruler[data-label='none'] .dir-corporate-cell-name {
+  .dir-corporate-stage-nav .dir-corporate-cell-name {
     display: block;
     letter-spacing: 0.1em;
   }
@@ -514,20 +645,6 @@
   height: 7px;
   background: var(--accent);
   transform: rotate(45deg);
-}
-
-.dir-corporate-ruler-tc {
-  position: absolute;
-  left: 0.65rem;
-  top: -0.05rem;
-  color: #ffffff;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.dir-corporate-ruler-head[data-flip='true'] .dir-corporate-ruler-tc {
-  left: auto;
-  right: 0.65rem;
 }
 
 /* ---------- Вступление ---------- */
@@ -723,22 +840,46 @@
   width: 1px;
 }
 
-/* Крупный номер главы: цифра «прокручивается» колонкой, как в счётчике */
-.dir-corporate-roll {
+/*
+ * Титр-карта: номер главы прокручивается колонкой, как в счётчике, рядом —
+ * тайм-код, который идёт с прокруткой секции. Плашка и рамка вместо гигантской
+ * цифры за заголовком: номер читается как надпись на кадре, а не как фон.
+ */
+.dir-corporate-card {
   position: absolute;
   z-index: 5;
   left: 5rem;
   bottom: 1.25rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 1.25rem;
+  padding: 0.75rem 1.25rem 0.75rem 1rem;
+  border: 1px solid rgb(255 255 255 / 0.28);
+  background: rgb(0 0 0 / 0.74);
+  pointer-events: none;
+}
+
+.dir-corporate-card::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  width: 2.25rem;
+  height: 2px;
+  background: var(--accent);
+}
+
+.dir-corporate-roll {
   display: flex;
   height: 1em;
   align-items: flex-start;
   overflow: hidden;
   color: #ffffff;
   font-family: var(--font-stage);
-  font-size: clamp(8.5rem, 18.5vw, 19rem);
+  font-size: clamp(3.75rem, 6.2vw, 6.5rem);
   letter-spacing: -0.05em;
   line-height: 1;
-  pointer-events: none;
+  font-variant-numeric: tabular-nums;
 }
 
 .dir-corporate-roll-col {
@@ -754,20 +895,38 @@
   height: 1em;
 }
 
-.dir-corporate-roll-of {
-  align-self: flex-end;
-  margin: 0 0 1.35rem 1.1rem;
-  color: rgb(255 255 255 / 0.65);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.22em;
-  line-height: 1;
+.dir-corporate-card-side {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  align-self: stretch;
+  padding: 0 0 0.3rem 1rem;
+  border-left: 1px solid rgb(255 255 255 / 0.28);
+}
+
+/* Телефон: та же карта, но компактная, в нижнем левом углу кадра главы */
+.dir-corporate-card-m {
+  left: 1.25rem;
+  bottom: 1.25rem;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.6rem 1rem 0.6rem 0.9rem;
+}
+
+.dir-corporate-mnum {
+  color: #ffffff;
+  font-family: var(--font-stage);
+  font-size: clamp(2.5rem, 12vw, 3.5rem);
+  letter-spacing: -0.05em;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Панели глав справа: читаются всегда, активная «зажигается» */
 .dir-corporate-panel {
   display: flex;
-  min-height: 82svh;
+  min-height: 74svh;
   flex-direction: column;
   /* Содержимое стоит от верхней линии кадра, схема ложится к нижнему краю кадра:
      без центрирования над заголовком не копится пустота на высоких экранах */
@@ -937,7 +1096,7 @@
 @media (max-width: 63.999rem) {
   .dir-corporate-panel {
     min-height: 0;
-    padding-block: 0 4rem;
+    padding-block: 0 2.5rem;
     border-top: 0;
   }
 
@@ -954,44 +1113,6 @@
   }
 }
 
-/* Схема главы — тонкая графика, рисуется слева направо при появлении */
-.dir-corporate-schematic {
-  clip-path: inset(0 100% 0 0);
-  transition: clip-path 1300ms var(--ease-out-expo);
-}
-
-.dir-corporate-schematic[data-reveal='shown'] {
-  clip-path: inset(0 0 0 0);
-}
-
-.dir-corporate-schematic svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  overflow: visible;
-}
-
-.dir-corporate-schematic [data-stroke] {
-  fill: none;
-  stroke: rgb(255 255 255 / 0.55);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-
-.dir-corporate-schematic [data-fill] {
-  fill: #0d0d0d;
-  stroke: rgb(255 255 255 / 0.7);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-
-.dir-corporate-schematic [data-accent] {
-  fill: var(--accent);
-  stroke: var(--accent);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-
 /* Кадр главы на телефоне: раскрывается снизу, когда доезжает до экрана */
 .dir-corporate-mframe {
   clip-path: inset(100% 0 0 0);
@@ -1005,20 +1126,6 @@
 /* Без кадра кадр-плашка остаётся видимой: чертёж и крупный номер */
 .dir-corporate-mframe[data-plate='true'] {
   clip-path: inset(0 0 0 0);
-}
-
-.dir-corporate-mroll {
-  position: absolute;
-  z-index: 5;
-  left: 1.25rem;
-  bottom: 0.25rem;
-  color: #ffffff;
-  font-family: var(--font-stage);
-  font-size: clamp(6.5rem, 30vw, 11rem);
-  letter-spacing: -0.05em;
-  line-height: 0.9;
-  font-variant-numeric: tabular-nums;
-  pointer-events: none;
 }
 
 /* ---------- Для кого фильм ---------- */
@@ -1231,8 +1338,8 @@
   position: relative;
   isolation: isolate;
   display: grid;
-  gap: 1.75rem 2rem;
-  padding-block: 2.5rem;
+  gap: 1.25rem 2rem;
+  padding-block: 2rem;
 }
 
 @media (min-width: 48rem) {
@@ -1426,11 +1533,15 @@
 .dir-corporate-shot-code {
   position: absolute;
   left: 0.5rem;
-  bottom: 0.4rem;
+  bottom: 0.5rem;
   z-index: 3;
-  color: rgb(255 255 255 / 0.9);
+  padding: 0.2rem 0.4rem;
+  background: rgb(0 0 0 / 0.64);
+  color: #ffffff;
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  line-height: 1.3;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 0.8);
 }
 
 .dir-corporate-work:focus-visible::before,
@@ -1592,13 +1703,40 @@
   }
 }
 
+/* Телефон: у каждой работы один кадр. Остальные только удлиняли страницу, а на ширине
+   390px пара кадров в 4:3 не несёт ничего, чего нет в первом */
+@media (max-width: 47.999rem) {
+  .dir-corporate-mosaic > :nth-child(n + 2) {
+    display: none;
+  }
+
+  .dir-corporate-mosaic > :nth-child(1),
+  .dir-corporate-mosaic[data-layout='duo'][data-n='2'] > :nth-child(1) {
+    grid-column: 1 / -1;
+    aspect-ratio: 16 / 9;
+  }
+}
+
 /* ---------- Призыв после работ: хлопушка ---------- */
 
+/* Угол раскрытой планки: на широком экране планка длиннее, поэтому круче нельзя —
+   она поднялась бы над предыдущим разделом */
+.dir-corporate-slate {
+  --arm-open: -7deg;
+}
+
+@media (min-width: 64rem) {
+  .dir-corporate-slate {
+    --arm-open: -3deg;
+  }
+}
+
+/* Планка в красно-чёрную полосу: бело-чёрная читалась как сигнальная лента */
 .dir-corporate-slate-arm {
   height: 2.5rem;
   border: 1px solid rgb(255 255 255 / 0.5);
-  background: repeating-linear-gradient(115deg, #efefef 0 1.35rem, #0a0a0a 1.35rem 2.7rem);
-  transform: rotate(-8deg);
+  background: repeating-linear-gradient(115deg, var(--accent) 0 1.35rem, #0a0a0a 1.35rem 2.7rem);
+  transform: rotate(var(--arm-open));
   transform-origin: 0 100%;
   transition: transform 520ms var(--ease-out-expo);
 }
@@ -1614,82 +1752,43 @@
   border-top: 0;
 }
 
-.dir-corporate-slate-cta {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.dir-corporate-slate-cta:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-}
-
-.dir-corporate-slate-curtain {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--accent);
-  transform: translateX(-101%);
-  transition: transform var(--motion-move) var(--ease-out-expo);
-}
-
-.dir-corporate-slate-cta:active .dir-corporate-slate-curtain,
-.dir-corporate-slate-cta:focus-visible .dir-corporate-slate-curtain {
-  transform: translateX(0);
-}
-
-.dir-corporate-slate-cta .dir-corporate-slate-label {
-  transition: color var(--motion-move) ease;
-}
-
-.dir-corporate-slate-cta:active .dir-corporate-slate-label,
-.dir-corporate-slate-cta:focus-visible .dir-corporate-slate-label {
-  color: #000000;
-}
-
-.dir-corporate-slate-cta:active {
-  transform: scale(0.99);
-}
-
 @media (hover: hover) {
-  .dir-corporate-slate-cta:hover .dir-corporate-slate-curtain {
-    transform: translateX(0);
-  }
-
-  .dir-corporate-slate-cta:hover .dir-corporate-slate-label {
-    color: #000000;
-  }
-
   /* Рука поднимает верхнюю планку перед хлопком */
-  .dir-corporate-slate:has(.dir-corporate-slate-cta:hover) .dir-corporate-slate-arm {
-    transform: rotate(-5deg);
+  .dir-corporate-slate:has(.dir-btn:hover) .dir-corporate-slate-arm {
+    transform: rotate(calc(var(--arm-open) * 0.6));
     transition-delay: 0ms;
     transition-duration: 420ms;
     transition-timing-function: var(--ease-out-expo);
   }
 }
 
-.dir-corporate-slate:has(.dir-corporate-slate-cta:focus-visible) .dir-corporate-slate-arm {
-  transform: rotate(-5deg);
+.dir-corporate-slate:has(.dir-btn:focus-visible) .dir-corporate-slate-arm {
+  transform: rotate(calc(var(--arm-open) * 0.6));
   transition-delay: 0ms;
   transition-duration: 420ms;
   transition-timing-function: var(--ease-out-expo);
 }
 
-.dir-corporate-slate:has(.dir-corporate-slate-cta:active) .dir-corporate-slate-arm {
+.dir-corporate-slate:has(.dir-btn:active) .dir-corporate-slate-arm {
   transform: rotate(0deg);
   transition-delay: 0ms;
   transition-duration: 120ms;
 }
 
-/* ---------- Лист согласований на бумаге ---------- */
+/* ---------- Этапы и согласования: один светлый лист ---------- */
 
-.dir-corporate-sheet {
-  position: relative;
-  background: var(--dc-paper);
-  color: var(--dc-ink);
+/* Лист — токен кита (.dir-paper-section): фон, чернила и кромку даёт он. Здесь только
+   своя графика: засечки по углам и дорожка. Угловые засечки лежат внутри листа */
+.dir-corporate-process {
+  --st-num: 0rem;
+  --st-node: 2.25rem;
+}
+
+@media (min-width: 48rem) {
+  .dir-corporate-process {
+    --st-num: 6.5rem;
+    --st-node: 3.25rem;
+  }
 }
 
 .dir-corporate-sheet-mark {
@@ -1697,7 +1796,7 @@
   width: 1.25rem;
   height: 1.25rem;
   pointer-events: none;
-  border: 0 solid rgb(11 11 11 / 0.6);
+  border: 0 solid rgb(13 13 13 / 0.6);
 }
 
 .dir-corporate-sheet-mark[data-c='tl'] {
@@ -1728,72 +1827,26 @@
   border-bottom-width: 1px;
 }
 
-/* Нижняя кромка листа — отрывная: полукруглые вырезы пропускают фон следующего раздела */
-.dir-corporate-sheet-tear {
-  position: absolute;
-  inset: auto 0 0;
-  height: 0.7rem;
-  pointer-events: none;
-  background-image: radial-gradient(circle at 50% 100%, #0d0d0d 0 0.36rem, transparent 0.4rem);
-  background-size: 1.15rem 0.7rem;
-  background-repeat: repeat-x;
-}
-
-.dir-corporate-sheet-row {
-  position: relative;
-  border-top: 1px solid rgb(11 11 11 / 0.85);
-}
-
-.dir-corporate-sheet-row:first-child {
-  border-top-width: 3px;
-}
-
-.dir-corporate-sheet-row:last-child {
-  border-bottom: 1px solid rgb(11 11 11 / 0.85);
-}
-
-/* Красная метка у номера рисуется при появлении строки */
-.dir-corporate-sheet-row::before {
-  content: '';
-  position: absolute;
-  inset: -1px auto auto 0;
-  width: 3.5rem;
-  height: 3px;
-  background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 900ms var(--ease-out-expo) 200ms;
-}
-
-.dir-corporate-sheet-row[data-reveal='shown']::before {
-  transform: scaleX(1);
-}
-
-/* ---------- Этапы: одна дорожка до кнопки ---------- */
-
-.dir-corporate-stages {
-  --st-num: 0rem;
-  --st-node: 2.25rem;
-  position: relative;
-  border-top: 1px solid var(--dc-hair);
-  background: #0d0d0d;
-}
-
-@media (min-width: 48rem) {
-  .dir-corporate-stages {
-    --st-num: 6.5rem;
-    --st-node: 3.25rem;
-  }
+/* Кегль подобран по самой длинной неразрывной паре «и согласования»: на 320px она
+   помещается целиком, а не ломается внутри слова */
+.dir-corporate-process-title {
+  margin-top: 1.25rem;
+  color: var(--dir-paper-ink);
+  font-size: clamp(1.4rem, 7.1vw, 5.25rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 
 .dir-corporate-track {
   position: relative;
-  margin-top: 3.5rem;
+  margin-top: 2.75rem;
 }
 
 @media (min-width: 48rem) {
   .dir-corporate-track {
-    margin-top: 5rem;
+    margin-top: 4.5rem;
   }
 }
 
@@ -1809,7 +1862,7 @@
 }
 
 .dir-corporate-track-rail {
-  background: rgb(255 255 255 / 0.2);
+  background: rgb(13 13 13 / 0.22);
 }
 
 .dir-corporate-track-fill {
@@ -1827,7 +1880,7 @@
   display: grid;
   margin: 0;
   padding: 0;
-  row-gap: 3rem;
+  row-gap: 1.75rem;
   list-style: none;
 }
 
@@ -1851,8 +1904,8 @@
 .dir-corporate-step-node > span {
   position: absolute;
   inset: 0.0625rem;
-  border: 1px solid rgb(255 255 255 / 0.55);
-  background: #0d0d0d;
+  border: 1px solid rgb(13 13 13 / 0.6);
+  background: var(--dir-paper);
   transform: rotate(45deg);
   transition:
     background-color var(--motion-move) ease,
@@ -1869,8 +1922,8 @@
 .dir-corporate-step-num {
   grid-column: 3;
   grid-row: 1;
-  color: #3b3b3b;
-  font-size: clamp(3.25rem, 14vw, 4.75rem);
+  color: var(--dir-paper-mute);
+  font-size: 1.5rem;
   line-height: 0.85;
   letter-spacing: -0.04em;
   transition: color var(--motion-move) ease;
@@ -1879,8 +1932,8 @@
 .dir-corporate-step-title {
   grid-column: 3;
   grid-row: 2;
-  margin-top: 1rem;
-  color: rgb(255 255 255 / 0.72);
+  margin-top: 0.6rem;
+  color: rgb(13 13 13 / 0.78);
   font-size: clamp(1.1rem, 4.8vw, 1.35rem);
   line-height: 1.1;
   letter-spacing: -0.012em;
@@ -1891,16 +1944,16 @@
   grid-column: 3;
   grid-row: 3;
   max-width: 30rem;
-  margin-top: 0.75rem;
-  color: rgb(255 255 255 / 0.66);
+  margin-top: 0.6rem;
+  color: var(--dir-paper-mute);
   font-size: 0.9375rem;
-  line-height: 1.65;
+  line-height: 1.6;
   transition: color var(--motion-move) ease;
 }
 
 .dir-corporate-step[data-on='true'] .dir-corporate-step-num,
 .dir-corporate-step[data-on='true'] .dir-corporate-step-title {
-  color: #ffffff;
+  color: var(--dir-paper-ink);
 }
 
 .dir-corporate-step[data-on='true'][data-last='true'] .dir-corporate-step-num {
@@ -1908,12 +1961,12 @@
 }
 
 .dir-corporate-step[data-on='true'] .dir-corporate-step-text {
-  color: rgb(255 255 255 / 0.84);
+  color: rgb(13 13 13 / 0.86);
 }
 
 @media (min-width: 48rem) {
   .dir-corporate-steps {
-    row-gap: 4.5rem;
+    row-gap: 3.5rem;
   }
 
   .dir-corporate-step-num {
@@ -1936,7 +1989,7 @@
 
 /* Широкий экран: дорожка ложится горизонтально, пять колонок под красной линией */
 @media (min-width: 75rem) {
-  .dir-corporate-stages {
+  .dir-corporate-process {
     --st-num: 0rem;
     --st-node: 0rem;
   }
@@ -2001,137 +2054,59 @@
   }
 }
 
-.dir-corporate-next {
-  margin-top: 5rem;
-  padding-top: 3rem;
-  border-top: 1px solid var(--dc-hair);
+/* «Что нужно от компании»: продолжение того же листа, отделено чернильной линией */
+.dir-corporate-asks {
+  margin-top: 3rem;
+  padding-top: 2.25rem;
+  border-top: 1px solid var(--dir-paper-ink);
 }
 
 @media (min-width: 48rem) {
-  .dir-corporate-next {
-    margin-top: 7rem;
-    padding-top: 4rem;
+  .dir-corporate-asks {
+    margin-top: 6rem;
+    padding-top: 3.5rem;
   }
 }
 
-/*
- * Кнопка после этапов. Не «призрак»: две белые линии, красная риска слева и
- * белая круглая стрелка читаются кнопкой и без наведения — на телефоне его нет.
- */
-.dir-corporate-rail-btn {
-  position: relative;
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.25rem;
-  overflow: hidden;
-  isolation: isolate;
-  padding: 1.25rem 0 1.25rem 1.5rem;
-  border: 0;
-  border-top: 2px solid #ffffff;
-  border-bottom: 2px solid #ffffff;
-  background: none;
-  color: #ffffff;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+.dir-corporate-asks-title {
+  color: var(--dir-paper-ink);
+  font-size: clamp(1.75rem, 3.2vw, 3.2rem);
 }
 
-.dir-corporate-rail-btn::before {
+.dir-corporate-sheet-row {
+  position: relative;
+  border-top: 1px solid var(--dir-paper-ink);
+  color: var(--dir-paper-ink);
+}
+
+.dir-corporate-sheet-row:first-child {
+  border-top-width: 3px;
+}
+
+.dir-corporate-sheet-row:last-child {
+  border-bottom: 1px solid var(--dir-paper-ink);
+}
+
+/* Красная метка у буквы рисуется при появлении строки */
+.dir-corporate-sheet-row::before {
   content: '';
   position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
+  inset: -1px auto auto 0;
+  width: 2.75rem;
+  height: 3px;
   background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 900ms var(--ease-out-expo) 200ms;
 }
 
-.dir-corporate-rail-btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-}
-
-.dir-corporate-rail-curtain {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--accent);
-  transform: translateY(101%);
-  transition: transform var(--motion-move) var(--ease-out-expo);
-}
-
-.dir-corporate-rail-label {
-  font-size: clamp(1.1rem, 4.6vw, 1.6rem);
-  line-height: 1.05;
-  letter-spacing: -0.01em;
-  text-wrap: balance;
-  transition:
-    color var(--motion-state) ease,
-    transform var(--motion-move) var(--ease-out-expo);
-}
-
-@media (min-width: 64rem) {
-  .dir-corporate-rail-label {
-    font-size: clamp(1.1rem, 1.75vw, 1.6rem);
-    white-space: nowrap;
-  }
-}
-
-.dir-corporate-rail-ring {
-  display: grid;
-  width: 3rem;
-  height: 3rem;
-  flex: none;
-  place-items: center;
-  border-radius: 9999px;
-  background: #ffffff;
-  color: #000000;
-  transition:
-    background-color var(--motion-state) ease,
-    color var(--motion-state) ease,
-    transform var(--motion-move) var(--ease-out-expo);
+.dir-corporate-sheet-row[data-reveal='shown']::before {
+  transform: scaleX(1);
 }
 
 @media (min-width: 48rem) {
-  .dir-corporate-rail-ring {
-    width: 3.5rem;
-    height: 3.5rem;
-  }
-}
-
-.dir-corporate-rail-btn:focus-visible .dir-corporate-rail-curtain,
-.dir-corporate-rail-btn:active .dir-corporate-rail-curtain {
-  transform: translateY(0);
-}
-
-.dir-corporate-rail-btn:focus-visible .dir-corporate-rail-label,
-.dir-corporate-rail-btn:active .dir-corporate-rail-label {
-  color: #000000;
-  transform: translateX(0.5rem);
-}
-
-.dir-corporate-rail-btn:focus-visible .dir-corporate-rail-ring,
-.dir-corporate-rail-btn:active .dir-corporate-rail-ring {
-  background: #000000;
-  color: #ffffff;
-  transform: rotate(-45deg);
-}
-
-@media (hover: hover) {
-  .dir-corporate-rail-btn:hover .dir-corporate-rail-curtain {
-    transform: translateY(0);
-  }
-
-  .dir-corporate-rail-btn:hover .dir-corporate-rail-label {
-    color: #000000;
-    transform: translateX(0.5rem);
-  }
-
-  .dir-corporate-rail-btn:hover .dir-corporate-rail-ring {
-    background: #000000;
-    color: #ffffff;
-    transform: rotate(-45deg);
+  .dir-corporate-sheet-row::before {
+    width: 5.5rem;
   }
 }
 
@@ -2140,7 +2115,7 @@
 .dir-corporate-band {
   position: relative;
   overflow: hidden;
-  padding-block: 0.5rem 1.25rem;
+  padding-block: 2.75rem 1rem;
   background: #000000;
   border-top: 1px solid var(--dc-hair);
 }
@@ -2213,7 +2188,6 @@
 
 .dir-corporate-faqframe {
   position: relative;
-  margin-top: 2rem;
   aspect-ratio: 16 / 9;
   overflow: hidden;
   background: #080808;
@@ -2229,127 +2203,16 @@
 @media (min-width: 64rem) {
   .dir-corporate-faqframe {
     height: clamp(16rem, calc(100svh - 24rem), 34rem);
-    margin-top: 2.5rem;
     aspect-ratio: auto;
   }
 }
 
-.dir-corporate-faq-link {
-  position: relative;
-  min-height: 2.75rem;
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: rgb(255 255 255 / 0.3);
-  text-underline-offset: 6px;
-  -webkit-tap-highlight-color: transparent;
-  transition:
-    color var(--motion-state) ease,
-    text-decoration-color var(--motion-state) ease;
-}
+/* ---------- Финал: знак сцены ---------- */
 
-.dir-corporate-faq-link:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-  color: var(--accent);
-}
-
-.dir-corporate-faq-link:active {
-  color: var(--accent);
-  text-decoration-color: var(--accent);
-}
-
-.dir-corporate-faq-arrow {
-  transition: transform var(--motion-move) var(--ease-out-expo);
-}
-
-.dir-corporate-faq-link:active .dir-corporate-faq-arrow {
-  transform: translateX(4px);
-}
-
-@media (hover: hover) {
-  .dir-corporate-faq-link:hover {
-    color: var(--accent);
-    text-decoration-color: var(--accent);
-  }
-
-  .dir-corporate-faq-link:hover .dir-corporate-faq-arrow {
-    transform: translateX(4px);
-  }
-}
-
-/* Бегущий титр финала (общий блок) ждёт появления на экране: EndGuard ставит data-live */
-.dir-corporate #direction-end:not([data-live='true']) .dir-end-marquee {
-  animation-play-state: paused;
-}
-
-/* ---------- Кнопки первого экрана ---------- */
-
-.dir-corporate-cta {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--motion-press) var(--ease-out-expo);
-}
-
-.dir-corporate-cta:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-}
-
-.dir-corporate-cta:active {
-  transform: scale(0.98);
-}
-
-.dir-corporate-cta-curtain {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--accent);
-  transform: translateX(-101%);
-  transition: transform var(--motion-move) var(--ease-out-expo);
-}
-
-.dir-corporate-cta-label,
-.dir-corporate-cta-arrow {
-  transition:
-    color var(--motion-state) ease,
-    transform var(--motion-move) var(--ease-out-expo);
-}
-
-.dir-corporate-cta:focus-visible .dir-corporate-cta-curtain,
-.dir-corporate-cta:active .dir-corporate-cta-curtain {
-  transform: translateX(0);
-}
-
-.dir-corporate-cta:focus-visible .dir-corporate-cta-label,
-.dir-corporate-cta:active .dir-corporate-cta-label,
-.dir-corporate-cta:focus-visible .dir-corporate-cta-arrow,
-.dir-corporate-cta:active .dir-corporate-cta-arrow {
-  color: #000000;
-}
-
-.dir-corporate-cta:focus-visible .dir-corporate-cta-arrow,
-.dir-corporate-cta:active .dir-corporate-cta-arrow {
-  transform: translateX(4px);
-}
-
-@media (hover: hover) {
-  .dir-corporate-cta:hover .dir-corporate-cta-curtain {
-    transform: translateX(0);
-  }
-
-  .dir-corporate-cta:hover .dir-corporate-cta-label,
-  .dir-corporate-cta:hover .dir-corporate-cta-arrow {
-    color: #000000;
-  }
-
-  .dir-corporate-cta:hover .dir-corporate-cta-arrow {
-    transform: translateX(4px);
-  }
+.dir-corporate-leader {
+  width: clamp(14rem, 20vw, 19rem);
+  height: auto;
+  overflow: visible;
 }
 
 .dir-corporate-link {
@@ -2404,8 +2267,8 @@
 
 /*
  * Снимается движение, а не обратная связь: вёрстка та же, цвет и состояние
- * остаются, а всё, что едет, встаёт на место. Кадр открыт, наезд и ход линейки
- * стоят, вступление светится целиком.
+ * остаются, а всё, что едет, встаёт на место. Кадр открыт, щель не рисуется,
+ * наезд, титр и ход линейки стоят, вступление светится целиком.
  */
 @media (prefers-reduced-motion: reduce) {
   .dir-corporate-rise,
@@ -2414,6 +2277,7 @@
   .dir-corporate-hero-light,
   .dir-corporate-hero-push,
   .dir-corporate-hero-edge,
+  .dir-corporate-credits-track,
   .dir-corporate-ruler-ticks,
   .dir-corporate-stage-layer[data-state='on'],
   .dir-corporate-stage-layer[data-state='on'] .dir-corporate-stage-still,
@@ -2421,7 +2285,8 @@
     animation: none;
   }
 
-  .dir-corporate-hero-light {
+  .dir-corporate-hero-light,
+  .dir-corporate-slit {
     display: none;
   }
 
@@ -2437,25 +2302,15 @@
   .dir-corporate-shot,
   .dir-corporate-shot-img,
   .dir-corporate-step-node > span,
-  .dir-corporate-faq-arrow,
   .dir-corporate-splice-line,
-  .dir-corporate-schematic,
   .dir-corporate-mframe,
   .dir-corporate-slate-arm,
-  .dir-corporate-slate-curtain,
   .dir-corporate-sheet-row::before,
-  .dir-corporate-rail-curtain,
-  .dir-corporate-rail-label,
-  .dir-corporate-rail-ring,
-  .dir-corporate-cta,
-  .dir-corporate-cta-curtain,
-  .dir-corporate-cta-arrow,
   .dir-corporate-link-icon {
     transition-property: color, background-color, border-color, opacity;
     transition-duration: var(--motion-state);
   }
 
-  .dir-corporate-schematic,
   .dir-corporate-mframe,
   .dir-corporate-shot {
     clip-path: none;
@@ -2467,8 +2322,8 @@
 
   .dir-corporate-slate-arm,
   .dir-corporate-slate[data-reveal='shown'] .dir-corporate-slate-arm,
-  .dir-corporate-slate:has(.dir-corporate-slate-cta:focus-visible) .dir-corporate-slate-arm,
-  .dir-corporate-slate:has(.dir-corporate-slate-cta:active) .dir-corporate-slate-arm {
+  .dir-corporate-slate:has(.dir-btn:focus-visible) .dir-corporate-slate-arm,
+  .dir-corporate-slate:has(.dir-btn:active) .dir-corporate-slate-arm {
     transform: rotate(0deg);
     transition: none;
   }
@@ -2489,18 +2344,8 @@
   .dir-corporate-work:active .dir-corporate-work-arrow,
   .dir-corporate-work:hover .dir-corporate-shot-img,
   .dir-corporate-work[data-focus='true'] .dir-corporate-shot-img,
-  .dir-corporate-rail-btn:hover .dir-corporate-rail-label,
-  .dir-corporate-rail-btn:hover .dir-corporate-rail-ring,
-  .dir-corporate-rail-btn:active .dir-corporate-rail-label,
-  .dir-corporate-rail-btn:active .dir-corporate-rail-ring,
-  .dir-corporate-cta:hover .dir-corporate-cta-arrow,
-  .dir-corporate-cta:active .dir-corporate-cta-arrow,
-  .dir-corporate-cta:active,
-  .dir-corporate-slate-cta:active,
   .dir-corporate-link:hover .dir-corporate-link-icon,
-  .dir-corporate-link:active .dir-corporate-link-icon,
-  .dir-corporate-faq-link:hover .dir-corporate-faq-arrow,
-  .dir-corporate-faq-link:active .dir-corporate-faq-arrow {
+  .dir-corporate-link:active .dir-corporate-link-icon {
     transform: none;
   }
 

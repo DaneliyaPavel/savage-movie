@@ -3,26 +3,31 @@
  *
  * Метафора: съёмка как проект в монтажной программе. Один мастер-кадр режется
  * на выдачи, выдачи ложатся на линейку квартала, а руководитель маркетинга за
- * десять секунд понимает, что получит. Самая «инженерная» из шести страниц:
- * сетка, метки, тайм-коды, дорожки V1/V2/A1.
+ * десять секунд понимает, что получит. Язык листа — сетка, метки, тайм-коды,
+ * дорожки V1/V2/A1 — идёт до самого низа, но нижняя половина держится не на
+ * схемах, а на кадрах.
  *
- * Композиция (у каждой секции свой масштаб и плотность, а язык листа идёт
- * до самого низа):
+ * Композиция (у каждой секции свой масштаб и плотность):
  *   1. Первый экран — мастер-кадр распадается на нарезки 9:16, 16:9, 1:1 и
  *      4:5; линия развёртки идёт по кадру сама, нарезки реагируют на курсор и
- *      на скролл, а нажатие выбирает нарезку (то же на телефоне).
+ *      на скролл, а нажатие выбирает нарезку (то же на телефоне). H1 короткий
+ *      («Регулярный видеопродакшн»), хук «Одна съёмка — восемь выдач» — крупная
+ *      визуальная строка под ним.
  *   2. Линейка квартала — sticky-сцена: скролл ведёт линию воспроизведения по
  *      13 неделям, монитор показывает, какой кусок мастер-кадра выходит сейчас.
+ *      На телефоне линейка едет под линией по горизонтали, цифры недель ≥ 10px.
  *      На низком окне сцена не закрепляется: те же блоки, но нажатием.
- *   3. Состав выдачи — мозаика карточек с настоящими нарезками.
- *   4. Кому подходит — три схемы: каталог, площадки, ритм.
- *   5. Кадры из работ — контактный лист; призыв; процесс — этапы, спускающиеся
- *      по дорожкам; призыв с нарезкой мастер-кадра; вопросы с мини-монитором.
+ *   3. Состав выдачи — мозаика: у каждой выдачи свой кадр, кадрирование и тон.
+ *   4. Полноэкранный кадр с тезисом — пауза между мозаикой и схемами.
+ *   5. Кому подходит — три схемы на светлом листе (--dir-paper); работы;
+ *      призыв; процесс — этапы по дорожкам, у каждого свой кадр или схема;
+ *      призыв с нарезкой мастер-кадра; вопросы с мини-монитором.
  *
- * Все нарезки — один и тот же мастер-кадр, сдвинутый в окне нарезки
- * (registered crop): картинка грузится один раз, нарезки не расходятся с
- * мастером ни на пиксель. Если работ из портфолио нет, вместо кадра везде
- * стоит поверхность «листа» — сетка и свет, — а вёрстка и смысл остаются.
+ * Нарезки на первом экране, в мониторе, в призыве процесса и в вопросах — один
+ * и тот же мастер-кадр, сдвинутый в окне (registered crop): картинка грузится
+ * один раз, нарезки не расходятся с мастером ни на пиксель. Если работ из
+ * портфолио нет, вместо кадра везде стоит поверхность «листа» — сетка и свет, —
+ * а вёрстка и смысл остаются.
  *
  * Движение — transform, clip-path и opacity декора. Всё, что идёт по кругу,
  * стоит вне экрана и выключено при prefers-reduced-motion; текст, кнопки и
@@ -39,7 +44,6 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
-  type ReactNode,
   type RefObject,
 } from 'react'
 import Link from 'next/link'
@@ -48,6 +52,7 @@ import { ArrowDown, ArrowRight, ArrowUpRight } from 'lucide-react'
 
 import {
   CONTENT_HERO_CUTS,
+  CONTENT_LOOKS,
   CONTENT_PAGE,
   CONTENT_PLAN,
   CONTENT_STAGE_LANES,
@@ -66,7 +71,14 @@ import type { FaqItem, ProcessStep } from '@/lib/services/pages/types'
 import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
 import { DirectionEnd } from '../direction-end'
-import { KIT_KICKER, KIT_TITLE, KIT_TITLE_SIZE, typo } from '../direction-kit'
+import {
+  DirectionButton,
+  KIT_KICKER,
+  KIT_TITLE,
+  KIT_TITLE_SIZE,
+  setTitle,
+  typo,
+} from '../direction-kit'
 import { DIRECTION_READING } from '@/lib/services/pages'
 import { OtherDirections } from '../other-directions'
 import { Still } from '../still'
@@ -86,36 +98,11 @@ type Frame = SceneFrame | null
 const MASTER_SIZES = '(min-width: 1024px) 58vw, 100vw'
 const FULL_RECT: CropRect = { x: 0, y: 0, w: 100, h: 100 }
 
-const NBSP = ' '
 const pad = (value: number) => String(value).padStart(2, '0')
 const delay = (ms: number) => ({ '--dc-d': `${ms}ms` }) as CSSProperties
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
-
-/**
- * typo() кита связывает только каждое второе короткое слово цепочки («и на
- * точках»: «и» держится, «на» остаётся последним в строке). Досвязываем
- * оставшиеся обычные пробелы после слов до трёх букв.
- */
-const SHORT_TAIL = /([\s«("'—–])([A-Za-zА-Яа-яЁё]{1,3}) (?=\S)/g
-
-function tight(text: string): string {
-  return typo(text).replace(SHORT_TAIL, `$1$2${NBSP}`).replace(SHORT_TAIL, `$1$2${NBSP}`)
-}
-
-/**
- * Заголовок раздела: слова с дефисом не рвутся («контент-план» целиком), а
- * неразрывные пробелы ставятся по полному правилу страницы.
- */
-function head(title: string): ReactNode {
-  return tight(title)
-    .split(' ')
-    .map((word, position) => (
-      <span key={`${word}-${position}`}>
-        {position > 0 ? ' ' : ''}
-        {word.includes('-') ? <span className="whitespace-nowrap">{word}</span> : word}
-      </span>
-    ))
-}
+/** Точка над «Ё» и скобка «Й» выше капители: такой строке нужен воздух сверху */
+const hasDiacritic = (word: string) => /[ёй]/i.test(word)
 
 /** Тайм-код на 24 кадрах в секунду: ЧЧ:ММ:СС:КК */
 function timecode(frames: number) {
@@ -361,7 +348,7 @@ function MonitorView({ frame, rect, tag }: { frame: Frame; rect: CropRect; tag: 
           height: `${rect.h}%`,
         }}
       >
-        <span className="dir-content-mon-tag type-meta-sm font-mono uppercase tabular-nums">
+        <span className="dir-content-mon-tag dir-kit-meta font-mono uppercase tabular-nums">
           {tag}
         </span>
       </span>
@@ -493,58 +480,77 @@ function Hero({ frame }: { frame: Frame }) {
 
       <div className="dir-content-herogrid grid flex-1 items-center gap-x-10 gap-y-9 px-6 pb-10 pt-24 md:px-10 lg:grid-cols-12 lg:px-20 lg:pb-12 lg:pt-28">
         <div className="lg:col-span-6 xl:col-span-5">
-          <p
-            className="dir-content-rise type-meta font-mono uppercase tabular-nums text-white/60"
-            style={delay(0)}
-          >
-            {hero.meta}
-            <span aria-hidden="true" className="mx-2.5 text-accent">
-              /
+          <p className={`${KIT_KICKER} dir-content-rise`} style={delay(0)}>
+            <span aria-hidden="true" className="h-px w-8 shrink-0 bg-accent" />
+            <span>
+              {hero.meta}
+              <span aria-hidden="true" className="mx-2.5 text-accent">
+                /
+              </span>
+              {hero.places}
             </span>
-            {hero.places}
           </p>
 
-          <h1 className="dir-content-h1 mt-6 font-stage text-[clamp(2.6rem,14.6vw,5.25rem)] uppercase leading-[0.94] tracking-[-0.04em] text-white sm:text-[clamp(2.1rem,9.3vw,5.25rem)] md:mt-8 lg:text-[clamp(3.4rem,min(6.3vw,11svh),7.75rem)]">
+          {/* H1 — название направления, коротко и с ключевой фразой; хук ниже — визуальная строка */}
+          <h1
+            className="dir-content-h1 dir-content-rise mt-6 font-stage text-[clamp(1rem,4.5vw,1.25rem)] uppercase leading-[1.2] tracking-[0.06em] text-white md:mt-8 lg:text-[clamp(1.05rem,1.45vw,1.45rem)]"
+            style={delay(40)}
+          >
+            {hero.title}
+          </h1>
+
+          {/* Интерлиньяж 1: точка над «Ё» в «съёмка» не упирается в строку выше */}
+          <p className="dir-content-hook mt-4 font-stage text-[clamp(2.6rem,14.6vw,5.25rem)] uppercase leading-[1] tracking-[-0.04em] text-white sm:text-[clamp(2.1rem,9.3vw,5.25rem)] md:mt-5 lg:text-[clamp(3.4rem,min(6.3vw,11svh),7.75rem)]">
             <span className="block">
-              <span className="dir-content-rise block sm:inline-block lg:block" style={delay(80)}>
-                Одна
-              </span>{' '}
-              <span className="dir-content-rise block sm:inline-block lg:block" style={delay(160)}>
-                съёмка
-              </span>
+              {hero.hook[0].map((word, position) => (
+                <Fragment key={word}>
+                  {position > 0 ? ' ' : null}
+                  <span
+                    className={`dir-content-rise block sm:inline-block lg:block${
+                      hasDiacritic(word) ? ' pt-[0.11em]' : ''
+                    }`}
+                    style={delay(80 + position * 80)}
+                  >
+                    {word}
+                  </span>
+                </Fragment>
+              ))}
               <span className="sr-only">,</span>
             </span>{' '}
             <span className="block font-brand-hero">
-              <span
-                className="dir-content-rise block text-accent sm:inline-block lg:block"
-                style={delay(240)}
-              >
-                восемь
-              </span>{' '}
-              <span className="dir-content-rise block sm:inline-block lg:block" style={delay(320)}>
-                выдач
-              </span>
-            </span>{' '}
-            <span
-              className="dir-content-lead dir-content-rise mt-6 block max-w-[27rem] font-sans text-base font-light normal-case leading-snug tracking-normal text-white/80 [text-wrap:pretty] md:mt-8 md:text-xl"
-              style={delay(420)}
-            >
-              {tight(hero.lead)}
+              {hero.hook[1].map((word, position) => (
+                <Fragment key={word}>
+                  {position > 0 ? ' ' : null}
+                  <span
+                    className={`dir-content-rise block sm:inline-block lg:block${
+                      position === 0 ? ' text-accent' : ''
+                    }${hasDiacritic(word) ? ' pt-[0.11em]' : ''}`}
+                    style={delay(240 + position * 80)}
+                  >
+                    {word}
+                  </span>
+                </Fragment>
+              ))}
             </span>
-          </h1>
+          </p>
+
+          <p
+            className="dir-content-lead dir-content-rise mt-6 max-w-[27rem] font-sans text-base font-light leading-snug text-white/80 [text-wrap:pretty] md:mt-8 md:text-xl"
+            style={delay(420)}
+          >
+            {typo(hero.lead)}
+          </p>
 
           <div
-            className="dir-content-rise mt-8 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-1 md:mt-10"
+            data-sticky-hide=""
+            className="dir-content-rise mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-1 md:mt-10"
             style={delay(520)}
           >
-            <button
-              type="button"
+            <DirectionButton
+              label={CONTENT_PAGE.ctaLabel}
               onClick={() => page.openBrief('hero')}
-              className="dir-content-btn w-full whitespace-nowrap px-7 py-4 text-base font-medium sm:w-auto"
-            >
-              <span>{CONTENT_PAGE.ctaLabel}</span>
-              <ArrowRight aria-hidden="true" className="h-4 w-4" />
-            </button>
+              className="w-full sm:w-auto sm:min-w-[19rem]"
+            />
             <a href="#sheet" className="dir-content-link whitespace-nowrap text-base">
               Как это работает
               <ArrowDown aria-hidden="true" className="h-4 w-4" />
@@ -556,7 +562,7 @@ function Hero({ frame }: { frame: Frame }) {
           <div className="dir-content-stagebox">
             <div
               aria-hidden="true"
-              className="type-meta mb-3 flex items-center justify-between gap-4 font-mono uppercase tabular-nums text-white/60"
+              className="dir-kit-meta mb-3 flex items-center justify-between gap-4 font-mono uppercase tabular-nums text-white/60"
             >
               <span className="truncate">Мастер-кадр{frame ? `: ${frame.client}` : ''}</span>
               <span className="shrink-0">
@@ -618,7 +624,7 @@ function Hero({ frame }: { frame: Frame }) {
                     <span aria-hidden="true" className="dir-content-cut-tick" />
                     <span
                       aria-hidden="true"
-                      className="dir-content-cut-tag type-meta-sm font-mono uppercase tabular-nums"
+                      className="dir-content-cut-tag dir-kit-meta font-mono uppercase tabular-nums"
                     >
                       <b>{item.ratio}</b>
                       <i>{pad(index + 1)}</i>
@@ -641,7 +647,7 @@ function Hero({ frame }: { frame: Frame }) {
             </div>
 
             <div aria-hidden="true" className="dir-content-readout mt-4">
-              <span className="type-meta font-mono uppercase tabular-nums text-white/70">
+              <span className="dir-kit-meta font-mono uppercase tabular-nums text-white/70">
                 {cut.ratio}
                 <span className="mx-2 text-accent">/</span>
                 {cut.name}
@@ -650,7 +656,7 @@ function Hero({ frame }: { frame: Frame }) {
                 key={cut.key}
                 className="dir-content-swap text-sm leading-snug text-white/80 md:text-base"
               >
-                {tight(cut.text)}
+                {typo(cut.text)}
               </span>
             </div>
           </div>
@@ -664,7 +670,7 @@ function Hero({ frame }: { frame: Frame }) {
         >
           {CONTENT_PAGE.spec.map(item => (
             <div key={item.label} className="border-l border-white/15 pl-4 md:pl-6">
-              <dt className="type-meta font-mono uppercase text-white/60">{item.label}</dt>
+              <dt className="dir-kit-meta font-mono uppercase text-white/60">{item.label}</dt>
               <dd className="mt-1.5 font-stage text-[clamp(1.1rem,2.1vw,1.75rem)] uppercase leading-none tracking-[-0.02em] text-white">
                 {item.value}
               </dd>
@@ -695,6 +701,7 @@ function Nle({ frame }: { frame: Frame }) {
   const scene = CONTENT_PAGE.scene
   const sectionRef = useRef<HTMLElement>(null)
   const hintRef = useRef<HTMLSpanElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const [active, setActive] = useState(0)
   const [week, setWeek] = useState(1)
   const flow = useMatch(FLOW_QUERY)
@@ -728,6 +735,12 @@ function Nle({ frame }: { frame: Frame }) {
     setActive(current => (current === nextActive ? current : nextActive))
     const hint = hintRef.current
     if (hint) hint.style.opacity = value > 0.02 ? '0' : '1'
+    // На телефоне линейка шире экрана и едет под линией: в начале квартала видны
+    // первые недели, в конце — последние, а сама линия проходит видимую часть
+    const scroller = scrollRef.current
+    if (scroller && scroller.scrollWidth > scroller.clientWidth + 1) {
+      scroller.scrollLeft = value * (scroller.scrollWidth - scroller.clientWidth)
+    }
   })
 
   // Нажатие на блок ведёт линию к началу этой выдачи: в закреплённой сцене
@@ -775,17 +788,17 @@ function Nle({ frame }: { frame: Frame }) {
               01 / Монтажный лист
             </p>
             <h2 id="dir-content-scene-title" className={`${KIT_TITLE} dir-content-nle-title`}>
-              {head(scene.title)}
+              {setTitle(scene.title)}
             </h2>
-            <p className="dir-content-nle-lead type-meta font-mono uppercase leading-relaxed tabular-nums text-white/60">
-              {tight(scene.lead)}
+            <p className="dir-content-nle-lead dir-kit-meta font-mono uppercase leading-relaxed tabular-nums text-white/60">
+              {typo(scene.lead)}
             </p>
           </header>
 
           <div className="dir-content-nle-mon">
             <p
               aria-hidden="true"
-              className="type-meta mb-3 flex shrink-0 items-center justify-between gap-4 font-mono uppercase tabular-nums text-white/60"
+              className="dir-kit-meta mb-3 flex shrink-0 items-center justify-between gap-4 font-mono uppercase tabular-nums text-white/60"
             >
               <span>
                 Монитор
@@ -812,7 +825,7 @@ function Nle({ frame }: { frame: Frame }) {
           <div aria-hidden="true" className="dir-content-nle-cap" data-cap="">
             <div key={current.output} className="dir-content-swap">
               <p
-                className="type-meta font-mono uppercase tabular-nums text-white/60"
+                className="dir-kit-meta font-mono uppercase tabular-nums text-white/60"
                 data-cap-meta=""
               >
                 <span className="text-accent">{pad(current.output + 1)}</span>
@@ -826,7 +839,7 @@ function Nle({ frame }: { frame: Frame }) {
                 {output.label}
               </p>
               <p className="dir-content-cap-text text-white/75 [text-wrap:pretty]" data-cap-text="">
-                {tight(output.text)}
+                {typo(output.text)}
               </p>
             </div>
           </div>
@@ -834,105 +847,109 @@ function Nle({ frame }: { frame: Frame }) {
 
         <div className="dir-content-nle-foot">
           <div className="dir-content-tl" style={{ '--dc-week': CONTENT_WEEKS } as CSSProperties}>
-            <div aria-hidden="true" className="dir-content-tl-head">
-              <span className="dir-content-tl-corner type-meta-sm font-mono uppercase">
-                <span className="md:hidden">Нед.</span>
-                <span className="hidden md:inline">Неделя</span>
-              </span>
-              <div className="dir-content-tl-weeks type-meta-sm font-mono tabular-nums">
-                {WEEK_NUMBERS.map(number => (
-                  <span
-                    key={number}
-                    data-state={number < week ? 'past' : number === week ? 'now' : 'next'}
-                  >
-                    {pad(number)}
+            <div ref={scrollRef} className="dir-content-tl-scroll">
+              <div className="dir-content-tl-inner">
+                <div aria-hidden="true" className="dir-content-tl-head">
+                  <span className="dir-content-tl-corner dir-kit-meta font-mono uppercase">
+                    <span className="md:hidden">Нед.</span>
+                    <span className="hidden md:inline">Неделя</span>
                   </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Блоки идут в порядке выхода, а не по дорожкам: так Tab ведёт по времени */}
-            <div className="dir-content-tl-body">
-              {CONTENT_TRACKS.map((track, row) => (
-                <Fragment key={track.id}>
-                  <span
-                    aria-hidden="true"
-                    className="dir-content-tl-label"
-                    style={{ gridRow: row + 1 }}
-                  >
-                    <b className="type-meta font-mono">{track.id}</b>
-                    <i className="type-meta-sm font-mono uppercase">{track.note}</i>
-                  </span>
-                  <span
-                    aria-hidden="true"
-                    className="dir-content-tl-lane"
-                    data-track={track.id}
-                    style={{ gridRow: row + 1 }}
-                  />
-                </Fragment>
-              ))}
-
-              {ORDER.map((plan, index) =>
-                plan.sound ? (
-                  <div
-                    key={`a-${plan.output}`}
-                    aria-hidden="true"
-                    className="dir-content-aclip"
-                    data-state={stateOf(index)}
-                    style={{ gridColumn: `${plan.week + 1} / span ${plan.span}`, gridRow: 3 }}
-                  >
-                    <Wave seed={plan.output + 1} />
+                  <div className="dir-content-tl-weeks dir-kit-meta font-mono tabular-nums">
+                    {WEEK_NUMBERS.map(number => (
+                      <span
+                        key={number}
+                        data-state={number < week ? 'past' : number === week ? 'now' : 'next'}
+                      >
+                        {pad(number)}
+                      </span>
+                    ))}
                   </div>
-                ) : null
-              )}
+                </div>
 
-              {ORDER.map((plan, index) => (
-                <button
-                  key={plan.output}
-                  type="button"
-                  className="dir-content-clip"
-                  data-state={stateOf(index)}
-                  aria-current={index === active ? 'true' : undefined}
-                  aria-label={`${outputAt(plan.output).label}${
-                    plan.note ? `, ${plan.note}` : ''
-                  }: выдача ${plan.output + 1}, недели ${weekRange(plan)}`}
-                  style={{
-                    gridColumn: `${plan.week + 1} / span ${plan.span}`,
-                    gridRow: trackRow(plan.track),
-                  }}
-                  onClick={() => select(plan)}
-                  onFocus={event => {
-                    // Фокус с клавиатуры двигает монитор сразу, не дожидаясь Enter
-                    let keyboard = false
-                    try {
-                      keyboard = event.currentTarget.matches(':focus-visible')
-                    } catch {
-                      keyboard = false
-                    }
-                    if (keyboard) select(plan, true)
-                  }}
-                >
-                  <span className="type-meta-sm font-mono tabular-nums">
-                    {pad(plan.output + 1)}
-                  </span>
-                  <span className="dir-content-clip-name type-meta font-mono uppercase">
-                    {outputAt(plan.output).label}
-                  </span>
-                </button>
-              ))}
-            </div>
+                {/* Блоки идут в порядке выхода, а не по дорожкам: так Tab ведёт по времени */}
+                <div className="dir-content-tl-body">
+                  {CONTENT_TRACKS.map((track, row) => (
+                    <Fragment key={track.id}>
+                      <span
+                        aria-hidden="true"
+                        className="dir-content-tl-label"
+                        style={{ gridRow: row + 1 }}
+                      >
+                        <b className="dir-kit-meta font-mono">{track.id}</b>
+                        <i className="dir-kit-meta font-mono uppercase">{track.note}</i>
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className="dir-content-tl-lane"
+                        data-track={track.id}
+                        style={{ gridRow: row + 1 }}
+                      />
+                    </Fragment>
+                  ))}
 
-            <div aria-hidden="true" className="dir-content-ph-rail">
-              <motion.div className="dir-content-ph" style={{ x: playheadX }}>
-                <span className="dir-content-ph-flag type-meta-sm font-mono tabular-nums">
-                  Н{pad(week)}
-                </span>
-              </motion.div>
+                  {ORDER.map((plan, index) =>
+                    plan.sound ? (
+                      <div
+                        key={`a-${plan.output}`}
+                        aria-hidden="true"
+                        className="dir-content-aclip"
+                        data-state={stateOf(index)}
+                        style={{ gridColumn: `${plan.week + 1} / span ${plan.span}`, gridRow: 3 }}
+                      >
+                        <Wave seed={plan.output + 1} />
+                      </div>
+                    ) : null
+                  )}
+
+                  {ORDER.map((plan, index) => (
+                    <button
+                      key={plan.output}
+                      type="button"
+                      className="dir-content-clip"
+                      data-state={stateOf(index)}
+                      aria-current={index === active ? 'true' : undefined}
+                      aria-label={`${outputAt(plan.output).label}${
+                        plan.note ? `, ${plan.note}` : ''
+                      }: выдача ${plan.output + 1}, недели ${weekRange(plan)}`}
+                      style={{
+                        gridColumn: `${plan.week + 1} / span ${plan.span}`,
+                        gridRow: trackRow(plan.track),
+                      }}
+                      onClick={() => select(plan)}
+                      onFocus={event => {
+                        // Фокус с клавиатуры двигает монитор сразу, не дожидаясь Enter
+                        let keyboard = false
+                        try {
+                          keyboard = event.currentTarget.matches(':focus-visible')
+                        } catch {
+                          keyboard = false
+                        }
+                        if (keyboard) select(plan, true)
+                      }}
+                    >
+                      <span className="dir-kit-meta font-mono tabular-nums">
+                        {pad(plan.output + 1)}
+                      </span>
+                      <span className="dir-content-clip-name dir-kit-meta font-mono uppercase">
+                        {outputAt(plan.output).label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                <div aria-hidden="true" className="dir-content-ph-rail">
+                  <motion.div className="dir-content-ph" style={{ x: playheadX }}>
+                    <span className="dir-content-ph-flag dir-kit-meta font-mono tabular-nums">
+                      Н{pad(week)}
+                    </span>
+                  </motion.div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <p data-scene-note="" className="dir-content-tl-note type-meta font-mono uppercase">
-            {tight(scene.note)}
+          <p data-scene-note="" className="dir-content-tl-note dir-kit-meta font-mono uppercase">
+            {typo(scene.note)}
           </p>
         </div>
       </div>
@@ -951,18 +968,28 @@ function Splice({ from, to }: { from: string; to: string }) {
   useArrival(ref)
   return (
     <div ref={ref} aria-hidden="true" className="dir-content-splice">
-      <span className="type-meta font-mono uppercase tabular-nums text-white/55">CUT {from}</span>
+      <span className="dir-kit-meta font-mono uppercase tabular-nums text-white/55">
+        CUT {from}
+      </span>
       <span className="dir-content-splice-line" />
       <span className="dir-content-splice-mark" />
       <span className="dir-content-splice-line" />
-      <span className="type-meta font-mono uppercase tabular-nums text-white/55">{to}</span>
+      <span className="dir-kit-meta font-mono uppercase tabular-nums text-white/55">{to}</span>
     </div>
   )
 }
 
 /* ─────────────────────────── 3. Состав выдачи ─────────────────────────── */
 
-function Outputs({ frame }: { frame: Frame }) {
+/**
+ * Кадр карточки мозаики: своя работа, своё кадрирование и тон (CONTENT_LOOKS).
+ * Вертикальные и квадратные карточки уже широких, поэтому им нужен меньший
+ * sizes — иначе браузер возьмёт из srcset лишнюю ширину.
+ */
+const WIDE_SIZES = '(min-width: 1024px) 50vw, (min-width: 640px) 100vw, 82vw'
+const NARROW_SIZES = '(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 82vw'
+
+function Outputs({ frame, pool }: { frame: Frame; pool: SceneFrame[] }) {
   const page = useDirectionPage()
   const outputs = CONTENT_PAGE.outputs
   return (
@@ -981,14 +1008,14 @@ function Outputs({ frame }: { frame: Frame }) {
             data-reveal=""
             className={`${KIT_TITLE} mt-5 text-[clamp(2rem,5.4vw,5.25rem)]`}
           >
-            {head('Что получаете с одной съёмки')}
+            {setTitle('Что получаете с одной съёмки')}
           </h2>
         </div>
         <p
           data-reveal=""
           className="max-w-md text-base leading-relaxed text-white/70 [text-wrap:pretty] lg:col-span-4 md:text-lg"
         >
-          {tight(
+          {typo(
             'Стандартный набор — восемь материалов. Состав меняем под ваш контент-план: что-то убираем, что-то добавляем.'
           )}
         </p>
@@ -996,15 +1023,13 @@ function Outputs({ frame }: { frame: Frame }) {
 
       <p
         aria-hidden="true"
-        className="type-meta mt-12 flex items-center justify-between gap-6 border-t border-white/15 pt-4 font-mono uppercase tabular-nums text-white/60 md:mt-16"
+        className="dir-kit-meta mt-12 flex items-center justify-between gap-6 border-t border-white/15 pt-4 font-mono uppercase tabular-nums text-white/60 md:mt-16"
       >
         <span className="whitespace-nowrap">
           Лист 01<span className="mx-2.5 text-accent">/</span>
           {pad(outputs.length)} кадров
         </span>
-        <span className="hidden truncate md:block">
-          Из одного мастер-кадра{frame ? `: ${frame.client}` : ''}
-        </span>
+        <span className="hidden truncate md:block">Кадры из работ студии</span>
         <span className="whitespace-nowrap text-white/80 md:hidden">Листайте →</span>
       </p>
 
@@ -1012,43 +1037,63 @@ function Outputs({ frame }: { frame: Frame }) {
         {outputs.map((output, index) => {
           const plan = CONTENT_PLAN.find(item => item.output === index)
           if (!plan) return null
+          const look = CONTENT_LOOKS[index % CONTENT_LOOKS.length] ?? CONTENT_LOOKS[0]
+          const shot =
+            look?.pick === 'master' || pool.length === 0
+              ? frame
+              : (pool[(look?.pick ?? 0) % pool.length] ?? frame)
+          const narrow = plan.aspect < 1.2
           return (
             <li
               key={`${output.label}-${index}`}
               className="dir-content-card"
               data-k={plan.slot}
-              data-wide={plan.aspect > 1.5}
+              data-tone={look?.tone ?? 'natural'}
+              style={{ '--ar': plan.aspect.toFixed(4) } as CSSProperties}
             >
-              <div className="type-meta flex items-baseline justify-between gap-3 font-mono uppercase tabular-nums">
+              <div className="dir-content-card-top dir-kit-meta flex items-baseline justify-between gap-3 font-mono uppercase tabular-nums">
                 <span className="dir-content-card-idx">{pad(index + 1)}</span>
-                <span className="text-white/60">
+                <span className="dir-content-card-week">
                   {plan.track} · Н{weekRange(plan)}
                 </span>
               </div>
 
-              <div
-                aria-hidden="true"
-                className="dir-content-card-slot"
-                style={{ '--ar': plan.aspect.toFixed(4) } as CSSProperties}
-              >
-                <div className="dir-content-card-frame">
-                  <div className="dir-content-card-zoom">
-                    <Registered frame={frame} rect={plan.rect} lit />
-                  </div>
+              <div aria-hidden="true" className="dir-content-card-frame">
+                <div
+                  className="dir-content-card-zoom"
+                  style={
+                    {
+                      '--zoom': look?.zoom ?? 1,
+                      transformOrigin: look?.pos ?? '50% 50%',
+                    } as CSSProperties
+                  }
+                >
+                  {shot ? (
+                    <Still
+                      src={shot.src}
+                      alt=""
+                      sizes={narrow ? NARROW_SIZES : WIDE_SIZES}
+                      objectPosition={look?.pos}
+                      className="h-full w-full"
+                    />
+                  ) : (
+                    <Plate lit />
+                  )}
                 </div>
+                <span className="dir-content-card-shade" />
               </div>
 
               <div className="dir-content-card-copy">
                 <h3 className="dir-content-card-title flex flex-wrap items-baseline gap-x-3 font-stage uppercase leading-none tracking-[-0.02em] text-white">
                   {output.label}{' '}
                   {plan.note ? (
-                    <span className="type-meta font-mono font-normal normal-case tracking-[0.08em] text-white/60">
+                    <span className="dir-kit-meta font-mono font-normal normal-case tracking-[0.08em] text-white/70">
                       {plan.note}
                     </span>
                   ) : null}
                 </h3>
-                <p className="mt-3 max-w-[32ch] text-sm leading-relaxed text-white/70 [text-wrap:pretty] md:text-[0.9375rem]">
-                  {tight(output.text)}
+                <p className="dir-content-card-text mt-3 text-sm leading-relaxed text-white/80 [text-wrap:pretty] md:text-[0.9375rem]">
+                  {typo(output.text)}
                 </p>
               </div>
             </li>
@@ -1056,32 +1101,124 @@ function Outputs({ frame }: { frame: Frame }) {
         })}
 
         <li className="dir-content-card dir-content-own" data-k="i">
-          <div className="type-meta flex items-baseline justify-between gap-3 font-mono uppercase tabular-nums">
+          <div className="dir-content-card-top dir-kit-meta flex items-baseline justify-between gap-3 font-mono uppercase tabular-nums">
             <span className="dir-content-card-idx">{pad(outputs.length + 1)}</span>
-            <span className="text-white/60">Ваш формат</span>
+            <span className="dir-content-card-week">Ваш формат</span>
           </div>
           <div className="dir-content-own-body">
             <p className="dir-content-own-plus font-stage" aria-hidden="true">
               +
             </p>
-            <p className="max-w-[26ch] text-base leading-snug text-white/75 [text-wrap:pretty] md:text-lg">
-              {tight('Другая пропорция, длина или площадка: соберём набор под ваш план.')}
-            </p>
-            <button
-              type="button"
-              onClick={() => page.openBrief('outputs')}
-              className="dir-content-link text-base"
-            >
-              Собрать набор
-              <ArrowRight aria-hidden="true" className="h-4 w-4" />
-            </button>
+            <div className="dir-content-own-copy">
+              <p className="max-w-[26ch] text-base leading-snug text-white/80 [text-wrap:pretty] md:text-lg">
+                {typo('Другая пропорция, длина или площадка: соберём набор под ваш план.')}
+              </p>
+              <DirectionButton
+                label="Собрать набор"
+                variant="ghost"
+                onClick={() => page.openBrief('outputs')}
+                className="mt-5 w-full sm:w-auto sm:min-w-[15rem]"
+              />
+            </div>
           </div>
         </li>
       </ul>
 
-      <p className="type-meta mt-5 max-w-2xl font-mono uppercase leading-relaxed text-white/60">
-        {tight('Недели в карточках — схема порядка выдачи, не график. Даты фиксируем до съёмки.')}
+      <p className="dir-kit-meta mt-5 max-w-2xl font-mono uppercase leading-relaxed text-white/60">
+        {typo(
+          'Кадры — из работ студии: они показывают форматы, а не один заказ. Недели в карточках — схема порядка выдачи, не график. Даты фиксируем до съёмки.'
+        )}
       </p>
+    </section>
+  )
+}
+
+/* ─────────────────────────── Тезис: полноэкранный кадр ─────────────────────────── */
+
+/** Тайм-код тезиса идёт по скроллу от 00:00:00:00 до восьми секунд на выходе секции */
+const THESIS_FRAMES = 8 * 24
+
+/**
+ * Пауза между мозаикой и схемами: один кадр на весь экран и тезис страницы.
+ * Кадр медленно сдвигается и приближается вместе со скроллом (translate и scale
+ * слоя, не размер), тайм-код в углу идёт с 00:00:00:00. Текст и подложка стоят
+ * на месте: читаются на любом кадре, светлом и тёмном.
+ */
+function Thesis({ frame }: { frame: Frame }) {
+  const thesis = CONTENT_PAGE.thesis
+  const ref = useRef<HTMLElement>(null)
+  const tcRef = useRef<HTMLSpanElement>(null)
+  const progress = useSectionProgress(ref, 1, 0)
+  useMotionValueEvent(progress, 'change', value => {
+    ref.current?.style.setProperty('--dc-p', value.toFixed(3))
+    if (tcRef.current) tcRef.current.textContent = timecode(Math.round(value * THESIS_FRAMES))
+  })
+
+  return (
+    <section
+      ref={ref}
+      aria-labelledby="dir-content-thesis-title"
+      className="dir-content-th relative isolate flex items-end overflow-hidden bg-[#000000] px-6 pb-14 pt-36 md:px-10 md:pb-20 lg:px-20"
+    >
+      <div aria-hidden="true" className="dir-content-th-img">
+        {frame ? (
+          <Still
+            src={frame.src}
+            alt=""
+            sizes="100vw"
+            quality={65}
+            objectPosition="50% 38%"
+            className="h-full w-full"
+          />
+        ) : (
+          <Plate lit />
+        )}
+      </div>
+      <span aria-hidden="true" className="dir-content-th-shade" />
+      <span aria-hidden="true" className="dir-content-th-corners">
+        <i />
+        <i />
+        <i />
+        <i />
+      </span>
+      <p
+        aria-hidden="true"
+        className="dir-content-th-meta dir-kit-meta font-mono uppercase tabular-nums text-white/80"
+      >
+        <span>
+          TC <span ref={tcRef}>00:00:00:00</span>
+        </span>
+        <span>16:9</span>
+      </p>
+
+      <div className="dir-content-th-copy relative">
+        <p className={KIT_KICKER}>
+          <span aria-hidden="true" className="h-px w-8 bg-accent" />
+          {thesis.kicker}
+        </p>
+        <h2
+          id="dir-content-thesis-title"
+          className="dir-content-th-title mt-5 font-stage uppercase leading-[1.02] tracking-[-0.035em] text-white [text-wrap:balance]"
+        >
+          <span data-reveal="" className="block">
+            {typo(thesis.lines[0])}
+          </span>{' '}
+          <span
+            data-reveal=""
+            style={{ '--reveal-delay': '120ms' } as CSSProperties}
+            className="block font-brand-hero text-accent"
+          >
+            {typo(thesis.lines[1])}
+          </span>
+        </h2>
+        <p
+          data-reveal=""
+          style={{ '--reveal-delay': '240ms' } as CSSProperties}
+          className="mt-6 max-w-[34rem] text-base leading-relaxed text-white/85 [text-wrap:pretty] md:text-lg"
+        >
+          {typo(thesis.text)}
+        </p>
+      </div>
     </section>
   )
 }
@@ -1109,7 +1246,7 @@ function Diagram({ kind }: { kind: 'catalog' | 'retail' | 'rhythm' }) {
       {kind === 'catalog' ? (
         <>
           <span className="dir-content-dg-bracket" />
-          <span className="dir-content-dg-cap type-meta-sm left-[9%] top-[5%] font-mono uppercase">
+          <span className="dir-content-dg-cap dir-kit-meta left-[9%] top-[5%] font-mono uppercase">
             Одна съёмка
           </span>
           <div className="dir-content-dg-tiles">
@@ -1127,7 +1264,7 @@ function Diagram({ kind }: { kind: 'catalog' | 'retail' | 'rhythm' }) {
       {kind === 'retail' ? (
         <>
           <span className="dir-content-dg-src" />
-          <span className="dir-content-dg-cap type-meta-sm left-[7%] top-[26%] font-mono uppercase">
+          <span className="dir-content-dg-cap dir-kit-meta left-[7%] top-[26%] font-mono uppercase">
             Съёмка
           </span>
           <svg className="dir-content-dg-lines" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -1163,7 +1300,7 @@ function Diagram({ kind }: { kind: 'catalog' | 'retail' | 'rhythm' }) {
 
       {kind === 'rhythm' ? (
         <>
-          <span className="dir-content-dg-cap type-meta-sm left-[7%] top-[8%] font-mono uppercase">
+          <span className="dir-content-dg-cap dir-kit-meta left-[7%] top-[8%] font-mono uppercase">
             Съёмка
           </span>
           <span className="absolute bottom-[24%] left-[7%] top-[22%] w-[3.5%] bg-accent" />
@@ -1188,7 +1325,7 @@ function Diagram({ kind }: { kind: 'catalog' | 'retail' | 'rhythm' }) {
             className="dir-content-dg-ticks"
             style={{ left: '15%', '--dc-week': CONTENT_WEEKS } as CSSProperties}
           />
-          <span className="dir-content-dg-cap type-meta-sm bottom-[4%] right-[7%] font-mono uppercase">
+          <span className="dir-content-dg-cap dir-kit-meta bottom-[4%] right-[7%] font-mono uppercase">
             Неделя 01 — {CONTENT_WEEKS}
           </span>
         </>
@@ -1203,13 +1340,18 @@ const DIAGRAM_CAPTIONS = {
   rhythm: 'Квартал → ритм выдач',
 } as const
 
+/**
+ * Светлый лист между чёрными сценами (--dir-paper): схемы читаются как чертёж
+ * на бумаге, а не как ещё один экран интерфейса. Overflow на самой секции не
+ * ставим — мягкая кромка бумаги рисуется снаружи.
+ */
 function Audiences() {
   // Колонки ступенькой: каждая следующая ниже, глаз идёт по диагонали
   const steps = ['', 'md:mt-14', 'md:mt-28']
   return (
     <section
       aria-labelledby="dir-content-audiences-title"
-      className="relative overflow-hidden bg-[#0a0a0a] px-6 py-20 md:px-10 md:py-32 lg:px-20"
+      className="dir-paper-section dir-content-aud relative px-6 py-20 md:px-10 md:py-32 lg:px-20"
     >
       <div className="lg:max-w-[46rem]">
         <p className={KIT_KICKER}>
@@ -1221,7 +1363,7 @@ function Audiences() {
           data-reveal=""
           className={`${KIT_TITLE} ${KIT_TITLE_SIZE} mt-5`}
         >
-          {head('Когда один ролик — мало')}
+          {setTitle('Когда один ролик — мало')}
         </h2>
       </div>
 
@@ -1231,15 +1373,15 @@ function Audiences() {
             <Diagram kind={item.kind} />
             <p
               aria-hidden="true"
-              className="type-meta mt-3 font-mono uppercase tabular-nums text-white/60"
+              className="dir-kit-meta dir-content-aud-cap mt-3 font-mono uppercase tabular-nums"
             >
               {DIAGRAM_CAPTIONS[item.kind]}
             </p>
-            <h3 className="mt-6 font-stage text-[1.35rem] uppercase md:text-[clamp(1.125rem,1.95vw,1.85rem)] leading-[1.04] tracking-[-0.02em] text-white [text-wrap:balance]">
-              {head(item.title)}
+            <h3 className="dir-content-aud-h3 mt-6 font-stage text-[1.35rem] uppercase leading-[1.04] tracking-[-0.02em] [text-wrap:balance] md:text-[clamp(1.125rem,1.95vw,1.85rem)]">
+              {setTitle(item.title)}
             </h3>
-            <p className="mt-4 max-w-[36ch] text-[0.9375rem] leading-relaxed text-white/70 [text-wrap:pretty] md:text-base">
-              {tight(item.text)}
+            <p className="dir-content-aud-text mt-4 max-w-[36ch] text-[0.9375rem] leading-relaxed [text-wrap:pretty] md:text-base">
+              {typo(item.text)}
             </p>
           </li>
         ))}
@@ -1277,10 +1419,10 @@ function Reel({ index, works }: { index: string; works: DirectionPageWork[] }) {
             data-reveal=""
             className={`${KIT_TITLE} ${KIT_TITLE_SIZE} mt-5`}
           >
-            {head('Кадры из работ')}
+            {setTitle('Кадры из работ')}
           </h2>
         </div>
-        <p className="type-meta max-w-xs font-mono uppercase leading-relaxed text-white/60">
+        <p className="dir-kit-meta max-w-xs font-mono uppercase leading-relaxed text-white/60">
           Работы студии
         </p>
       </div>
@@ -1299,7 +1441,7 @@ function Reel({ index, works }: { index: string; works: DirectionPageWork[] }) {
               >
                 <span
                   aria-hidden="true"
-                  className="dir-content-rc-meta type-meta font-mono uppercase tabular-nums"
+                  className="dir-content-rc-meta dir-kit-meta font-mono uppercase tabular-nums"
                 >
                   <span>Клип {pad(position + 1)}</span>
                   <span>{work.year ?? ''}</span>
@@ -1316,15 +1458,15 @@ function Reel({ index, works }: { index: string; works: DirectionPageWork[] }) {
                     <Plate lit />
                   )}
                   <span className="dir-content-rc-dim" />
-                  <span className="dir-content-rc-open type-meta font-mono uppercase">
+                  <span className="dir-content-rc-open dir-kit-meta font-mono uppercase">
                     Открыть проект
                     <ArrowUpRight className="h-3.5 w-3.5" />
                   </span>
                 </span>
                 <span className="dir-content-rc-name font-stage uppercase">{work.client}</span>
-                <span className="dir-content-rc-title">{tight(work.title)}</span>
+                <span className="dir-content-rc-title">{typo(work.title)}</span>
                 {excerpt ? (
-                  <span className="dir-content-rc-note [text-wrap:pretty]">{tight(excerpt)}</span>
+                  <span className="dir-content-rc-note [text-wrap:pretty]">{typo(excerpt)}</span>
                 ) : null}
               </Link>
             </li>
@@ -1344,7 +1486,7 @@ function ProofCta() {
   return (
     <section
       aria-labelledby="dir-content-proof-title"
-      data-cta-zone-target=""
+      data-sticky-hide=""
       className="relative overflow-hidden border-t border-white/10 bg-[#000000] px-6 py-20 md:px-10 md:py-28 lg:px-20"
     >
       <div aria-hidden="true" className="dir-content-paper" />
@@ -1359,16 +1501,16 @@ function ProofCta() {
             data-reveal=""
             className={`${KIT_TITLE} mt-5 text-[clamp(1.4rem,7.2vw,3.9rem)] lg:text-[clamp(2.2rem,4vw,3.9rem)]`}
           >
-            {head(cta.title)}
+            {setTitle(cta.title)}
           </h2>
           <p className="mt-6 max-w-md text-base leading-relaxed text-white/70 [text-wrap:pretty] md:text-lg">
-            {tight(cta.text)}
+            {typo(cta.text)}
           </p>
         </div>
 
         <div data-reveal="" className="dir-content-render lg:col-span-5">
           <div className="border border-white/25 bg-[#080808]">
-            <p className="type-meta flex items-center justify-between border-b border-white/15 px-5 py-3 font-mono uppercase text-white/60 md:px-6">
+            <p className="dir-kit-meta flex items-center justify-between border-b border-white/15 px-5 py-3 font-mono uppercase text-white/60 md:px-6">
               <span>Параметры выдачи</span>
               <span aria-hidden="true" className="flex gap-1.5">
                 <i className="h-1.5 w-1.5 bg-white/30" />
@@ -1380,20 +1522,17 @@ function ProofCta() {
               <dl>
                 {cta.rows.map(([label, value]) => (
                   <div key={label} className="dir-content-render-row">
-                    <dt className="type-meta font-mono uppercase text-white/60">{label}</dt>
+                    <dt className="dir-kit-meta font-mono uppercase text-white/60">{label}</dt>
                     <i aria-hidden="true" />
-                    <dd className="text-right text-sm text-white md:text-base">{tight(value)}</dd>
+                    <dd className="text-right text-sm text-white md:text-base">{typo(value)}</dd>
                   </div>
                 ))}
               </dl>
-              <button
-                type="button"
+              <DirectionButton
+                label={cta.label}
                 onClick={() => page.openBrief('proof')}
-                className="dir-content-btn mt-4 w-full px-6 py-4 text-base font-medium"
-              >
-                <span>{cta.label}</span>
-                <ArrowRight aria-hidden="true" className="h-4 w-4" />
-              </button>
+                className="mt-4 w-full"
+              />
               <div aria-hidden="true" className="dir-content-render-bar" />
             </div>
           </div>
@@ -1416,7 +1555,7 @@ function ProcessCta({ frame }: { frame: Frame }) {
     <section
       ref={ref}
       aria-labelledby="dir-content-process-cta-title"
-      data-cta-zone-target=""
+      data-sticky-hide=""
       className="dir-content-pcta relative overflow-hidden border-t border-white/10 bg-[#000000] px-6 py-16 md:px-10 md:py-24 lg:px-20"
     >
       <div aria-hidden="true" className="dir-content-paper" />
@@ -1429,21 +1568,18 @@ function ProcessCta({ frame }: { frame: Frame }) {
           <h2
             id="dir-content-process-cta-title"
             data-reveal=""
-            className="mt-5 font-brand-hero text-[clamp(2rem,5.6vw,5.25rem)] uppercase leading-[0.92] tracking-[-0.035em] text-white [text-wrap:balance]"
+            className="dir-content-pcta-title mt-5 font-brand-hero text-[clamp(2rem,9.5vw,4.25rem)] uppercase leading-[1] tracking-[-0.035em] text-white [text-wrap:balance] lg:text-[clamp(2.4rem,4.3vw,4.6rem)]"
           >
-            {tight(cta.title)}
+            {typo(cta.title)}
           </h2>
           <p className="mt-5 max-w-md text-base leading-relaxed text-white/70 [text-wrap:pretty] md:text-lg">
-            {tight(cta.text)}
+            {typo(cta.text)}
           </p>
-          <button
-            type="button"
+          <DirectionButton
+            label={cta.label}
             onClick={() => page.openBrief('process')}
-            className="dir-content-btn mt-8 w-full shrink-0 px-7 py-4 text-base font-medium md:mt-10 lg:w-auto lg:min-w-[19rem]"
-          >
-            <span>{cta.label}</span>
-            <ArrowRight aria-hidden="true" className="h-4 w-4" />
-          </button>
+            className="mt-8 w-full md:mt-10 lg:w-auto lg:min-w-[20rem]"
+          />
         </div>
 
         <div
@@ -1459,7 +1595,7 @@ function ProcessCta({ frame }: { frame: Frame }) {
               <i />
               <i />
             </span>
-            <span className="dir-content-pcta-tag type-meta-sm font-mono uppercase tabular-nums">
+            <span className="dir-content-pcta-tag dir-kit-meta font-mono uppercase tabular-nums">
               Мастер-кадр
               <b>{CONTENT_PAGE.outputs.length} нарезок</b>
             </span>
@@ -1472,13 +1608,148 @@ function ProcessCta({ frame }: { frame: Frame }) {
 
 /* ─────────────────────────── 6. Процесс ─────────────────────────── */
 
+/** Высоты столбиков недель в схеме плана: ритм выдач, а не данные */
+const PLAN_BARS = [0.55, 0.85, 0.42, 0.7, 0.5, 0.92, 0.46, 0.76] as const
+
+/**
+ * Маленький кадр или схема этапа: пять одинаковых карточек процесса получили
+ * каждая свой образ. План — ритм выдач по неделям; раскадровка — мастер-кадр с
+ * четырьмя нарезками; съёмка — кадр в видоискателе; монтаж — мини-линейка из
+ * плана квартала; передача — восемь выдач в своих пропорциях. Декор: текст
+ * этапа уже в заголовке и абзаце.
+ */
+function StepArt({ position, master, still }: { position: number; master: Frame; still: Frame }) {
+  if (position === 0) {
+    return (
+      <>
+        <span className="dir-content-art-bars">
+          {ORDER.map((plan, index) => (
+            <i
+              key={plan.output}
+              style={
+                {
+                  gridColumn: plan.week,
+                  height: `${(PLAN_BARS[index] ?? 0.5) * 100}%`,
+                } as CSSProperties
+              }
+            />
+          ))}
+        </span>
+        <span className="dir-content-art-ticks" />
+        <span className="dir-content-art-cap dir-kit-meta font-mono uppercase">
+          Неделя 01 — {CONTENT_WEEKS}
+        </span>
+      </>
+    )
+  }
+
+  if (position === 1) {
+    return (
+      <span className="dir-content-art-board">
+        <Registered frame={master} rect={FULL_RECT} />
+        <span className="dir-content-art-dim" />
+        {CONTENT_HERO_CUTS.map(cut => (
+          <span
+            key={cut.key}
+            className="dir-content-art-cut"
+            style={{
+              left: `${cut.rect.x}%`,
+              top: `${cut.rect.y}%`,
+              width: `${cut.rect.w}%`,
+              height: `${cut.rect.h}%`,
+            }}
+          >
+            <Registered frame={master} rect={cut.rect} lit />
+          </span>
+        ))}
+      </span>
+    )
+  }
+
+  if (position === 2) {
+    return (
+      <span className="dir-content-art-shot">
+        {still ? (
+          <Still
+            src={still.src}
+            alt=""
+            sizes="(min-width: 1024px) 20vw, 50vw"
+            className="absolute inset-0 h-full w-full"
+          />
+        ) : (
+          <Plate lit />
+        )}
+        <span className="dir-content-art-shade" />
+        <span className="dir-content-pcta-corners">
+          <i />
+          <i />
+          <i />
+          <i />
+        </span>
+        <span className="dir-content-art-reticle" />
+      </span>
+    )
+  }
+
+  if (position === 3) {
+    return (
+      <span className="dir-content-art-nle">
+        {ORDER.map(plan => (
+          <i
+            key={plan.output}
+            data-track={plan.track}
+            style={{
+              gridColumn: `${plan.week} / span ${plan.span}`,
+              gridRow: plan.track === 'V2' ? 1 : 2,
+            }}
+          />
+        ))}
+        {ORDER.filter(plan => plan.sound).map(plan => (
+          <b
+            key={plan.output}
+            style={{ gridColumn: `${plan.week} / span ${plan.span}`, gridRow: 3 }}
+          />
+        ))}
+        <em />
+      </span>
+    )
+  }
+
+  // Две строки: в каждой кадры встают в одну высоту сами, по своим пропорциям
+  return (
+    <span className="dir-content-art-out">
+      {[ORDER.slice(0, 4), ORDER.slice(4)].map((row, rowIndex) => (
+        <span key={rowIndex} className="dir-content-art-row">
+          {row.map(plan => (
+            <i key={plan.output} style={{ '--ar': plan.aspect.toFixed(4) } as CSSProperties}>
+              {plan.aspect >= 0.75 ? (
+                <b className="dir-kit-meta font-mono tabular-nums">{pad(plan.output + 1)}</b>
+              ) : null}
+            </i>
+          ))}
+        </span>
+      ))}
+    </span>
+  )
+}
+
 /**
  * Этапы процесса на дорожках: подготовка делит одну дорожку, дальше каждый
  * этап спускается ниже, как блоки на линейке. Красная линия идёт по этапам
  * вместе со скроллом, текущий этап зажигается. Это порядок, не сроки.
  * На узком экране дорожки складываются в ступенчатый список.
  */
-function Sequence({ steps, stops }: { steps: ProcessStep[]; stops: string[] }) {
+function Sequence({
+  steps,
+  stops,
+  master,
+  still,
+}: {
+  steps: ProcessStep[]
+  stops: string[]
+  master: Frame
+  still: Frame
+}) {
   const ref = useRef<HTMLDivElement>(null)
   const lastIndex = useRef(-2)
   const progress = useSectionProgress(ref, 0.86, 0.46)
@@ -1528,13 +1799,16 @@ function Sequence({ steps, stops }: { steps: ProcessStep[]; stops: string[] }) {
           >
             <span
               aria-hidden="true"
-              className="dir-content-seq-clip type-meta font-mono uppercase tabular-nums"
+              className="dir-content-seq-clip dir-kit-meta font-mono uppercase tabular-nums"
             >
               <b>{step.number}</b>
               <span>{stops[position] ?? ''}</span>
             </span>
-            <h3 className="dir-content-seq-title">{tight(step.title)}</h3>
-            <p className="dir-content-seq-text [text-wrap:pretty]">{tight(step.text)}</p>
+            <div aria-hidden="true" className="dir-content-seq-art" data-art={position}>
+              <StepArt position={position} master={master} still={still} />
+            </div>
+            <h3 className="dir-content-seq-title">{typo(step.title)}</h3>
+            <p className="dir-content-seq-text [text-wrap:pretty]">{typo(step.text)}</p>
           </li>
         ))}
       </ol>
@@ -1542,7 +1816,19 @@ function Sequence({ steps, stops }: { steps: ProcessStep[]; stops: string[] }) {
   )
 }
 
-function Process({ index, title, lead }: { index: string; title: string; lead: string }) {
+function Process({
+  index,
+  title,
+  lead,
+  master,
+  still,
+}: {
+  index: string
+  title: string
+  lead: string
+  master: Frame
+  still: Frame
+}) {
   return (
     <section
       aria-labelledby="dir-content-process-title"
@@ -1560,19 +1846,24 @@ function Process({ index, title, lead }: { index: string; title: string; lead: s
             data-reveal=""
             className={`${KIT_TITLE} ${KIT_TITLE_SIZE} mt-5`}
           >
-            {head(title)}
+            {setTitle(title)}
           </h2>
         </div>
         <p
           data-reveal=""
           className="max-w-md text-base leading-relaxed text-white/70 [text-wrap:pretty] md:text-lg lg:col-span-5"
         >
-          {tight(lead)}
+          {typo(lead)}
         </p>
       </div>
 
       <div className="relative mt-12 md:mt-16">
-        <Sequence steps={CONTENT_PAGE.process} stops={CONTENT_PAGE.cta.process.stops} />
+        <Sequence
+          steps={CONTENT_PAGE.process}
+          stops={CONTENT_PAGE.cta.process.stops}
+          master={master}
+          still={still}
+        />
       </div>
     </section>
   )
@@ -1654,11 +1945,11 @@ function Faq({
               data-reveal=""
               className={`${KIT_TITLE} mt-5 text-[clamp(1.5rem,2.7vw,2.75rem)]`}
             >
-              {head(title)}
+              {setTitle(title)}
             </h2>
 
             <div aria-hidden="true" className="dir-content-faqmon">
-              <p className="type-meta mb-3 flex items-center justify-between gap-4 font-mono uppercase tabular-nums text-white/60">
+              <p className="dir-kit-meta mb-3 flex items-center justify-between gap-4 font-mono uppercase tabular-nums text-white/60">
                 <span>
                   Вопрос {pad(focused + 1)}
                   <span className="mx-2.5 text-accent">/</span>
@@ -1672,7 +1963,7 @@ function Faq({
         </div>
 
         <div className="lg:col-span-7">
-          <div ref={listRef}>
+          <div ref={listRef} data-sticky-hide="desktop">
             {items.map((item, position) => {
               const isOpen = open.has(position)
               const triggerId = `${baseId}-q${position}`
@@ -1692,12 +1983,12 @@ function Faq({
                     >
                       <span
                         aria-hidden="true"
-                        className="dir-kit-faq-idx type-meta font-mono uppercase tabular-nums"
+                        className="dir-kit-faq-idx dir-kit-meta font-mono uppercase tabular-nums"
                       >
                         {pad(position + 1)}
-                      </span>
+                      </span>{' '}
                       <span className="dir-kit-faq-q text-[clamp(1.125rem,1.7vw,1.5rem)] leading-[1.25] tracking-[-0.005em] [text-wrap:balance]">
-                        {tight(item.question)}
+                        {typo(item.question)}
                       </span>
                       <span aria-hidden="true" className="dir-kit-faq-icon">
                         <span className="dir-kit-faq-glyph" />
@@ -1712,7 +2003,7 @@ function Faq({
                   >
                     <div>
                       <p className="max-w-[40rem] pb-8 pl-[2.5rem] pr-12 text-[clamp(1rem,1.25vw,1.1875rem)] leading-[1.65] text-white/75 [text-wrap:pretty] md:pb-10 md:pl-[3.75rem] md:pr-16">
-                        {tight(item.answer)}
+                        {typo(item.answer)}
                       </p>
                     </div>
                   </div>
@@ -1723,12 +2014,12 @@ function Faq({
 
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 md:mt-10 md:pl-[3.75rem]">
             <p className="text-sm text-white/60 md:text-base">
-              {tight('Нет вашего вопроса? Задайте его в брифе.')}
+              {typo('Нет вашего вопроса? Задайте его в брифе.')}
             </p>
             <button
               type="button"
               onClick={() => page.openBrief('faq')}
-              className="group type-meta inline-flex min-h-11 items-center gap-3 font-mono uppercase text-white underline decoration-white/30 underline-offset-[6px] transition-colors duration-[var(--motion-state)] hover:text-accent hover:decoration-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+              className="group dir-kit-meta inline-flex min-h-11 items-center gap-3 font-mono uppercase text-white underline decoration-white/30 underline-offset-[6px] transition-colors duration-[var(--motion-state)] hover:text-accent hover:decoration-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
               К брифу
               <ArrowRight
@@ -1746,34 +2037,35 @@ function Faq({
 /* ─────────────────────────── Страница ─────────────────────────── */
 
 /**
- * Пока на экране один из смысловых призывов страницы, sticky-полоса каркаса
- * уступает ему место: две белые кнопки подряд только мешают друг другу.
- * Полосу каркаса скрывает CSS по data-cta-zone на корне страницы.
+ * Знак сцены в финале: линейка квартала с восемью выдачами и линией
+ * воспроизведения в конце. Декор, стоит на месте: финал не должен двигаться
+ * рядом с главной кнопкой.
  */
-function useCtaZone(ref: RefObject<HTMLDivElement | null>) {
-  useEffect(() => {
-    const root = ref.current
-    if (!root || typeof IntersectionObserver === 'undefined') return
-    const targets = root.querySelectorAll<HTMLElement>('[data-cta-zone-target]')
-    const visible = new Set<Element>()
-    const observer = new IntersectionObserver(
-      entries => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) visible.add(entry.target)
-          else visible.delete(entry.target)
-        }
-        root.dataset.ctaZone = String(visible.size > 0)
-      },
-      { rootMargin: '-12% 0px -12% 0px' }
-    )
-    targets.forEach(node => observer.observe(node))
-    return () => observer.disconnect()
-  }, [ref])
+function EndSign() {
+  return (
+    <div className="dir-content-end-sign" style={{ '--dc-week': CONTENT_WEEKS } as CSSProperties}>
+      <p className="dir-kit-meta flex justify-between font-mono uppercase tabular-nums text-white/70">
+        <span>Неделя 01</span>
+        <span>{pad(CONTENT_WEEKS)}</span>
+      </p>
+      <div className="dir-content-end-rule">
+        {ORDER.map(plan => (
+          <i
+            key={plan.output}
+            data-track={plan.track}
+            style={{
+              gridColumn: `${plan.week} / span ${plan.span}`,
+              gridRow: plan.track === 'V2' ? 1 : 2,
+            }}
+          />
+        ))}
+        <em />
+      </div>
+    </div>
+  )
 }
 
 export function ContentPage({ works }: ContentPageProps) {
-  const rootRef = useRef<HTMLDivElement>(null)
-  useCtaZone(rootRef)
   const frames = interleaveFrames(works, 6)
   // Мастер-кадр — тот план ведущей работы, который выбран в раскадровке направления
   // (SERVICE_FRAMES), а не просто первый кадр галереи
@@ -1788,38 +2080,35 @@ export function ContentPage({ works }: ContentPageProps) {
       }
     : (frames[0] ?? null)
   const closing = frames[frames.length - 1]
+  // Кадры мозаики, тезиса и этапов: все кадры работ по кругу, кроме мастера —
+  // он уже стоит на первом экране и в карточке HERO
+  const pool = interleaveFrames(works, 12).filter(item => item.src !== master?.src)
+  const thesisFrame: Frame = pool.length > 0 ? (pool[8 % pool.length] ?? master) : master
+  const shotFrame: Frame = pool.length > 0 ? (pool[9 % pool.length] ?? master) : master
   // Без работ раздел «Работы» не рисуется, номера следующих разделов сдвигаются
   const hasWorks = works.length > 0
   const end = CONTENT_PAGE.end
   const processNo = hasWorks ? '05' : '04'
   const faqNo = hasWorks ? '06' : '05'
-  // Строки вопроса склеиваются в textContent через пробел: блочные span без него
-  // читаются слитно, а пробел в конце блочной строки визуально схлопывается
-  const endLines = end.lines.map((line, position) =>
-    position < end.lines.length - 1 ? `${line} ` : line
-  )
 
   return (
     <DirectionShell id="content-production" stickyLabel={CONTENT_PAGE.stickyLabel}>
-      <div ref={rootRef} className="dir-content">
+      <div className="dir-content">
         <Hero frame={master} />
         <Nle frame={master} />
         <Splice from="01" to="02" />
-        <Outputs frame={master} />
-        <Splice from="02" to="03" />
+        <Outputs frame={master} pool={pool} />
+        <Thesis frame={thesisFrame} />
         <Audiences />
-        {hasWorks ? (
-          <>
-            <Splice from="03" to="04" />
-            <Reel index="04" works={works} />
-          </>
-        ) : null}
+        {hasWorks ? <Reel index="04" works={works} /> : null}
         <ProofCta />
         <Splice from={hasWorks ? '04' : '03'} to={processNo} />
         <Process
           index={processNo}
           title="Как планируем квартал"
           lead="Главное решение принимается до съёмки: какие материалы нужны и где они будут жить."
+          master={master}
+          still={shotFrame}
         />
         <ProcessCta frame={master} />
         <Splice from={processNo} to={faqNo} />
@@ -1834,10 +2123,11 @@ export function ContentPage({ works }: ContentPageProps) {
           reading={DIRECTION_READING['content-production']}
         />
         <DirectionEnd
-          lines={endLines}
+          lines={end.lines}
           ctaLabel={end.ctaLabel}
-          note={tight(end.note)}
+          note={typo(end.note)}
           frame={closing ? { src: closing.src, alt: closing.client } : null}
+          aside={<EndSign />}
         />
       </div>
     </DirectionShell>
