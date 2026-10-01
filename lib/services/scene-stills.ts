@@ -402,6 +402,46 @@ const STILLS = {
     position: '50% 48%',
     tone: 'mid',
   },
+  // Макро: закрытые глаза, брови и капли воды на коже
+  'skin-eyes-wide': {
+    src: '/scenes/skin-eyes-wide.5328f7f9.webp',
+    w: 2400,
+    h: 1352,
+    position: '50% 45%',
+    tone: 'dark',
+  },
+  // Макро: щека, нос, ухо и капли воды
+  'skin-cheek-wide': {
+    src: '/scenes/skin-cheek-wide.3bc8825d.webp',
+    w: 2400,
+    h: 1275,
+    position: '40% 50%',
+    tone: 'dark',
+  },
+  // Макро: губы и капли воды на подбородке
+  'skin-lips-wide': {
+    src: '/scenes/skin-lips-wide.7b6f1bbb.webp',
+    w: 1831,
+    h: 1034,
+    position: '50% 40%',
+    tone: 'dark',
+  },
+  // Бьюти: мокрая кожа, закрытые глаза, руки у висков
+  'skin-closed-portrait': {
+    src: '/scenes/skin-closed-portrait.d41f6111.webp',
+    w: 1792,
+    h: 1921,
+    position: '50% 35%',
+    tone: 'dark',
+  },
+  // Бьюти: мокрая кожа, лицо в полуоборот, капли воды
+  'skin-profile-portrait': {
+    src: '/scenes/skin-profile-portrait.32d440b9.webp',
+    w: 1792,
+    h: 1921,
+    position: '45% 40%',
+    tone: 'dark',
+  },
 } as const satisfies Record<string, SceneStill>
 
 export type SceneStillId = keyof typeof STILLS
@@ -435,6 +475,11 @@ export const DIRECTION_SCENES: Record<ServiceDirectionId, readonly SceneStillId[
     'beauty-gloss',
     'beauty-blonde',
     'beauty-wet',
+    'skin-eyes-wide',
+    'skin-cheek-wide',
+    'skin-lips-wide',
+    'skin-closed-portrait',
+    'skin-profile-portrait',
   ],
   'content-production': [
     'coupe-aviators',
