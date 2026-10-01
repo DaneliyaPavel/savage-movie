@@ -2,12 +2,20 @@
  * Статичный постер подставляется только шоурилу: у любого другого ролика свой
  * кадр, и чужой постер подменил бы его.
  */
+import { existsSync } from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import { SHOWREEL_POSTER } from '@/lib/services/showreel'
 import { showreelPosterFor } from '../showreel-poster'
 
 const SHOWREEL_ID = '83ad0e8e-c614-46fd-8324-2c26659ad721'
+
+describe('SHOWREEL_POSTER', () => {
+  it('указывает на файл, который лежит в public/', () => {
+    expect(existsSync(path.join(process.cwd(), 'public', SHOWREEL_POSTER))).toBe(true)
+  })
+})
 
 describe('showreelPosterFor', () => {
   it('видео блока — шоурил: отдаёт статичный постер', () => {

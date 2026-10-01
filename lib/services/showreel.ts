@@ -7,7 +7,7 @@
  */
 import { publicEnv } from '@/lib/env'
 
-export const SHOWREEL_POSTER = '/showreel-poster.jpg'
+export { SHOWREEL_POSTER } from './showreel-poster-path'
 
 export async function getShowreelPlaybackId(): Promise<string> {
   const fallback = publicEnv.NEXT_PUBLIC_SHOWREEL_VIDEO_ID || ''
