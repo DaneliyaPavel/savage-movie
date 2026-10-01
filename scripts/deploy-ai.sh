@@ -29,8 +29,11 @@ SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=15)
 if [ -n "${AI_SSH_KEY:-}" ]; then SSH_OPTS+=(-i "$AI_SSH_KEY" -o IdentitiesOnly=yes); fi
 
 remote() { ssh "${SSH_OPTS[@]}" "$AI_SSH" "$@"; }
-sync_to() { rsync -a -e "ssh ${SSH_OPTS[*]}" "$@"; }
+# владельца и права задаём явно: иначе на сервере файлы получат числовой uid с локальной машины
+sync_to() { rsync -a --no-owner --no-group --chmod=D755,F644 -e "ssh ${SSH_OPTS[*]}" "$@"; }
 check_url() { curl -fsS -m 20 --resolve "ai.savagemovie.ru:443:$HOST" "https://ai.savagemovie.ru/$1"; }
+# grep -q закрывает канал раньше, чем curl дописал ответ, и pipefail принимает это за ошибку: читаем ответ целиком
+has_form() { local body; body="$(check_url "$1")" || return 1; grep -q 'data-enroll' <<<"$body"; }
 
 die() { echo "Ошибка: $*" >&2; exit 1; }
 
@@ -62,7 +65,7 @@ case "${1:-}" in
     grep -q 'noindex' "$tmp" || die "не удалось вставить noindex в превью"
     sync_to "$tmp" "$AI_SSH:$AI_WEBROOT/next.html"
     remote "chmod 644 '$AI_WEBROOT/next.html'"
-    check_url next.html | grep -q 'data-enroll' || die "превью выложено, но форма на странице не найдена"
+    has_form next.html || die "превью выложено, но форма на странице не найдена"
     echo "Превью: https://ai.savagemovie.ru/next.html"
     ;;
 
@@ -72,7 +75,7 @@ case "${1:-}" in
     # сначала во временный файл рядом, потом атомарная подмена
     sync_to "$SRC/index.html" "$AI_SSH:$AI_WEBROOT/index.html.new"
     remote "chmod 644 '$AI_WEBROOT/index.html.new' && mv '$AI_WEBROOT/index.html.new' '$AI_WEBROOT/index.html' && rm -f '$AI_WEBROOT/next.html'"
-    check_url '' | grep -q 'data-enroll' || die "страница выложена, но форма на ней не найдена: запустите rollback"
+    has_form '' || die "страница выложена, но форма на ней не найдена: запустите rollback"
     echo "Выложено: https://ai.savagemovie.ru/"
     ;;
 
