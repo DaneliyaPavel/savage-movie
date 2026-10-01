@@ -76,8 +76,6 @@ const BUTTON_LABELS: Record<string, string> = {
   link: 'Ссылка с #enroll',
 }
 
-const SUBJECT_PREFIX = '[AI-курс]'
-
 const COLOR = {
   ink: '#08080A',
   ember: '#E2402C',
@@ -284,8 +282,9 @@ function buildRows(
   return rows
 }
 
-function buildSubject(lead: AiCourseLead, name: string): string {
-  return `${SUBJECT_PREFIX} Предзапись — ${name} · ${TIER_SHORT[lead.tier]}`.replace(/[\r\n]/g, ' ')
+/** Тема письма: «ПРЕДЗАПИСЬ НА КУРС - Имя». Фиксированное начало удобно для правила в почте. */
+function buildSubject(name: string): string {
+  return `ПРЕДЗАПИСЬ НА КУРС - ${name}`.replace(/[\r\n]/g, ' ').trim()
 }
 
 function contactSummary(contact: AiCourseContact): string {
@@ -425,7 +424,7 @@ export function buildAiCourseMail(
   const leadId = makeLeadId(receivedAt, random)
   const rows = buildRows(lead, contact, leadId, receivedAt)
   return {
-    subject: buildSubject(lead, contact.name),
+    subject: buildSubject(contact.name),
     html: buildHtml(lead, contact, rows, receivedAt),
     text: buildText(rows, contact),
     leadId,
