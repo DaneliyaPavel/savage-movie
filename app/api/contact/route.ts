@@ -11,6 +11,7 @@ import {
   isTelegramConfigured,
   sendTelegramMessage,
 } from '@/lib/integrations/telegram/client'
+import { buildAiCourseMail, parseAiCourseLead } from '@/lib/leads/ai-course'
 import { logger } from '@/lib/utils/logger'
 
 /** Почта, на которую падают все заявки с сайта */
@@ -26,6 +27,9 @@ interface ContactFormBody {
   message?: unknown
   budget?: unknown
   projectType?: unknown
+  /** 'ai-course': предзапись с лендинга ai.savagemovie.ru, см. lib/leads/ai-course.ts */
+  source?: unknown
+  lead?: unknown
 }
 
 interface ContactSubmission {
@@ -237,6 +241,26 @@ export async function POST(request: NextRequest) {
         projectType && typeof projectType === 'string' ? sanitizeString(projectType, 50) : null,
     }
 
+    const aiLead = parseAiCourseLead(body as Record<string, unknown>)
+    if (aiLead.kind === 'invalid') {
+      return NextResponse.json({ error: aiLead.error }, { status: 400 })
+    }
+
+    // Предзапись на AI-курс получает свой шаблон письма, остальные формы остаются как были
+    const mail =
+      aiLead.kind === 'ok'
+        ? buildAiCourseMail(aiLead.lead, {
+            name: submission.name,
+            email: submission.email,
+            phone: submission.phone,
+            telegram: submission.telegram,
+          })
+        : {
+            subject: buildSubject(submission),
+            html: buildEmailHtml(submission),
+            text: undefined,
+          }
+
     const deliveries: Array<{ channel: string; promise: Promise<unknown> }> = []
 
     if (isSmtpConfigured()) {
@@ -244,8 +268,9 @@ export async function POST(request: NextRequest) {
         channel: 'smtp',
         promise: sendSmtpMail({
           to: CONTACT_EMAIL,
-          subject: buildSubject(submission),
-          html: buildEmailHtml(submission),
+          subject: mail.subject,
+          html: mail.html,
+          ...(mail.text ? { text: mail.text } : {}),
           ...(submission.email ? { replyTo: submission.email } : {}),
         }),
       })
@@ -256,8 +281,9 @@ export async function POST(request: NextRequest) {
         channel: 'email',
         promise: sendEmail({
           to: CONTACT_EMAIL,
-          subject: buildSubject(submission),
-          html: buildEmailHtml(submission),
+          subject: mail.subject,
+          html: mail.html,
+          ...(mail.text ? { text: mail.text } : {}),
           ...(submission.email ? { replyTo: submission.email } : {}),
         }),
       })

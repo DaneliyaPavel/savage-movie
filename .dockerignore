@@ -32,3 +32,6 @@ ENV
 .venv
 backend/uploads/*
 !backend/uploads/.gitkeep
+
+# статические лендинги выкладываются отдельно (scripts/deploy-ai.sh)
+sites

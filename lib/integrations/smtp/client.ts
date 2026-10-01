@@ -12,6 +12,8 @@ interface SmtpMailOptions {
   to: string | string[]
   subject: string
   html: string
+  /** Текстовая версия письма: её читают почтовики без HTML и она удобна для копирования в CRM */
+  text?: string
   from?: string
   replyTo?: string
 }
@@ -70,6 +72,7 @@ export async function sendSmtpMail(options: SmtpMailOptions) {
       to: Array.isArray(options.to) ? options.to.join(', ') : options.to,
       subject: sanitizeSubject(options.subject),
       html: options.html,
+      ...(options.text ? { text: options.text } : {}),
       ...(options.replyTo ? { replyTo: options.replyTo } : {}),
     })
 
