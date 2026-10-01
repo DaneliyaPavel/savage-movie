@@ -1581,6 +1581,14 @@ function ProofCta() {
   )
 }
 
+/**
+ * Заголовок призыва крупный и на телефоне стоит в узкой колонке: typo() связала бы
+ * «с плана квартала» в один кусок шире экрана, и колонка растягивалась бы за край.
+ * Здесь короткое слово держится за следующим, а цепочка не склеивается.
+ */
+const tieShort = (text: string) =>
+  text.replace(/(^|\s)([A-Za-zА-Яа-яЁё]{1,3}) (?=\S)/g, '$1$2\u00A0')
+
 /** Нарезка мастер-кадра под призывом процесса: крупная, в рамке с метками */
 const PCTA_RECT: CropRect = { x: 14, y: 12, w: 72, h: 62 }
 
@@ -1598,7 +1606,7 @@ function ProcessCta({ frame }: { frame: Frame }) {
       className="dir-content-pcta relative overflow-hidden border-t border-white/10 bg-[#000000] px-6 py-16 md:px-10 md:py-24 lg:px-20"
     >
       <div aria-hidden="true" className="dir-content-paper" />
-      <div className="relative grid items-center gap-10 lg:grid-cols-12 lg:gap-x-16">
+      <div className="relative grid grid-cols-[minmax(0,1fr)] items-center gap-10 lg:grid-cols-12 lg:gap-x-16">
         <div className="lg:col-span-7">
           <p className={KIT_KICKER}>
             <span aria-hidden="true" className="h-px w-8 bg-accent" />
@@ -1609,7 +1617,7 @@ function ProcessCta({ frame }: { frame: Frame }) {
             data-reveal=""
             className="dir-content-pcta-title mt-5 font-brand-hero text-[clamp(2rem,9.5vw,4.25rem)] uppercase leading-[1] tracking-[-0.035em] text-white [text-wrap:balance] lg:text-[clamp(2.4rem,4.3vw,4.6rem)]"
           >
-            {typo(cta.title)}
+            {tieShort(cta.title)}
           </h2>
           <p className="mt-5 max-w-md text-base leading-relaxed text-white/70 [text-wrap:pretty] md:text-lg">
             {typo(cta.text)}

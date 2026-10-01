@@ -13,6 +13,10 @@ import { SvgMark } from '@/components/ui/svg-mark'
 import { HoverNote } from '@/components/ui/hover-note'
 import { useI18n } from '@/lib/i18n-context'
 import { getSettings, type JsonValue } from '@/lib/api/settings'
+import { sceneFrame } from '@/lib/services/scene-stills'
+
+/** Одинокая фигура на лестнице: без лица, логотипов и клиента, под «визуальные истории» */
+const HERO_FRAME = sceneFrame('stairs-figure')
 
 type PhotoCrop = {
   x: number
@@ -183,29 +187,56 @@ export default function StudioPage() {
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-6 md:px-10 lg:px-20">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <span className="text-xs uppercase tracking-widest text-muted-foreground mb-4 block">
-            {t('studio.label')}
-          </span>
-          <h1 className="text-5xl md:text-7xl lg:text-[8rem] font-light tracking-tight leading-[0.9] max-w-5xl">
-            {t('studio.title.line1')}
-            <br />
-            <span className="text-accent">{t('studio.title.line2')}</span>
-          </h1>
-        </motion.div>
+        {/* С 1320 px заголовок «Мы создаём» в 8rem занимает три строки (~680 px), справа остаётся
+            колонка под кадр; уже этой ширины заголовок рвётся на четыре строки, поэтому ниже
+            кадр идёт полосой под абзацем */}
+        <div className="min-[1320px]:grid min-[1320px]:grid-cols-[minmax(0,1fr)_26rem] min-[1320px]:items-end min-[1320px]:gap-12">
+          <div>
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <span className="text-xs uppercase tracking-widest text-muted-foreground mb-4 block">
+                {t('studio.label')}
+              </span>
+              <h1 className="text-5xl md:text-7xl lg:text-[8rem] font-light tracking-tight leading-[0.9] max-w-5xl">
+                {t('studio.title.line1')}
+                <br />
+                <span className="text-accent">{t('studio.title.line2')}</span>
+              </h1>
+            </motion.div>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
-          className="text-lg md:text-xl text-muted-foreground max-w-2xl mt-12 leading-relaxed"
-        >
-          {t('studio.description')}
-        </motion.p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="text-lg md:text-xl text-muted-foreground max-w-2xl mt-12 leading-relaxed"
+            >
+              {t('studio.description')}
+            </motion.p>
+          </div>
+
+          {/* Кадр сцены: безымянная иллюстрация, не работа и не человек из команды, без подписи */}
+          <motion.figure
+            aria-hidden="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+            className="relative mt-12 aspect-[16/9] overflow-hidden bg-black md:max-[1319px]:aspect-[3/1] min-[1320px]:mt-0 min-[1320px]:aspect-[4/5]"
+          >
+            <Image
+              src={HERO_FRAME.src}
+              alt=""
+              fill
+              priority
+              quality={65}
+              sizes="(min-width: 1320px) 58rem, 100vw"
+              className="object-cover"
+              style={{ objectPosition: HERO_FRAME.position }}
+            />
+          </motion.figure>
+        </div>
       </section>
 
       {/* Editorial Correction Moment */}
@@ -278,7 +309,9 @@ export default function StudioPage() {
                       <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105">
                         <Image
                           src={toImageSrc(member.photo_url, member.id)}
-                          alt={member.name || `Участник команды — ${member.position || 'Savage Movie'}`}
+                          alt={
+                            member.name || `Участник команды — ${member.position || 'Savage Movie'}`
+                          }
                           fill
                           className="object-cover grayscale group-hover:grayscale-0"
                           style={{

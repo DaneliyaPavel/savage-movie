@@ -69,7 +69,7 @@ import {
 } from '../direction-kit'
 import { DIRECTION_READING } from '@/lib/services/pages'
 import { OtherDirections } from '../other-directions'
-import { Still } from '../still'
+import { PORTRAIT_QUERY, PORTRAIT_SIZES, Still } from '../still'
 import './beauty-page.css'
 
 export interface BeautyPageProps {
@@ -612,6 +612,8 @@ const ZOOM_FULL = 0.56
  * 8% оставляет губы целиком, а круг наезда раскрывается из центра сцены прямо по ним.
  */
 const ZOOM_POSITION = '8% 48%'
+/** Вертикальный кадр в высоком слоте телефона по высоте шире экрана в 1,5 раза: файл нужен с запасом */
+const ZOOM_SIZES = `${PORTRAIT_QUERY} ${PORTRAIT_SIZES}, 100vw`
 
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2)
 
@@ -684,12 +686,12 @@ function Zoom({ frame }: { frame: Frame }) {
       </h2>
       <div ref={stageRef} data-sticky-hide="desktop" className="dir-beauty-zoom-stage">
         <div aria-hidden="true" className="absolute inset-0 opacity-[0.16]">
-          <Plate frame={frame} x={50} y={50} position={ZOOM_POSITION} />
+          <Plate frame={frame} x={50} y={50} position={ZOOM_POSITION} sizes={ZOOM_SIZES} />
         </div>
 
         <motion.div aria-hidden="true" style={{ clipPath: clip }} className="absolute inset-0">
           <motion.div style={{ scale }} className="h-full w-full">
-            <Plate frame={frame} x={50} y={50} position={ZOOM_POSITION} />
+            <Plate frame={frame} x={50} y={50} position={ZOOM_POSITION} sizes={ZOOM_SIZES} />
           </motion.div>
           <span className="dir-beauty-zoom-veil" />
           <motion.span style={{ opacity: litFade }} className="dir-beauty-zoom-lift">
@@ -1342,7 +1344,8 @@ function ProofCta({ frame }: { frame: Frame }) {
               frame={frame}
               x={58}
               y={40}
-              sizes="(min-width: 1024px) 34rem, 80vw"
+              // Диск квадратный, кадр 16:9 в нём режется по ширине: файл шире диска в 16/9 раза
+              sizes="(min-width: 1024px) 61rem, 143vw"
               quality={65}
             />
           </div>

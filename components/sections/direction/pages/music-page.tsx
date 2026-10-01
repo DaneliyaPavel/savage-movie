@@ -277,14 +277,14 @@ const vars = (values: Record<string, string | number>) => values as CSSPropertie
  * припев, бридж, аутро), 11 — выход. Героиня в куртке у купе стоит один раз —
  * на выходе, где её лицо справа читается через градиент; первый кадр монтажа с
  * лицом выше заголовка, чтобы и LCP, и статичный кадр при reduced-motion не были
- * серым туманом дороги. На телефоне выход получает вертикаль той же съёмки.
+ * серым туманом дороги. На телефоне выход получает вертикаль другой съёмки: у кадра
+ * с героиней лицо уходило под белую кнопку и за правый край, у рыжей в низком ключе оно
+ * стоит над заголовком, а волосы падают вправо за контакты.
  */
 const SCENE_FRAMES = sceneFramesFor('music')
 const HERO_FRAMES = SCENE_FRAMES.slice(0, 6)
 const CLOSING_FRAME = SCENE_FRAMES[SCENE_FRAMES.length - 1] ?? null
-const CLOSING_PHONE = sceneFrame('coupe-portrait')
-/** Градиент под заголовком закрывает левую часть: окно кадра сдвинуто влево, лицо уходит вправо */
-const CLOSING_PHONE_POSITION = '0% 42%'
+const CLOSING_PHONE = sceneFrame('redhead-lowkey')
 
 /**
  * Узкий бридж режет кадр до полосы в треть экрана по высоте: по центру остались бы
@@ -1699,7 +1699,7 @@ export function MusicPage({ works }: MusicPageProps) {
                 ? {
                     src: CLOSING_FRAME.src,
                     position: CLOSING_FRAME.position,
-                    portrait: { src: CLOSING_PHONE.src, objectPosition: CLOSING_PHONE_POSITION },
+                    portrait: { src: CLOSING_PHONE.src, objectPosition: CLOSING_PHONE.position },
                   }
                 : null
             }
