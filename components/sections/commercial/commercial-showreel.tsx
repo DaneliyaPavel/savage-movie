@@ -15,16 +15,23 @@ import { LazyHlsVideo } from './lazy-hls-video'
 
 interface CommercialShowreelProps {
   content: ShowreelContent
+  /** Постер видео; без него LazyHlsVideo берёт автопостер Bunny */
+  posterUrl?: string | null
   onVideoMilestone: (milestone: 'start' | 'half' | 'complete') => void
 }
 
-export function CommercialShowreel({ content, onVideoMilestone }: CommercialShowreelProps) {
+export function CommercialShowreel({
+  content,
+  posterUrl = null,
+  onVideoMilestone,
+}: CommercialShowreelProps) {
   if (!content.playbackId) return null
 
   return (
     <section className="relative border-t border-[#1A1A1A] bg-[#000000]">
       <LazyHlsVideo
         playbackId={content.playbackId}
+        poster={posterUrl}
         loop
         autoPlay
         controls
