@@ -59,7 +59,7 @@ import {
   type DirectionPageWork,
   type SceneFrame,
 } from '@/lib/services/pages/resolve'
-import { sceneFramesFor } from '@/lib/services/scene-stills'
+import { sceneFrame, sceneFramesFor } from '@/lib/services/scene-stills'
 import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
 import { DirectionEnd } from '../direction-end'
@@ -1851,18 +1851,25 @@ function EndPrint({ frame }: { frame: SceneFrame | null }) {
 
 /* ─────────────────────────────── Страница ─────────────────────────────── */
 
+/** Героиня на финале уходит в правую, светлую часть кадра: слева градиент под заголовком */
+const CLOSING_POSITION = '5% 22%'
+
 /*
  * Раскладка кадров сцены (порядок DIRECTION_SCENES.fashion): 0–4 обложка, 5 оглавление,
  * 6–8 большой кадр разворота, 9–11 малый, 12 вопросы, 13 фон финала. Вклейка в финале
  * повторяет первый кадр обложки: страница открывается и закрывается одним образом.
  * Все слоты, кроме фона финала, вертикальные, поэтому и кадры в них вертикальные:
  * горизонтальный кадр, обрезанный под 3:4, остаётся без трети кадра и мылится.
+ * Большие кадры разворота — самые сильные и разные по образу (лебедь, рыжая в дюнах,
+ * мотокуртка), слабый desert-drive уходит в малую вклейку, где дефектов не видно.
+ * Фон финала горизонтальный, на телефоне его заменяет вертикаль той же страницы.
  * Кадры работ (со ссылкой на кейс) нужны только лукбуку.
  */
 export function FashionPage({ works }: FashionPageProps) {
   const frames = sceneFramesFor('fashion')
   const projectFrames = interleaveFrames(works, 16)
   const closing = frames[13]
+  const closingPhone = sceneFrame('burgundy-hall')
   const hasWorks = works.length > 0
   const pages = paginate(hasWorks)
 
@@ -1890,7 +1897,15 @@ export function FashionPage({ works }: FashionPageProps) {
         lines={SCENE.end.lines}
         ctaLabel={FASHION_PAGE.ctaLabel}
         note={typo(SCENE.end.note)}
-        frame={closing ? { src: closing.src, position: closing.position } : null}
+        frame={
+          closing
+            ? {
+                src: closing.src,
+                position: CLOSING_POSITION,
+                portrait: { src: closingPhone.src, objectPosition: closingPhone.position },
+              }
+            : null
+        }
         aside={<EndPrint frame={pick(frames, 0)} />}
       />
     </DirectionShell>

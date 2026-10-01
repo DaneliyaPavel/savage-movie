@@ -72,7 +72,7 @@ import {
   type DirectionPageWork,
   type SceneFrame,
 } from '@/lib/services/pages/resolve'
-import { sceneFramesFor } from '@/lib/services/scene-stills'
+import { sceneFrame, sceneFramesFor } from '@/lib/services/scene-stills'
 import type { FaqItem, ProcessStep } from '@/lib/services/pages/types'
 import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
@@ -100,14 +100,23 @@ type Frame = SceneFrame | null
 /**
  * Кадры сцены не зависят от работ: порядок задан в DIRECTION_SCENES. Первый —
  * мастер (первый экран, монитор, нарезки), последний — финал, середина — пул
- * мозаики, тезиса и этапа «съёмка».
+ * мозаики, тезиса и этапа «съёмка». Номера в CONTENT_LOOKS — места в пуле.
+ *
+ * На телефоне полноэкранные кадры тезиса и финала — вертикали: горизонталь в
+ * высоком слоте режется до трети ширины и растягивается втрое.
  */
 const SCENE = sceneFramesFor('content-production')
 const MASTER: Frame = SCENE[0] ?? null
 const CLOSING: Frame = SCENE.length > 1 ? (SCENE[SCENE.length - 1] ?? null) : null
 const POOL = SCENE.slice(1, -1)
-const THESIS_FRAME: Frame = POOL.length > 0 ? (POOL[8 % POOL.length] ?? MASTER) : MASTER
-const SHOT_FRAME: Frame = POOL.length > 0 ? (POOL[9 % POOL.length] ?? MASTER) : MASTER
+const THESIS_FRAME: Frame = POOL.length > 0 ? (POOL[7 % POOL.length] ?? MASTER) : MASTER
+const SHOT_FRAME: Frame = POOL.length > 0 ? (POOL[8 % POOL.length] ?? MASTER) : MASTER
+const THESIS_PHONE = sceneFrame('moto-desert')
+const CLOSING_PHONE = sceneFrame('desert-drive')
+/** Градиент под заголовком закрывает левую часть: окно кадра сдвинуто влево, лицо уходит вправо */
+const CLOSING_PHONE_POSITION = '0% 38%'
+/** Героиня на финале уходит в правую, светлую часть кадра: слева градиент под заголовком */
+const CLOSING_POSITION = '8% 30%'
 
 /**
  * Одна строка sizes на весь мастер-кадр: первый экран, монитор и карточки
@@ -1197,6 +1206,7 @@ function Thesis({ frame }: { frame: Frame }) {
             sizes="100vw"
             quality={65}
             objectPosition={frame.position ?? '50% 38%'}
+            portrait={{ src: THESIS_PHONE.src, objectPosition: THESIS_PHONE.position }}
             className="h-full w-full"
           />
         ) : (
@@ -2138,7 +2148,15 @@ export function ContentPage({ works }: ContentPageProps) {
           lines={end.lines}
           ctaLabel={end.ctaLabel}
           note={typo(end.note)}
-          frame={CLOSING ? { src: CLOSING.src, position: CLOSING.position } : null}
+          frame={
+            CLOSING
+              ? {
+                  src: CLOSING.src,
+                  position: CLOSING_POSITION,
+                  portrait: { src: CLOSING_PHONE.src, objectPosition: CLOSING_PHONE_POSITION },
+                }
+              : null
+          }
           aside={<EndSign />}
         />
       </div>

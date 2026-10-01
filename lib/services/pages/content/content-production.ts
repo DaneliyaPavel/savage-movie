@@ -254,13 +254,15 @@ export interface OutputLook {
 
 export const CONTENT_LOOKS: readonly OutputLook[] = [
   { pick: 'master', pos: '52% 47%', zoom: 1, tone: 'natural' },
-  { pick: 2, pos: '40% 50%', zoom: 1.05, tone: 'natural' },
-  { pick: 4, pos: '55% 35%', zoom: 1, tone: 'punch' },
-  { pick: 3, pos: '62% 45%', zoom: 1.3, tone: 'natural' },
-  { pick: 5, pos: '52% 34%', zoom: 1.04, tone: 'mono' },
-  { pick: 1, pos: '40% 25%', zoom: 1.05, tone: 'soft' },
-  { pick: 6, pos: '54% 42%', zoom: 1.5, tone: 'punch' },
-  { pick: 0, pos: '49% 30%', zoom: 1.1, tone: 'natural' },
+  { pick: 1, pos: '40% 50%', zoom: 1.05, tone: 'natural' },
+  { pick: 3, pos: '55% 35%', zoom: 1, tone: 'punch' },
+  { pick: 2, pos: '62% 45%', zoom: 1.3, tone: 'natural' },
+  { pick: 4, pos: '52% 34%', zoom: 1.04, tone: 'mono' },
+  { pick: 0, pos: '40% 25%', zoom: 1.05, tone: 'soft' },
+  // PRODUCT: деталь, а не портрет — воротник, молния и рука на раме
+  { pick: 5, pos: '62% 82%', zoom: 1.7, tone: 'punch' },
+  // RETAIL: публичное место с человеком, не двойник STORY
+  { pick: 6, pos: '45% 48%', zoom: 1.05, tone: 'natural' },
 ]
 
 export const CONTENT_PAGE: DirectionPageBase & {

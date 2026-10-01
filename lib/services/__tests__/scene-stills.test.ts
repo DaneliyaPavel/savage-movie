@@ -51,6 +51,11 @@ describe('кадры сцен', () => {
     }
   })
 
+  it('в библиотеке нет лишних кадров: каждый стоит хотя бы в одном направлении', () => {
+    const used = new Set(Object.values(DIRECTION_SCENES).flat())
+    for (const id of ids) expect(used.has(id), `${id} не используется`).toBe(true)
+  })
+
   it('кадр сцены безымянный: ни клиента, ни проекта, ни ссылки на кейс', () => {
     for (const id of ids) {
       const frame = sceneFrame(id)

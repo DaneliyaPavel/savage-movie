@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import Image from 'next/image'
+import { useState, type CSSProperties } from 'react'
+import Image, { getImageProps } from 'next/image'
 
 import { canOptimizePoster } from '@/lib/commercial-landing/poster-url'
 import { cn } from '@/lib/utils'
@@ -19,6 +19,27 @@ import './direction-kit.css'
  * Ошибка загрузки ловится и до гидратации: кадр мог упасть раньше, чем
  * React навесил onError, — тогда событие уже прошло, а `complete` остался.
  */
+
+/** Слот выше, чем шире: телефон и планшет «стоя». Тот же запрос читают <source> и CSS. */
+export const PORTRAIT_QUERY = '(max-aspect-ratio: 4/5)'
+
+/**
+ * sizes для горизонтального кадра в полноэкранном слоте, который на телефоне
+ * высокий: cover подгоняет кадр по высоте, поэтому он шире экрана раза в три-четыре.
+ * С `100vw` оптимизатор отдаёт файл по ширине экрана и браузер растягивает его
+ * втрое — «мыло». Здесь просим файл с запасом: кадры библиотеки лежат шириной 1920.
+ */
+export const COVER_SIZES = `${PORTRAIT_QUERY} 360vw, 100vw`
+
+/** sizes для вертикального кадра (3:4) в высоком слоте: по высоте он шире экрана примерно в 1,5 раза */
+export const PORTRAIT_SIZES = '165vw'
+
+/** Вертикальная версия кадра для высокого слота (телефон) */
+export interface StillPortrait {
+  src: string
+  objectPosition?: string
+}
+
 export interface StillProps {
   src: string
   alt: string
@@ -28,6 +49,13 @@ export interface StillProps {
   imgClassName?: string
   objectPosition?: string
   quality?: 50 | 65 | 75
+  /**
+   * Другой кадр для высокого слота (`PORTRAIT_QUERY`). Горизонтальный кадр в
+   * вертикальном экране режется до трети ширины и выглядит дёшево, поэтому
+   * там, где есть вертикальный кадр сцены, показываем его. Браузер берёт
+   * только один из двух файлов (<picture>), второй не качается.
+   */
+  portrait?: StillPortrait
 }
 
 export function Still({
@@ -39,6 +67,7 @@ export function Still({
   imgClassName,
   objectPosition,
   quality = 75,
+  portrait,
 }: StillProps) {
   // Храним адрес, который упал: смена src сама сбрасывает состояние
   const [failedSrc, setFailedSrc] = useState<string | null>(null)
@@ -59,6 +88,19 @@ export function Still({
           <span aria-hidden="true" className="dir-kit-still-fallback absolute inset-0" />
           <span className="sr-only">{alt}</span>
         </>
+      ) : portrait && canOptimizePoster(src) && canOptimizePoster(portrait.src) ? (
+        <ArtDirected
+          src={src}
+          alt={alt}
+          sizes={sizes}
+          priority={priority}
+          quality={quality}
+          imgClassName={imgClassName}
+          objectPosition={objectPosition}
+          portrait={portrait}
+          imgRef={checkEarlyFail}
+          onError={markFailed}
+        />
       ) : canOptimizePoster(src) ? (
         <Image
           ref={checkEarlyFail}
@@ -86,5 +128,69 @@ export function Still({
         />
       )}
     </div>
+  )
+}
+
+interface ArtDirectedProps {
+  src: string
+  alt: string
+  sizes: string
+  priority: boolean
+  quality: 50 | 65 | 75
+  imgClassName?: string
+  objectPosition?: string
+  portrait: StillPortrait
+  imgRef: (node: HTMLImageElement | null) => void
+  onError: () => void
+}
+
+/**
+ * <picture> с двумя кадрами. Оптимизатор Next сам собирает srcset для каждого,
+ * а точка кропа переключается CSS-переменной в том же запросе, что и файл.
+ */
+function ArtDirected({
+  src,
+  alt,
+  sizes,
+  priority,
+  quality,
+  imgClassName,
+  objectPosition,
+  portrait,
+  imgRef,
+  onError,
+}: ArtDirectedProps) {
+  const wide = getImageProps({ src, alt, fill: true, sizes, priority, quality }).props
+  const tall = getImageProps({
+    src: portrait.src,
+    alt,
+    fill: true,
+    sizes: PORTRAIT_SIZES,
+    quality,
+  }).props
+  const position = objectPosition ?? '50% 50%'
+  const style = {
+    ...wide.style,
+    '--still-pos': position,
+    '--still-pos-portrait': portrait.objectPosition ?? position,
+  } as CSSProperties
+
+  return (
+    <picture>
+      <source media={PORTRAIT_QUERY} srcSet={tall.srcSet} sizes={tall.sizes} />
+      {/* getImageProps отдаёт готовые атрибуты <img>: тот же next/image, но внутри <picture> */}
+      <img
+        {...wide}
+        alt={alt}
+        ref={imgRef}
+        onError={onError}
+        style={style}
+        className={cn(
+          'object-cover [object-position:var(--still-pos)]',
+          '[@media(max-aspect-ratio:4/5)]:[object-position:var(--still-pos-portrait)]',
+          imgClassName
+        )}
+      />
+    </picture>
   )
 }

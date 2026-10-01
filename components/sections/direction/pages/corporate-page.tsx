@@ -62,7 +62,7 @@ import { cn } from '@/lib/utils'
 import { DIRECTION_READING } from '@/lib/services/pages'
 import { CORPORATE_PAGE } from '@/lib/services/pages/content/corporate'
 import { firstSentence, type DirectionPageWork } from '@/lib/services/pages/resolve'
-import { sceneFramesFor } from '@/lib/services/scene-stills'
+import { sceneFrame, sceneFramesFor } from '@/lib/services/scene-stills'
 import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
 import { DirectionEnd } from '../direction-end'
@@ -76,7 +76,7 @@ import {
   typo,
 } from '../direction-kit'
 import { OtherDirections } from '../other-directions'
-import { Still } from '../still'
+import { COVER_SIZES, Still } from '../still'
 import '../direction-kit.css'
 import './corporate-page.css'
 
@@ -130,15 +130,20 @@ interface Shot {
  * Кадры сцены направления (scene-stills.ts) — отобранные иллюстрации, а не кадры
  * из портфолио: у них нет клиента и ссылки на кейс, подписей с именем не печатаем.
  * Места по порядку DIRECTION_SCENES.corporate: 0–3 главы (0 — первый экран),
- * 4–6 экран аудиторий, 7–12 плёнка, 13 кадр вопросов, 14 финал. Кадры не
+ * 4–6 экран аудиторий, 7–11 плёнка, 12 кадр вопросов, 13 финал. Кадры не
  * повторяются, поэтому перекадровка и запас из галерей работ больше не нужны.
+ * В плёнке видны первые четыре кадра (на телефоне три), поэтому женщина в светлом
+ * жакете не стоит там трижды подряд: между её кадрами — двое в кинозале.
+ * Финал на телефоне получает вертикальный кадр: горизонталь в высоком слоте
+ * режется до трети ширины (CLOSING_PHONE).
  */
 const SCENES = sceneFramesFor('corporate')
 const SCENE_CHAPTERS = SCENES.slice(0, 4)
 const SCENE_AUDIENCE = SCENES.slice(4, 7)
-const SCENE_BAND = SCENES.slice(7, 13)
-const SCENE_FAQ = SCENES[13] ?? null
-const SCENE_CLOSING = SCENES[14] ?? null
+const SCENE_BAND = SCENES.slice(7, 12)
+const SCENE_FAQ = SCENES[12] ?? null
+const SCENE_CLOSING = SCENES[13] ?? null
+const CLOSING_PHONE = sceneFrame('burgundy-hall')
 
 type Chapter = (typeof CORPORATE_PAGE.chapters)[number] & {
   /** Кадр главы из сцены; null — кадра нет, остаётся чертёжная плашка */
@@ -471,7 +476,7 @@ function Hero({ chapters }: { chapters: Chapter[] }) {
                         src={chapter.src}
                         alt=""
                         priority={index === 0}
-                        sizes="100vw"
+                        sizes={COVER_SIZES}
                         objectPosition={chapter.position}
                         className="h-full w-full"
                       />
@@ -1639,7 +1644,15 @@ export function CorporatePage({ works }: CorporatePageProps) {
         lines={end.lines}
         ctaLabel={end.ctaLabel}
         note={end.note}
-        frame={SCENE_CLOSING ? { src: SCENE_CLOSING.src, position: SCENE_CLOSING.position } : null}
+        frame={
+          SCENE_CLOSING
+            ? {
+                src: SCENE_CLOSING.src,
+                position: SCENE_CLOSING.position,
+                portrait: { src: CLOSING_PHONE.src, objectPosition: CLOSING_PHONE.position },
+              }
+            : null
+        }
         aside={<Leader />}
       />
     </DirectionShell>

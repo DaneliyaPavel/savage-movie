@@ -61,7 +61,7 @@ import { ArrowUpRight, AudioLines } from 'lucide-react'
 
 import { MUSIC_PAGE, type MusicStage } from '@/lib/services/pages/content/music'
 import type { DirectionPageWork, SceneFrame } from '@/lib/services/pages/resolve'
-import { sceneFramesFor } from '@/lib/services/scene-stills'
+import { sceneFrame, sceneFramesFor } from '@/lib/services/scene-stills'
 import { DIRECTION_READING } from '@/lib/services/pages'
 import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
@@ -70,7 +70,7 @@ import { DirectionEnd } from '../direction-end'
 import { DirectionFaq } from '../direction-faq'
 import { DirectionButton, KIT_KICKER, typo } from '../direction-kit'
 import { OtherDirections } from '../other-directions'
-import { Still } from '../still'
+import { COVER_SIZES, Still } from '../still'
 import './music-page.css'
 
 export interface MusicPageProps {
@@ -274,11 +274,17 @@ const vars = (values: Record<string, string | number>) => values as CSSPropertie
 /**
  * Кадры сцены по местам (порядок задан в scene-stills.ts, от портфолио не зависит):
  * 0–5 — монтаж первого экрана (0 — LCP), 6–10 — мониторы этапов (интро, куплет,
- * припев, бридж, аутро), 11 — выход.
+ * припев, бридж, аутро), 11 — выход. Героиня в куртке у купе стоит один раз —
+ * на выходе, где её лицо справа читается через градиент; первый кадр монтажа с
+ * лицом выше заголовка, чтобы и LCP, и статичный кадр при reduced-motion не были
+ * серым туманом дороги. На телефоне выход получает вертикаль той же съёмки.
  */
 const SCENE_FRAMES = sceneFramesFor('music')
 const HERO_FRAMES = SCENE_FRAMES.slice(0, 6)
 const CLOSING_FRAME = SCENE_FRAMES[SCENE_FRAMES.length - 1] ?? null
+const CLOSING_PHONE = sceneFrame('coupe-portrait')
+/** Градиент под заголовком закрывает левую часть: окно кадра сдвинуто влево, лицо уходит вправо */
+const CLOSING_PHONE_POSITION = '0% 42%'
 
 /**
  * Узкий бридж режет кадр до полосы в треть экрана по высоте: по центру остались бы
@@ -461,7 +467,7 @@ const Montage = memo(function Montage({
               src={frame.src}
               alt=""
               priority={priority && index === 0}
-              sizes="100vw"
+              sizes={COVER_SIZES}
               quality={priority && index === 0 ? 75 : 65}
               objectPosition={frame.position}
               className="h-full w-full"
@@ -1689,7 +1695,13 @@ export function MusicPage({ works }: MusicPageProps) {
             note={prose(MUSIC_PAGE.end.note)}
             aside={<EndSign />}
             frame={
-              CLOSING_FRAME ? { src: CLOSING_FRAME.src, position: CLOSING_FRAME.position } : null
+              CLOSING_FRAME
+                ? {
+                    src: CLOSING_FRAME.src,
+                    position: CLOSING_FRAME.position,
+                    portrait: { src: CLOSING_PHONE.src, objectPosition: CLOSING_PHONE_POSITION },
+                  }
+                : null
             }
           />
         </div>

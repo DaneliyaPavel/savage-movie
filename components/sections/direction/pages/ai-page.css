@@ -119,6 +119,103 @@
   }
 }
 
+/* ---------- Лента кадров: шов на каждом ---------- */
+
+.dir-ai-reel {
+  padding-block: clamp(2.5rem, 6vw, 5.5rem);
+  background: #000;
+}
+
+.dir-ai-reel-head {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  color: var(--ai-mute);
+}
+
+.dir-ai-reel-rule {
+  height: 1px;
+  flex: 1;
+  background: var(--ai-line);
+}
+
+/* Телефон: лента едет пальцем, края кадров видны — понятно, что дальше есть ещё */
+.dir-ai-reel-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 58vw;
+  align-items: start;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0 var(--ai-pad);
+  overflow-x: auto;
+  list-style: none;
+  scroll-padding-inline: var(--ai-pad);
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.dir-ai-reel-track::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 64rem) {
+  .dir-ai-reel-track {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 1rem;
+    overflow: visible;
+  }
+
+  /* Через один кадры сдвинуты вниз: лента читается как плёнка, а не как сетка */
+  .dir-ai-reel-tile:nth-child(even) {
+    margin-top: 2.5rem;
+  }
+}
+
+.dir-ai-reel-tile {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: #0d0d0d;
+  outline: 1px solid rgb(255 255 255 / 0.2);
+  outline-offset: -1px;
+  scroll-snap-align: start;
+}
+
+.dir-ai-reel-photo,
+.dir-ai-reel-plate {
+  position: absolute;
+  inset: 0;
+}
+
+/* Левее шва — плоская плёнка, правее — цвет */
+.dir-ai-reel-plate {
+  clip-path: inset(0 calc(100% - var(--seam)) 0 0);
+}
+
+.dir-ai-reel-plate .dir-ai-plate-img {
+  filter: grayscale(1) contrast(0.92) brightness(0.96);
+}
+
+.dir-ai-reel-seam {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--seam);
+  width: 1px;
+  background: var(--accent);
+}
+
+.dir-ai-reel-tile .dir-ai-reel-tag {
+  top: auto;
+  right: auto;
+  bottom: 0.75rem;
+  left: 0.75rem;
+}
+
 /* ---------- Склейка между секциями ---------- */
 
 .dir-ai-cut {

@@ -3,9 +3,18 @@
 import { ArrowDown } from 'lucide-react'
 
 import { SceneMedia } from './scene-media'
+import { PORTRAIT_SIZES, Still } from '@/components/sections/direction/still'
 import { EMAIL, EMAIL_HREF, PHONE_DISPLAY, PHONE_HREF } from '@/lib/contacts'
 import { TELEGRAM_URL } from '@/lib/commercial-landing/content'
 import type { DirectionWork } from '@/lib/services/proof'
+import { sceneFrame } from '@/lib/services/scene-stills'
+
+/**
+ * На телефоне слот высокий, и горизонтальный кадр работы режется до трети
+ * ширины и растягивается втрое. Там вместо него лежит вертикальный кадр сцены:
+ * фон безымянный, подписи и ссылки на проект у него нет.
+ */
+const PHONE_FRAME = sceneFrame('burgundy-hall')
 
 /**
  * 08 — выход. Метафора: ПОСЛЕДНИЙ КАДР.
@@ -62,13 +71,25 @@ export function ServicesEndFrame({
       */}
       <div className="absolute inset-0 z-0">
         {closing ? (
-          <SceneMedia
-            work={{ ...closing, playbackId: null }}
-            active={false}
-            aspect="auto"
-            sizes="100vw"
-            className="h-full w-full bg-transparent"
-          />
+          <>
+            <div className="absolute inset-0 [@media(max-aspect-ratio:4/5)]:hidden">
+              <SceneMedia
+                work={{ ...closing, playbackId: null }}
+                active={false}
+                aspect="auto"
+                sizes="100vw"
+                className="h-full w-full bg-transparent"
+              />
+            </div>
+            <Still
+              src={PHONE_FRAME.src}
+              alt=""
+              sizes={PORTRAIT_SIZES}
+              quality={65}
+              objectPosition={PHONE_FRAME.position}
+              className="absolute inset-0 hidden [@media(max-aspect-ratio:4/5)]:block"
+            />
+          </>
         ) : null}
         <span
           aria-hidden="true"
