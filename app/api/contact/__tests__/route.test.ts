@@ -352,7 +352,7 @@ describe('POST /api/contact — SMTP и реле Telegram', () => {
 
       expect(response.status).toBe(200)
       const mail = sendSmtpMail.mock.calls[0][0]
-      expect(mail.subject).toBe('[AI-курс] Предзапись — Анна Тестова · Продвинутый')
+      expect(mail.subject).toBe('ПРЕДЗАПИСЬ НА КУРС - Анна Тестова')
       expect(mail.html).toContain('Для CRM')
       expect(mail.text).toContain('Email: anna@mail.ru · удобнее всего')
       expect(mail.replyTo).toBe('anna@mail.ru')

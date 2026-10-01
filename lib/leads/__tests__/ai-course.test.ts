@@ -96,9 +96,9 @@ describe('makeLeadId', () => {
 describe('buildAiCourseMail', () => {
   const contact = { name: 'Анна Тестова', email: null, phone: null, telegram: '@anna_test' }
 
-  it('формирует тему с фиксированным префиксом для фильтров почты', () => {
+  it('формирует тему «ПРЕДЗАПИСЬ НА КУРС - Имя» для фильтров почты', () => {
     const mail = buildAiCourseMail(parseOk(okBody), contact, receivedAt, fixedRandom)
-    expect(mail.subject).toBe('[AI-курс] Предзапись — Анна Тестова · Продвинутый')
+    expect(mail.subject).toBe('ПРЕДЗАПИСЬ НА КУРС - Анна Тестова')
     expect(mail.leadId).toBe('AI-261001-1750-I000')
   })
 
@@ -178,10 +178,10 @@ describe('buildAiCourseMail', () => {
     expect(mail.subject).not.toMatch(/[\r\n]/)
   })
 
-  it('пишет «тариф не выбран», если тариф не указан', () => {
+  it('пишет «Пока не выбран», если тариф не указан, а тему не меняет', () => {
     const lead = parseOk({ source: 'ai-course', lead: { consent: { personalData: true } } })
     const mail = buildAiCourseMail(lead, contact, receivedAt, fixedRandom)
-    expect(mail.subject).toBe('[AI-курс] Предзапись — Анна Тестова · тариф не выбран')
+    expect(mail.subject).toBe('ПРЕДЗАПИСЬ НА КУРС - Анна Тестова')
     expect(mail.text).toContain('Тариф: Пока не выбран')
   })
 })
