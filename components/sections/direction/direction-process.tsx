@@ -2,15 +2,20 @@
  * Этапы производства направления.
  *
  * Не сетка одинаковых плиток: этапы идут во времени, поэтому читаются как
- * плёнка — номер-таймкод, тонкая линия, крупная строка этапа. Линия
- * дорисовывается от скролла (transform), текст на месте с первого кадра.
+ * монтажная дорожка — крупный номер, рельс с ромбами-маркерами, строка этапа.
+ * Красная линия рельса доходит до «линии чтения» (55% высоты экрана) и
+ * идёт за прокруткой (transform), текущий этап зажигается: номер белеет,
+ * маркер краснеет. Текст на месте с первого кадра, движение — только декор.
  */
 'use client'
 
-import { useRef } from 'react'
-import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { motion, useMotionValueEvent, useScroll } from 'framer-motion'
 
 import type { ProcessStep } from '@/lib/services/pages/types'
+import { KIT_KICKER, KIT_TITLE, KIT_TITLE_SIZE, setTitle, typo } from './direction-kit'
+
+import './direction-kit.css'
 
 export interface DirectionProcessProps {
   title: string
@@ -21,12 +26,51 @@ export interface DirectionProcessProps {
 
 export function DirectionProcess({ title, lead, steps, index }: DirectionProcessProps) {
   const listRef = useRef<HTMLOListElement>(null)
-  const reduced = useReducedMotion()
+  // -1 — линия чтения ещё не дошла до первого этапа: все этапы приглушены
+  const [active, setActive] = useState(-1)
+  // Верхние кромки этапов в координатах списка: измеряются при изменении размера,
+  // а не на скролле, поэтому прокрутка не читает layout
+  const marks = useRef<{ tops: number[]; height: number }>({ tops: [], height: 1 })
+
+  // Линия чтения на 55% высоты экрана: рельс заполнен ровно до неё
   const { scrollYProgress } = useScroll({
     target: listRef,
-    offset: ['start 75%', 'end 60%'],
+    offset: ['start 55%', 'end 55%'],
   })
-  const scaleY = useTransform(scrollYProgress, [0, 1], [0, 1])
+
+  // Прогресс 0…1 — это и есть положение линии чтения внутри списка, так что
+  // активный этап — последний, чья кромка выше линии. Работает на телефоне,
+  // переживает резкий скачок (якорь, восстановление прокрутки) и не зависит от
+  // наблюдателя, который мог бы пропустить пересечение
+  const activeAt = useCallback((progress: number) => {
+    if (progress <= 0) return -1
+    const { tops, height } = marks.current
+    const line = progress * height
+    let found = 0
+    // +24px: этап зажигается, когда линия доходит до его маркера, а не до кромки
+    tops.forEach((top, position) => {
+      if (top + 24 <= line) found = position
+    })
+    return found
+  }, [])
+
+  useMotionValueEvent(scrollYProgress, 'change', progress => setActive(activeAt(progress)))
+
+  useEffect(() => {
+    const list = listRef.current
+    if (!list || typeof ResizeObserver === 'undefined') return
+    const measure = () => {
+      const nodes = list.querySelectorAll<HTMLElement>('[data-step]')
+      marks.current = { tops: Array.from(nodes, node => node.offsetTop), height: list.offsetHeight }
+      setActive(activeAt(scrollYProgress.get()))
+    }
+    const observer = new ResizeObserver(measure)
+    observer.observe(list)
+    return () => observer.disconnect()
+  }, [activeAt, scrollYProgress])
+
+  const stateOf = (position: number) =>
+    position < active ? 'done' : position === active ? 'active' : 'todo'
 
   return (
     <section
@@ -35,45 +79,58 @@ export function DirectionProcess({ title, lead, steps, index }: DirectionProcess
     >
       <div className="max-w-3xl">
         {index ? (
-          <p className="type-meta font-mono uppercase text-white/50">{index} / Процесс</p>
+          <p className={KIT_KICKER}>
+            <span aria-hidden="true" className="h-px w-8 bg-accent" />
+            {index} / Процесс
+          </p>
         ) : null}
         <h2
           id="direction-process-title"
           data-reveal=""
-          className="mt-4 font-stage text-[clamp(1.6rem,3.4vw,2.8rem)] uppercase leading-[0.92] tracking-[-0.02em] text-white"
+          className={`${KIT_TITLE} ${KIT_TITLE_SIZE} mt-5`}
         >
-          {title}
+          {setTitle(title)}
         </h2>
         {lead ? (
-          <p className="mt-5 text-base leading-relaxed text-white/60 md:text-lg">{lead}</p>
+          <p className="mt-6 max-w-xl text-base leading-relaxed text-white/65 [text-wrap:pretty] md:text-lg">
+            {typo(lead)}
+          </p>
         ) : null}
       </div>
 
-      <ol ref={listRef} className="relative mt-14 md:mt-20">
-        <span
-          aria-hidden="true"
-          className="absolute bottom-0 left-0 top-0 w-px bg-white/10 md:left-[7.5rem]"
-        />
-        <motion.span
-          aria-hidden="true"
-          style={{ scaleY: reduced ? 1 : scaleY }}
-          className="absolute bottom-0 left-0 top-0 w-px origin-top bg-accent md:left-[7.5rem]"
-        />
-        {steps.map(step => (
+      <ol
+        ref={listRef}
+        role="list"
+        // Для сниженного движения CSS подменяет заливку рельса шагом по этапам
+        style={{ '--dk-fill': Math.max(0, active + 1) / steps.length } as CSSProperties}
+        className="dir-kit-steps mt-14 md:mt-20"
+      >
+        <span aria-hidden="true" className="dir-kit-rail">
+          <motion.span className="dir-kit-rail-fill" style={{ scaleY: scrollYProgress }} />
+        </span>
+
+        {steps.map((step, position) => (
           <li
             key={step.number}
-            data-reveal=""
-            className="relative grid gap-3 pb-12 pl-6 last:pb-0 md:grid-cols-[7.5rem_1fr] md:gap-0 md:pb-16 md:pl-0"
+            data-step=""
+            data-state={stateOf(position)}
+            className="dir-kit-step"
           >
-            <span className="type-meta font-mono uppercase text-white/50 md:pt-3">
+            <span
+              aria-hidden="true"
+              className="dir-kit-step-num font-brand-hero text-[clamp(3.25rem,7.2vw,6.5rem)] leading-[0.82] tracking-[-0.04em]"
+            >
               {step.number}
             </span>
-            <div className="md:pl-12">
-              <h3 className="text-xl font-light tracking-tight text-white md:text-3xl">
-                {step.title}
+            <span aria-hidden="true" className="dir-kit-step-node">
+              <span className="dir-kit-node" />
+            </span>
+            <div className="dir-kit-step-body lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,23rem)] lg:gap-x-14">
+              <h3 className="dir-kit-step-title mt-4 text-[clamp(1.5rem,2.5vw,2.25rem)] font-light leading-[1.1] tracking-[-0.015em] [text-wrap:balance] md:mt-0">
+                {typo(step.title)}
               </h3>
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/55 md:text-base">
-                {step.text}
+              <p className="dir-kit-step-text mt-3 max-w-[30rem] text-[0.9375rem] leading-[1.65] [text-wrap:pretty] md:text-base lg:mt-1">
+                {typo(step.text)}
               </p>
             </div>
           </li>

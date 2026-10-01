@@ -1,0 +1,2817 @@
+/*
+ * /ai-video — «Шов и слои».
+ *
+ * Палитра сцены — чёрный, белый и красная нитка шва. Серый здесь смысловой:
+ * это «плёнка», плоский кадр до цвета и сведения; финал — чёрный и контрастный.
+ * Красный только метка и то, что решает: шов, активный слой, выбранное действие.
+ *
+ * Движение — transform, clip-path и opacity декора. Длительности и кривая из
+ * шкалы раздела (--motion-*, --ease-out-expo). Наведение только там, где оно
+ * есть (hover: hover): на телефоне то же состояние даёт нажатие или положение
+ * на экране. Всё бесконечное стоит, пока блок вне кадра, и снимается при
+ * prefers-reduced-motion в конце файла.
+ *
+ * Кнопки — DirectionButton кита, светлая секция — .dir-paper-section и токены
+ * --dir-paper*: своих диалектов кнопки и бумаги у страницы нет. Все правила
+ * начинаются с .dir-ai-* и не задевают общие блоки кита.
+ */
+
+/*
+ * Положение шва первого экрана, % ширины. Свойство зарегистрировано: только
+ * тогда CSS может плавно вести его сам — первый ход шва идёт до гидрации.
+ */
+@property --dir-ai-seam {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 52;
+}
+
+/* Подъём активной карточки стопки: зарегистрирован, чтобы переход шёл плавно */
+@property --dir-ai-lift {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+.dir-ai {
+  --ai-pad: 1.5rem;
+  --ai-line: rgb(255 255 255 / 0.14);
+  /* Серая половина заголовка и «плёнка»: светлее прежнего #a9a9a9, чтобы слово не тускнело */
+  --ai-ink: #cfcfcf;
+  --ai-mute: rgb(255 255 255 / 0.72);
+  background: #000;
+  color: #fff;
+}
+
+/*
+ * Микротекст не мельче 10 px: глобальные .type-meta-sm на телефоне дают 8,6 px, и
+ * подписи кадра, которые объясняют сцену, читаются с трудом.
+ */
+.dir-ai .type-meta,
+.dir-ai .type-meta-sm {
+  font-size: 0.6875rem;
+}
+
+@media (min-width: 48rem) {
+  .dir-ai .type-meta {
+    font-size: 0.6875rem;
+  }
+
+  .dir-ai .type-meta-sm {
+    font-size: 0.625rem;
+  }
+}
+
+@media (min-width: 48rem) {
+  .dir-ai {
+    --ai-pad: 2.5rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .dir-ai {
+    --ai-pad: 5rem;
+  }
+}
+
+.dir-ai-pad {
+  padding-inline: var(--ai-pad);
+}
+
+/* ---------- Общее: заголовки, метки, кнопки ---------- */
+
+.dir-ai-h2 {
+  font-family: var(--font-stage);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  /* Страховка для 320–360px: склеенная typo() связка («и лицо в крупном») не раздвигает колонку */
+  overflow-wrap: anywhere;
+  color: #fff;
+}
+
+.dir-ai-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dir-ai-kicker-rule {
+  width: 2rem;
+  height: 1px;
+  flex-shrink: 0;
+  background: var(--accent);
+}
+
+.dir-ai-rise {
+  animation: dir-ai-rise 900ms var(--ease-out-expo) var(--d, 0ms) both;
+}
+
+/* Только сдвиг: текст виден на первом кадре, вход — «прибытие», а не появление из нуля */
+@keyframes dir-ai-rise {
+  from {
+    transform: translate3d(0, 1.1rem, 0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* ---------- Склейка между секциями ---------- */
+
+.dir-ai-cut {
+  display: flex;
+  height: 3.75rem;
+  align-items: center;
+  gap: 1.25rem;
+  background: #000;
+  color: var(--ai-mute);
+}
+
+.dir-ai-cut[data-tone='deep'] {
+  background: #050505;
+}
+
+.dir-ai-cut-line {
+  position: relative;
+  display: block;
+  height: 100%;
+  flex: 1;
+}
+
+/* Насечки шкалы над и под ниткой */
+.dir-ai-cut-line::before {
+  content: '';
+  position: absolute;
+  inset: 34% 0;
+  background: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.22) 0 1px, transparent 1px 12px);
+}
+
+/* Красная нитка «прошивается» слева направо, когда склейка входит в экран */
+.dir-ai-cut-stitch {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: repeating-linear-gradient(90deg, var(--accent) 0 8px, transparent 8px 14px);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 900ms var(--ease-out-expo);
+}
+
+.dir-ai-cut[data-reveal='shown'] .dir-ai-cut-stitch {
+  transform: scaleX(1);
+}
+
+.dir-ai-cut-mark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.4375rem;
+  height: 0.4375rem;
+  margin: -0.21875rem;
+  background: #fff;
+  transform: rotate(45deg);
+}
+
+/* ---------- Первый экран: шов ---------- */
+
+.dir-ai-hero {
+  --dir-ai-seam: 52;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: 100svh;
+  flex-direction: column;
+  overflow: hidden;
+  /* Кнопка стоит не у самой кромки: ~76px снизу, чтобы первый экран дышал */
+  padding-bottom: 4.75rem;
+  background: #000;
+  /* Ширина первого экрана нужна ручке и подписям шва в cqw, чтобы не выходить за край */
+  container-type: inline-size;
+  /* Вертикаль остаётся за прокруткой страницы, горизонталь — за швом */
+  touch-action: pan-y;
+  animation: dir-ai-seam-in 1400ms var(--ease-in-out-cubic) 200ms both;
+}
+
+/* Первый ход шва: слева направо до положения покоя. Дальше шов ведёт скрипт */
+@keyframes dir-ai-seam-in {
+  from {
+    --dir-ai-seam: 3;
+  }
+  to {
+    --dir-ai-seam: 52;
+  }
+}
+
+.dir-ai-hero.dir-ai-live {
+  animation: none;
+}
+
+/* Первый экран вне кадра — всё бесконечное стоит */
+.dir-ai-hero[data-live='false'] .dir-ai-ring {
+  animation-play-state: paused;
+}
+
+.dir-ai-frames {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.dir-ai-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Плёнка — левее шва. inset справа = 100% − положение шва */
+.dir-ai-plate {
+  clip-path: inset(0 calc(100% - var(--dir-ai-seam) * 1%) 0 0);
+}
+
+/* Кадр «садится» на место; масштабируется сам кадр, а не кромка среза */
+.dir-ai-photo {
+  position: absolute;
+  inset: 0;
+  animation: dir-ai-settle 1800ms var(--ease-out-expo) both;
+}
+
+@keyframes dir-ai-settle {
+  from {
+    transform: scale(1.06);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.dir-ai-plate-img {
+  filter: grayscale(1) contrast(0.78) brightness(0.74);
+}
+
+.dir-ai-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.dir-ai-scene-tall {
+  display: none;
+}
+
+/* Вертикальный экран: своя композиция, иначе «cover» оставил бы в кадре один пол */
+@media (max-aspect-ratio: 4 / 5) {
+  .dir-ai-scene[data-adaptive='true'] .dir-ai-scene-wide {
+    display: none;
+  }
+
+  .dir-ai-scene[data-adaptive='true'] .dir-ai-scene-tall {
+    display: inline;
+  }
+}
+
+/* Свет приходит на финал постепенно; это декор, текст под ним виден с первого кадра */
+.dir-ai-light {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 70% at 72% 26%, rgb(255 255 255 / 0.13), transparent 70%);
+  animation: dir-ai-light 2200ms ease-out 200ms both;
+}
+
+@keyframes dir-ai-light {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/*
+ * Скрим держит контраст на любом кадре: внизу почти глухой чёрный (под
+ * заголовком и абзацем), вверху — под служебной строкой и шапкой.
+ */
+.dir-ai-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgb(0 0 0 / 0.74), transparent 30%),
+    linear-gradient(
+      to top,
+      rgb(0 0 0 / 0.97) 0,
+      rgb(0 0 0 / 0.92) 30%,
+      rgb(0 0 0 / 0.5) 58%,
+      transparent 82%
+    ),
+    linear-gradient(to right, rgb(0 0 0 / 0.42), transparent 62%);
+}
+
+/* Технарская графика плёнки */
+.dir-ai-marks {
+  position: absolute;
+  inset: 0;
+}
+
+.dir-ai-lines {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 42%, transparent 64%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 42%, transparent 64%);
+}
+
+.dir-ai-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(to right, rgb(255 255 255 / 0.08) 1px, transparent 1px);
+  background-size: calc(100% / 12) 100%;
+}
+
+.dir-ai-third {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgb(255 255 255 / 0.16);
+}
+
+.dir-ai-third-h {
+  right: 0;
+  bottom: auto;
+  left: 0;
+  width: auto;
+  height: 1px;
+}
+
+/* Рамка безопасной зоны: четыре уголка */
+.dir-ai-safe {
+  --b: rgb(255 255 255 / 0.6);
+  position: absolute;
+  inset: 5.5% 3.5%;
+  background:
+    linear-gradient(var(--b), var(--b)) top left / 18px 1px no-repeat,
+    linear-gradient(var(--b), var(--b)) top left / 1px 18px no-repeat,
+    linear-gradient(var(--b), var(--b)) top right / 18px 1px no-repeat,
+    linear-gradient(var(--b), var(--b)) top right / 1px 18px no-repeat,
+    linear-gradient(var(--b), var(--b)) bottom left / 18px 1px no-repeat,
+    linear-gradient(var(--b), var(--b)) bottom left / 1px 18px no-repeat,
+    linear-gradient(var(--b), var(--b)) bottom right / 18px 1px no-repeat,
+    linear-gradient(var(--b), var(--b)) bottom right / 1px 18px no-repeat;
+}
+
+/* На первом экране рамка безопасной зоны лежит между служебной строкой и заголовком, не у логотипа */
+.dir-ai-marks .dir-ai-safe {
+  inset: 15% 3.5% 34%;
+}
+
+.dir-ai-cross {
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  width: 14px;
+  height: 14px;
+  color: rgb(255 255 255 / 0.95);
+  filter: drop-shadow(0 0 4px rgb(0 0 0 / 0.9));
+  transform: translate(-50%, -50%);
+}
+
+.dir-ai-cross::before,
+.dir-ai-cross::after {
+  content: '';
+  position: absolute;
+  background: currentColor;
+}
+
+.dir-ai-cross::before {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+}
+
+.dir-ai-cross::after {
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+}
+
+/*
+ * Зона рамок: во всю ширину экрана (поля съедены отрицательным margin), чтобы срез
+ * швом совпадал с процентом шва, и по высоте — от строки меток до заголовка. Проценты
+ * рамок считаются от зоны, а не от кадра, поэтому на низком окне они сжимаются вместе
+ * с ней. Верхний вылет среза -3rem оставляет место подписи над рамкой.
+ */
+.dir-ai-boxzone {
+  position: relative;
+  z-index: 5;
+  flex: 1 1 0;
+  min-height: 6.5rem;
+  margin: 0 calc(var(--ai-pad) * -1) 1.25rem;
+  clip-path: inset(-3rem calc(100% - var(--dir-ai-seam) * 1%) 0 0);
+  pointer-events: none;
+}
+
+/* Положение рамок задано здесь, а не в разметке: на телефоне они встают столбиком у левого края */
+.dir-ai-box-keep {
+  --x: 7%;
+  --y: 32%;
+  --w: 25%;
+  --h: 60%;
+}
+
+.dir-ai-box-gen {
+  --x: 35%;
+  --y: 38%;
+  --w: 25%;
+  --h: 40%;
+}
+
+@media (max-width: 47.99rem) {
+  .dir-ai-box-keep {
+    --x: 6%;
+    --y: 26%;
+    --w: 26%;
+    --h: 32%;
+  }
+
+  .dir-ai-box-gen {
+    --x: 6%;
+    --y: 68%;
+    --w: 26%;
+    --h: 16%;
+  }
+}
+
+.dir-ai-box {
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  width: var(--w);
+  height: var(--h);
+  /* На планшете зона высокая: рамка остаётся рамкой, а не колонной */
+  max-height: 15rem;
+  border: 1px solid rgb(255 255 255 / 0.9);
+}
+
+.dir-ai-box-gen {
+  border-color: var(--accent);
+  border-style: dashed;
+  background: repeating-linear-gradient(135deg, rgb(255 41 54 / 0.2) 0 1px, transparent 1px 8px);
+}
+
+.dir-ai-box-tag {
+  position: absolute;
+  bottom: 100%;
+  left: -1px;
+  display: flex;
+  flex-direction: column;
+  padding: 0.3rem 0.5rem;
+  background: #000;
+  color: #fff;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.dir-ai-box-tag > span {
+  color: rgb(255 255 255 / 0.78);
+}
+
+/* Метки лежат над скримом: красная плашка — чистый accent, чёрный текст на нём даёт 5,4:1 */
+.dir-ai-box-gen .dir-ai-box-tag {
+  background: var(--accent);
+  color: #000;
+}
+
+.dir-ai-box-gen .dir-ai-box-tag > span {
+  color: rgb(0 0 0 / 0.82);
+}
+
+/* Шов: контейнер во всю ширину, сдвинутый transform; линия и ручка живут на его левой кромке */
+.dir-ai-seam {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+  transform: translate3d(calc(var(--dir-ai-seam) * 1%), 0, 0);
+}
+
+.dir-ai-seam-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  margin-left: -0.5px;
+  background: var(--accent);
+}
+
+.dir-ai-seam-tag {
+  position: absolute;
+  top: 8.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.45rem 0.7rem;
+  background: rgb(0 0 0 / 0.72);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.dir-ai-seam-tag > span:last-child {
+  color: var(--ai-mute);
+}
+
+/*
+ * Подпись гаснет, когда шов подходит к краю и ей не хватает места: --edge — доля
+ * ширины экрана, которую она занимает, плюс поле. Так она не упирается в кромку.
+ */
+.dir-ai-seam {
+  --edge: 12;
+}
+
+@media (max-width: 79.99rem) {
+  .dir-ai-seam {
+    --edge: 15;
+  }
+}
+
+@media (max-width: 63.99rem) {
+  .dir-ai-seam {
+    --edge: 21;
+  }
+}
+
+@media (max-width: 47.99rem) {
+  .dir-ai-seam {
+    --edge: 27;
+  }
+}
+
+.dir-ai-seam-tag-l {
+  right: 100%;
+  margin-right: 0.9rem;
+  text-align: right;
+  opacity: clamp(0, calc((var(--dir-ai-seam) - var(--edge)) / 4), 1);
+}
+
+.dir-ai-seam-tag-l > span:first-child {
+  color: var(--ai-ink);
+}
+
+.dir-ai-seam-tag-r {
+  left: 0;
+  margin-left: 0.9rem;
+  opacity: clamp(0, calc((100 - var(--dir-ai-seam) - var(--edge)) / 4), 1);
+}
+
+.dir-ai-handle {
+  position: absolute;
+  top: 38%;
+  left: 0;
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin: -1.625rem 0 0 -1.625rem;
+  /* Ручка не уходит за край экрана: у кромки шов едет дальше, а она остаётся под пальцем */
+  translate: calc(
+      max(0px, 2.625rem - var(--dir-ai-seam) * 1cqw) -
+        max(0px, 2.625rem - (100 - var(--dir-ai-seam)) * 1cqw)
+    )
+    0;
+  place-items: center;
+  border-radius: 9999px;
+  cursor: ew-resize;
+  pointer-events: auto;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dir-ai-handle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.dir-ai-grip {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 0.9);
+  border-radius: 9999px;
+  background: rgb(0 0 0 / 0.66);
+  color: #fff;
+  transition:
+    background-color var(--motion-state) ease,
+    border-color var(--motion-state) ease,
+    color var(--motion-state) ease,
+    transform var(--motion-press) var(--ease-out-expo);
+}
+
+.dir-ai-grip svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.dir-ai-handle:focus-visible .dir-ai-grip {
+  background: #fff;
+  color: #000;
+}
+
+.dir-ai-handle:active .dir-ai-grip {
+  transform: scale(0.92);
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #000;
+}
+
+@media (hover: hover) {
+  .dir-ai-handle:hover .dir-ai-grip {
+    background: #fff;
+    color: #000;
+  }
+}
+
+/* Кольцо подсказывает, что ручку можно взять: на телефоне это единственный намёк */
+.dir-ai-ring {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgb(255 255 255 / 0.55);
+  border-radius: 9999px;
+  animation: dir-ai-ring 2600ms var(--ease-out-expo) 1800ms infinite;
+}
+
+@keyframes dir-ai-ring {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.85);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.75);
+  }
+}
+
+.dir-ai-meta {
+  position: absolute;
+  top: 5.75rem;
+  right: var(--ai-pad);
+  left: var(--ai-pad);
+  z-index: 6;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: rgb(255 255 255 / 0.88);
+  /* Мелкий текст поверх любого кадра, даже светлого: контур из тени, а не подложка */
+  text-shadow: 0 0 10px rgb(0 0 0 / 0.85);
+  pointer-events: none;
+}
+
+.dir-ai-meta-short {
+  display: none;
+}
+
+.dir-ai-meta-tc {
+  display: none;
+  min-width: 12ch;
+  text-align: right;
+}
+
+/* Показание шва появляется, когда CSS-вход закончился и шов взял в руки скрипт */
+.dir-ai-meta-tc {
+  animation: dir-ai-fade 500ms ease-out 1600ms both;
+}
+
+@keyframes dir-ai-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (min-width: 48rem) {
+  .dir-ai-meta {
+    top: 6.25rem;
+  }
+
+  .dir-ai-meta-tc {
+    display: block;
+  }
+}
+
+/* Верхняя часть экрана: шов идёт от кромки до линейки и не заходит в строку с кнопкой */
+.dir-ai-top {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 7rem var(--ai-pad) 0;
+}
+
+.dir-ai-copy {
+  position: relative;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.dir-ai-h1 {
+  margin: 0;
+  font-weight: inherit;
+}
+
+/*
+ * Заголовок «проявляется» вместе с кадром: левее шва он серый (плёнка), правее
+ * белый (финал). Блок растянут на всю ширину экрана, чтобы процент градиента
+ * совпадал с процентом шва. Прозрачный цвет только там, где есть background-clip:
+ * text, иначе заголовок остался бы невидимым.
+ */
+.dir-ai-h1-main {
+  display: block;
+  margin-inline: calc(var(--ai-pad) * -1);
+  padding-inline: var(--ai-pad);
+  color: #fff;
+  font-family: var(--font-stage);
+  font-size: clamp(3rem, 16.2vw, 14.5rem);
+  font-weight: 900;
+  line-height: 0.84;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+}
+
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .dir-ai-h1-main {
+    background-image: linear-gradient(
+      90deg,
+      var(--ai-ink) 0,
+      var(--ai-ink) calc(var(--dir-ai-seam) * 1%),
+      #fff calc(var(--dir-ai-seam) * 1%)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .dir-ai-hy {
+    -webkit-text-fill-color: var(--accent);
+  }
+}
+
+.dir-ai-hy {
+  color: var(--accent);
+}
+
+.dir-ai-h1-sub {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: clamp(0.9rem, 1.8vw, 1.6rem);
+  color: #fff;
+  font-family: var(--font-brand-hero);
+  font-size: clamp(1.15rem, 2.5vw, 2.1rem);
+  font-style: italic;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.dir-ai-h1-sub::before {
+  content: '';
+  width: clamp(2rem, 5vw, 4.5rem);
+  height: 2px;
+  background: var(--accent);
+}
+
+/* Линейка под заголовком: головка едет за швом, насечки — как на монтажном столе */
+.dir-ai-ruler {
+  position: relative;
+  height: 1.75rem;
+  margin: clamp(1.1rem, 2.2vw, 1.9rem) calc(var(--ai-pad) * -1) 0;
+}
+
+.dir-ai-ruler-ticks {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 11px;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.36) 0 1px, transparent 1px 10px) top / 100%
+      6px no-repeat,
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.72) 0 1px, transparent 1px 50px) top / 100%
+      11px no-repeat,
+    linear-gradient(rgb(255 255 255 / 0.22), rgb(255 255 255 / 0.22)) top / 100% 1px no-repeat;
+}
+
+.dir-ai-rider {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(calc(var(--dir-ai-seam) * 1%), 0, 0);
+}
+
+.dir-ai-rider-head {
+  position: absolute;
+  top: 0;
+  left: -5px;
+  width: 10px;
+  height: 18px;
+  background: var(--accent);
+  clip-path: polygon(0 0, 100% 0, 100% 40%, 50% 100%, 0 40%);
+}
+
+.dir-ai-hero-row {
+  position: relative;
+  z-index: 6;
+  display: grid;
+  align-items: end;
+  gap: 1.25rem;
+  margin-top: clamp(1rem, 2vw, 1.6rem);
+}
+
+/* Лид слева, кнопка справа: линейка над ними — единственная «подсказка» шва */
+@media (min-width: 64rem) {
+  .dir-ai-hero-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 2.5rem;
+  }
+}
+
+.dir-ai-lead {
+  max-width: 30rem;
+  color: rgb(255 255 255 / 0.88);
+  font-size: 1rem;
+  font-weight: 300;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+@media (min-width: 48rem) {
+  .dir-ai-lead {
+    font-size: 1.125rem;
+  }
+}
+
+.dir-ai-hero-cta {
+  min-width: 0;
+}
+
+/* Подстрочники меток шов обрезает на любой высоте экрана уже в планшетной ширине */
+@media (max-width: 63.99rem) {
+  .dir-ai-box-tag > span {
+    display: none;
+  }
+}
+
+@media (max-width: 47.99rem) {
+  .dir-ai-meta-long {
+    display: none;
+  }
+
+  .dir-ai-meta-short {
+    display: inline;
+  }
+
+  .dir-ai-hero {
+    padding-bottom: 4rem;
+  }
+
+  .dir-ai-top {
+    padding-top: 5.5rem;
+  }
+
+  .dir-ai-handle {
+    top: 34%;
+  }
+
+  .dir-ai-seam-tag {
+    top: 7.6rem;
+    padding: 0.35rem 0.5rem;
+  }
+
+  .dir-ai-seam-tag > span:last-child {
+    display: none;
+  }
+
+  .dir-ai-cross[data-hide='true'] {
+    display: none;
+  }
+}
+
+/* Низкий телефон (360×640): подписи шва не помещаются, остаются сам шов и рамки */
+@media (max-width: 47.99rem) and (max-height: 720px) {
+  .dir-ai-seam-tag,
+  .dir-ai-cross {
+    display: none;
+  }
+}
+
+/* ---------- Слои: закреплённая стопка ---------- */
+
+.dir-ai-layers {
+  --ai-e: 0;
+  --ai-p: 0;
+  position: relative;
+  /* Закрепление 300svh: раскрытие стопки и четыре слоя укладываются в 200svh прокрутки */
+  height: 300svh;
+  background: #000;
+}
+
+.dir-ai-pin {
+  position: sticky;
+  top: 0;
+  display: grid;
+  height: 100svh;
+  grid-template-areas: 'stage copy';
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  align-items: center;
+  column-gap: 3rem;
+  overflow: hidden;
+  padding-top: 5.75rem;
+  padding-bottom: 2.25rem;
+}
+
+.dir-ai-pin-copy {
+  grid-area: copy;
+  min-width: 0;
+}
+
+.dir-ai-h2-layers {
+  margin-top: 1.25rem;
+  font-size: clamp(1.9rem, 3.5vw, 3.5rem);
+}
+
+.dir-ai-steps {
+  margin-top: 2rem;
+  border-top: 1px solid var(--ai-line);
+}
+
+.dir-ai-step {
+  position: relative;
+  border-bottom: 1px solid var(--ai-line);
+}
+
+/* Красная линия над активным слоем рисуется слева направо */
+.dir-ai-step::before {
+  content: '';
+  position: absolute;
+  inset: -1px 0 auto;
+  height: 1px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--motion-move) var(--ease-out-expo);
+}
+
+/* Красное — только выбранный слой: пока стопка собрана, раскрыт первый пункт, но не выбран */
+.dir-ai-step[data-active='true']::before {
+  transform: scaleX(1);
+}
+
+.dir-ai-step-btn {
+  display: grid;
+  width: 100%;
+  min-height: 3.5rem;
+  grid-template-columns: 3rem minmax(0, 1fr) auto;
+  align-items: center;
+  padding: 0.9rem 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dir-ai-step-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.dir-ai-step-num {
+  color: var(--ai-mute);
+  transition: color var(--motion-state) ease;
+}
+
+.dir-ai-step-title {
+  color: rgb(255 255 255 / 0.72);
+  font-family: var(--font-stage);
+  font-size: clamp(1.05rem, 1.6vw, 1.5rem);
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+  text-transform: uppercase;
+  transition:
+    color var(--motion-state) ease,
+    transform var(--motion-move) var(--ease-out-expo);
+}
+
+.dir-ai-step-tag {
+  color: var(--ai-mute);
+}
+
+.dir-ai-step[data-active='true'] .dir-ai-step-num {
+  color: var(--accent);
+}
+
+.dir-ai-step[data-active='true'] .dir-ai-step-title,
+.dir-ai-step[data-lit='true'] .dir-ai-step-title {
+  color: #fff;
+}
+
+.dir-ai-step-btn:active .dir-ai-step-title {
+  transform: translateX(0.375rem);
+}
+
+@media (hover: hover) {
+  .dir-ai-step-btn:hover .dir-ai-step-title {
+    color: #fff;
+    transform: translateX(0.375rem);
+  }
+
+  .dir-ai-step-btn:hover .dir-ai-step-num {
+    color: #fff;
+  }
+
+  .dir-ai-step[data-active='true'] .dir-ai-step-btn:hover .dir-ai-step-num {
+    color: var(--accent);
+  }
+}
+
+/* Текст всегда в DOM: закрытая панель схлопнута и скрыта от фокуса и скринридера */
+.dir-ai-step-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows var(--motion-move) var(--ease-out-expo),
+    visibility 0s linear var(--motion-move);
+}
+
+.dir-ai-step[data-lit='true'] .dir-ai-step-panel {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition:
+    grid-template-rows var(--motion-move) var(--ease-out-expo),
+    visibility 0s linear 0s;
+}
+
+.dir-ai-step-panel > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dir-ai-step-panel p {
+  max-width: 32rem;
+  padding: 0 0 1.25rem 3rem;
+  color: rgb(255 255 255 / 0.78);
+  font-size: 0.9375rem;
+  line-height: 1.62;
+  text-wrap: pretty;
+}
+
+/* Сцена стопки */
+/*
+ * Размер стопки считается от самой сцены (cqw/cqh), а не от окна: на 1920 и на планшете
+ * она занимает своё поле целиком, а на низком экране не вылезает из него. Коэффициенты —
+ * размах раскрытой стопки в ширину и высоту относительно ширины карточки.
+ */
+.dir-ai-stage3d {
+  /* Запасной размер для браузеров без единиц контейнера */
+  --dw: clamp(17rem, 37vw, 40rem);
+  --gap: clamp(2.4rem, 5.8vw, 6.25rem);
+  /* Насколько активный слой подходит к соседнему: чем больше, тем уже открытая полоса с подписью */
+  --lift-k: 0.55;
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  grid-area: stage;
+  align-items: center;
+  justify-content: center;
+  perspective: 1500px;
+  perspective-origin: 50% 30%;
+}
+
+@supports (width: 1cqw) {
+  .dir-ai-stage3d {
+    --dw: min(calc(100cqw / 1.3), calc(100cqh / 1.14), 54rem);
+    --gap: clamp(1.6rem, calc(var(--dw) * 0.15), 7rem);
+    container-type: size;
+  }
+}
+
+.dir-ai-deck {
+  position: relative;
+  width: var(--dw);
+  aspect-ratio: 5 / 3;
+  transform-style: preserve-3d;
+  transform: translate3d(0, calc(var(--ai-e) * 9svh), 0) rotateX(calc(var(--ai-e) * 60deg))
+    rotateZ(calc(var(--ai-e) * -34deg));
+  will-change: transform;
+}
+
+.dir-ai-card {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.56);
+  background: #0f0f0f;
+  transform: translate3d(
+    0,
+    0,
+    calc(var(--ai-e) * (var(--k) + var(--dir-ai-lift) * var(--lift-k)) * var(--gap))
+  );
+  transition:
+    --dir-ai-lift var(--motion-move) var(--ease-out-expo),
+    border-color var(--motion-move) ease;
+}
+
+.dir-ai-card[data-on='true'] {
+  --dir-ai-lift: 1;
+  border-color: var(--accent);
+}
+
+/* Неактивные слои приглушены затемнением, а не filter: дешевле и не красит кадр */
+.dir-ai-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-move) ease;
+}
+
+.dir-ai-card[data-on='false']::after {
+  opacity: 0.26;
+}
+
+/*
+ * Подпись слоя стоит у нижней кромки: следующая карточка стопки сдвинута вверх и
+ * закрывает верхний левый угол, а нижняя полоса каждого слоя остаётся открытой.
+ * Кегль задан с запасом: плоскость лежит под 60° и повёрнута на 34°, по высоте
+ * строка сжимается примерно в 0,7 раза, поэтому 14px на карточке дают ~10px на экране.
+ */
+.dir-ai-card-tag {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  padding: 0.35rem 0.7rem;
+  background: rgb(0 0 0 / 0.86);
+  color: #fff;
+  font-size: 0.875rem;
+  letter-spacing: 0.14em;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.dir-ai-card[data-on='true'] .dir-ai-card-tag {
+  background: var(--accent);
+  color: #000;
+}
+
+.dir-ai-hatch {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 0.22) 0 1px, transparent 1px 9px), #141414;
+}
+
+.dir-ai-hatch-dense {
+  background:
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 0.15) 0 1px, transparent 1px 6px), #0a0a0a;
+}
+
+/* Слой плёнки в стопке светлее, чем на первом экране: он должен читаться как кадр, а не как чёрное стекло */
+.dir-ai-card .dir-ai-plate-img {
+  filter: grayscale(1) contrast(0.92) brightness(1.02);
+}
+
+.dir-ai-card .dir-ai-grid {
+  background-image: linear-gradient(to right, rgb(255 255 255 / 0.2) 1px, transparent 1px);
+}
+
+.dir-ai-genregion {
+  position: absolute;
+  inset: 0;
+  background: rgb(255 255 255 / 0.12);
+  clip-path: ellipse(28% 36% at 62% 46%);
+}
+
+/* Та же область на итоговом кадре: сюда разница ставит красную штриховку */
+.dir-ai-genregion-mark {
+  background: none;
+}
+
+.dir-ai-genring {
+  position: absolute;
+  top: 10%;
+  left: 34%;
+  width: 56%;
+  height: 72%;
+  border: 1px dashed var(--accent);
+  border-radius: 9999px;
+}
+
+/* Диф: красная штриховка поверх того, что дала генерация */
+.dir-ai-diff {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(135deg, rgb(255 41 54 / 0.55) 0 1px, transparent 1px 6px),
+    rgb(255 41 54 / 0.14);
+  opacity: 0;
+  transition: opacity var(--motion-move) ease;
+}
+
+.dir-ai-layers[data-diff='true'] .dir-ai-diff {
+  opacity: 1;
+}
+
+.dir-ai-card img {
+  transition: filter var(--motion-move) ease;
+}
+
+/* Разница: снятое — серое, сгенерированное — красная штриховка. Кадр не чернеет */
+.dir-ai-layers[data-diff='true'] .dir-ai-card[data-layer='1'] img,
+.dir-ai-layers[data-diff='true'] .dir-ai-card[data-layer='3'] img {
+  filter: grayscale(1) contrast(1.05) brightness(0.92);
+}
+
+.dir-ai-bars {
+  position: absolute;
+  right: 6%;
+  bottom: 13%;
+  left: 6%;
+  display: flex;
+  height: 6%;
+  gap: 1px;
+}
+
+.dir-ai-bars i {
+  flex: 1;
+  background: hsl(0 0% var(--g));
+}
+
+.dir-ai-bars .dir-ai-bars-red {
+  flex: 1.4;
+  background: var(--accent);
+}
+
+.dir-ai-stage-read {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--ai-mute);
+}
+
+/* На узком телефоне рядом с переключателем остаётся только «Кадр собран» */
+@media (max-width: 29.99rem) {
+  .dir-ai-stage-more {
+    display: none;
+  }
+}
+
+.dir-ai-stage-hint {
+  opacity: max(0, calc(1 - var(--ai-p) * 14));
+}
+
+.dir-ai-diff-row {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dir-ai-diff-note {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 15rem;
+  color: rgb(255 255 255 / 0.82);
+  line-height: 1.5;
+  opacity: 0;
+  transform: translate3d(-0.5rem, 0, 0);
+  transition:
+    opacity var(--motion-move) ease,
+    transform var(--motion-move) var(--ease-out-expo);
+}
+
+.dir-ai-diff-note[data-on='true'] {
+  opacity: 1;
+  transform: none;
+}
+
+.dir-ai-diff-note i {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  background: var(--accent);
+}
+
+.dir-ai-diff-btn {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 1rem 0 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  background: rgb(0 0 0 / 0.6);
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color var(--motion-state) ease,
+    color var(--motion-state) ease,
+    transform var(--motion-press) var(--ease-out-expo);
+}
+
+.dir-ai-diff-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.dir-ai-diff-btn:active {
+  transform: scale(0.97);
+}
+
+.dir-ai-diff-btn[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+@media (hover: hover) {
+  .dir-ai-diff-btn:hover {
+    border-color: #fff;
+  }
+
+  .dir-ai-diff-btn[aria-pressed='true']:hover {
+    border-color: var(--accent);
+  }
+}
+
+.dir-ai-switch {
+  position: relative;
+  width: 1.75rem;
+  height: 1rem;
+  border: 1px solid currentColor;
+  border-radius: 9999px;
+}
+
+.dir-ai-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(1rem - 6px);
+  height: calc(1rem - 6px);
+  border-radius: 9999px;
+  background: currentColor;
+  transition: transform var(--motion-state) var(--ease-out-expo);
+}
+
+.dir-ai-diff-btn[aria-pressed='true'] .dir-ai-switch::after {
+  transform: translateX(0.75rem);
+}
+
+.dir-ai-stage-note {
+  position: absolute;
+  right: 0;
+  bottom: 0.4rem;
+  max-width: 14rem;
+  color: rgb(255 255 255 / 0.66);
+  line-height: 1.6;
+  text-align: right;
+}
+
+/* Телефон и планшет: заголовок сверху, стопка посередине, слои — «доком» у большого пальца */
+@media (max-width: 63.99rem) {
+  .dir-ai-layers {
+    height: 320svh;
+  }
+
+  .dir-ai-pin {
+    grid-template-areas:
+      'head'
+      'stage'
+      'steps';
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    row-gap: 0.75rem;
+    padding-top: 5rem;
+    /* Снизу остаётся место под плавающую кнопку брифа: она не должна закрывать текст слоя */
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .dir-ai-pin-copy {
+    display: contents;
+  }
+
+  .dir-ai-pin-head {
+    grid-area: head;
+  }
+
+  .dir-ai-h2-layers {
+    margin-top: 0.75rem;
+    font-size: clamp(1.45rem, 6.6vw, 2.25rem);
+  }
+
+  .dir-ai-steps {
+    display: grid;
+    grid-area: steps;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-top: 0;
+    border-top: 0;
+  }
+
+  .dir-ai-step {
+    display: contents;
+  }
+
+  .dir-ai-step::before {
+    display: none;
+  }
+
+  .dir-ai-step-btn {
+    min-height: 2.75rem;
+    grid-row: 1;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    padding: 0.6rem 0;
+    border-top: 1px solid var(--ai-line);
+  }
+
+  .dir-ai-step:nth-child(1) .dir-ai-step-btn {
+    grid-column: 1;
+  }
+
+  .dir-ai-step:nth-child(2) .dir-ai-step-btn {
+    grid-column: 2;
+  }
+
+  .dir-ai-step:nth-child(3) .dir-ai-step-btn {
+    grid-column: 3;
+  }
+
+  .dir-ai-step:nth-child(4) .dir-ai-step-btn {
+    grid-column: 4;
+  }
+
+  .dir-ai-step[data-active='true'] .dir-ai-step-btn {
+    border-top-color: var(--accent);
+  }
+
+  /* Название доступно скринридеру, а видно его в панели */
+  .dir-ai-step-title,
+  .dir-ai-step-tag {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .dir-ai-step-panel {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .dir-ai-step-panel p {
+    max-width: none;
+    padding: 0.75rem 0 0;
+    font-size: 0.875rem;
+  }
+
+  .dir-ai-step-echo {
+    display: block;
+  }
+
+  .dir-ai-stage3d {
+    --dw: min(76vw, 25rem);
+    --gap: clamp(1.4rem, 8vw, 2.6rem);
+    --lift-k: 0.3;
+    align-items: center;
+  }
+
+  @supports (width: 1cqw) {
+    .dir-ai-stage3d {
+      --dw: min(calc(100cqw / 1.26), calc(100cqh / 1.02), 34rem);
+      --gap: clamp(1.4rem, calc(var(--dw) * 0.14), 3.4rem);
+    }
+  }
+
+  .dir-ai-stage-hint,
+  .dir-ai-stage-note {
+    display: none;
+  }
+
+  .dir-ai-diff-row {
+    top: 0;
+    right: 0;
+    bottom: auto;
+    left: auto;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+
+  .dir-ai-diff-note {
+    max-width: 11rem;
+    text-align: right;
+    flex-direction: row-reverse;
+    transform: translate3d(0.5rem, 0, 0);
+  }
+
+  .dir-ai-diff-note[data-on='true'] {
+    transform: none;
+  }
+}
+
+.dir-ai-step-echo {
+  display: none;
+  padding-top: 0.75rem;
+  color: #fff;
+  font-family: var(--font-stage);
+  font-size: 1.05rem;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+/* ---------- Где что: разрез по шву ---------- */
+
+.dir-ai-fit {
+  padding-top: clamp(3rem, 6vw, 6rem);
+  background: #000;
+}
+
+.dir-ai-fit-head {
+  padding-bottom: clamp(2.5rem, 5vw, 4.5rem);
+}
+
+.dir-ai-fit-title {
+  display: grid;
+  margin-top: 1.5rem;
+  color: #fff;
+  font-family: var(--font-stage);
+  font-size: clamp(1.9rem, 5.2vw, 4.9rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.dir-ai-fit-b {
+  margin-top: 0.4em;
+  color: var(--ai-ink);
+}
+
+/*
+ * Заголовок читается по порядку: первая фраза в одну строку, вторая строкой ниже и
+ * ровно с левой кромки правой колонки (серой), под красной строчкой шва.
+ */
+@media (min-width: 64rem) {
+  .dir-ai-fit-title {
+    font-size: clamp(2rem, 4.9vw, 4.9rem);
+  }
+
+  .dir-ai-fit-b {
+    margin-top: 0.12em;
+    margin-left: calc(50% + 3.5rem);
+  }
+}
+
+.dir-ai-fit-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 64rem) {
+  .dir-ai-fit-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* Шов по центру: серая нить и красная строчка, которая дошивается по мере прокрутки */
+.dir-ai-fit-seam {
+  position: absolute;
+  top: -2.5rem;
+  bottom: 0;
+  left: 50%;
+  z-index: 2;
+  display: none;
+  width: 1px;
+  background: rgb(255 255 255 / 0.12);
+}
+
+.dir-ai-fit-seam-fill {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(to bottom, var(--accent) 0 9px, transparent 9px 15px);
+  transform-origin: top;
+}
+
+@media (min-width: 64rem) {
+  .dir-ai-fit-seam {
+    display: block;
+  }
+}
+
+.dir-ai-fit-col {
+  position: relative;
+  isolation: isolate;
+  padding-bottom: clamp(2.75rem, 5vw, 4.5rem);
+}
+
+/* Кадр над колонкой: слева итог с красным кольцом генерации, справа плоская плёнка */
+.dir-ai-fit-frame {
+  position: relative;
+  aspect-ratio: 16 / 8;
+  margin-bottom: 1.75rem;
+  overflow: hidden;
+  background: #0d0d0d;
+  outline: 1px solid rgb(255 255 255 / 0.22);
+  outline-offset: -1px;
+}
+
+@media (min-width: 64rem) {
+  .dir-ai-fit-frame {
+    aspect-ratio: 16 / 7.4;
+  }
+}
+
+.dir-ai-fit-frame .dir-ai-plate-img {
+  filter: grayscale(1) contrast(0.92) brightness(0.96);
+}
+
+.dir-ai-fit-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 55%, rgb(0 0 0 / 0.55));
+}
+
+.dir-ai-fit-ring {
+  top: 14%;
+  left: auto;
+  right: 12%;
+  width: 26%;
+  height: 72%;
+  background: repeating-linear-gradient(135deg, rgb(255 41 54 / 0.4) 0 1px, transparent 1px 7px);
+}
+
+/* Селектор длиннее, чем у .dir-ai-frame-tag ниже по файлу, иначе тот тянет подпись на всю высоту */
+.dir-ai-fit-frame .dir-ai-fit-tag {
+  top: auto;
+  right: auto;
+  bottom: 0.75rem;
+  left: 0.75rem;
+}
+
+/* Правая сторона — плоская «плёнка»: серая поверхность и тонкая штриховка */
+.dir-ai-fit-cam::before {
+  content: '';
+  position: absolute;
+  inset: 0 calc(var(--ai-pad) * -1) 0;
+  z-index: -1;
+  background:
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 0.028) 0 1px, transparent 1px 10px), #101010;
+}
+
+@media (min-width: 64rem) {
+  .dir-ai-fit-gen {
+    padding-right: 3.5rem;
+  }
+
+  .dir-ai-fit-cam {
+    padding-left: 3.5rem;
+  }
+
+  .dir-ai-fit-cam::before {
+    inset: 0 calc(var(--ai-pad) * -1) 0 0;
+  }
+}
+
+@media (max-width: 63.99rem) {
+  .dir-ai-fit-cam {
+    margin-top: 1rem;
+    padding-top: 1.25rem;
+    border-top: 1px dashed var(--accent);
+  }
+}
+
+.dir-ai-fit-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.1rem 0;
+  border-top: 1px solid var(--accent);
+  color: #fff;
+}
+
+.dir-ai-fit-cam .dir-ai-fit-label {
+  border-top-color: rgb(255 255 255 / 0.5);
+  color: var(--ai-ink);
+}
+
+@media (max-width: 63.99rem) {
+  .dir-ai-fit-cam .dir-ai-fit-label {
+    border-top: 0;
+  }
+}
+
+.dir-ai-fit-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--accent);
+}
+
+.dir-ai-fit-cam .dir-ai-fit-dot {
+  background: var(--ai-ink);
+}
+
+.dir-ai-fit-count {
+  margin-left: auto;
+  color: var(--ai-mute);
+}
+
+.dir-ai-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3.75rem minmax(0, 1fr);
+  column-gap: 1.25rem;
+  padding: 1.75rem 0 2rem;
+  border-top: 1px solid var(--ai-line);
+}
+
+@media (min-width: 48rem) {
+  .dir-ai-row {
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    column-gap: 1.75rem;
+    padding: 2.25rem 0 2.5rem;
+  }
+}
+
+.dir-ai-row::before {
+  content: '';
+  position: absolute;
+  inset: -1px 0 auto;
+  height: 1px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--motion-move) var(--ease-out-expo);
+}
+
+.dir-ai-fit-cam .dir-ai-row::before {
+  background: #fff;
+}
+
+@media (max-width: 29.99rem) {
+  .dir-ai-row {
+    grid-template-columns: 3rem minmax(0, 1fr);
+    column-gap: 1rem;
+  }
+
+  .dir-ai-row-title {
+    font-size: 1.05rem;
+  }
+}
+
+.dir-ai-row-glyph {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  color: rgb(255 255 255 / 0.82);
+  transition:
+    color var(--motion-state) ease,
+    transform var(--motion-move) var(--ease-out-expo);
+}
+
+.dir-ai-glyph {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.dir-ai-row-code {
+  color: var(--ai-mute);
+}
+
+.dir-ai-row-title {
+  margin-top: 0.6rem;
+  color: #fff;
+  font-family: var(--font-stage);
+  font-size: clamp(1.15rem, 1.9vw, 1.7rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  transition: transform var(--motion-move) var(--ease-out-expo);
+}
+
+.dir-ai-row-text {
+  max-width: 32rem;
+  margin-top: 0.85rem;
+  color: rgb(255 255 255 / 0.7);
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.dir-ai-fit-cam .dir-ai-row-title {
+  color: #e4e4e4;
+}
+
+.dir-ai-fit-cam .dir-ai-row-text {
+  color: rgb(255 255 255 / 0.64);
+}
+
+@media (hover: hover) {
+  .dir-ai-row:hover::before {
+    transform: scaleX(1);
+  }
+
+  .dir-ai-row:hover .dir-ai-row-glyph {
+    color: #fff;
+    transform: translateX(3px);
+  }
+
+  .dir-ai-row:hover .dir-ai-row-title {
+    transform: translateX(0.375rem);
+  }
+}
+
+/* ---------- Работы ---------- */
+
+.dir-ai-works {
+  padding-block: clamp(5rem, 9vw, 9rem);
+  background: #050505;
+}
+
+.dir-ai-works-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem 2.5rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--ai-line);
+}
+
+.dir-ai-h2-works {
+  margin-top: 1.25rem;
+  font-size: clamp(2.25rem, 7vw, 6.5rem);
+}
+
+.dir-ai-note {
+  max-width: 16rem;
+  color: var(--ai-mute);
+  line-height: 1.7;
+}
+
+.dir-ai-works-list {
+  display: grid;
+  gap: clamp(3.5rem, 8vw, 7rem);
+  margin-top: clamp(2.5rem, 5vw, 4.5rem);
+}
+
+.dir-ai-work-link {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 1.25rem;
+  color: inherit;
+  isolation: isolate;
+}
+
+.dir-ai-work-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 8px;
+}
+
+.dir-ai-work-frame {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: #0d0d0d;
+}
+
+.dir-ai-work-img {
+  transform: scale(1.001);
+  transition: transform var(--motion-cut) var(--ease-out-expo);
+}
+
+/* Рамка кадра: уголки белые, а у выбранной работы — красные */
+.dir-ai-corner {
+  position: absolute;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0 solid rgb(255 255 255 / 0.8);
+  transition:
+    border-color var(--motion-state) ease,
+    transform var(--motion-move) var(--ease-out-expo);
+}
+
+.dir-ai-corner-a {
+  top: 0.9rem;
+  left: 0.9rem;
+  border-width: 1.5px 0 0 1.5px;
+}
+
+.dir-ai-corner-b {
+  right: 0.9rem;
+  bottom: 0.9rem;
+  border-width: 0 1.5px 1.5px 0;
+}
+
+.dir-ai-frame-tag {
+  position: absolute;
+  right: 0.9rem;
+  top: 0.9rem;
+  padding: 0.25rem 0.5rem;
+  background: rgb(0 0 0 / 0.75);
+  color: #fff;
+}
+
+.dir-ai-work-info {
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+}
+
+/*
+ * Номер работы — на линейке, а не призрачной цифрой за названием: «01 ┤┤┤ 02»,
+ * красная головка у начала. Тот же словарь, что у линейки первого экрана.
+ */
+.dir-ai-work-idx {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  color: var(--ai-mute);
+}
+
+.dir-ai-work-idx-now {
+  color: #fff;
+}
+
+.dir-ai-work-idx-ticks {
+  position: relative;
+  height: 0.75rem;
+  flex: 1;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.34) 0 1px, transparent 1px 8px) bottom /
+      100% 5px no-repeat,
+    linear-gradient(rgb(255 255 255 / 0.28), rgb(255 255 255 / 0.28)) bottom / 100% 1px no-repeat;
+}
+
+.dir-ai-work-idx-ticks::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* Головка стоит на доле списка: первая работа — у начала, последняя — у конца */
+  left: calc(var(--at, 0) * (100% - 2px));
+  width: 2px;
+  background: var(--accent);
+}
+
+.dir-ai-work-text {
+  display: block;
+}
+
+.dir-ai-work-client {
+  color: #fff;
+  font-family: var(--font-stage);
+  font-size: clamp(1.75rem, 3.4vw, 3.2rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+}
+
+.dir-ai-work-title {
+  display: block;
+  margin-top: 0.75rem;
+  color: rgb(255 255 255 / 0.78);
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.dir-ai-work-note {
+  display: block;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ai-line);
+  color: rgb(255 255 255 / 0.72);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.dir-ai-work-note > span {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--accent);
+}
+
+.dir-ai-work-go {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.3);
+  color: #fff;
+  transition:
+    border-color var(--motion-state) ease,
+    color var(--motion-state) ease;
+}
+
+.dir-ai-work-go svg {
+  transition: transform var(--motion-move) var(--ease-out-expo);
+}
+
+.dir-ai-work-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  align-self: end;
+}
+
+.dir-ai-work-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #0d0d0d;
+}
+
+.dir-ai-work-thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.5);
+  transition: opacity var(--motion-move) ease;
+}
+
+.dir-ai-thumb-tag {
+  position: absolute;
+  bottom: 0.35rem;
+  left: 0.4rem;
+  z-index: 1;
+  color: #fff;
+}
+
+.dir-ai-work-link:focus-visible .dir-ai-work-img,
+.dir-ai-work-link:active .dir-ai-work-img {
+  transform: scale(1.04);
+}
+
+.dir-ai-work-link:focus-visible .dir-ai-corner,
+.dir-ai-work-link:active .dir-ai-corner {
+  border-color: var(--accent);
+}
+
+.dir-ai-work-link:focus-visible .dir-ai-work-go,
+.dir-ai-work-link:active .dir-ai-work-go {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.dir-ai-work-link:focus-visible .dir-ai-work-go svg,
+.dir-ai-work-link:active .dir-ai-work-go svg {
+  transform: translate(3px, -3px);
+}
+
+.dir-ai-work-link:focus-visible .dir-ai-work-thumb::after,
+.dir-ai-work-link:active .dir-ai-work-thumb::after {
+  opacity: 0;
+}
+
+@media (hover: hover) {
+  .dir-ai-work-link:hover .dir-ai-work-img {
+    transform: scale(1.04);
+  }
+
+  .dir-ai-work-link:hover .dir-ai-corner {
+    border-color: var(--accent);
+  }
+
+  .dir-ai-work-link:hover .dir-ai-corner-a {
+    transform: translate(-4px, -4px);
+  }
+
+  .dir-ai-work-link:hover .dir-ai-corner-b {
+    transform: translate(4px, 4px);
+  }
+
+  .dir-ai-work-link:hover .dir-ai-work-go {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .dir-ai-work-link:hover .dir-ai-work-go svg {
+    transform: translate(3px, -3px);
+  }
+
+  .dir-ai-work-link:hover .dir-ai-work-thumb::after {
+    opacity: 0;
+  }
+}
+
+@media (min-width: 64rem) {
+  .dir-ai-work-link {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: 1fr auto;
+    column-gap: 1.5rem;
+    row-gap: 1.5rem;
+  }
+
+  .dir-ai-work-frame {
+    grid-column: 1 / span 8;
+    grid-row: 1 / span 2;
+  }
+
+  .dir-ai-work-info {
+    grid-column: 9 / -1;
+    grid-row: 1;
+  }
+
+  .dir-ai-work-strip {
+    grid-column: 9 / -1;
+    grid-row: 2;
+  }
+
+  .dir-ai-work[data-flip='true'] .dir-ai-work-frame {
+    grid-column: 5 / -1;
+  }
+
+  .dir-ai-work[data-flip='true'] .dir-ai-work-info,
+  .dir-ai-work[data-flip='true'] .dir-ai-work-strip {
+    grid-column: 1 / span 4;
+  }
+}
+
+/* ---------- CTA 1: светлая «плёнка» (общий токен бумаги) ---------- */
+
+/*
+ * Фон, цвет текста и мягкую кромку даёт .dir-paper-section; шапка над ней темнеет
+ * сама. overflow на секции нельзя: кромка рисуется снаружи. Штриховка лежит
+ * отдельным слоем внутри и ничего не обрезает.
+ */
+.dir-ai-slab {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3rem;
+  padding-block: clamp(4rem, 8vw, 7.5rem);
+}
+
+.dir-ai-slab-hatch {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(135deg, rgb(13 13 13 / 0.04) 0 1px, transparent 1px 12px);
+  pointer-events: none;
+}
+
+.dir-ai-slab > :not(.dir-ai-slab-hatch) {
+  position: relative;
+}
+
+@media (min-width: 64rem) {
+  .dir-ai-slab {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+    column-gap: 5rem;
+    align-items: end;
+  }
+}
+
+.dir-ai-slab-title {
+  max-width: 13ch;
+  margin-top: 1.25rem;
+  color: var(--dir-paper-ink);
+  font-family: var(--font-stage);
+  font-size: clamp(2.25rem, 6.4vw, 6rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.dir-ai-slab-text {
+  max-width: 30rem;
+  margin: 1.5rem 0 2rem;
+  color: var(--dir-paper-mute);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.dir-ai-slab-layers {
+  display: grid;
+  border-top: 1px solid var(--dir-paper-ink);
+}
+
+.dir-ai-slab-layers li {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) 8.25rem;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.95rem 0;
+  border-bottom: 1px solid var(--dir-paper-line);
+  color: var(--dir-paper-mute);
+}
+
+.dir-ai-slab-bar {
+  display: block;
+  height: 0.875rem;
+}
+
+.dir-ai-slab-bar[data-kind='0'] {
+  background: var(--dir-paper-ink);
+}
+
+.dir-ai-slab-bar[data-kind='1'] {
+  border: 1px solid var(--accent);
+  background: repeating-linear-gradient(135deg, var(--accent) 0 2px, transparent 2px 6px);
+}
+
+.dir-ai-slab-bar[data-kind='2'] {
+  border: 1px solid var(--dir-paper-ink);
+  background: rgb(13 13 13 / 0.08);
+}
+
+.dir-ai-slab-bar[data-kind='3'] {
+  background: linear-gradient(90deg, var(--dir-paper-ink), rgb(13 13 13 / 0.28));
+}
+
+/* Мини-кадр: тот же шов, что на первом экране, только маленький и медленный */
+@property --dir-ai-mini {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 50;
+}
+
+.dir-ai-slab-side {
+  display: grid;
+  gap: 1.75rem;
+  min-width: 0;
+}
+
+.dir-ai-mini {
+  --dir-ai-mini: 50;
+  position: relative;
+  isolation: isolate;
+  aspect-ratio: 5 / 3;
+  overflow: hidden;
+  background: #000;
+  outline: 1px solid var(--mini-line, var(--dir-paper-ink));
+  animation: dir-ai-mini-sweep 7200ms var(--ease-in-out-cubic) infinite alternate;
+}
+
+/* В финале мини-шов — знак сцены справа от кнопки: на чёрном контур светлый */
+.dir-ai-mini-end {
+  --mini-line: rgb(255 255 255 / 0.32);
+  width: min(100%, 22rem);
+}
+
+@keyframes dir-ai-mini-sweep {
+  from {
+    --dir-ai-mini: 26;
+  }
+  to {
+    --dir-ai-mini: 74;
+  }
+}
+
+/* Вне кадра шов стоит: бесконечный ход не тратит кадры впустую */
+.dir-ai-mini[data-live='false'] {
+  animation-play-state: paused;
+}
+
+.dir-ai-mini-final,
+.dir-ai-mini-plate {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.dir-ai-mini-plate {
+  clip-path: inset(0 calc(100% - var(--dir-ai-mini) * 1%) 0 0);
+}
+
+.dir-ai-mini-seam {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  transform: translate3d(calc(var(--dir-ai-mini) * 1%), 0, 0);
+}
+
+.dir-ai-mini-seam > span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  margin-left: -0.5px;
+  background: var(--accent);
+}
+
+/* ---------- Процесс: монтажные дорожки ---------- */
+
+.dir-ai-process {
+  padding-block: clamp(5rem, 9vw, 9rem);
+  background: #080808;
+}
+
+/* 21ch: «Гибридная работа» держится в одной строке, и «работа» не остаётся сиротой */
+.dir-ai-h2-process {
+  max-width: 21ch;
+  margin-top: 1.25rem;
+  font-size: clamp(1.55rem, 6.6vw, 1.9rem);
+}
+
+@media (min-width: 48rem) {
+  .dir-ai-h2-process {
+    font-size: clamp(1.9rem, 4.2vw, 3.9rem);
+  }
+}
+
+.dir-ai-process-lead {
+  max-width: 26rem;
+  margin-top: 1.5rem;
+  color: rgb(255 255 255 / 0.72);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.dir-ai-tl {
+  --ai-tl: 0;
+  position: relative;
+  margin-top: clamp(2.5rem, 5vw, 4.5rem);
+}
+
+.dir-ai-tl-ruler,
+.dir-ai-head-lane {
+  display: none;
+}
+
+.dir-ai-track-row {
+  padding: 2rem 0 2.25rem;
+  border-top: 1px solid var(--ai-line);
+}
+
+.dir-ai-track-row:last-child {
+  border-bottom: 1px solid var(--ai-line);
+}
+
+.dir-ai-track-text {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  gap: 0.75rem 1rem;
+}
+
+/*
+ * Номер этапа — плашка-слейт с линией сверху, а не призрачная цифра за текстом:
+ * линия белеет у пройденного этапа и краснеет у того, где сейчас головка.
+ */
+.dir-ai-track-num {
+  align-self: start;
+  padding-top: 0.6rem;
+  border-top: 2px solid rgb(255 255 255 / 0.28);
+  color: rgb(255 255 255 / 0.6);
+  font-family: var(--font-stage);
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  transition:
+    color var(--motion-move) ease,
+    border-color var(--motion-move) ease;
+}
+
+.dir-ai-track-title {
+  color: rgb(255 255 255 / 0.86);
+  font-size: clamp(1.35rem, 5.4vw, 2rem);
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+  transition: color var(--motion-move) ease;
+}
+
+.dir-ai-track-desc {
+  max-width: 28rem;
+  margin-top: 0.75rem;
+  color: rgb(255 255 255 / 0.64);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.dir-ai-track-row[data-state='done'] .dir-ai-track-num {
+  border-top-color: rgb(255 255 255 / 0.7);
+  color: rgb(255 255 255 / 0.82);
+}
+
+.dir-ai-track-row[data-state='live'] .dir-ai-track-num {
+  border-top-color: var(--accent);
+  color: #fff;
+}
+
+.dir-ai-track-row[data-state='live'] .dir-ai-track-title {
+  color: #fff;
+}
+
+/* Дорожка: сетка в десять долей, клип стоит на своём месте */
+.dir-ai-track {
+  position: relative;
+  height: 2.75rem;
+  margin-top: 2rem;
+  border-block: 1px solid var(--ai-line);
+  background: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.07) 0 1px, transparent 1px 10%);
+}
+
+.dir-ai-track-label {
+  position: absolute;
+  top: -1.35rem;
+  left: 0;
+  color: var(--ai-mute);
+}
+
+.dir-ai-clipbar {
+  position: absolute;
+  top: 0.3rem;
+  bottom: 0.3rem;
+  left: calc(var(--s) * 1%);
+  display: flex;
+  width: calc(var(--w) * 1%);
+  align-items: center;
+  padding-inline: 0.6rem;
+  border: 1px dashed rgb(255 255 255 / 0.4);
+  color: rgb(255 255 255 / 0.7);
+  transition:
+    background-color var(--motion-move) ease,
+    border-color var(--motion-move) ease,
+    color var(--motion-move) ease;
+}
+
+.dir-ai-track-row[data-state='done'] .dir-ai-clipbar {
+  border-style: solid;
+  border-color: rgb(255 255 255 / 0.7);
+  background: rgb(255 255 255 / 0.14);
+  color: #fff;
+}
+
+.dir-ai-track-row[data-state='live'] .dir-ai-clipbar {
+  border-style: solid;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #000;
+}
+
+@media (min-width: 64rem) {
+  .dir-ai-tl {
+    --tl-text: minmax(0, 5fr);
+    --tl-track: minmax(0, 7fr);
+    --tl-gap: 4.5rem;
+  }
+
+  .dir-ai-tl-ruler {
+    display: grid;
+    grid-template-columns: var(--tl-text) var(--tl-track);
+    column-gap: var(--tl-gap);
+    padding-bottom: 1rem;
+    color: var(--ai-mute);
+  }
+
+  /* IN у левого края дорожки, OUT у правого; риски ниже, на своей строке */
+  .dir-ai-tl-ruler > span:first-child,
+  .dir-ai-tl-ruler > span:last-child {
+    grid-column: 2;
+    grid-row: 1;
+    padding-bottom: 0.5rem;
+  }
+
+  .dir-ai-tl-ruler > span:last-child {
+    justify-self: end;
+  }
+
+  .dir-ai-tl-ruler .dir-ai-tl-ticks {
+    grid-column: 2;
+    grid-row: 2;
+    height: 0.75rem;
+    background:
+      repeating-linear-gradient(90deg, rgb(255 255 255 / 0.4) 0 1px, transparent 1px 10%) bottom /
+        100% 100% no-repeat,
+      linear-gradient(rgb(255 255 255 / 0.22), rgb(255 255 255 / 0.22)) bottom / 100% 1px no-repeat;
+  }
+
+  .dir-ai-track-row {
+    display: grid;
+    grid-template-columns: var(--tl-text) var(--tl-track);
+    column-gap: var(--tl-gap);
+    align-items: start;
+    padding: 2.5rem 0 3rem;
+  }
+
+  .dir-ai-track {
+    margin-top: 1.5rem;
+  }
+
+  .dir-ai-head-lane {
+    position: absolute;
+    top: 2.1rem;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: var(--tl-text) var(--tl-track);
+    column-gap: var(--tl-gap);
+    pointer-events: none;
+  }
+
+  .dir-ai-head {
+    position: relative;
+    grid-column: 2;
+  }
+
+  /*
+   * Линия сидит на правой кромке блока и едет от −100% до 0: в конце пути блок
+   * встаёт ровно над дорожкой, а не уходит вправо за край страницы (иначе у
+   * страницы появился бы горизонтальный скролл). Влево за край можно — он не скроллится.
+   */
+  .dir-ai-head-line {
+    position: absolute;
+    inset: 0;
+    transform: translate3d(calc((var(--ai-tl) - 100) * 1%), 0, 0);
+  }
+
+  .dir-ai-head-line::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--accent);
+  }
+
+  .dir-ai-head-line::after {
+    content: '';
+    position: absolute;
+    top: -0.45rem;
+    right: -4px;
+    width: 10px;
+    height: 12px;
+    background: var(--accent);
+    clip-path: polygon(0 0, 100% 0, 100% 45%, 50% 100%, 0 45%);
+  }
+}
+
+/* ---------- CTA 2: клип на дорожке ---------- */
+
+.dir-ai-clipcta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.75rem 4rem;
+  padding-block: clamp(3.5rem, 7vw, 6rem);
+  border-top: 1px solid var(--ai-line);
+  background: #000;
+}
+
+@media (min-width: 64rem) {
+  .dir-ai-clipcta {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    align-items: end;
+  }
+}
+
+.dir-ai-clipcta-title {
+  margin-top: 1.1rem;
+  color: #fff;
+  font-family: var(--font-stage);
+  font-size: clamp(1.75rem, 3.8vw, 3.5rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.dir-ai-clipcta-text {
+  max-width: 28rem;
+  color: rgb(255 255 255 / 0.78);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+/* Дорожка: метки IN и OUT по краям, кнопка — клип у красной головки */
+.dir-ai-clipcta-track {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  border-block: 1px solid var(--ai-line);
+  background: repeating-linear-gradient(
+    90deg,
+    rgb(255 255 255 / 0.06) 0 1px,
+    transparent 1px 2.5rem
+  );
+}
+
+.dir-ai-clip-io {
+  color: var(--ai-mute);
+}
+
+.dir-ai-clip-lane {
+  position: relative;
+  padding-block: 1rem;
+}
+
+/*
+ * Пустые клипы за кнопкой: тот же пунктир, что у дорожек процесса выше. Считаются от
+ * остатка дорожки после кнопки (26rem и зазор), поэтому не заходят под неё на любой ширине.
+ */
+.dir-ai-clip-empty {
+  --rest: max(0px, calc(100% - 27rem));
+  position: absolute;
+  top: 1rem;
+  bottom: 1rem;
+  left: calc(27rem + var(--rest) * var(--s));
+  width: calc(var(--rest) * var(--w) - 0.5rem);
+  min-width: 0;
+  border: 1px dashed rgb(255 255 255 / 0.22);
+  pointer-events: none;
+}
+
+.dir-ai-clip-lane > button {
+  position: relative;
+}
+
+/* Красная головка у начала клипа: линия выходит за дорожку, сверху — ромб-кадр */
+.dir-ai-clip-lane::before {
+  content: '';
+  position: absolute;
+  top: -0.6rem;
+  bottom: -0.6rem;
+  left: -1px;
+  width: 1px;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.dir-ai-clip-lane::after {
+  content: '';
+  position: absolute;
+  top: -0.6rem;
+  left: -4px;
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+  transform: translateY(-50%) rotate(45deg);
+  pointer-events: none;
+}
+
+@media (max-width: 47.99rem) {
+  .dir-ai-clipcta-track {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .dir-ai-clip-io {
+    display: none;
+  }
+
+  .dir-ai-clip-lane {
+    padding-inline: 0.75rem;
+  }
+
+  .dir-ai-clip-lane::before,
+  .dir-ai-clip-lane::after,
+  .dir-ai-clip-empty {
+    display: none;
+  }
+}
+
+/* ---------- Сниженное движение ---------- */
+
+/*
+ * Снимается движение, а не обратная связь: цвет остаётся, а всё, что едет,
+ * переключается мгновенно. Шов стоит в покое, стопка раскрыта сразу и не
+ * закреплена, головка дорожек не ходит, клипы показаны выполненными. Кнопки —
+ * DirectionButton, их reduced-motion лежит в direction-kit.css.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .dir-ai-hero,
+  .dir-ai-rise,
+  .dir-ai-photo,
+  .dir-ai-light,
+  .dir-ai-meta-tc,
+  .dir-ai-mini,
+  .dir-ai-ring {
+    animation: none;
+  }
+
+  .dir-ai-ring {
+    display: none;
+  }
+
+  .dir-ai-layers {
+    --ai-e: 1;
+    --ai-p: 1;
+    height: auto;
+  }
+
+  .dir-ai-pin {
+    position: relative;
+    height: auto;
+    min-height: 100svh;
+    padding-top: 5.5rem;
+  }
+
+  .dir-ai-stage3d {
+    min-height: 26rem;
+  }
+
+  .dir-ai-deck {
+    will-change: auto;
+  }
+
+  .dir-ai-card,
+  .dir-ai-step-panel,
+  .dir-ai-step::before,
+  .dir-ai-row::before,
+  .dir-ai-cut-stitch {
+    transition: none;
+  }
+
+  .dir-ai-cut-stitch {
+    transform: scaleX(1);
+  }
+
+  .dir-ai-step-title,
+  .dir-ai-row-glyph,
+  .dir-ai-row-title,
+  .dir-ai-work-img,
+  .dir-ai-corner,
+  .dir-ai-work-go svg,
+  .dir-ai-grip,
+  .dir-ai-diff-btn {
+    transition-property: color, background-color, border-color;
+  }
+
+  .dir-ai-step-btn:hover .dir-ai-step-title,
+  .dir-ai-step-btn:active .dir-ai-step-title,
+  .dir-ai-row:hover .dir-ai-row-glyph,
+  .dir-ai-row:hover .dir-ai-row-title,
+  .dir-ai-work-link:hover .dir-ai-work-img,
+  .dir-ai-work-link:focus-visible .dir-ai-work-img,
+  .dir-ai-work-link:active .dir-ai-work-img,
+  .dir-ai-work-link:hover .dir-ai-corner,
+  .dir-ai-work-link:hover .dir-ai-work-go svg,
+  .dir-ai-work-link:focus-visible .dir-ai-work-go svg,
+  .dir-ai-work-link:active .dir-ai-work-go svg,
+  .dir-ai-handle:active .dir-ai-grip,
+  .dir-ai-diff-btn:active {
+    transform: none;
+  }
+
+  .dir-ai-head-lane {
+    display: none;
+  }
+}

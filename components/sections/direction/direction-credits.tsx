@@ -1,16 +1,26 @@
 /**
- * Работы направления как титры: строка — проект, кадр открывается по наведению
- * и фокусу (тот же жест, что в ролле /clients). На телефоне кадр стоит
- * под строкой постоянно — наведения там нет.
+ * Работы направления как титры: строка — проект, справа кадр, год и стрелка.
+ *
+ * Кадр крупный (на lg около 40% ширины строки, не шире 34rem) и стоит вплотную
+ * к тексту, поэтому середина строки не пустеет. Он всегда приглушён;
+ * «зажигается» у строки под курсором или фокусом — растёт сам и приближается
+ * внутри, — а на телефоне у строки, которая проходит через центр экрана (тот же
+ * жест, что в ролле /clients: наведения там нет). Без постера строка держит
+ * ту же высоту: на месте кадра — штриховка. Кадр и цвет меняются слоями и
+ * transform — без layout.
  */
 'use client'
 
+import { useEffect, useRef, type CSSProperties } from 'react'
 import Link from 'next/link'
+import { ArrowUpRight } from 'lucide-react'
 
-import { cn } from '@/lib/utils'
 import { firstSentence, type DirectionPageWork } from '@/lib/services/pages/resolve'
 import { useDirectionPage } from './direction-context'
+import { KIT_KICKER, KIT_TITLE, KIT_TITLE_SIZE, setTitle, typo } from './direction-kit'
 import { Still } from './still'
+
+import './direction-kit.css'
 
 export interface DirectionCreditsProps {
   title: string
@@ -22,8 +32,46 @@ export interface DirectionCreditsProps {
 
 const excerpt = (work: DirectionPageWork) => firstSentence(work.description)
 
+const delay = (position: number) =>
+  ({ '--reveal-delay': `${Math.min(position, 5) * 60}ms` }) as CSSProperties
+
 export function DirectionCredits({ title, works, index, note }: DirectionCreditsProps) {
   const page = useDirectionPage()
+  const listRef = useRef<HTMLUListElement>(null)
+
+  // Без курсора строку зажигает положение на экране. Состояние лежит в
+  // data-focus, а не в React: строки не перерисовываются на каждом скролле
+  useEffect(() => {
+    const list = listRef.current
+    if (!list || typeof IntersectionObserver === 'undefined') return
+    const touch = window.matchMedia('(hover: none)')
+    let observer: IntersectionObserver | null = null
+
+    const connect = () => {
+      observer?.disconnect()
+      observer = null
+      const rows = list.querySelectorAll<HTMLElement>('[data-credit]')
+      rows.forEach(row => row.removeAttribute('data-focus'))
+      if (!touch.matches) return
+      observer = new IntersectionObserver(
+        entries => {
+          for (const entry of entries) {
+            ;(entry.target as HTMLElement).dataset.focus = String(entry.isIntersecting)
+          }
+        },
+        { rootMargin: '-42% 0px -42% 0px', threshold: 0 }
+      )
+      rows.forEach(row => observer?.observe(row))
+    }
+
+    connect()
+    touch.addEventListener('change', connect)
+    return () => {
+      touch.removeEventListener('change', connect)
+      observer?.disconnect()
+    }
+  }, [works.length])
+
   if (works.length === 0) return null
 
   return (
@@ -31,74 +79,99 @@ export function DirectionCredits({ title, works, index, note }: DirectionCredits
       aria-labelledby="direction-credits-title"
       className="border-t border-white/10 bg-[#000000] px-6 py-20 md:px-10 md:py-28 lg:px-20"
     >
-      <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4 border-b border-white/15 pb-5">
+      <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5 border-b border-white/15 pb-6">
         <div>
           {index ? (
-            <p className="type-meta font-mono uppercase text-white/50">{index} / Работы</p>
+            <p className={KIT_KICKER}>
+              <span aria-hidden="true" className="h-px w-8 bg-accent" />
+              {index} / Работы
+            </p>
           ) : null}
           <h2
             id="direction-credits-title"
             data-reveal=""
-            className="mt-4 font-stage text-[clamp(1.6rem,3.4vw,2.8rem)] uppercase leading-[0.92] tracking-[-0.02em] text-white"
+            className={`${KIT_TITLE} ${KIT_TITLE_SIZE} mt-5`}
           >
-            {title}
+            {setTitle(title)}
           </h2>
         </div>
         {note ? (
-          <p className="type-meta max-w-xs font-mono uppercase leading-relaxed text-white/45">
-            {note}
+          <p className="dir-kit-meta max-w-xs font-mono uppercase leading-relaxed text-white/60">
+            {typo(note)}
           </p>
         ) : null}
       </div>
 
-      <ul>
+      {/* Шапка таблицы титров: только на широком экране, декор */}
+      <div
+        aria-hidden="true"
+        className="dir-kit-meta hidden grid-cols-[3rem_minmax(0,1fr)_minmax(0,30%)_4.5rem] gap-x-6 border-b border-white/10 py-3 font-mono uppercase text-white/55 md:grid lg:grid-cols-[4.5rem_minmax(0,1fr)_min(40%,34rem)_5rem]"
+      >
+        <span />
+        <span>Клиент / работа</span>
+        <span>Кадр</span>
+        <span className="text-right">Год</span>
+      </div>
+
+      <ul ref={listRef} role="list" data-sticky-hide="desktop">
         {works.map((work, position) => (
-          <li key={work.slug} className="border-b border-white/10">
+          <li
+            key={work.slug}
+            data-reveal=""
+            style={delay(position)}
+            className="border-b border-white/10"
+          >
             <Link
               href={`/projects/${work.slug}`}
               prefetch={false}
+              data-credit=""
               onClick={() => page.openCase(work.slug)}
-              className="group relative grid grid-cols-[2.5rem_1fr] items-baseline gap-x-4 gap-y-4 py-7 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent md:grid-cols-[4rem_1fr_12rem] md:py-9"
+              className="dir-kit-credit grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3 py-7 md:grid-cols-[3rem_minmax(0,1fr)_minmax(0,30%)_4.5rem] md:items-center md:gap-x-6 md:py-8 lg:grid-cols-[4.5rem_minmax(0,1fr)_min(40%,34rem)_5rem]"
             >
-              <span className="type-meta font-mono uppercase text-white/45 transition-colors duration-[var(--motion-state)] group-hover:text-accent group-focus-visible:text-accent">
+              <span className="dir-kit-credit-idx dir-kit-meta font-mono uppercase tabular-nums md:self-start md:pt-3">
                 {String(position + 1).padStart(2, '0')}
               </span>
+
               <span className="min-w-0">
-                <span className="block font-stage text-[clamp(1.5rem,4.6vw,3.6rem)] uppercase leading-[0.95] tracking-[-0.02em] text-white transition-transform duration-[var(--motion-move)] ease-[var(--ease-out-expo)] group-hover:translate-x-2 group-focus-visible:translate-x-2 motion-reduce:transition-none">
+                <span className="dir-kit-credit-name block break-words font-stage text-[clamp(1.85rem,6.2vw,3.6rem)] uppercase md:text-[clamp(1.6rem,4.2vw,3.6rem)] leading-[0.95] tracking-[-0.02em] text-white">
                   {work.client}
                 </span>
-                <span className="mt-2 block text-sm text-white/70 md:text-base">{work.title}</span>
+                <span className="mt-3 block text-sm text-white/75 md:text-base">
+                  {typo(work.title)}
+                </span>
                 {excerpt(work) ? (
-                  <span className="mt-2 hidden max-w-xl text-sm leading-relaxed text-white/45 md:block">
-                    {excerpt(work)}
+                  <span className="mt-2 hidden max-w-xl text-sm leading-relaxed text-white/55 [text-wrap:pretty] md:block">
+                    {typo(excerpt(work) ?? '')}
                   </span>
                 ) : null}
               </span>
-              <span className="type-meta col-start-2 font-mono uppercase text-white/45 md:col-start-auto md:text-right">
-                {work.year ?? ' '}
+
+              <span className="col-start-2 mt-4 flex items-center gap-3 md:col-start-4 md:row-start-1 md:mt-0 md:justify-end md:self-start md:pt-3">
+                <span className="dir-kit-meta font-mono uppercase tabular-nums text-white/60">
+                  {work.year ?? ' '}
+                </span>
+                <ArrowUpRight
+                  aria-hidden="true"
+                  className="dir-kit-credit-arrow h-4 w-4 shrink-0"
+                />
               </span>
 
-              {work.posterUrl ? (
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    'col-span-2 block md:col-span-1',
-                    // Десктоп: кадр вылетает справа по hover через clip-path
-                    'md:pointer-events-none md:absolute md:right-[12rem] md:top-1/2 md:z-10 md:w-[22rem] md:-translate-y-1/2',
-                    'md:[clip-path:inset(0_0_0_100%)] md:transition-[clip-path] md:duration-[var(--motion-move)] md:ease-[var(--ease-out-expo)]',
-                    'md:group-hover:[clip-path:inset(0)] md:group-focus-visible:[clip-path:inset(0)]',
-                    'motion-reduce:md:transition-none'
-                  )}
-                >
+              <span
+                aria-hidden="true"
+                className="dir-kit-credit-thumb col-start-2 mt-5 block md:col-start-3 md:row-start-1 md:mt-0"
+              >
+                {work.posterUrl ? (
                   <Still
                     src={work.posterUrl}
                     alt=""
-                    sizes="(min-width: 768px) 22rem, 100vw"
+                    sizes="(min-width: 1024px) 38vw, (min-width: 768px) 30vw, 90vw"
                     quality={65}
                     className="aspect-video w-full"
                   />
-                </span>
-              ) : null}
+                ) : (
+                  <span className="dir-kit-still-fallback block aspect-video w-full" />
+                )}
+              </span>
             </Link>
           </li>
         ))}
