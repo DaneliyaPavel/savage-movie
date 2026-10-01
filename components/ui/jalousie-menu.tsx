@@ -130,7 +130,12 @@ export function JalousieMenu() {
 
   type CountKey = 'projects' | 'blog' | null
 
-  /* Menu items - Asymmetric layout matching freshman reference */
+  /*
+   * Menu items — асимметричный ритм: после полной строки «Услуги» позиции идут
+   * по кругу слева → по центру → справа. «Рекламные ролики» из меню убраны
+   * (ссылка живёт в футере и на /services), поэтому позиции ниже сдвинуты
+   * по тому же кругу, иначе «Клиенты» встали бы по центру прямо под «Услугами».
+   */
   const NAV_ITEMS = useMemo(
     () =>
       [
@@ -153,46 +158,37 @@ export function JalousieMenu() {
           position: 'full' as const,
         },
         {
-          // Коммерческая посадочная: внутренняя ссылка с каждой страницы,
-          // включая главную, — меню единственное место, где это не ломает вёрстку.
-          // Занимает позицию, ранее принадлежавшую «Обучению» (пункт убран из меню)
-          labelKey: 'nav.commercial',
-          href: '/reklamny-rolik',
-          countKey: null as CountKey,
-          position: 'left' as const,
-        },
-        {
           // Доказательство перед обращением: посетитель, который уже посмотрел
           // работы, приходит проверить, с кем студия действительно работала.
           // До этого /clients жила только в sitemap и была недостижима из сайта
           labelKey: 'nav.clients',
           href: '/clients',
           countKey: null as CountKey,
-          position: 'center' as const,
+          position: 'left' as const,
         },
         {
           labelKey: 'nav.studio',
           href: '/about',
           countKey: null as CountKey,
-          position: 'right' as const,
+          position: 'center' as const,
         },
         {
           labelKey: 'nav.blog',
           href: '/blog',
           countKey: 'blog' as CountKey,
-          position: 'left' as const,
+          position: 'right' as const,
         },
         {
           labelKey: 'nav.contact',
           href: '/contact',
           countKey: null as CountKey,
-          position: 'center' as const,
+          position: 'left' as const,
         },
         {
           labelKey: 'nav.booking',
           href: '/booking',
           countKey: null as CountKey,
-          position: 'right' as const,
+          position: 'center' as const,
         },
       ] as const,
     []
