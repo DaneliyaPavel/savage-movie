@@ -25,8 +25,10 @@
  * Бесконечные вещи — наезд кадра, бегущий титр и ход плейхеда — стоят, пока
  * первый экран вне экрана, и выключены при prefers-reduced-motion.
  *
- * Если работ из портфолио нет, каждая секция остаётся целой: вместо кадров —
- * чертёжная плашка с сеткой.
+ * Кадры сцен (первый экран, главы, аудитории, плёнка, вопросы, финал) — отобранные
+ * иллюстрации из scene-stills.ts, не кадры из портфолио: без клиента и подписей.
+ * Настоящие кадры работ — только в блоке «Работы». Если работ нет, этот блок не
+ * рисуется, а у главы без кадра остаётся чертёжная плашка с сеткой.
  */
 'use client'
 
@@ -59,11 +61,8 @@ import { ArrowDown, ArrowRight, ArrowUpRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { DIRECTION_READING } from '@/lib/services/pages'
 import { CORPORATE_PAGE } from '@/lib/services/pages/content/corporate'
-import {
-  firstSentence,
-  interleaveFrames,
-  type DirectionPageWork,
-} from '@/lib/services/pages/resolve'
+import { firstSentence, type DirectionPageWork } from '@/lib/services/pages/resolve'
+import { sceneFramesFor } from '@/lib/services/scene-stills'
 import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
 import { DirectionEnd } from '../direction-end'
@@ -116,101 +115,63 @@ function useReduced() {
   )
 }
 
-/* ───────────────────────────── Данные глав ───────────────────────────── */
+/* ───────────────────────────── Кадры сцен и данные глав ───────────────────────────── */
 
-type Chapter = (typeof CORPORATE_PAGE.chapters)[number] & {
-  /** Кадр главы из портфолио; null — работы нет, остаётся чертёжная плашка */
-  src: string | null
-  client: string | null
-}
-
-function resolveChapters(works: DirectionPageWork[]): Chapter[] {
-  const bySlug = new Map(works.map(work => [work.slug, work]))
-  return CORPORATE_PAGE.chapters.map(chapter => {
-    const work = bySlug.get(chapter.slug)
-    const src = work?.stills[chapter.still ?? 0] ?? work?.stills[0] ?? work?.posterUrl ?? null
-    return { ...chapter, src, client: src ? (work?.client ?? null) : null }
-  })
-}
-
-/** Кадр из портфолио; crop — вариант перекадровки, когда свежих кадров не хватает */
+/**
+ * Кадр: src и собственная композиция (object-position). Кадры сцены несут её с
+ * собой, у кадров работ её нет, и они кадрируются по центру.
+ */
 interface Shot {
   src: string
-  client: string
-  crop: number
+  position?: string
 }
 
-/** Перекадровка повторного кадра: увеличение с другой опорной точкой, зеркала нет */
-const CROPS: { scale: number; origin: string }[] = [
-  { scale: 1, origin: '50% 50%' },
-  { scale: 1.55, origin: '18% 34%' },
-  { scale: 1.55, origin: '84% 66%' },
-  { scale: 2.1, origin: '52% 22%' },
-]
+/**
+ * Кадры сцены направления (scene-stills.ts) — отобранные иллюстрации, а не кадры
+ * из портфолио: у них нет клиента и ссылки на кейс, подписей с именем не печатаем.
+ * Места по порядку DIRECTION_SCENES.corporate: 0–3 главы (0 — первый экран),
+ * 4–6 экран аудиторий, 7–12 плёнка, 13 кадр вопросов, 14 финал. Кадры не
+ * повторяются, поэтому перекадровка и запас из галерей работ больше не нужны.
+ */
+const SCENES = sceneFramesFor('corporate')
+const SCENE_CHAPTERS = SCENES.slice(0, 4)
+const SCENE_AUDIENCE = SCENES.slice(4, 7)
+const SCENE_BAND = SCENES.slice(7, 13)
+const SCENE_FAQ = SCENES[13] ?? null
+const SCENE_CLOSING = SCENES[14] ?? null
+
+type Chapter = (typeof CORPORATE_PAGE.chapters)[number] & {
+  /** Кадр главы из сцены; null — кадра нет, остаётся чертёжная плашка */
+  src: string | null
+  position?: string
+}
+
+/** Текст глав — из контента, кадры — по порядку из сцены (slug и still из контента не нужны) */
+function resolveChapters(frames: Shot[]): Chapter[] {
+  return CORPORATE_PAGE.chapters.map((chapter, index) => ({
+    ...chapter,
+    src: frames[index]?.src ?? null,
+    position: frames[index]?.position,
+  }))
+}
+
+const CHAPTERS = resolveChapters(SCENE_CHAPTERS)
 
 type WorkLayout = 'trio' | 'pano' | 'duo'
 const WORK_LAYOUTS: WorkLayout[] = ['trio', 'pano', 'duo']
 const WORK_NEED: Record<WorkLayout, number> = { trio: 3, pano: 1, duo: 2 }
 
-interface ShotPlan {
-  /** Кадры каждой работы под её разворот, в порядке works */
-  rows: Shot[][]
-  /** Следующие n кадров для сцен вне работ: свежие, а затем повторы с иной перекадровкой */
-  extras: (count: number) => Shot[]
-}
-
 /**
- * Раздаёт кадры так, чтобы один и тот же не встречался дважды, пока есть свежие:
- * сначала главы, затем развороты работ, затем плёнка, экран аудиторий и вопросы.
- * Когда свежие кончились, кадр возвращается с другой перекадровкой, а не копией.
+ * Кадры каждой работы под её разворот, в порядке works. Это единственное место
+ * с настоящими кадрами проектов: блок привязан к работе и ссылке на её кейс.
  */
-function planShots(works: DirectionPageWork[], chapterSrcs: ReadonlySet<string>): ShotPlan {
-  const used = new Set(chapterSrcs)
-  const rows = works.map((work, position) => {
+function planRows(works: DirectionPageWork[]): Shot[][] {
+  return works.map((work, position) => {
     const need = WORK_NEED[WORK_LAYOUTS[position % WORK_LAYOUTS.length] ?? 'trio']
-    const fresh = work.stills.filter(src => !chapterSrcs.has(src)).slice(0, need)
-    const list = fresh.length > 0 ? fresh : [work.stills[0] ?? work.posterUrl].filter(Boolean)
-    list.forEach(src => src && used.add(src))
-    return list.map(src => ({ src: src as string, client: work.client, crop: 0 }))
+    const own = work.stills.slice(0, need)
+    const list = own.length > 0 ? own : [work.posterUrl].filter(Boolean)
+    return list.map(src => ({ src: src as string }))
   })
-
-  const pool = interleaveFrames(works, 60).map(frame => ({
-    src: frame.src,
-    client: frame.client,
-  }))
-  const spare = pool.filter(frame => !used.has(frame.src))
-  let cursor = 0
-  const extras = (count: number): Shot[] => {
-    const out: Shot[] = []
-    for (let i = 0; i < count; i += 1) {
-      const from = cursor + i
-      if (from < spare.length) {
-        out.push({ ...(spare[from] as { src: string; client: string }), crop: 0 })
-      } else if (pool.length > 0) {
-        const again = from - spare.length
-        const frame = pool[again % pool.length] as { src: string; client: string }
-        const crop = 1 + (Math.floor(again / pool.length) % (CROPS.length - 1))
-        out.push({ ...frame, crop })
-      }
-    }
-    cursor += count
-    return out
-  }
-  return { rows, extras }
-}
-
-/** Кадр с перекадровкой: обёртка масштабирует, сам кадр остаётся обычным Still */
-function Reframe({ crop, children }: { crop: number; children: ReactNode }) {
-  const frame = CROPS[crop] ?? CROPS[0]
-  if (!frame || frame.scale === 1) return <>{children}</>
-  return (
-    <div
-      className="absolute inset-0"
-      style={{ transform: `scale(${frame.scale})`, transformOrigin: frame.origin }}
-    >
-      {children}
-    </div>
-  )
 }
 
 /* ───────────────────────────── Мелочи набора ───────────────────────────── */
@@ -511,6 +472,7 @@ function Hero({ chapters }: { chapters: Chapter[] }) {
                         alt=""
                         priority={index === 0}
                         sizes="100vw"
+                        objectPosition={chapter.position}
                         className="h-full w-full"
                       />
                     </div>
@@ -535,11 +497,6 @@ function Hero({ chapters }: { chapters: Chapter[] }) {
             00:00:00:00
           </span>
         </div>
-        {current?.client ? (
-          <p className="dir-corporate-hud-credit dir-kit-meta font-mono uppercase">
-            Кадр из портфолио · {current.client}
-          </p>
-        ) : null}
       </div>
       <span aria-hidden="true" className="dir-corporate-hero-edge" data-side="top" />
       <span aria-hidden="true" className="dir-corporate-hero-edge" data-side="bottom" />
@@ -773,8 +730,6 @@ function Chapters({ chapters }: { chapters: Chapter[] }) {
     }
   })
 
-  const current = chapters[active] ?? chapters[0]
-
   return (
     <section
       id="chapters"
@@ -820,6 +775,7 @@ function Chapters({ chapters }: { chapters: Chapter[] }) {
                         alt=""
                         sizes="(min-width: 1024px) 58vw, 1px"
                         quality={65}
+                        objectPosition={chapter.position}
                         className="h-full w-full"
                       />
                     </div>
@@ -830,15 +786,6 @@ function Chapters({ chapters }: { chapters: Chapter[] }) {
               ))}
               <span aria-hidden="true" className="dir-corporate-stage-shade" />
               <Marks />
-
-              {current?.client ? (
-                <p
-                  aria-hidden="true"
-                  className="dir-corporate-plate absolute right-6 top-6 z-[5] hidden xl:block"
-                >
-                  Кадр из портфолио · {current.client}
-                </p>
-              ) : null}
 
               {/* Титр-карта: номер главы прокручивается колонкой, рядом тайм-код идёт с прокруткой */}
               <div aria-hidden="true" className="dir-corporate-card">
@@ -901,6 +848,7 @@ function Chapters({ chapters }: { chapters: Chapter[] }) {
                     alt=""
                     sizes="(min-width: 1024px) 1px, 100vw"
                     quality={65}
+                    objectPosition={chapter.position}
                     className="absolute inset-0 h-full w-full"
                   />
                 ) : (
@@ -1082,15 +1030,14 @@ function Audiences({ chapters, frames }: { chapters: Chapter[]; frames: Shot[] }
                     }
                   >
                     <div className="dir-corporate-stage-still">
-                      <Reframe crop={shot.crop}>
-                        <Still
-                          src={shot.src}
-                          alt=""
-                          sizes="(min-width: 1024px) 40vw, 100vw"
-                          quality={50}
-                          className="h-full w-full"
-                        />
-                      </Reframe>
+                      <Still
+                        src={shot.src}
+                        alt=""
+                        sizes="(min-width: 1024px) 40vw, 100vw"
+                        quality={50}
+                        objectPosition={shot.position}
+                        className="h-full w-full"
+                      />
                     </div>
                   </div>
                 )
@@ -1098,9 +1045,6 @@ function Audiences({ chapters, frames }: { chapters: Chapter[]; frames: Shot[] }
               <span className="dir-corporate-stage-shade" />
               <p className="dir-corporate-plate absolute left-3 top-3 z-[5]">
                 {pad(selected + 1)} / {audience?.label}
-              </p>
-              <p className="dir-corporate-plate absolute bottom-3 right-3 z-[5] hidden sm:block">
-                Кадр из портфолио · {frames[selected % frames.length]?.client}
               </p>
             </div>
           ) : null}
@@ -1292,15 +1236,13 @@ function Works({ works, rows }: { works: DirectionPageWork[]; rows: Shot[][] }) 
                           style={{ '--k': index } as CSSProperties}
                         >
                           <div className="dir-corporate-shot-img">
-                            <Reframe crop={shot.crop}>
-                              <Still
-                                src={shot.src}
-                                alt=""
-                                sizes={shotSizes(layout, index)}
-                                quality={index === 0 ? 65 : 50}
-                                className="h-full w-full"
-                              />
-                            </Reframe>
+                            <Still
+                              src={shot.src}
+                              alt=""
+                              sizes={shotSizes(layout, index)}
+                              quality={index === 0 ? 65 : 50}
+                              className="h-full w-full"
+                            />
                           </div>
                           <span className="dir-corporate-shot-code font-mono uppercase">
                             {pad(position + 1)}
@@ -1565,19 +1507,17 @@ function FilmBandTrack({ frames }: { frames: Shot[] }) {
         {frames.map((shot, index) => (
           <li key={`${shot.src}-${index}`} className="dir-corporate-band-frame">
             <div className="dir-corporate-band-img">
-              <Reframe crop={shot.crop}>
-                <Still
-                  src={shot.src}
-                  alt=""
-                  sizes="(min-width: 1024px) 26vw, 64vw"
-                  quality={50}
-                  className="h-full w-full"
-                />
-              </Reframe>
+              <Still
+                src={shot.src}
+                alt=""
+                sizes="(min-width: 1024px) 26vw, 64vw"
+                quality={50}
+                objectPosition={shot.position}
+                className="h-full w-full"
+              />
             </div>
             <p className="dir-corporate-band-code dir-kit-meta font-mono uppercase tabular-nums">
               <span>Кадр {pad(index + 1)}</span>
-              <span>{shot.client}</span>
             </p>
           </li>
         ))}
@@ -1592,21 +1532,17 @@ function FilmBandTrack({ frames }: { frames: Shot[] }) {
 function FaqFrame({ frame }: { frame: Shot }) {
   return (
     <div aria-hidden="true" className="dir-corporate-faqframe">
-      <Reframe crop={frame.crop}>
-        <Still
-          src={frame.src}
-          alt=""
-          sizes="(min-width: 1024px) 34vw, 1px"
-          quality={65}
-          className="h-full w-full"
-        />
-      </Reframe>
+      <Still
+        src={frame.src}
+        alt=""
+        sizes="(min-width: 1024px) 34vw, 1px"
+        quality={65}
+        objectPosition={frame.position}
+        className="h-full w-full"
+      />
       <span className="dir-corporate-stage-shade" />
       <span className="dir-corporate-mark" data-c="tl" />
       <span className="dir-corporate-mark" data-c="br" />
-      <p className="dir-corporate-plate absolute bottom-3 left-3 z-[5]">
-        Кадр из портфолио · {frame.client}
-      </p>
     </div>
   )
 }
@@ -1671,24 +1607,9 @@ function Leader() {
 /* ───────────────────────────── Страница ───────────────────────────── */
 
 export function CorporatePage({ works }: CorporatePageProps) {
-  const chapters = useMemo(() => resolveChapters(works), [works])
-  const plan = useMemo(() => {
-    const chapterSrcs = new Set(
-      chapters.map(chapter => chapter.src).filter((src): src is string => src !== null)
-    )
-    const shots = planShots(works, chapterSrcs)
-    // Порядок раздачи — порядок появления на странице: кадры, которые выше,
-    // получают свежие, а те, что ниже, — перекадрированные повторы
-    return {
-      rows: shots.rows,
-      audience: shots.extras(3),
-      band: shots.extras(6),
-      faq: shots.extras(1)[0] ?? null,
-    }
-  }, [chapters, works])
+  // Кадры работ нужны только блоку «Работы»; все остальные кадры — из сцены
+  const rows = useMemo(() => planRows(works), [works])
   const hasWorks = works.length > 0
-  const frames = interleaveFrames(works, 6)
-  const closing = frames[frames.length - 1]
   const end = CORPORATE_PAGE.end
 
   return (
@@ -1697,28 +1618,28 @@ export function CorporatePage({ works }: CorporatePageProps) {
       stickyLabel={CORPORATE_PAGE.stickyLabel}
       className="dir-corporate min-h-screen bg-[#000000] pb-20 md:pb-0"
     >
-      <Hero chapters={chapters} />
+      <Hero chapters={CHAPTERS} />
       <Statement />
-      <Chapters chapters={chapters} />
+      <Chapters chapters={CHAPTERS} />
       <Splice label="Далее — для кого фильм" />
-      <Audiences chapters={chapters} frames={plan.audience} />
+      <Audiences chapters={CHAPTERS} frames={SCENE_AUDIENCE} />
       {hasWorks ? <Splice label="Далее — работы" /> : null}
-      <Works works={works} rows={plan.rows} />
+      <Works works={works} rows={rows} />
       <SlateCta hasWorks={hasWorks} />
       <Process />
-      <FilmBand frames={plan.band} />
+      <FilmBand frames={SCENE_BAND} />
       <DirectionFaq
         index="06"
         title="Вопросы о корпоративном видео"
         items={CORPORATE_PAGE.faq}
-        aside={plan.faq ? <FaqFrame frame={plan.faq} /> : undefined}
+        aside={SCENE_FAQ ? <FaqFrame frame={SCENE_FAQ} /> : undefined}
       />
       <OtherDirections current="corporate" reading={DIRECTION_READING['corporate']} />
       <DirectionEnd
         lines={end.lines}
         ctaLabel={end.ctaLabel}
         note={end.note}
-        frame={closing ? { src: closing.src, alt: closing.client } : null}
+        frame={SCENE_CLOSING ? { src: SCENE_CLOSING.src, position: SCENE_CLOSING.position } : null}
         aside={<Leader />}
       />
     </DirectionShell>

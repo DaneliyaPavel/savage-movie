@@ -314,6 +314,22 @@ const STILLS = {
     position: '50% 20%',
     tone: 'dark',
   },
+  // Модель с лебедем под рукой, красная стена, крупнее
+  'swan-red-wall-close': {
+    src: '/scenes/swan-red-wall-close.42e6b084.webp',
+    w: 1792,
+    h: 2400,
+    position: '55% 25%',
+    tone: 'mid',
+  },
+  // Блондинка за рулём купе, профиль, золотой свет
+  'desert-drive': {
+    src: '/scenes/desert-drive.4f7b8f25.webp',
+    w: 1792,
+    h: 2400,
+    position: '40% 38%',
+    tone: 'mid',
+  },
   // Рыжая модель в кожаном корсете, пустыня, синее небо
   'redhead-dunes': {
     src: '/scenes/redhead-dunes.b1c5db6d.webp',
@@ -396,19 +412,18 @@ export const DIRECTION_SCENES: Record<ServiceDirectionId, readonly SceneStillId[
   commercial: [],
   fashion: [
     'burgundy-hall',
-    'redhead-lowkey',
     'swan-wall',
+    'redhead-lowkey',
     'swan-red-wall',
     'helmet',
     'redhead-leaf',
     'swan-wing',
-    'white-suit-hall',
+    'desert-drive',
     'moto-desert',
-    'window-blazer',
-    'swan-cape',
     'redhead-dunes',
+    'swan-cape',
+    'swan-red-wall-close',
     'coupe-portrait',
-    'cream-jacket-hall',
     'white-suit-profile',
   ],
   beauty: [

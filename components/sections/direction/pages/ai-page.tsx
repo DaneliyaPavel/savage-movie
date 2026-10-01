@@ -27,8 +27,10 @@
  * «плёнка» — .dir-paper-section, и шапка сама темнеет над ней; плавающая кнопка
  * прячется по data-sticky-hide; кнопки — DirectionButton.
  *
- * Если работ из портфолио нет, страница остаётся целой: кадры заменяет
- * нарисованная сцена, секция работ уходит, CTA встаёт после «Где что».
+ * Кадры сцены — отобранные иллюстрации направления (scene-stills.ts), а не
+ * скриншоты работ: без клиента, подписи и ссылки на кейс. Настоящие кадры
+ * проектов остаются только в «Работах». Если работ из портфолио нет, страница
+ * остаётся целой: секция работ уходит, CTA встаёт после «Где что».
  */
 'use client'
 
@@ -48,11 +50,8 @@ import { ArrowUpRight } from 'lucide-react'
 
 import { DIRECTION_READING } from '@/lib/services/pages'
 import { AI_PAGE, type AiCta } from '@/lib/services/pages/content/ai'
-import {
-  interleaveFrames,
-  type DirectionPageWork,
-  type SceneFrame,
-} from '@/lib/services/pages/resolve'
+import type { DirectionPageWork, SceneFrame } from '@/lib/services/pages/resolve'
+import { sceneFramesFor } from '@/lib/services/scene-stills'
 import { cn } from '@/lib/utils'
 import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
@@ -189,10 +188,11 @@ function Cut({ from, to, tone = 'dark' }: { from: string; to: string; tone?: 'da
 /* ───────────────────────────── Кадры и сцена ───────────────────────────── */
 
 /**
- * Нарисованный кадр на случай, когда работ из портфолио нет. Плёнка — плоская
- * серая, финал — чёрный с единственным красным кругом: красный здесь сигнал,
- * а не заливка. Для вертикального экрана в SVG лежит вторая композиция: при
- * обрезке «cover» центральной полосы иначе хватило бы только на пол.
+ * Нарисованный кадр — запасной путь, если кадра сцены нет (а также мини-шов и
+ * секция работ без галереи). Плёнка — плоская серая, финал — чёрный с
+ * единственным красным кругом: красный здесь сигнал, а не заливка. Для
+ * вертикального экрана в SVG лежит вторая композиция: при обрезке «cover»
+ * центральной полосы иначе хватило бы только на пол.
  */
 function Scene({ tone, adaptive = false }: { tone: 'final' | 'plate'; adaptive?: boolean }) {
   const plate = tone === 'plate'
@@ -274,7 +274,10 @@ interface PhotoProps {
   adaptive?: boolean
 }
 
-/** Кадр из портфолио или нарисованная сцена; плёнка — тот же кадр, лишённый цвета */
+/**
+ * Кадр сцены или нарисованная сцена; плёнка — тот же кадр, лишённый цвета.
+ * Кроп берётся из самого кадра (у каждого своя композиция), position его перекрывает.
+ */
 function Photo({ frame, tone, sizes, priority, quality, position, adaptive }: PhotoProps) {
   if (!frame) return <Scene tone={tone} adaptive={adaptive} />
   return (
@@ -284,7 +287,7 @@ function Photo({ frame, tone, sizes, priority, quality, position, adaptive }: Ph
       sizes={sizes}
       priority={priority}
       quality={quality}
-      objectPosition={position}
+      objectPosition={position ?? frame.position}
       className="absolute inset-0 h-full w-full"
       imgClassName={tone === 'plate' ? 'dir-ai-plate-img' : undefined}
     />
@@ -734,14 +737,14 @@ function Hero({ frame }: { frame: SceneFrame | null }) {
       <div aria-hidden="true" className="dir-ai-frames">
         <div className="dir-ai-layer dir-ai-final">
           <div className="dir-ai-photo">
-            <Photo frame={frame} tone="final" sizes="100vw" priority position="50% 32%" adaptive />
+            <Photo frame={frame} tone="final" sizes="100vw" priority adaptive />
           </div>
           <span className="dir-ai-light" />
         </div>
         <div className="dir-ai-layer dir-ai-plate">
           <div className="dir-ai-photo">
             {/* То же качество, что у финала: оптимизатор отдаёт один файл, серость делает CSS */}
-            <Photo frame={frame} tone="plate" sizes="100vw" position="50% 32%" adaptive />
+            <Photo frame={frame} tone="plate" sizes="100vw" adaptive />
           </div>
         </div>
         <span className="dir-ai-scrim" />
@@ -1695,12 +1698,17 @@ function Process({ index }: { index: string }) {
 
 /* ───────────────────────────── Страница ───────────────────────────── */
 
+/**
+ * Кадры сцены по местам: первый экран, стопка слоёв, «Где что», выход. Порядок
+ * назначения задан в scene-stills.ts; кадры от портфолио не зависят.
+ */
+const SCENE_FRAMES = sceneFramesFor('ai')
+
 export function AiPage({ works }: AiPageProps) {
-  const frames = interleaveFrames(works, 6)
-  const heroFrame = frames[0] ?? null
-  const layerFrame = frames[1] ?? heroFrame
-  const fitFrame = frames[2] ?? layerFrame
-  const closing = frames[frames.length - 1]
+  const heroFrame = SCENE_FRAMES[0] ?? null
+  const layerFrame = SCENE_FRAMES[1] ?? heroFrame
+  const fitFrame = SCENE_FRAMES[2] ?? layerFrame
+  const closing = SCENE_FRAMES[3] ?? null
   const hasWorks = works.length > 0
 
   // Нумерация разделов не должна оставлять дыру, если работ нет
@@ -1734,7 +1742,7 @@ export function AiPage({ works }: AiPageProps) {
           lines={AI_PAGE.end.lines}
           ctaLabel={CTA_LABEL}
           note={tidy(AI_PAGE.end.note)}
-          frame={closing ? { src: closing.src, alt: closing.client } : null}
+          frame={closing ? { src: closing.src, position: closing.position } : null}
           aside={<SeamMini className="dir-ai-mini-end" />}
         />
       </div>

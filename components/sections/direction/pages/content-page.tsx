@@ -25,9 +25,14 @@
  *
  * Нарезки на первом экране, в мониторе, в призыве процесса и в вопросах — один
  * и тот же мастер-кадр, сдвинутый в окне (registered crop): картинка грузится
- * один раз, нарезки не расходятся с мастером ни на пиксель. Если работ из
- * портфолио нет, вместо кадра везде стоит поверхность «листа» — сетка и свет, —
- * а вёрстка и смысл остаются.
+ * один раз, нарезки не расходятся с мастером ни на пиксель.
+ *
+ * Кадры сцены — мастер, мозаика, тезис, этап «съёмка» и финал — не принадлежат
+ * ни одной работе: это отобранные кадры направления (lib/services/scene-stills),
+ * подписи с клиентом на них нет, и они стоят даже без работ. Настоящие работы
+ * только в разделе «Работы»: у каждой карточки клиент и ссылка на проект. Если
+ * кадров сцены нет, вместо кадра везде стоит поверхность «листа» — сетка и
+ * свет, — а вёрстка и смысл остаются.
  *
  * Движение — transform, clip-path и opacity декора. Всё, что идёт по кругу,
  * стоит вне экрана и выключено при prefers-reduced-motion; текст, кнопки и
@@ -63,10 +68,11 @@ import {
 } from '@/lib/services/pages/content/content-production'
 import {
   firstSentence,
-  interleaveFrames,
+  isCredited,
   type DirectionPageWork,
   type SceneFrame,
 } from '@/lib/services/pages/resolve'
+import { sceneFramesFor } from '@/lib/services/scene-stills'
 import type { FaqItem, ProcessStep } from '@/lib/services/pages/types'
 import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
@@ -88,8 +94,20 @@ export interface ContentPageProps {
   works: DirectionPageWork[]
 }
 
-/** Кадр сцены: у работы может не быть ни одного, тогда вместо него поверхность листа */
+/** Кадр сцены: если у направления кадров нет, вместо него поверхность листа */
 type Frame = SceneFrame | null
+
+/**
+ * Кадры сцены не зависят от работ: порядок задан в DIRECTION_SCENES. Первый —
+ * мастер (первый экран, монитор, нарезки), последний — финал, середина — пул
+ * мозаики, тезиса и этапа «съёмка».
+ */
+const SCENE = sceneFramesFor('content-production')
+const MASTER: Frame = SCENE[0] ?? null
+const CLOSING: Frame = SCENE.length > 1 ? (SCENE[SCENE.length - 1] ?? null) : null
+const POOL = SCENE.slice(1, -1)
+const THESIS_FRAME: Frame = POOL.length > 0 ? (POOL[8 % POOL.length] ?? MASTER) : MASTER
+const SHOT_FRAME: Frame = POOL.length > 0 ? (POOL[9 % POOL.length] ?? MASTER) : MASTER
 
 /**
  * Одна строка sizes на весь мастер-кадр: первый экран, монитор и карточки
@@ -317,6 +335,7 @@ function Registered({
           alt=""
           sizes={MASTER_SIZES}
           priority={priority}
+          objectPosition={frame.position}
           className="h-full w-full"
         />
       ) : (
@@ -571,7 +590,9 @@ function Hero({ frame }: { frame: Frame }) {
               aria-hidden="true"
               className="dir-kit-meta mb-3 flex items-center justify-between gap-4 font-mono uppercase tabular-nums text-white/60"
             >
-              <span className="truncate">Мастер-кадр{frame ? `: ${frame.client}` : ''}</span>
+              <span className="truncate">
+                Мастер-кадр{isCredited(frame) ? `: ${frame.client}` : ''}
+              </span>
               <span className="shrink-0">
                 TC <span ref={tcRef}>00:00:00:00</span>
               </span>
@@ -592,6 +613,7 @@ function Hero({ frame }: { frame: Frame }) {
                       alt=""
                       priority
                       sizes={MASTER_SIZES}
+                      objectPosition={frame.position}
                       className="absolute inset-0 h-full w-full"
                     />
                   ) : (
@@ -989,7 +1011,7 @@ function Splice({ from, to }: { from: string; to: string }) {
 /* ─────────────────────────── 3. Состав выдачи ─────────────────────────── */
 
 /**
- * Кадр карточки мозаики: своя работа, своё кадрирование и тон (CONTENT_LOOKS).
+ * Кадр карточки мозаики: свой кадр сцены, своё кадрирование и тон (CONTENT_LOOKS).
  * Вертикальные и квадратные карточки уже широких, поэтому им нужен меньший
  * sizes — иначе браузер возьмёт из srcset лишнюю ширину.
  */
@@ -1036,7 +1058,7 @@ function Outputs({ frame, pool }: { frame: Frame; pool: SceneFrame[] }) {
           Лист 01<span className="mx-2.5 text-accent">/</span>
           {pad(outputs.length)} кадров
         </span>
-        <span className="hidden truncate md:block">Кадры из работ студии</span>
+        <span className="hidden truncate md:block">Кадры показывают форматы</span>
         <span className="whitespace-nowrap text-white/80 md:hidden">Листайте →</span>
       </p>
 
@@ -1133,7 +1155,7 @@ function Outputs({ frame, pool }: { frame: Frame; pool: SceneFrame[] }) {
 
       <p className="dir-kit-meta mt-5 max-w-2xl font-mono uppercase leading-relaxed text-white/60">
         {typo(
-          'Кадры — из работ студии: они показывают форматы, а не один заказ. Недели в карточках — схема порядка выдачи, не график. Даты фиксируем до съёмки.'
+          'Кадры показывают форматы, а не один заказ. Недели в карточках — схема порядка выдачи, не график. Даты фиксируем до съёмки.'
         )}
       </p>
     </section>
@@ -1174,7 +1196,7 @@ function Thesis({ frame }: { frame: Frame }) {
             alt=""
             sizes="100vw"
             quality={65}
-            objectPosition="50% 38%"
+            objectPosition={frame.position ?? '50% 38%'}
             className="h-full w-full"
           />
         ) : (
@@ -1681,6 +1703,7 @@ function StepArt({ position, master, still }: { position: number; master: Frame;
             src={still.src}
             alt=""
             sizes="(min-width: 1024px) 20vw, 50vw"
+            objectPosition={still.position}
             className="absolute inset-0 h-full w-full"
           />
         ) : (
@@ -2073,26 +2096,8 @@ function EndSign() {
 }
 
 export function ContentPage({ works }: ContentPageProps) {
-  const frames = interleaveFrames(works, 6)
-  // Мастер-кадр — тот план ведущей работы, который выбран в раскадровке направления
-  // (SERVICE_FRAMES), а не просто первый кадр галереи
-  const lead = works.find(work => work.posterUrl)
-  const master: Frame = lead?.posterUrl
-    ? {
-        key: `${lead.slug}-master`,
-        src: lead.posterUrl,
-        slug: lead.slug,
-        client: lead.client,
-        title: lead.title,
-      }
-    : (frames[0] ?? null)
-  const closing = frames[frames.length - 1]
-  // Кадры мозаики, тезиса и этапов: все кадры работ по кругу, кроме мастера —
-  // он уже стоит на первом экране и в карточке HERO
-  const pool = interleaveFrames(works, 12).filter(item => item.src !== master?.src)
-  const thesisFrame: Frame = pool.length > 0 ? (pool[8 % pool.length] ?? master) : master
-  const shotFrame: Frame = pool.length > 0 ? (pool[9 % pool.length] ?? master) : master
-  // Без работ раздел «Работы» не рисуется, номера следующих разделов сдвигаются
+  // Кадры сцены от работ не зависят (см. SCENE); работы нужны только разделу «Работы».
+  // Без работ он не рисуется, номера следующих разделов сдвигаются
   const hasWorks = works.length > 0
   const end = CONTENT_PAGE.end
   const processNo = hasWorks ? '05' : '04'
@@ -2101,11 +2106,11 @@ export function ContentPage({ works }: ContentPageProps) {
   return (
     <DirectionShell id="content-production" stickyLabel={CONTENT_PAGE.stickyLabel}>
       <div className="dir-content">
-        <Hero frame={master} />
-        <Nle frame={master} />
+        <Hero frame={MASTER} />
+        <Nle frame={MASTER} />
         <Splice from="01" to="02" />
-        <Outputs frame={master} pool={pool} />
-        <Thesis frame={thesisFrame} />
+        <Outputs frame={MASTER} pool={POOL} />
+        <Thesis frame={THESIS_FRAME} />
         <Audiences />
         {hasWorks ? <Reel index="04" works={works} /> : null}
         <ProofCta />
@@ -2114,16 +2119,16 @@ export function ContentPage({ works }: ContentPageProps) {
           index={processNo}
           title="Как планируем квартал"
           lead="Главное решение принимается до съёмки: какие материалы нужны и где они будут жить."
-          master={master}
-          still={shotFrame}
+          master={MASTER}
+          still={SHOT_FRAME}
         />
-        <ProcessCta frame={master} />
+        <ProcessCta frame={MASTER} />
         <Splice from={processNo} to={faqNo} />
         <Faq
           index={faqNo}
           title="Вопросы о регулярном продакшне"
           items={CONTENT_PAGE.faq}
-          frame={master}
+          frame={MASTER}
         />
         <OtherDirections
           current="content-production"
@@ -2133,7 +2138,7 @@ export function ContentPage({ works }: ContentPageProps) {
           lines={end.lines}
           ctaLabel={end.ctaLabel}
           note={typo(end.note)}
-          frame={closing ? { src: closing.src, alt: closing.client } : null}
+          frame={CLOSING ? { src: CLOSING.src, position: CLOSING.position } : null}
           aside={<EndSign />}
         />
       </div>

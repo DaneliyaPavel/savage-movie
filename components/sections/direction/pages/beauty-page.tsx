@@ -21,8 +21,11 @@
  * секция вне экрана (IntersectionObserver). При prefers-reduced-motion циклов
  * нет: линза и свет остаются в выбранном положении, вёрстка не меняется.
  *
- * Если работ из портфолио нет, каждая секция остаётся целой: кадры заменяет
- * «макро-поверхность» — свет, блик и кольца без единой картинки.
+ * Кадры сцены — отобранные иллюстрации направления (lib/services/scene-stills.ts),
+ * а не кадры работ: подписей и ссылок на кейсы у них нет. Работы портфолио живут
+ * только в списке «Крупный план в работах». Если набор кадров пуст, каждая секция
+ * остаётся целой: кадры заменяет «макро-поверхность» — свет, блик и кольца без
+ * единой картинки.
  */
 'use client'
 
@@ -49,11 +52,8 @@ import { ArrowDown } from 'lucide-react'
 
 import { BEAUTY_PAGE, type BeautyMaterial } from '@/lib/services/pages/content/beauty'
 import type { FaqItem, ProcessStep } from '@/lib/services/pages/types'
-import {
-  interleaveFrames,
-  type DirectionPageWork,
-  type SceneFrame,
-} from '@/lib/services/pages/resolve'
+import type { DirectionPageWork, SceneFrame } from '@/lib/services/pages/resolve'
+import { sceneFramesFor } from '@/lib/services/scene-stills'
 import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
 import { DirectionCredits } from '../direction-credits'
@@ -76,7 +76,7 @@ export interface BeautyPageProps {
   works: DirectionPageWork[]
 }
 
-/** Кадр сцены: у работы может не быть ни одного, тогда вместо него макро-поверхность */
+/** Кадр сцены; null — кадров нет, тогда вместо него макро-поверхность */
 type Frame = SceneFrame | null
 
 const pad = (value: number) => String(value).padStart(2, '0')
@@ -157,11 +157,19 @@ function MacroSurface({
   )
 }
 
-/** Кадр или, если кадра нет, макро-поверхность той же геометрии */
+/**
+ * Кадр или, если кадра нет, макро-поверхность той же геометрии.
+ *
+ * x и y — точка фокуса макро-поверхности (запасной вариант без кадра), на кроп
+ * картинки они не влияют. Кроп — position: по умолчанию свой у кадра (кадры сцены
+ * вертикальные 3:4, а сцены почти везде горизонтальные или полноэкранные, центр
+ * показал бы не лицо), но слот может его переопределить.
+ */
 function Plate({
   frame,
   x,
   y,
+  position,
   sizes = '100vw',
   priority = false,
   quality,
@@ -169,6 +177,7 @@ function Plate({
   frame: Frame
   x?: number
   y?: number
+  position?: string
   sizes?: string
   priority?: boolean
   quality?: 50 | 65 | 75
@@ -180,6 +189,7 @@ function Plate({
       sizes={sizes}
       priority={priority}
       quality={quality}
+      objectPosition={position ?? frame.position}
       className="h-full w-full"
     />
   ) : (
@@ -453,7 +463,9 @@ function Hero({ frame, hasWorks }: { frame: Frame; hasWorks: boolean }) {
       className="dir-beauty-hero relative isolate flex min-h-[100svh] w-full flex-col justify-end overflow-hidden bg-[#000000] px-6 pb-16 pt-[5.25rem] md:flex-row md:items-end md:px-10 md:pb-24 md:pt-28 lg:px-20"
     >
       <div ref={stageRef} aria-hidden="true" className="dir-beauty-stage absolute inset-0 z-0">
-        {/* Расфокус: тот же кадр, размытый и притушенный; один статичный слой */}
+        {/* Расфокус: тот же кадр, размытый и притушенный; один статичный слой. Кроп у расфокуса
+            и линзы общий (position кадра): на широком экране вертикальный кадр виден полосой,
+            и при 50% 30% в неё попадают глаза и нос, а линза ходит именно по этой полосе */}
         <div className="dir-beauty-base absolute inset-0">
           <div className="dir-beauty-base-blur absolute inset-0">
             <Plate frame={frame} priority sizes="100vw" />
@@ -589,6 +601,14 @@ const ZOOM_OPEN = 0.82
 /** Конечный радиус круга в долях диагонали сцены: круг выходит за края кадра */
 const ZOOM_FULL = 0.56
 
+/**
+ * Кроп кадра наезда (beauty-lips: губы занимают примерно 7–60% ширины и 38–62% высоты).
+ * На широком экране кадр полной ширины, по x сдвигать нечего, а 48% по y ставит губы
+ * в середину сцены. На телефоне кадр уже сцены, и x=33% из набора срезал бы угол рта:
+ * 8% оставляет губы целиком, а круг наезда раскрывается из центра сцены прямо по ним.
+ */
+const ZOOM_POSITION = '8% 48%'
+
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2)
 
 function Zoom({ frame }: { frame: Frame }) {
@@ -660,12 +680,12 @@ function Zoom({ frame }: { frame: Frame }) {
       </h2>
       <div ref={stageRef} data-sticky-hide="desktop" className="dir-beauty-zoom-stage">
         <div aria-hidden="true" className="absolute inset-0 opacity-[0.16]">
-          <Plate frame={frame} x={50} y={50} />
+          <Plate frame={frame} x={50} y={50} position={ZOOM_POSITION} />
         </div>
 
         <motion.div aria-hidden="true" style={{ clipPath: clip }} className="absolute inset-0">
           <motion.div style={{ scale }} className="h-full w-full">
-            <Plate frame={frame} x={50} y={50} />
+            <Plate frame={frame} x={50} y={50} position={ZOOM_POSITION} />
           </motion.div>
           <span className="dir-beauty-zoom-veil" />
           <motion.span style={{ opacity: litFade }} className="dir-beauty-zoom-lift">
@@ -1372,13 +1392,21 @@ function ProofCta({ frame }: { frame: Frame }) {
 
 /* ──────────────────────────── Процесс: шкала крупности ×1…×5 ──────────────────────────── */
 
+/** Кроп по y для горизонтальной версии: глаза и нос в полосе 16:9 (кадр beauty-gloss) */
+const WIDE_EYES_Y = '20%'
+
 /** Формат версии: один и тот же кадр, по-разному скадрированный */
 function Format({ frame, ratio, tag }: { frame: Frame; ratio: '9:16' | '16:9'; tag: string }) {
+  // Вертикаль режется только по ширине, и x кадра хватает. В горизонтали видна полоса
+  // в ~40% высоты: по y кадра (45%) глаза уходят под верхнюю кромку, поэтому поднимаем кроп к ним
+  const position =
+    ratio === '16:9' ? `${frame?.position?.split(' ')[0] ?? '50%'} ${WIDE_EYES_Y}` : undefined
+
   return (
     <div aria-hidden="true" data-ratio={ratio} className="dir-beauty-format">
       <span className="dir-beauty-format-frame">
         <span className="absolute inset-0 block">
-          <Plate frame={frame} x={58} y={40} sizes="10rem" quality={50} />
+          <Plate frame={frame} x={58} y={40} position={position} sizes="10rem" quality={50} />
         </span>
         <span className="dir-beauty-format-shade" />
       </span>
@@ -1592,39 +1620,19 @@ function EndSign() {
 /* ──────────────────────────────────── Страница ─────────────────────────────────── */
 
 /**
- * Набор кадров сцены. Сначала кадры, выбранные в раскадровке направления
- * (постеры работ), потом остальные кадры галерей по кругу: соседние секции
- * получают разные кадры, а не один и тот же постер.
+ * Кадры сцены: восемь отобранных кадров направления в порядке назначения
+ * (scene-stills.ts). Места: 0 — hero, 1 — финал, 2 — диск CTA, 3 — наезд,
+ * 4–7 — материалы, 5 заодно в версиях процесса. Кадры вертикальные, у каждого свой
+ * кроп (position). Работы портфолио сюда не попадают: они только в списке «Крупный план в работах».
  */
-function sceneFrames(works: DirectionPageWork[]): SceneFrame[] {
-  const seen = new Set<string>()
-  const pool: SceneFrame[] = []
-  const add = (frame: SceneFrame) => {
-    if (seen.has(frame.src)) return
-    seen.add(frame.src)
-    pool.push(frame)
-  }
-  for (const work of works) {
-    if (!work.posterUrl) continue
-    add({
-      key: `${work.slug}-poster`,
-      src: work.posterUrl,
-      slug: work.slug,
-      client: work.client,
-      title: work.title,
-    })
-  }
-  interleaveFrames(works, 16).forEach(add)
-  return pool
-}
+const SCENES = sceneFramesFor('beauty')
 
 export function BeautyPage({ works }: BeautyPageProps) {
-  const pool = sceneFrames(works)
   const hasWorks = works.length > 0
   const at = (index: number): Frame =>
-    pool.length > 0 ? (pool[index % pool.length] ?? null) : null
+    SCENES.length > 0 ? (SCENES[index % SCENES.length] ?? null) : null
   // Материалы берут кадры из второй половины набора: hero и наезд уже заняли первые
-  const offset = pool.length >= 8 ? 4 : 0
+  const offset = SCENES.length >= 8 ? 4 : 0
   const materialFrames: Frame[] = BEAUTY_PAGE.materials.map((_, index) => at(offset + index))
   const closing = at(1)
 
@@ -1670,7 +1678,7 @@ export function BeautyPage({ works }: BeautyPageProps) {
         lines={BEAUTY_PAGE.end.lines}
         ctaLabel={BEAUTY_PAGE.ctaLabel}
         note={typo(BEAUTY_PAGE.end.note)}
-        frame={closing ? { src: closing.src, alt: closing.client } : null}
+        frame={closing ? { src: closing.src, position: closing.position } : null}
         aside={<EndSign />}
       />
     </DirectionShell>

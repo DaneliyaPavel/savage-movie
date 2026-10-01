@@ -32,8 +32,10 @@
  * prefers-reduced-motion: там страница статична, но собрана целиком.
  * Контент (H1, абзацы, кнопки) виден с первого кадра, вход — сдвигом.
  *
- * Если портфолио не пришло, кадры заменяет «сцена» — свет и сетка; секции,
- * смысл и кнопки остаются, заставка работ не показывается.
+ * Кадры первого экрана, этапов и выхода — отобранные иллюстрации направления
+ * (scene-stills.ts), а не скриншоты работ: без клиента и ссылки на кейс.
+ * Настоящие кадры клипов остаются только в заставке работ и в титрах. Если
+ * портфолио не пришло, заставка работ не показывается, остальное цело.
  */
 'use client'
 
@@ -58,11 +60,8 @@ import Link from 'next/link'
 import { ArrowUpRight, AudioLines } from 'lucide-react'
 
 import { MUSIC_PAGE, type MusicStage } from '@/lib/services/pages/content/music'
-import {
-  interleaveFrames,
-  type DirectionPageWork,
-  type SceneFrame,
-} from '@/lib/services/pages/resolve'
+import type { DirectionPageWork, SceneFrame } from '@/lib/services/pages/resolve'
+import { sceneFramesFor } from '@/lib/services/scene-stills'
 import { DIRECTION_READING } from '@/lib/services/pages'
 import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
@@ -273,26 +272,19 @@ const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
 const vars = (values: Record<string, string | number>) => values as CSSProperties
 
 /**
- * Кадры сцены. Первым идёт выбранный в раскадровке план (posterUrl), дальше —
- * кадры галерей вперемешку; повторов нет.
+ * Кадры сцены по местам (порядок задан в scene-stills.ts, от портфолио не зависит):
+ * 0–5 — монтаж первого экрана (0 — LCP), 6–10 — мониторы этапов (интро, куплет,
+ * припев, бридж, аутро), 11 — выход.
  */
-function buildFrames(works: DirectionPageWork[]): SceneFrame[] {
-  const lead = works.find(work => work.posterUrl)
-  const head: SceneFrame[] = lead?.posterUrl
-    ? [
-        {
-          key: `${lead.slug}-lead`,
-          src: lead.posterUrl,
-          slug: lead.slug,
-          client: lead.client,
-          title: lead.title,
-        },
-      ]
-    : []
-  const seen = new Set(head.map(frame => frame.src))
-  const tail = interleaveFrames(works, 12).filter(frame => !seen.has(frame.src))
-  return [...head, ...tail].slice(0, 12)
-}
+const SCENE_FRAMES = sceneFramesFor('music')
+const HERO_FRAMES = SCENE_FRAMES.slice(0, 6)
+const CLOSING_FRAME = SCENE_FRAMES[SCENE_FRAMES.length - 1] ?? null
+
+/**
+ * Узкий бридж режет кадр до полосы в треть экрана по высоте: по центру остались бы
+ * колонны над лестницей. Ставим полосу на освещённые ступени с фигурой.
+ */
+const BRIDGE_POSITION = '43% 47%'
 
 /** Кадр для слота: если кадров мало, берём по кругу; без кадров — null (сцена) */
 const frameAt = (frames: SceneFrame[], index: number): SceneFrame | null =>
@@ -471,6 +463,7 @@ const Montage = memo(function Montage({
               priority={priority && index === 0}
               sizes="100vw"
               quality={priority && index === 0 ? 75 : 65}
+              objectPosition={frame.position}
               className="h-full w-full"
             />
             {state === 'on' && fresh ? <span className="dir-music-edge" /> : null}
@@ -1135,6 +1128,7 @@ function Tracks({ frames }: { frames: SceneFrame[] }) {
                       isBridge ? '100vw' : '(min-width: 1024px) 50vw, (min-width: 768px) 46vw, 92vw'
                     }
                     quality={isBridge ? 65 : 50}
+                    objectPosition={isBridge ? BRIDGE_POSITION : frame.position}
                     className="absolute inset-0 h-full w-full"
                   />
                 ) : (
@@ -1657,8 +1651,6 @@ export function MusicPage({ works }: MusicPageProps) {
   const [bpm, setBpm] = useState<number>(MUSIC_PAGE.tempos[2] ?? 128)
   const tempo = useMemo<TempoApi>(() => ({ bpm, setBpm }), [bpm])
   const rootRef = useRef<HTMLDivElement>(null)
-  const frames = useMemo(() => buildFrames(works), [works])
-  const closing = frames[frames.length - 1]
   useLiveZones(rootRef)
 
   return (
@@ -1669,9 +1661,9 @@ export function MusicPage({ works }: MusicPageProps) {
           className="dir-music"
           style={vars({ '--dm-beat': `${Math.round(60000 / bpm)}ms` })}
         >
-          <Hero frames={frames.slice(0, 6)} />
+          <Hero frames={HERO_FRAMES} />
           <Manifesto />
-          <Tracks frames={frames} />
+          <Tracks frames={SCENE_FRAMES} />
           <PlayBar />
           <Sequencer />
           <ClipsReel works={works} />
@@ -1696,7 +1688,9 @@ export function MusicPage({ works }: MusicPageProps) {
             ctaLabel={MUSIC_PAGE.end.ctaLabel}
             note={prose(MUSIC_PAGE.end.note)}
             aside={<EndSign />}
-            frame={closing ? { src: closing.src, alt: closing.client } : null}
+            frame={
+              CLOSING_FRAME ? { src: CLOSING_FRAME.src, position: CLOSING_FRAME.position } : null
+            }
           />
         </div>
       </TempoContext.Provider>

@@ -39,7 +39,7 @@ export interface DirectionEndProps {
   ctaLabel: string
   note?: string
   /** Кадр справа, гаснущий влево; без него — чистое поле */
-  frame?: { src: string; alt: string } | null
+  frame?: { src: string; position?: string } | null
   /** Подпись над вопросом */
   kicker?: string
   /** Знак сцены справа на lg; декор */
@@ -79,7 +79,14 @@ export function DirectionEnd({
     >
       {frame ? (
         <div aria-hidden="true" className="absolute inset-0 -z-10">
-          <Still src={frame.src} alt="" sizes="100vw" quality={65} className="h-full w-full" />
+          <Still
+            src={frame.src}
+            alt=""
+            sizes="100vw"
+            quality={65}
+            objectPosition={frame.position}
+            className="h-full w-full"
+          />
           <span className="absolute inset-0 bg-gradient-to-r from-[#000000] via-[#000000]/85 to-[#000000]/25" />
           <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#000000] to-transparent" />
         </div>
