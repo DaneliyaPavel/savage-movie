@@ -17,8 +17,14 @@
  * opacity:0). Бесконечных анимаций нет: листание обложки — таймер, он стоит,
  * пока обложка вне экрана, под курсором или при prefers-reduced-motion.
  *
- * Если работ из портфолио нет, каждая секция остаётся целой: вместо кадров —
- * типографические заставки со словами «Ткань», «Свет», «Пластика».
+ * Кадры. Декор (обложка, оглавление, разворот, вопросы, финал) — отобранные
+ * кадры сцены без клиента и ссылки на кейс (lib/services/scene-stills.ts), поэтому
+ * подписей «Кадр — {клиент}» у них нет. Кадры работ остаются только там, где кадр
+ * ведёт на кейс: в лукбуке и карточках работ.
+ *
+ * Если работ из портфолио нет, лукбук остаётся целым: вместо кадров — типографические
+ * заставки со словами «Ткань», «Свет», «Пластика». Те же заставки — страховка на
+ * случай, если у сцены не хватит кадров.
  */
 'use client'
 
@@ -49,9 +55,11 @@ import { FASHION_PAGE } from '@/lib/services/pages/content/fashion'
 import {
   firstSentence,
   interleaveFrames,
+  isCredited,
   type DirectionPageWork,
   type SceneFrame,
 } from '@/lib/services/pages/resolve'
+import { sceneFrame, sceneFramesFor } from '@/lib/services/scene-stills'
 import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
 import { DirectionEnd } from '../direction-end'
@@ -126,6 +134,22 @@ function pick(frames: SceneFrame[], index: number): SceneFrame | null {
   if (frames.length === 0) return null
   return frames[index % frames.length] ?? null
 }
+
+/**
+ * Кроп обложки на телефоне. Полоса там почти горизонтальная (около 327×227: видна
+ * лишь половина высоты вертикального кадра), и собственная точка кадра режет лицо
+ * по глазам или прижимает его к верхним кнопкам. Здесь точка поднята к лицу; на
+ * десктопе обложка 3:4 повторяет пропорцию кадра, и кроп ничего не меняет.
+ * Ключ — key кадра сцены, остальные кадры берут собственную точку.
+ */
+const COVER_CROP: Record<string, string> = {
+  'scene-burgundy-hall': '62% 12%',
+  'scene-redhead-lowkey': '52% 0%',
+  'scene-swan-wall': '52% 0%',
+  'scene-swan-red-wall': '52% 25%',
+}
+
+const coverCrop = (frame: SceneFrame | undefined) => (frame ? COVER_CROP[frame.key] : undefined)
 
 /** Номера страниц «журнала»: разворот занимает по две страницы на формат */
 function paginate(hasWorks: boolean) {
@@ -210,10 +234,11 @@ interface PlateProps {
   quality?: 50 | 65 | 75
   className?: string
   imgClassName?: string
+  /** Кроп слота; без него — композиция самого кадра сцены, а у кадра работы — общий */
   objectPosition?: string
 }
 
-/** Кадр из портфолио или, если кадров нет, заставка: слово во весь рост на чёрном */
+/** Кадр сцены или работы; если кадра нет, заставка: слово во весь рост на чёрном */
 function Plate({
   frame,
   word,
@@ -223,7 +248,7 @@ function Plate({
   quality = 65,
   className,
   imgClassName,
-  objectPosition = 'center 28%',
+  objectPosition,
 }: PlateProps) {
   if (frame) {
     return (
@@ -235,7 +260,7 @@ function Plate({
         quality={quality}
         className={className}
         imgClassName={imgClassName}
-        objectPosition={objectPosition}
+        objectPosition={objectPosition ?? frame.position ?? 'center 28%'}
       />
     )
   }
@@ -613,6 +638,7 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
                           quality={75}
                           className="h-full w-full"
                           imgClassName="dir-fashion-settle dir-fashion-lift"
+                          objectPosition={coverCrop(frames[i])}
                         />
                         <span className="dir-fashion-edge" />
                       </div>
@@ -661,8 +687,14 @@ function Cover({ frames }: { frames: SceneFrame[] }) {
                     {credit ? (
                       <>
                         <span className="text-white">{pad(shown + 1)}</span> / {pad(count)} —{' '}
-                        {credit.client}
-                        <span className="hidden @[21rem]:inline"> · {credit.title}</span>
+                        {isCredited(credit) ? (
+                          <>
+                            {credit.client}
+                            <span className="hidden @[21rem]:inline"> · {credit.title}</span>
+                          </>
+                        ) : (
+                          'Обложка'
+                        )}
                       </>
                     ) : (
                       <>Обложка</>
@@ -759,7 +791,7 @@ function Contents({
               />
             </div>
             <figcaption className="dir-kit-meta mt-3 flex justify-between gap-3 font-mono uppercase tabular-nums text-[color:var(--dir-paper-mute)]">
-              <span>{frame ? `Кадр — ${frame.client}` : 'Вклейка'}</span>
+              <span>{isCredited(frame) ? `Кадр — ${frame.client}` : 'Вклейка'}</span>
               <span>02</span>
             </figcaption>
           </figure>
@@ -1006,7 +1038,7 @@ function Spread({ frames }: { frames: SceneFrame[] }) {
               style={{ '--fs-rise': '8px' } as CSSProperties}
             >
               <span className="min-w-0 truncate">
-                {credit ? (
+                {isCredited(credit) ? (
                   <>
                     Кадр — {credit.client}
                     <span className="hidden xl:inline"> · {credit.title}</span>
@@ -1135,7 +1167,7 @@ function Lookbook({ frames, pages }: { frames: SceneFrame[]; pages: Pages }) {
   const [current, setCurrent] = useState(0)
   const [chipLabel, setChipLabel] = useState('Тяни')
 
-  // Другая часть кадров, чем на обложке и в развороте: лента не повторяет соседей
+  // Со сдвигом: лента начинается не с первых кадров работ, их уже показывают карточки ниже
   const offset = frames.length > 8 ? 4 : 0
   const prints: { frame: SceneFrame | null; word: string }[] =
     frames.length > 0
@@ -1780,7 +1812,9 @@ function FaqPlate({ frame, page }: { frame: SceneFrame | null; page: string }) {
         />
       </div>
       <figcaption className="dir-kit-meta mt-7 flex justify-between gap-3 font-mono uppercase tabular-nums text-white/60">
-        <span className="min-w-0 truncate">{frame ? `Кадр — ${frame.client}` : 'Вклейка'}</span>
+        <span className="min-w-0 truncate">
+          {isCredited(frame) ? `Кадр — ${frame.client}` : 'Вклейка'}
+        </span>
         <span className="shrink-0">Стр. {page}</span>
       </figcaption>
     </figure>
@@ -1788,9 +1822,9 @@ function FaqPlate({ frame, page }: { frame: SceneFrame | null; page: string }) {
 }
 
 /**
- * Знак сцены в финале: отпечаток с загнутым углом и метками реза по краям — тот же
- * кадр-вклейка, что и в вопросах, только с другого съёмочного дня. Декор:
- * DirectionEnd сам делает его aria-hidden и не ловит указатель.
+ * Знак сцены в финале: отпечаток с загнутым углом и метками реза по краям — такая
+ * же вклейка, как в вопросах, только другой кадр. Декор: DirectionEnd сам делает
+ * его aria-hidden и не ловит указатель.
  */
 function EndPrint({ frame }: { frame: SceneFrame | null }) {
   return (
@@ -1817,9 +1851,25 @@ function EndPrint({ frame }: { frame: SceneFrame | null }) {
 
 /* ─────────────────────────────── Страница ─────────────────────────────── */
 
+/** Героиня на финале уходит в правую, светлую часть кадра: слева градиент под заголовком */
+const CLOSING_POSITION = '5% 22%'
+
+/*
+ * Раскладка кадров сцены (порядок DIRECTION_SCENES.fashion): 0–4 обложка, 5 оглавление,
+ * 6–8 большой кадр разворота, 9–11 малый, 12 вопросы, 13 фон финала. Вклейка в финале
+ * повторяет первый кадр обложки: страница открывается и закрывается одним образом.
+ * Все слоты, кроме фона финала, вертикальные, поэтому и кадры в них вертикальные:
+ * горизонтальный кадр, обрезанный под 3:4, остаётся без трети кадра и мылится.
+ * Большие кадры разворота — самые сильные и разные по образу (лебедь, рыжая в дюнах,
+ * мотокуртка), слабый desert-drive уходит в малую вклейку, где дефектов не видно.
+ * Фон финала горизонтальный, на телефоне его заменяет вертикаль той же страницы.
+ * Кадры работ (со ссылкой на кейс) нужны только лукбуку.
+ */
 export function FashionPage({ works }: FashionPageProps) {
-  const frames = interleaveFrames(works, 16)
-  const closing = frames[frames.length - 1]
+  const frames = sceneFramesFor('fashion')
+  const projectFrames = interleaveFrames(works, 16)
+  const closing = frames[13]
+  const closingPhone = sceneFrame('burgundy-hall')
   const hasWorks = works.length > 0
   const pages = paginate(hasWorks)
 
@@ -1829,7 +1879,7 @@ export function FashionPage({ works }: FashionPageProps) {
         <Cover frames={frames.slice(0, 5)} />
         <Contents frame={pick(frames, 5)} pages={pages} hasWorks={hasWorks} />
         <Spread frames={frames} />
-        <Lookbook frames={frames} pages={pages} />
+        <Lookbook frames={projectFrames} pages={pages} />
         {hasWorks ? <Works works={works} pages={pages} /> : null}
         <ProofCta />
         <Process pages={pages} />
@@ -1839,7 +1889,7 @@ export function FashionPage({ works }: FashionPageProps) {
           index={pad(pages.faq.from)}
           title="Вопросы о fashion-видео"
           items={FASHION_PAGE.faq}
-          aside={<FaqPlate frame={pick(frames, 11)} page={pad(pages.faq.from)} />}
+          aside={<FaqPlate frame={pick(frames, 12)} page={pad(pages.faq.from)} />}
         />
       </div>
       <OtherDirections current="fashion" reading={DIRECTION_READING['fashion']} />
@@ -1847,8 +1897,16 @@ export function FashionPage({ works }: FashionPageProps) {
         lines={SCENE.end.lines}
         ctaLabel={FASHION_PAGE.ctaLabel}
         note={typo(SCENE.end.note)}
-        frame={closing ? { src: closing.src, alt: closing.client } : null}
-        aside={<EndPrint frame={pick(frames, 3)} />}
+        frame={
+          closing
+            ? {
+                src: closing.src,
+                position: CLOSING_POSITION,
+                portrait: { src: closingPhone.src, objectPosition: closingPhone.position },
+              }
+            : null
+        }
+        aside={<EndPrint frame={pick(frames, 0)} />}
       />
     </DirectionShell>
   )

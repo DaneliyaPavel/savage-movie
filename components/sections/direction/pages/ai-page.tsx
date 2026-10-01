@@ -27,8 +27,10 @@
  * «плёнка» — .dir-paper-section, и шапка сама темнеет над ней; плавающая кнопка
  * прячется по data-sticky-hide; кнопки — DirectionButton.
  *
- * Если работ из портфолио нет, страница остаётся целой: кадры заменяет
- * нарисованная сцена, секция работ уходит, CTA встаёт после «Где что».
+ * Кадры сцены — отобранные иллюстрации направления (scene-stills.ts), а не
+ * скриншоты работ: без клиента, подписи и ссылки на кейс. Настоящие кадры
+ * проектов остаются только в «Работах». Если работ из портфолио нет, страница
+ * остаётся целой: секция работ уходит, CTA встаёт после «Где что».
  */
 'use client'
 
@@ -48,11 +50,8 @@ import { ArrowUpRight } from 'lucide-react'
 
 import { DIRECTION_READING } from '@/lib/services/pages'
 import { AI_PAGE, type AiCta } from '@/lib/services/pages/content/ai'
-import {
-  interleaveFrames,
-  type DirectionPageWork,
-  type SceneFrame,
-} from '@/lib/services/pages/resolve'
+import type { DirectionPageWork, SceneFrame } from '@/lib/services/pages/resolve'
+import { sceneFrame } from '@/lib/services/scene-stills'
 import { cn } from '@/lib/utils'
 import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
@@ -60,7 +59,7 @@ import { DirectionEnd } from '../direction-end'
 import { DirectionFaq } from '../direction-faq'
 import { DirectionButton, KIT_KICKER, typo } from '../direction-kit'
 import { OtherDirections } from '../other-directions'
-import { Still } from '../still'
+import { COVER_SIZES, Still } from '../still'
 import './ai-page.css'
 
 export interface AiPageProps {
@@ -189,10 +188,11 @@ function Cut({ from, to, tone = 'dark' }: { from: string; to: string; tone?: 'da
 /* ───────────────────────────── Кадры и сцена ───────────────────────────── */
 
 /**
- * Нарисованный кадр на случай, когда работ из портфолио нет. Плёнка — плоская
- * серая, финал — чёрный с единственным красным кругом: красный здесь сигнал,
- * а не заливка. Для вертикального экрана в SVG лежит вторая композиция: при
- * обрезке «cover» центральной полосы иначе хватило бы только на пол.
+ * Нарисованный кадр — запасной путь, если кадра сцены нет (а также мини-шов и
+ * секция работ без галереи). Плёнка — плоская серая, финал — чёрный с
+ * единственным красным кругом: красный здесь сигнал, а не заливка. Для
+ * вертикального экрана в SVG лежит вторая композиция: при обрезке «cover»
+ * центральной полосы иначе хватило бы только на пол.
  */
 function Scene({ tone, adaptive = false }: { tone: 'final' | 'plate'; adaptive?: boolean }) {
   const plate = tone === 'plate'
@@ -272,10 +272,24 @@ interface PhotoProps {
   quality?: 50 | 65 | 75
   position?: string
   adaptive?: boolean
+  /** Вертикальный кадр для телефона: горизонталь в высоком экране режется до трети ширины */
+  portrait?: SceneFrame | null
 }
 
-/** Кадр из портфолио или нарисованная сцена; плёнка — тот же кадр, лишённый цвета */
-function Photo({ frame, tone, sizes, priority, quality, position, adaptive }: PhotoProps) {
+/**
+ * Кадр сцены или нарисованная сцена; плёнка — тот же кадр, лишённый цвета.
+ * Кроп берётся из самого кадра (у каждого своя композиция), position его перекрывает.
+ */
+function Photo({
+  frame,
+  tone,
+  sizes,
+  priority,
+  quality,
+  position,
+  adaptive,
+  portrait,
+}: PhotoProps) {
   if (!frame) return <Scene tone={tone} adaptive={adaptive} />
   return (
     <Still
@@ -284,7 +298,8 @@ function Photo({ frame, tone, sizes, priority, quality, position, adaptive }: Ph
       sizes={sizes}
       priority={priority}
       quality={quality}
-      objectPosition={position}
+      objectPosition={position ?? frame.position}
+      portrait={portrait ? { src: portrait.src, objectPosition: portrait.position } : undefined}
       className="absolute inset-0 h-full w-full"
       imgClassName={tone === 'plate' ? 'dir-ai-plate-img' : undefined}
     />
@@ -722,7 +737,8 @@ function useSeam(heroRef: RefObject<HTMLElement | null>, handleRef: RefObject<HT
   }, [heroRef, handleRef])
 }
 
-function Hero({ frame }: { frame: SceneFrame | null }) {
+function Hero({ frame, portrait }: { frame: SceneFrame | null; portrait: SceneFrame | null }) {
+  const sizes = portrait ? '100vw' : COVER_SIZES
   const page = useDirectionPage()
   const heroRef = useRef<HTMLElement>(null)
   const handleRef = useRef<HTMLDivElement>(null)
@@ -734,14 +750,14 @@ function Hero({ frame }: { frame: SceneFrame | null }) {
       <div aria-hidden="true" className="dir-ai-frames">
         <div className="dir-ai-layer dir-ai-final">
           <div className="dir-ai-photo">
-            <Photo frame={frame} tone="final" sizes="100vw" priority position="50% 32%" adaptive />
+            <Photo frame={frame} tone="final" sizes={sizes} priority adaptive portrait={portrait} />
           </div>
           <span className="dir-ai-light" />
         </div>
         <div className="dir-ai-layer dir-ai-plate">
           <div className="dir-ai-photo">
             {/* То же качество, что у финала: оптимизатор отдаёт один файл, серость делает CSS */}
-            <Photo frame={frame} tone="plate" sizes="100vw" position="50% 32%" adaptive />
+            <Photo frame={frame} tone="plate" sizes={sizes} adaptive portrait={portrait} />
           </div>
         </div>
         <span className="dir-ai-scrim" />
@@ -1222,7 +1238,17 @@ function FitFrame({
   )
 }
 
-function Fit({ index, frame }: { index: string; frame: SceneFrame | null }) {
+function Fit({
+  index,
+  genFrame,
+  camFrame,
+}: {
+  index: string
+  /** Левая колонка: то, что нельзя снять, — кадр с красным кольцом генерации */
+  genFrame: SceneFrame | null
+  /** Правая колонка: то, что лучше снять камерой, — лицо и кожа на плёнке */
+  camFrame: SceneFrame | null
+}) {
   const ref = useRef<HTMLElement>(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start 70%', 'end 60%'] })
 
@@ -1247,7 +1273,7 @@ function Fit({ index, frame }: { index: string; frame: SceneFrame | null }) {
         </span>
 
         <div className="dir-ai-fit-col dir-ai-fit-gen">
-          <FitFrame frame={frame} tone="final" label="Слой 02 · генерация" />
+          <FitFrame frame={genFrame} tone="final" label="Слой 02 · генерация" />
           <p className="dir-ai-fit-label type-meta font-mono uppercase tabular-nums">
             <span aria-hidden="true" className="dir-ai-fit-dot" />
             Подходит
@@ -1270,7 +1296,7 @@ function Fit({ index, frame }: { index: string; frame: SceneFrame | null }) {
         </div>
 
         <div className="dir-ai-fit-col dir-ai-fit-cam">
-          <FitFrame frame={frame} tone="plate" label="Слой 01 · плёнка" />
+          <FitFrame frame={camFrame} tone="plate" label="Слой 01 · плёнка" />
           <p className="dir-ai-fit-label type-meta font-mono uppercase tabular-nums">
             <span aria-hidden="true" className="dir-ai-fit-dot" />
             Лучше снять камерой
@@ -1292,6 +1318,43 @@ function Fit({ index, frame }: { index: string; frame: SceneFrame | null }) {
           </ul>
         </div>
       </div>
+    </section>
+  )
+}
+
+/* ───────────────────────────── Лента кадров: шов на каждом ───────────────────────────── */
+
+/**
+ * Шесть кадров, у каждого свой шов: слева плоская плёнка, справа цвет. Тот же жест, что на
+ * первом экране, но на разных кадрах: видно, что шов — приём постпродакшна, а не один
+ * удачный кадр. Лента декоративная: подписей, клиентов и ссылок на кейсы здесь нет.
+ */
+const REEL_SIZES = '(min-width: 1024px) 17vw, 60vw'
+
+function Reel({ frames }: { frames: { frame: SceneFrame; seam: number }[] }) {
+  return (
+    <section aria-hidden="true" className="dir-ai-reel">
+      <div className="dir-ai-pad dir-ai-reel-head type-meta font-mono uppercase tabular-nums">
+        <span>Шов на каждом кадре</span>
+        <span className="dir-ai-reel-rule" />
+        <span>Плёнка → финал</span>
+      </div>
+      <ul role="presentation" className="dir-ai-reel-track">
+        {frames.map(({ frame, seam }, index) => (
+          <li key={frame.key} className="dir-ai-reel-tile" style={vars({ '--seam': `${seam}%` })}>
+            <div className="dir-ai-reel-photo">
+              <Photo frame={frame} tone="final" sizes={REEL_SIZES} quality={65} />
+            </div>
+            <div className="dir-ai-reel-plate">
+              <Photo frame={frame} tone="plate" sizes={REEL_SIZES} quality={65} />
+            </div>
+            <span className="dir-ai-reel-seam" />
+            <span className="dir-ai-frame-tag dir-ai-reel-tag type-meta-sm font-mono uppercase tabular-nums">
+              Ген {pad2(index + 1)}
+            </span>
+          </li>
+        ))}
+      </ul>
     </section>
   )
 }
@@ -1695,12 +1758,39 @@ function Process({ index }: { index: string }) {
 
 /* ───────────────────────────── Страница ───────────────────────────── */
 
+/**
+ * Кадры сцены по местам. Горизонталь и вертикаль подобраны под форму слота:
+ * первый экран и выход на телефоне получают вертикальный кадр той же сцены.
+ * Кадры от портфолио не зависят.
+ *
+ *  - шов первого экрана и стопка слоёв — лебедь в зале и в накидке: «кадр, который нельзя снять»;
+ *  - «Где что»: слева генерация, справа макро кожи — то, что лучше снять камерой;
+ *  - лента: шесть разных съёмок, на каждой свой шов.
+ */
+const FRAME = {
+  hero: sceneFrame('swan-hall'),
+  heroPhone: sceneFrame('swan-red-wall'),
+  layers: sceneFrame('swan-cape-wide'),
+  fitGen: sceneFrame('swan-red-wall-wide'),
+  fitCam: sceneFrame('skin-eyes-wide'),
+  closing: sceneFrame('swan-embrace'),
+  closingPhone: sceneFrame('swan-cape'),
+}
+
+const REEL_FRAMES = [
+  { frame: sceneFrame('redhead-lowkey'), seam: 46 },
+  { frame: sceneFrame('burgundy-hall'), seam: 62 },
+  { frame: sceneFrame('redhead-leaf'), seam: 38 },
+  { frame: sceneFrame('swan-wing'), seam: 55 },
+  { frame: sceneFrame('helmet'), seam: 70 },
+  { frame: sceneFrame('redhead-dunes'), seam: 42 },
+]
+
+/** Лицо на выходе уходит левее: правая часть кадра светлая, там его и видно */
+const CLOSING_POSITION = '15% 20%'
+
 export function AiPage({ works }: AiPageProps) {
-  const frames = interleaveFrames(works, 6)
-  const heroFrame = frames[0] ?? null
-  const layerFrame = frames[1] ?? heroFrame
-  const fitFrame = frames[2] ?? layerFrame
-  const closing = frames[frames.length - 1]
+  const { closing, closingPhone } = FRAME
   const hasWorks = works.length > 0
 
   // Нумерация разделов не должна оставлять дыру, если работ нет
@@ -1715,10 +1805,11 @@ export function AiPage({ works }: AiPageProps) {
   return (
     <DirectionShell id="ai" stickyLabel={AI_PAGE.stickyLabel}>
       <div className="dir-ai">
-        <Hero frame={heroFrame} />
+        <Hero frame={FRAME.hero} portrait={FRAME.heroPhone} />
         <Cut from="Склейка 01" to="00:00:08:12" />
-        <Layers frame={layerFrame} index={layersIndex} />
-        <Fit index={fitIndex} frame={fitFrame} />
+        <Layers frame={FRAME.layers} index={layersIndex} />
+        <Fit index={fitIndex} genFrame={FRAME.fitGen} camFrame={FRAME.fitCam} />
+        <Reel frames={REEL_FRAMES} />
         {hasWorks ? (
           <>
             <Cut from="Склейка 02" to="00:00:21:04" tone="deep" />
@@ -1734,7 +1825,11 @@ export function AiPage({ works }: AiPageProps) {
           lines={AI_PAGE.end.lines}
           ctaLabel={CTA_LABEL}
           note={tidy(AI_PAGE.end.note)}
-          frame={closing ? { src: closing.src, alt: closing.client } : null}
+          frame={{
+            src: closing.src,
+            position: CLOSING_POSITION,
+            portrait: { src: closingPhone.src, objectPosition: closingPhone.position },
+          }}
           aside={<SeamMini className="dir-ai-mini-end" />}
         />
       </div>

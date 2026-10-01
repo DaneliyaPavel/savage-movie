@@ -15,7 +15,9 @@
  *  - aside — знак сцены справа на lg (значок, линейка, кольцо): декор, блок
  *    сам ставит aria-hidden и pointer-events: none. Ниже lg не показывается.
  *  - frame — кадр справа, гаснущий влево; метки остаются в левой защищённой
- *    зоне, поэтому читаются и на светлом кадре.
+ *    зоне, поэтому читаются и на светлом кадре. Фон горизонтальный; на телефоне
+ *    слот высокий, и горизонтальный кадр режется до трети ширины, поэтому у
+ *    кадра есть `portrait` — вертикальная версия под высокий экран.
  *
  * Кнопка — всегда плашка, а не «призрак»: на телефоне ховера нет, и главное
  * действие страницы не должно ждать наведения, чтобы быть видным.
@@ -31,7 +33,7 @@ import { EMAIL, EMAIL_HREF } from '@/lib/contacts'
 import { cn } from '@/lib/utils'
 import { useDirectionPage } from './direction-context'
 import { DirectionButton, typo } from './direction-kit'
-import { Still } from './still'
+import { COVER_SIZES, Still, type StillPortrait } from './still'
 
 export interface DirectionEndProps {
   /** Строки вопроса: каждая — отдельная строка набора */
@@ -39,7 +41,7 @@ export interface DirectionEndProps {
   ctaLabel: string
   note?: string
   /** Кадр справа, гаснущий влево; без него — чистое поле */
-  frame?: { src: string; alt: string } | null
+  frame?: { src: string; position?: string; portrait?: StillPortrait } | null
   /** Подпись над вопросом */
   kicker?: string
   /** Знак сцены справа на lg; декор */
@@ -79,7 +81,15 @@ export function DirectionEnd({
     >
       {frame ? (
         <div aria-hidden="true" className="absolute inset-0 -z-10">
-          <Still src={frame.src} alt="" sizes="100vw" quality={65} className="h-full w-full" />
+          <Still
+            src={frame.src}
+            alt=""
+            sizes={frame.portrait ? '100vw' : COVER_SIZES}
+            quality={65}
+            objectPosition={frame.position}
+            portrait={frame.portrait}
+            className="h-full w-full"
+          />
           <span className="absolute inset-0 bg-gradient-to-r from-[#000000] via-[#000000]/85 to-[#000000]/25" />
           <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#000000] to-transparent" />
         </div>

@@ -22,6 +22,8 @@ import {
 } from '@/lib/commercial-landing/content'
 import { getThumbnailUrl } from '@/lib/integrations/bunny/client'
 import { normalizePosterUrl } from '@/lib/commercial-landing/poster-url'
+import { showreelPosterFor } from '@/lib/commercial-landing/showreel-poster'
+import { getShowreelPlaybackId } from '@/lib/services/showreel'
 import { logger } from '@/lib/utils/logger'
 import type { CommercialCase } from '@/components/sections/commercial/commercial-cases'
 import { CommercialLandingClient } from './client'
@@ -218,7 +220,7 @@ export default async function CommercialLandingPage() {
 
   // Кейсы и логотипы не должны валить страницу: без них лендинг деградирует
   // до текстовой версии, но остаётся рабочим
-  const [projects, clients] = await Promise.all([
+  const [projects, clients, showreelId] = await Promise.all([
     getProjectsServer().catch(error => {
       logger.error('Не удалось загрузить проекты для лендинга', error, {
         route: COMMERCIAL_LANDING_PATH,
@@ -236,7 +238,17 @@ export default async function CommercialLandingPage() {
         return [] as Client[]
       }
     })(),
+    getShowreelPlaybackId(),
   ])
+
+  // Автопостер Bunny для шоурила отдаёт 404: без своего постера hero падал бы на
+  // случайный кадр кейса. Постер из CMS, если он задан, остаётся главным.
+  const heroPoster =
+    content.hero.posterUrl || showreelPosterFor(content.hero.videoPlaybackId, showreelId)
+  const pageContent: CommercialLandingContent = {
+    ...content,
+    hero: { ...content.hero, posterUrl: heroPoster },
+  }
 
   const cases = buildCases(content, projects)
   // Все реально опубликованные проекты, а не только 4 карточки на лендинге —
@@ -247,10 +259,11 @@ export default async function CommercialLandingPage() {
     <>
       <JsonLdScripts scripts={buildJsonLd(content, projects, cases)} />
       <CommercialLandingClient
-        content={content}
+        content={pageContent}
         cases={cases}
         clients={clients}
         allCaseSlugs={allCaseSlugs}
+        showreelPosterUrl={showreelPosterFor(content.showreel.playbackId, showreelId)}
       />
     </>
   )

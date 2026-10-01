@@ -35,7 +35,14 @@ export function cropRect(ratio: number, h: number, x: number, y: number): CropRe
   return { x, y, w, h }
 }
 
-/** Нарезки первого экрана: кадр распадается на четыре пропорции */
+/**
+ * Нарезки первого экрана: кадр распадается на четыре пропорции.
+ *
+ * Прямоугольники подогнаны под композицию мастера: лицо стоит по центру
+ * (примерно 36–66% по ширине, 25–68% по высоте). HERO держит лицо целиком, с
+ * глазами; вертикаль берёт окно машины слева, квадрат и 4:5 — куртку ниже. Рамка
+ * ни одной нарезки не проходит по лицу.
+ */
 export interface HeroCut {
   key: string
   /** Подпись пропорции: «9:16» */
@@ -57,7 +64,7 @@ export const CONTENT_HERO_CUTS: readonly [HeroCut, ...HeroCut[]] = [
     ratio: '9:16',
     name: 'Вертикаль',
     text: 'Вертикальная версия для соцсетей и сторис.',
-    rect: cropRect(9 / 16, 94, 2, 3),
+    rect: cropRect(9 / 16, 70, 2, 15),
     drift: { x: -2, y: 0.4 },
     depth: 1.5,
   },
@@ -66,7 +73,7 @@ export const CONTENT_HERO_CUTS: readonly [HeroCut, ...HeroCut[]] = [
     ratio: '16:9',
     name: 'HERO',
     text: 'Главный ролик съёмки: сайт, презентации, экраны.',
-    rect: cropRect(16 / 9, 36, 45, 3),
+    rect: cropRect(16 / 9, 40, 34, 20),
     drift: { x: 2.6, y: -1.6 },
     depth: 0.8,
   },
@@ -75,7 +82,7 @@ export const CONTENT_HERO_CUTS: readonly [HeroCut, ...HeroCut[]] = [
     ratio: '1:1',
     name: 'LOOP',
     text: 'Короткая петля без звука для баннеров и экранов.',
-    rect: cropRect(1, 36, 45, 45),
+    rect: cropRect(1, 34, 37, 64),
     drift: { x: -0.6, y: 2.2 },
     depth: 1.1,
   },
@@ -84,7 +91,7 @@ export const CONTENT_HERO_CUTS: readonly [HeroCut, ...HeroCut[]] = [
     ratio: '4:5',
     name: 'PRODUCT',
     text: 'Продуктовая вставка: деталь, применение, упаковка.',
-    rect: cropRect(4 / 5, 36, 75, 45),
+    rect: cropRect(4 / 5, 34, 67, 64),
     drift: { x: 2.4, y: 2 },
     depth: 1.3,
   },
@@ -122,11 +129,15 @@ export const CONTENT_WEEKS = 13
  *
  * Выдачи лежат в порядке выхода: номер в карточке, на мониторе и на линейке
  * один и тот же, а индекс в outputs совпадает с индексом здесь.
+ *
+ * rect — окно в мастер-кадре, его показывает монитор. Лицо в мастере занимает
+ * примерно 36–66% по ширине и 25–68% по высоте: нарезки 0, 1, 2, 4 и 5 берут
+ * лицо с глазами и не режут его рамкой, 3, 6 и 7 — куртку и волосы.
  */
 export const CONTENT_PLAN: readonly [OutputPlan, ...OutputPlan[]] = [
   {
     output: 0,
-    rect: cropRect(16 / 9, 54, 3, 8),
+    rect: cropRect(16 / 9, 56, 4, 12),
     aspect: 16 / 9,
     track: 'V1',
     week: 1,
@@ -136,7 +147,7 @@ export const CONTENT_PLAN: readonly [OutputPlan, ...OutputPlan[]] = [
   },
   {
     output: 1,
-    rect: cropRect(21 / 9, 34, 20, 52),
+    rect: cropRect(21 / 9, 34, 22, 28),
     aspect: 21 / 9,
     track: 'V1',
     week: 3,
@@ -145,7 +156,7 @@ export const CONTENT_PLAN: readonly [OutputPlan, ...OutputPlan[]] = [
   },
   {
     output: 2,
-    rect: cropRect(9 / 16, 88, 58, 6),
+    rect: cropRect(9 / 16, 88, 33, 6),
     aspect: 9 / 16,
     track: 'V2',
     week: 4,
@@ -155,7 +166,7 @@ export const CONTENT_PLAN: readonly [OutputPlan, ...OutputPlan[]] = [
   },
   {
     output: 3,
-    rect: cropRect(9 / 16, 88, 12, 6),
+    rect: cropRect(9 / 16, 86, 63.5, 7),
     aspect: 9 / 16,
     track: 'V2',
     week: 6,
@@ -165,7 +176,7 @@ export const CONTENT_PLAN: readonly [OutputPlan, ...OutputPlan[]] = [
   },
   {
     output: 4,
-    rect: cropRect(1, 50, 50, 10),
+    rect: cropRect(1, 48, 32, 21),
     aspect: 1,
     track: 'V2',
     week: 8,
@@ -174,7 +185,7 @@ export const CONTENT_PLAN: readonly [OutputPlan, ...OutputPlan[]] = [
   },
   {
     output: 5,
-    rect: cropRect(16 / 9, 48, 30, 30),
+    rect: cropRect(16 / 9, 48, 28, 24),
     aspect: 16 / 9,
     track: 'V1',
     week: 9,
@@ -184,7 +195,7 @@ export const CONTENT_PLAN: readonly [OutputPlan, ...OutputPlan[]] = [
   },
   {
     output: 6,
-    rect: cropRect(4 / 5, 64, 8, 20),
+    rect: cropRect(4 / 5, 36, 52, 62),
     aspect: 4 / 5,
     track: 'V2',
     week: 10,
@@ -193,7 +204,7 @@ export const CONTENT_PLAN: readonly [OutputPlan, ...OutputPlan[]] = [
   },
   {
     output: 7,
-    rect: cropRect(16 / 9, 40, 40, 56),
+    rect: cropRect(16 / 9, 30, 48, 68),
     aspect: 16 / 9,
     track: 'V1',
     week: 12,
@@ -220,11 +231,16 @@ export const CONTENT_STAGE_LANES = [0, 0, 1, 2, 3] as const
 /**
  * Вид карточки в мозаике «Состав выдачи». Все восемь выдач раньше показывали
  * один мастер-кадр под разным углом, и мозаика читалась обоями. Теперь у каждой
- * свой кадр из работ страницы, своя точка кадрирования, масштаб и мягкий тон:
- * версии одной съёмки отличаются планом и характером, а не только рамкой.
+ * свой кадр сцены, своя точка кадрирования, масштаб и мягкий тон: версии одной
+ * съёмки отличаются планом и характером, а не только рамкой.
  *
- * `pick` — номер кадра в наборе работ (по кругу, если кадров меньше); у HERO
- * мастер-кадр, тот же, что на первом экране.
+ * `pick` — номер кадра в пуле сцены (по кругу, если кадров меньше): вертикальным
+ * карточкам достаются вертикальные кадры, широким — широкие. У HERO мастер-кадр,
+ * тот же, что на первом экране. `pos` — точка кадра (лицо или предмет) в долях
+ * самого кадра: она же центр приближения, поэтому герой остаётся на месте, пока
+ * кадр растёт, и рамка карточки его не режет.
+ *
+ * Карточки идут по номеру выдачи: 16:9, 21:9, 9:16, 9:16, 1:1, 16:9, 4:5, 16:9.
  */
 export type OutputTone = 'natural' | 'mono' | 'punch' | 'soft'
 
@@ -237,14 +253,16 @@ export interface OutputLook {
 }
 
 export const CONTENT_LOOKS: readonly OutputLook[] = [
-  { pick: 'master', pos: '50% 50%', zoom: 1, tone: 'natural' },
-  { pick: 1, pos: '50% 42%', zoom: 1, tone: 'natural' },
-  { pick: 2, pos: '42% 50%', zoom: 1.08, tone: 'natural' },
-  { pick: 4, pos: '70% 30%', zoom: 1.5, tone: 'punch' },
-  { pick: 3, pos: '28% 66%', zoom: 1.7, tone: 'mono' },
-  { pick: 5, pos: '56% 50%', zoom: 1.05, tone: 'soft' },
-  { pick: 0, pos: '50% 38%', zoom: 1.9, tone: 'punch' },
-  { pick: 6, pos: '22% 64%', zoom: 1.3, tone: 'natural' },
+  { pick: 'master', pos: '52% 47%', zoom: 1, tone: 'natural' },
+  { pick: 1, pos: '40% 50%', zoom: 1.05, tone: 'natural' },
+  { pick: 3, pos: '55% 35%', zoom: 1, tone: 'punch' },
+  { pick: 2, pos: '62% 45%', zoom: 1.3, tone: 'natural' },
+  { pick: 4, pos: '52% 34%', zoom: 1.04, tone: 'mono' },
+  { pick: 0, pos: '40% 25%', zoom: 1.05, tone: 'soft' },
+  // PRODUCT: деталь, а не портрет — воротник, молния и рука на раме
+  { pick: 5, pos: '62% 82%', zoom: 1.7, tone: 'punch' },
+  // RETAIL: публичное место с человеком, не двойник STORY
+  { pick: 6, pos: '45% 48%', zoom: 1.05, tone: 'natural' },
 ]
 
 export const CONTENT_PAGE: DirectionPageBase & {

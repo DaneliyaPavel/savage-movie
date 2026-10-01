@@ -82,6 +82,22 @@ export interface SceneFrame {
   slug: string
   client: string
   title: string
+  /**
+   * Точка кропа для object-position. Есть у кадров сцены (scene-stills.ts):
+   * у них своя композиция, и общий «center 28%» страниц им не подходит.
+   */
+  position?: string
+}
+
+/**
+ * Кадр с подписью работы или безымянный кадр сцены.
+ *
+ * Кадры сцены не принадлежат ни одной работе из портфолио (это отобранные
+ * иллюстрации направления), поэтому клиент и название у них пустые, а
+ * подписи вида «Кадр — {клиент}» на них не печатаются.
+ */
+export function isCredited(frame: SceneFrame | null | undefined): frame is SceneFrame {
+  return Boolean(frame && frame.client)
 }
 
 export function interleaveFrames(works: DirectionPageWork[], limit = 12): SceneFrame[] {

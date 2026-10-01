@@ -46,6 +46,8 @@ interface CommercialLandingClientProps {
   clients: Client[]
   /** Слаги всех опубликованных проектов — для проверки proof-ссылок в WhySavage */
   allCaseSlugs: string[]
+  /** Постер блока шоурила; null — автопостер Bunny */
+  showreelPosterUrl?: string | null
 }
 
 /** Откуда нажали CTA — параметр цели estimate_cta_click */
@@ -56,6 +58,7 @@ export function CommercialLandingClient({
   cases,
   clients,
   allCaseSlugs,
+  showreelPosterUrl = null,
 }: CommercialLandingClientProps) {
   const [presetProjectType, setPresetProjectType] = useState<string | null>(null)
   const [isFormInView, setIsFormInView] = useState(false)
@@ -180,6 +183,7 @@ export function CommercialLandingClient({
 
         <CommercialShowreel
           content={content.showreel}
+          posterUrl={showreelPosterUrl}
           onVideoMilestone={milestone => handleVideoMilestone(milestone, 'showreel')}
         />
 

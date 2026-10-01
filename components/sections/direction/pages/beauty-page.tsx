@@ -21,8 +21,11 @@
  * секция вне экрана (IntersectionObserver). При prefers-reduced-motion циклов
  * нет: линза и свет остаются в выбранном положении, вёрстка не меняется.
  *
- * Если работ из портфолио нет, каждая секция остаётся целой: кадры заменяет
- * «макро-поверхность» — свет, блик и кольца без единой картинки.
+ * Кадры сцены — отобранные иллюстрации направления (lib/services/scene-stills.ts),
+ * а не кадры работ: подписей и ссылок на кейсы у них нет. Работы портфолио живут
+ * только в списке «Крупный план в работах». Если набор кадров пуст, каждая секция
+ * остаётся целой: кадры заменяет «макро-поверхность» — свет, блик и кольца без
+ * единой картинки.
  */
 'use client'
 
@@ -49,11 +52,8 @@ import { ArrowDown } from 'lucide-react'
 
 import { BEAUTY_PAGE, type BeautyMaterial } from '@/lib/services/pages/content/beauty'
 import type { FaqItem, ProcessStep } from '@/lib/services/pages/types'
-import {
-  interleaveFrames,
-  type DirectionPageWork,
-  type SceneFrame,
-} from '@/lib/services/pages/resolve'
+import type { DirectionPageWork, SceneFrame } from '@/lib/services/pages/resolve'
+import { sceneFrame } from '@/lib/services/scene-stills'
 import { DirectionShell } from '../direction-shell'
 import { useDirectionPage } from '../direction-context'
 import { DirectionCredits } from '../direction-credits'
@@ -76,7 +76,7 @@ export interface BeautyPageProps {
   works: DirectionPageWork[]
 }
 
-/** Кадр сцены: у работы может не быть ни одного, тогда вместо него макро-поверхность */
+/** Кадр сцены; null — кадров нет, тогда вместо него макро-поверхность */
 type Frame = SceneFrame | null
 
 const pad = (value: number) => String(value).padStart(2, '0')
@@ -157,11 +157,20 @@ function MacroSurface({
   )
 }
 
-/** Кадр или, если кадра нет, макро-поверхность той же геометрии */
+/**
+ * Кадр или, если кадра нет, макро-поверхность той же геометрии.
+ *
+ * x и y — точка фокуса макро-поверхности (запасной вариант без кадра), на кроп
+ * картинки они не влияют. Кроп — position: по умолчанию свой у кадра (кадры сцены
+ * вертикальные 3:4, а сцены почти везде горизонтальные или полноэкранные, центр
+ * показал бы не лицо), но слот может его переопределить.
+ */
 function Plate({
   frame,
   x,
   y,
+  position,
+  portrait,
   sizes = '100vw',
   priority = false,
   quality,
@@ -169,6 +178,9 @@ function Plate({
   frame: Frame
   x?: number
   y?: number
+  position?: string
+  /** Вертикальный кадр для телефона: на высоком экране горизонталь режется до трети ширины */
+  portrait?: Frame
   sizes?: string
   priority?: boolean
   quality?: 50 | 65 | 75
@@ -180,6 +192,8 @@ function Plate({
       sizes={sizes}
       priority={priority}
       quality={quality}
+      objectPosition={position ?? frame.position}
+      portrait={portrait ? { src: portrait.src, objectPosition: portrait.position } : undefined}
       className="h-full w-full"
     />
   ) : (
@@ -189,7 +203,7 @@ function Plate({
 
 /* ───────────────────────────────── 1. Hero ───────────────────────────────── */
 
-function Hero({ frame, hasWorks }: { frame: Frame; hasWorks: boolean }) {
+function Hero({ frame, portrait, hasWorks }: { frame: Frame; portrait: Frame; hasWorks: boolean }) {
   const page = useDirectionPage()
   const reduced = useReducedMotion()
   const sectionRef = useRef<HTMLElement>(null)
@@ -453,10 +467,12 @@ function Hero({ frame, hasWorks }: { frame: Frame; hasWorks: boolean }) {
       className="dir-beauty-hero relative isolate flex min-h-[100svh] w-full flex-col justify-end overflow-hidden bg-[#000000] px-6 pb-16 pt-[5.25rem] md:flex-row md:items-end md:px-10 md:pb-24 md:pt-28 lg:px-20"
     >
       <div ref={stageRef} aria-hidden="true" className="dir-beauty-stage absolute inset-0 z-0">
-        {/* Расфокус: тот же кадр, размытый и притушенный; один статичный слой */}
+        {/* Расфокус: тот же кадр, размытый и притушенный; один статичный слой. Кроп у расфокуса
+            и линзы общий (position кадра): на широком экране вертикальный кадр виден полосой,
+            и при 50% 30% в неё попадают глаза и нос, а линза ходит именно по этой полосе */}
         <div className="dir-beauty-base absolute inset-0">
           <div className="dir-beauty-base-blur absolute inset-0">
-            <Plate frame={frame} priority sizes="100vw" />
+            <Plate frame={frame} portrait={portrait} priority sizes="100vw" />
           </div>
         </div>
         <span className="dir-beauty-bloom" />
@@ -464,7 +480,7 @@ function Hero({ frame, hasWorks }: { frame: Frame; hasWorks: boolean }) {
 
         <div ref={lensRef} className="dir-beauty-lens">
           <div ref={innerRef} className="dir-beauty-lens-inner">
-            <Plate frame={frame} sizes="100vw" />
+            <Plate frame={frame} portrait={portrait} sizes="100vw" />
           </div>
           <span className="dir-beauty-lens-glint" />
           <span className="dir-beauty-lens-rim" />
@@ -589,6 +605,14 @@ const ZOOM_OPEN = 0.82
 /** Конечный радиус круга в долях диагонали сцены: круг выходит за края кадра */
 const ZOOM_FULL = 0.56
 
+/**
+ * Кроп кадра наезда (beauty-lips: губы занимают примерно 7–60% ширины и 38–62% высоты).
+ * На широком экране кадр полной ширины, по x сдвигать нечего, а 48% по y ставит губы
+ * в середину сцены. На телефоне кадр уже сцены, и x=33% из набора срезал бы угол рта:
+ * 8% оставляет губы целиком, а круг наезда раскрывается из центра сцены прямо по ним.
+ */
+const ZOOM_POSITION = '8% 48%'
+
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2)
 
 function Zoom({ frame }: { frame: Frame }) {
@@ -660,12 +684,12 @@ function Zoom({ frame }: { frame: Frame }) {
       </h2>
       <div ref={stageRef} data-sticky-hide="desktop" className="dir-beauty-zoom-stage">
         <div aria-hidden="true" className="absolute inset-0 opacity-[0.16]">
-          <Plate frame={frame} x={50} y={50} />
+          <Plate frame={frame} x={50} y={50} position={ZOOM_POSITION} />
         </div>
 
         <motion.div aria-hidden="true" style={{ clipPath: clip }} className="absolute inset-0">
           <motion.div style={{ scale }} className="h-full w-full">
-            <Plate frame={frame} x={50} y={50} />
+            <Plate frame={frame} x={50} y={50} position={ZOOM_POSITION} />
           </motion.div>
           <span className="dir-beauty-zoom-veil" />
           <motion.span style={{ opacity: litFade }} className="dir-beauty-zoom-lift">
@@ -1372,7 +1396,10 @@ function ProofCta({ frame }: { frame: Frame }) {
 
 /* ──────────────────────────── Процесс: шкала крупности ×1…×5 ──────────────────────────── */
 
-/** Формат версии: один и тот же кадр, по-разному скадрированный */
+/**
+ * Формат версии: вертикаль и горизонталь одной съёмки. Кадры лежат в библиотеке парой,
+ * вырезанной из одного оригинала, поэтому слот не режет вертикаль в полоску, а берёт готовый кадр.
+ */
 function Format({ frame, ratio, tag }: { frame: Frame; ratio: '9:16' | '16:9'; tag: string }) {
   return (
     <div aria-hidden="true" data-ratio={ratio} className="dir-beauty-format">
@@ -1400,12 +1427,13 @@ function Process({
   title,
   lead,
   steps,
-  frame,
+  versions,
 }: {
   title: string
   lead: string
   steps: ProcessStep[]
-  frame: Frame
+  /** Вертикаль и горизонталь одной съёмки для шага про версии */
+  versions: { tall: Frame; wide: Frame }
 }) {
   const calm = useCalm()
   const listRef = useRef<HTMLDivElement>(null)
@@ -1508,8 +1536,8 @@ function Process({
                 {/* Шаг про версии показывает их: вертикаль и горизонталь из одного кадра */}
                 {/верси/i.test(step.title) ? (
                   <div aria-hidden="true" className="dir-beauty-formats">
-                    <Format frame={frame} ratio="9:16" tag="Вертикаль" />
-                    <Format frame={frame} ratio="16:9" tag="Горизонталь" />
+                    <Format frame={versions.tall} ratio="9:16" tag="Вертикаль" />
+                    <Format frame={versions.wide} ratio="16:9" tag="Горизонталь" />
                   </div>
                 ) : null}
               </div>
@@ -1592,41 +1620,37 @@ function EndSign() {
 /* ──────────────────────────────────── Страница ─────────────────────────────────── */
 
 /**
- * Набор кадров сцены. Сначала кадры, выбранные в раскадровке направления
- * (постеры работ), потом остальные кадры галерей по кругу: соседние секции
- * получают разные кадры, а не один и тот же постер.
+ * Кадры сцены по местам (scene-stills.ts). Кожа и вода — макро-кадры из исходников
+ * 3520×4704: на сцене с лупой «×8» важна резкость, а не только композиция.
+ *
+ *  - hero: горизонталь для десктопа и вертикаль той же съёмки для телефона;
+ *  - наезд — beauty-lips: губы и мокрые пряди под слова «Текстура / Свет / Кожа / Вода»;
+ *  - материалы 01–04, диск «Покажите продукт» — губы с водой (читается и под вуалью);
+ *  - версии процесса — вертикаль и горизонталь одной съёмки, как и сказано в шаге;
+ *  - финал — светлая кожа beauty-front: тёмные макро под градиентом с белым текстом тонут.
+ * Работы портфолио сюда не попадают: они только в списке «Крупный план в работах».
  */
-function sceneFrames(works: DirectionPageWork[]): SceneFrame[] {
-  const seen = new Set<string>()
-  const pool: SceneFrame[] = []
-  const add = (frame: SceneFrame) => {
-    if (seen.has(frame.src)) return
-    seen.add(frame.src)
-    pool.push(frame)
-  }
-  for (const work of works) {
-    if (!work.posterUrl) continue
-    add({
-      key: `${work.slug}-poster`,
-      src: work.posterUrl,
-      slug: work.slug,
-      client: work.client,
-      title: work.title,
-    })
-  }
-  interleaveFrames(works, 16).forEach(add)
-  return pool
+const FRAME = {
+  hero: sceneFrame('skin-cheek-wide'),
+  heroPhone: sceneFrame('skin-profile-portrait'),
+  zoom: sceneFrame('beauty-lips'),
+  materials: [
+    sceneFrame('beauty-freckles'),
+    sceneFrame('beauty-gloss'),
+    sceneFrame('beauty-blonde'),
+    sceneFrame('beauty-tilt'),
+  ],
+  disc: sceneFrame('skin-lips-wide'),
+  versions: { tall: sceneFrame('skin-closed-portrait'), wide: sceneFrame('skin-eyes-wide') },
+  closing: sceneFrame('beauty-front'),
 }
 
+/** Лицо в финале уходит выше заголовка: «ПРОДУКТ» шёл прямо по глазу */
+const CLOSING_POSITION = '50% 60%'
+
 export function BeautyPage({ works }: BeautyPageProps) {
-  const pool = sceneFrames(works)
   const hasWorks = works.length > 0
-  const at = (index: number): Frame =>
-    pool.length > 0 ? (pool[index % pool.length] ?? null) : null
-  // Материалы берут кадры из второй половины набора: hero и наезд уже заняли первые
-  const offset = pool.length >= 8 ? 4 : 0
-  const materialFrames: Frame[] = BEAUTY_PAGE.materials.map((_, index) => at(offset + index))
-  const closing = at(1)
+  const { closing } = FRAME
 
   return (
     <DirectionShell
@@ -1634,10 +1658,10 @@ export function BeautyPage({ works }: BeautyPageProps) {
       stickyLabel={BEAUTY_PAGE.stickyLabel}
       className="dir-beauty min-h-screen bg-[#000000] pb-20 md:pb-0"
     >
-      <Hero frame={at(0)} hasWorks={hasWorks} />
-      <Zoom frame={at(3)} />
+      <Hero frame={FRAME.hero} portrait={FRAME.heroPhone} hasWorks={hasWorks} />
+      <Zoom frame={FRAME.zoom} />
       <Seam label="Шкала крупности" />
-      <Materials frames={materialFrames} />
+      <Materials frames={BEAUTY_PAGE.materials.map((_, index) => FRAME.materials[index] ?? null)} />
       <ObjectScene />
       {/* Без работ «доказательства» нет: ни склейки, ни якоря «Смотреть работы» */}
       {hasWorks ? (
@@ -1653,12 +1677,12 @@ export function BeautyPage({ works }: BeautyPageProps) {
           </div>
         </>
       ) : null}
-      <ProofCta frame={at(2)} />
+      <ProofCta frame={FRAME.disc} />
       <Process
         title="От продукта до версий"
         lead="Пять шагов: что в продукте видит камера и как это превратить в ролик."
         steps={BEAUTY_PAGE.process}
-        frame={at(5)}
+        versions={FRAME.versions}
       />
       <Seam label="Вопросы — в фокусе" />
       <FaqBlock />
@@ -1670,7 +1694,7 @@ export function BeautyPage({ works }: BeautyPageProps) {
         lines={BEAUTY_PAGE.end.lines}
         ctaLabel={BEAUTY_PAGE.ctaLabel}
         note={typo(BEAUTY_PAGE.end.note)}
-        frame={closing ? { src: closing.src, alt: closing.client } : null}
+        frame={{ src: closing.src, position: CLOSING_POSITION }}
         aside={<EndSign />}
       />
     </DirectionShell>
