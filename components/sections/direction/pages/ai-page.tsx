@@ -88,6 +88,14 @@ const FAQ_ITEMS = AI_PAGE.faq.map(item => ({
 }))
 
 /**
+ * Для узкого столбца крупного набора: короткое слово держится за следующим, но цепочка
+ * не склеивается. typo() связала бы «и лицо в крупном плане» в один кусок шире колонки
+ * на телефоне, и перенос по символам рвал бы слово («ПЛАН / Е»).
+ */
+const tieShort = (text: string) =>
+  text.replace(/(^|\s)([A-Za-zА-Яа-яЁё]{1,3}) (?=\S)/g, '$1$2\u00A0')
+
+/**
  * Набор абзаца: предлоги и цепочки коротких слов связывает общий typo(). Сверх него —
  * вдова: два последних слова не разъезжаются («…где пройдёт / шов.»). Склеивается только
  * последняя пара слов, а не целые связки: иначе заголовок в три слова держался бы колонной.
@@ -1199,7 +1207,7 @@ function FitRow({
       </span>
       <div className="dir-ai-row-body">
         <p className="dir-ai-row-code type-meta font-mono uppercase tabular-nums">{code}</p>
-        <h3 className="dir-ai-row-title">{tidy(title)}</h3>
+        <h3 className="dir-ai-row-title">{tieShort(title)}</h3>
         <p className="dir-ai-row-text">{tidy(text)}</p>
       </div>
     </li>
@@ -1774,7 +1782,8 @@ const FRAME = {
   fitGen: sceneFrame('swan-red-wall-wide'),
   fitCam: sceneFrame('skin-eyes-wide'),
   closing: sceneFrame('swan-embrace'),
-  closingPhone: sceneFrame('swan-cape'),
+  // У swan-cape лицо стояло под заголовком «Что нельзя снять»; у swan-wing оно над ним
+  closingPhone: sceneFrame('swan-wing'),
 }
 
 const REEL_FRAMES = [

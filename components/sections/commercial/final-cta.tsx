@@ -11,12 +11,21 @@
  */
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 
 import { CONTACT_EMAIL, TELEGRAM_URL, type FinalCtaContent } from '@/lib/commercial-landing/content'
+import { sceneFrame } from '@/lib/services/scene-stills'
 import { LazyHlsVideo } from './lazy-hls-video'
+
+/**
+ * Фон финала, пока в контенте нет ролика: безымянная иллюстрация из библиотеки сцен,
+ * без подписи и без привязки к проекту. Только с xl: ниже текст заполняет экран целиком,
+ * и кадр лёг бы под него. Фигура стоит правее и ниже первой строки заголовка.
+ */
+const FALLBACK_FRAME = sceneFrame('stairs-figure')
 
 interface FinalCtaProps {
   content: FinalCtaContent
@@ -48,7 +57,22 @@ export function FinalCta({
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#000000] via-[#000000]/80 to-[#000000]/50" />
         </div>
-      ) : null}
+      ) : (
+        // display:none ниже xl: ленивая картинка в скрытом блоке не запрашивается, телефоны её не грузят
+        <div aria-hidden="true" className="absolute inset-0 z-0 hidden xl:block">
+          <Image
+            src={FALLBACK_FRAME.src}
+            alt=""
+            fill
+            quality={65}
+            sizes="100vw"
+            className="object-cover"
+            style={{ objectPosition: FALLBACK_FRAME.position }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#000000] via-[#000000]/85 to-[#000000]/25" />
+          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#000000] to-transparent" />
+        </div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 24 }}

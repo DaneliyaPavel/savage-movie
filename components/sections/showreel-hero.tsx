@@ -9,6 +9,7 @@ import { JalousieMenu } from '@/components/ui/jalousie-menu'
 import { Preloader } from '@/components/ui/preloader'
 import { useI18n } from '@/lib/i18n-context'
 import { getThumbnailUrl } from '@/lib/integrations/bunny/client'
+import { SHOWREEL_POSTER } from '@/lib/services/showreel-poster-path'
 
 /*
  * Две ступени поверх нулевой. Шаг 60 мс: имя студии, следом чем она
@@ -183,7 +184,7 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
                 playbackId={currentPlaybackId}
                 poster={
                   currentPlaybackId === showreelPlaybackId
-                    ? '/showreel-poster.jpg'
+                    ? SHOWREEL_POSTER
                     : getThumbnailUrl(currentPlaybackId)
                 }
                 autoPlay

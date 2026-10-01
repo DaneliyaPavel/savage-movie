@@ -10,6 +10,8 @@
 import { motion } from 'framer-motion'
 
 import type { ProcessContent } from '@/lib/commercial-landing/content'
+import { hasFormatChip } from '@/lib/commercial-landing/format-chip'
+import { FormatRuler } from './format-ruler'
 
 interface ProductionProcessProps {
   content: ProcessContent
@@ -60,6 +62,7 @@ export function ProductionProcess({ content }: ProductionProcessProps) {
                     </li>
                   ))}
                 </ul>
+                {hasFormatChip(step.items) ? <FormatRuler /> : null}
               </div>
             </div>
           </motion.li>

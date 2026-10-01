@@ -447,7 +447,7 @@ export const DIRECTION_SCENES: Record<ServiceDirectionId, readonly SceneStillId[
     'desert-drive',
     'swan-wing',
     'swan-red-wall-close',
-    'coupe-portrait',
+    'brutalist-man',
     'cream-jacket-lobby',
   ],
   beauty: [
