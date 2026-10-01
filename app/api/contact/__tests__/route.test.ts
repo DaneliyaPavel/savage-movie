@@ -329,4 +329,57 @@ describe('POST /api/contact — SMTP и реле Telegram', () => {
 
     expect(response.status).toBe(500)
   })
+  describe('предзапись на AI-курс (source: ai-course)', () => {
+    const aiSubmission = {
+      name: 'Анна Тестова',
+      email: 'Anna@Mail.RU',
+      projectType: 'course',
+      message: 'резервный текст',
+      source: 'ai-course',
+      lead: {
+        tier: 'advanced',
+        channel: 'email',
+        button: 'hero',
+        consent: { personalData: true, announcements: false, rev: '2026-10-01' },
+      },
+    }
+
+    it('отправляет письмо по шаблону предзаписи с текстовой версией', async () => {
+      configureSmtp()
+      const { POST } = await loadRoute()
+
+      const response = await POST(makeRequest(aiSubmission))
+
+      expect(response.status).toBe(200)
+      const mail = sendSmtpMail.mock.calls[0][0]
+      expect(mail.subject).toBe('[AI-курс] Предзапись — Анна Тестова · Продвинутый')
+      expect(mail.html).toContain('Для CRM')
+      expect(mail.text).toContain('Email: anna@mail.ru · удобнее всего')
+      expect(mail.replyTo).toBe('anna@mail.ru')
+      expect(mail.to).toBe('hello@savagemovie.ru')
+    })
+
+    it('отклоняет заявку без согласия на обработку данных и ничего не отправляет', async () => {
+      configureSmtp()
+      const { POST } = await loadRoute()
+
+      const response = await POST(
+        makeRequest({ ...aiSubmission, lead: { ...aiSubmission.lead, consent: {} } })
+      )
+
+      expect(response.status).toBe(400)
+      expect(sendSmtpMail).not.toHaveBeenCalled()
+    })
+
+    it('обычные заявки идут по прежнему шаблону без текстовой версии', async () => {
+      configureSmtp()
+      const { POST } = await loadRoute()
+
+      await POST(makeRequest(validSubmission))
+
+      const mail = sendSmtpMail.mock.calls[0][0]
+      expect(mail.subject).toBe('Новая заявка с сайта — Иван — Коммерция')
+      expect(mail).not.toHaveProperty('text')
+    })
+  })
 })
