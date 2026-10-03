@@ -779,6 +779,8 @@
     --motion-state: 180ms;
     --motion-move: 420ms;
     --motion-cut: 700ms;
+    /* Кроссфейд постер → видео (lib/media): 600 мс, кривая --ease-out-expo */
+    --motion-media: 600ms;
   }
 
   /* Freshman.tv style typography utilities */
@@ -1302,5 +1304,70 @@
 @media (prefers-reduced-motion: reduce) {
   .dir-end-marquee {
     animation: none;
+  }
+}
+
+/*
+ * Медиа-поверхность (lib/media, components/media).
+ *
+ * Постер (<picture>) рисует сервер и он ВСЕГДА лежит под видео. Видео сверху
+ * прозрачно, пока загрузчик (lib/media/boot) не подтвердит, что кадр
+ * декодирован, запаса буфера хватает и первый движущийся кадр уже показан.
+ * Только тогда data-sm-state="visible", и видео проявляется за --motion-media
+ * на кривой сайта. Любая ошибка, остановка или выход из кадра возвращают
+ * состояние poster: под видео всегда готовый кадр, чёрного не бывает.
+ *
+ * В слое components, чтобы утилиты Tailwind (absolute, inset-0, aspect-*)
+ * при необходимости переопределяли базу.
+ */
+@layer components {
+  .sm-root {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background-color: #0a0a0a;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+  }
+
+  .sm-poster {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .sm-poster-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: var(--sm-fit, cover);
+    object-position: center;
+  }
+
+  .sm-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: var(--sm-fit, cover);
+    object-position: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--motion-media, 600ms)
+      var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+  }
+
+  .sm-root[data-sm-state='visible'] > .sm-video {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Движения нет: загрузчик не качает видео, а если оно уже показано — без перехода */
+  .sm-video {
+    transition: none;
   }
 }

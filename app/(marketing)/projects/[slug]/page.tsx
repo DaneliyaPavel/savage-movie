@@ -4,6 +4,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getProjectBySlugServer, getProjectsServer, getProjectVideosServer } from '@/features/projects/api'
+import { mediaSpecsByVideoIds } from '@/lib/media/manifest'
 import { ProjectDetailClient } from './client'
 
 const SITE_NAME = 'SAVAGE MOVIE'
@@ -88,5 +89,17 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       ? (allProjects[currentIndex + 1] ?? null)
       : (allProjects[0] ?? null)
 
-  return <ProjectDetailClient project={project} nextProject={nextProject} projectVideos={projectVideos} />
+  const mediaSpecs = mediaSpecsByVideoIds([
+    project.mux_playback_id || project.video_url,
+    ...projectVideos.map(video => video.mux_playback_id),
+  ])
+
+  return (
+    <ProjectDetailClient
+      project={project}
+      nextProject={nextProject}
+      projectVideos={projectVideos}
+      mediaSpecs={mediaSpecs}
+    />
+  )
 }

@@ -7,6 +7,7 @@ import { ShowreelHero } from '@/components/sections/showreel-hero'
 import { SiteFooter } from '@/components/sections/site-footer'
 import { getProjectsServer } from '@/features/projects/api'
 import { publicEnv } from '@/lib/env'
+import { findMediaSpecByVideoId, getMediaSpec, mediaSpecsByVideoIds } from '@/lib/media/manifest'
 
 export const revalidate = 3600 // ISR: revalidate every hour
 
@@ -102,16 +103,30 @@ export default async function HomePage() {
     }
   }
 
-  // Preload the first carousel image (LCP element) for faster loading
-  const firstCarouselUrl = projects[0]?.carousel_gif_url || null
+  /*
+   * Постеры и MP4 первого экрана берутся из манифеста веб-медиа
+   * (scripts/media/build-web-video.mjs) по id видео. Если id шоурила в CMS
+   * сменили и записи под него нет, hero остаётся на HLS Bunny с кадром Bunny.
+   * Пустой id (CMS и env недоступны) — берём шоурил из манифеста как есть.
+   *
+   * LCP главной — постер hero из HTML. Раньше здесь был preload первой плитки
+   * ленты с fetchpriority=high: анимированный webp на 9 МБ забирал канал у
+   * первого экрана, поэтому предзагрузки больше нет.
+   */
+  const showreelMedia = showreelVideoId
+    ? findMediaSpecByVideoId(showreelVideoId)
+    : getMediaSpec('showreel')
+  const projectMedia = mediaSpecsByVideoIds(projects.map(p => p.playbackId))
 
   return (
     <>
-      {firstCarouselUrl && (
-        <link rel="preload" as="image" href={firstCarouselUrl} fetchPriority="high" />
-      )}
       <main className="relative">
-        <ShowreelHero showreelPlaybackId={showreelVideoId} projects={projects} />
+        <ShowreelHero
+          showreelPlaybackId={showreelVideoId || showreelMedia?.streamId || ''}
+          showreelMedia={showreelMedia}
+          projectMedia={projectMedia}
+          projects={projects}
+        />
         {/*
           Футер после полноэкранного hero — единственная краулимая навигация
           главной. Hero остаётся h-svh и первым экраном; футер открывается

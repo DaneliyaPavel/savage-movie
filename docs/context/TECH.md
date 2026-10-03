@@ -9,7 +9,11 @@ Next.js 16.1 · React 19 · TS 5 · Tailwind 4 · Framer Motion · hls.js · RHF
 
 ## Поток запроса
 Browser → nginx (443) → `/` и Next-роуты → `frontend:3000` (Next standalone); `/api/*` → `backend:8000` (FastAPI) кроме явных: `/api/contact`, `/api/subscribe`, `/api/estimate`, `/api/auth/session`, `/api/payments/`, `/api/uploads/` → Next. `/uploads/` → Next (rewrite → `/api/uploads`, volume `backend/uploads` ro). `/cdn/` → Bunny (обход блокировок b-cdn.net). Next SSR → `API_URL=http://backend:8000`.
+`/media/` → статика nginx из тома `/var/www/savage-media` (Range/206, `immutable` на год), при отсутствии файла — Next (`public/media`). Там лежат постеры и короткие MP4 первого экрана; полные фильмы остаются на Bunny HLS через `/cdn/`.
 Расхождение: `app/api/auth/refresh` и `app/api/admin/revalidate` существуют в Next, но nginx отдаёт их FastAPI (зафиксировано в тесте как `SERVED_BY_BACKEND`); revalidate из админки, вероятно, не работает через Next (**UNVERIFIED**).
+
+## Медиа-слой (постер → видео)
+Резкий постер приходит в HTML, MP4-превью фиксированного качества стартует загрузчиком из `<head>` до гидратации и проявляется поверх постера, когда показан движущийся кадр и хватает буфера. Один hls.js-контроллер на весь сайт (`lib/media/hls-controller.ts`). Файлы собирает `scripts/media/build-web-video.mjs` вне VDS. Подробно: [docs/media-pipeline.md](../media-pipeline.md).
 
 ## Формы и лиды
 - `/api/estimate` (бриф `/reklamny-rolik` и `/services`): honeypot, rate-limit 5/ч (in-memory), дедуп 10 мин, атрибуция (utm, yclid, gclid, ClientID, first-touch), файл брифа в `/uploads/briefs`, доставка: SMTP/Resend + Telegram + n8n (`LEAD_WEBHOOK_URL`, prod `n8n.savagemovie.ru:8444`). Успех = доставлено хотя бы в один канал.

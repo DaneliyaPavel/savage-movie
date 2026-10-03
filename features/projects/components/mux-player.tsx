@@ -4,9 +4,9 @@
  */
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import Hls from 'hls.js'
+import { useHlsSource } from '@/components/media/use-hls-source'
 import { getStreamUrl } from '@/lib/integrations/bunny/client'
 
 interface VideoPlayerProps {
@@ -29,48 +29,13 @@ export function VideoPlayer({
   controls = false,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const hlsRef = useRef<Hls | null>(null)
   const effectiveMuted = autoPlay ? true : muted
 
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video || !playbackId) return
-
-    const src = getStreamUrl(playbackId)
-
-    // Только Safari действительно умеет нативный HLS. Chrome 149+ возвращает
-    // canPlayType="maybe" для HLS, но реально декодить не может — видео зависает
-    // с readyState=0. Всё, что не Safari, гоним через hls.js.
-    const isAppleSafari =
-      typeof navigator !== 'undefined' &&
-      /^((?!chrome|android|crios|fxios|edg).)*safari/i.test(navigator.userAgent)
-
-    if (isAppleSafari && video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = src
-    } else if (Hls.isSupported()) {
-      const hls = new Hls({
-        enableWorker: true,
-        capLevelToPlayerSize: true,
-        maxBufferLength: 30,
-        // Старт сразу с высокого качества — без 2–5с замера канала на низком битрейте
-        abrEwmaDefaultEstimate: 5_000_000,
-        testBandwidth: false,
-      })
-      hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
-        hls.startLevel = data.levels.length - 1
-      })
-      hls.loadSource(src)
-      hls.attachMedia(video)
-      hlsRef.current = hls
-    }
-
-    return () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy()
-        hlsRef.current = null
-      }
-    }
-  }, [playbackId])
+  // Единая фабрика: стратегия по движку, уровень под размер блока, destroy при размонтировании
+  useHlsSource(videoRef, {
+    src: playbackId ? getStreamUrl(playbackId) : null,
+    useCase: controls ? 'player' : 'background',
+  })
 
   const handleError = useCallback(() => {
     if (process.env.NODE_ENV === 'development') {

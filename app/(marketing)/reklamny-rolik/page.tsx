@@ -12,6 +12,7 @@
  */
 import type { Metadata } from 'next'
 
+import { MediaSpecsProvider } from '@/components/media/media-specs-context'
 import { JsonLdScripts } from '@/components/seo/json-ld-scripts'
 import { getProjectsServer, type Project } from '@/features/projects/api'
 import type { Client } from '@/lib/api/clients'
@@ -23,6 +24,7 @@ import {
 import { getThumbnailUrl } from '@/lib/integrations/bunny/client'
 import { normalizePosterUrl } from '@/lib/commercial-landing/poster-url'
 import { showreelPosterFor } from '@/lib/commercial-landing/showreel-poster'
+import { mediaSpecsForContent } from '@/lib/media/manifest'
 import { getShowreelPlaybackId } from '@/lib/services/showreel'
 import { logger } from '@/lib/utils/logger'
 import type { CommercialCase } from '@/components/sections/commercial/commercial-cases'
@@ -255,16 +257,22 @@ export default async function CommercialLandingPage() {
   // WhySavage сверяет с этим список, доказывающий кейс может не входить в грид
   const allCaseSlugs = projects.map(project => project.slug)
 
+  // Веб-превью (MP4 + постеры) для видео, которые реально стоят на странице:
+  // перекрытие контента из CMS учитывается, потому что ids берутся из pageContent
+  const mediaSpecs = mediaSpecsForContent(pageContent, cases)
+
   return (
     <>
       <JsonLdScripts scripts={buildJsonLd(content, projects, cases)} />
-      <CommercialLandingClient
-        content={pageContent}
-        cases={cases}
-        clients={clients}
-        allCaseSlugs={allCaseSlugs}
-        showreelPosterUrl={showreelPosterFor(content.showreel.playbackId, showreelId)}
-      />
+      <MediaSpecsProvider specs={mediaSpecs}>
+        <CommercialLandingClient
+          content={pageContent}
+          cases={cases}
+          clients={clients}
+          allCaseSlugs={allCaseSlugs}
+          showreelPosterUrl={showreelPosterFor(content.showreel.playbackId, showreelId)}
+        />
+      </MediaSpecsProvider>
     </>
   )
 }

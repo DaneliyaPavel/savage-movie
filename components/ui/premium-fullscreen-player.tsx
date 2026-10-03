@@ -7,7 +7,7 @@
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
-import Hls from 'hls.js'
+import { useHlsSource } from '@/components/media/use-hls-source'
 import { GrainOverlay } from './grain-overlay'
 import { getStreamUrl } from '@/lib/integrations/bunny/client'
 
@@ -27,7 +27,6 @@ export function PremiumFullscreenPlayer({
   poster,
 }: PremiumFullscreenPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const hlsRef = useRef<Hls | null>(null)
 
   // ESC key handler
   useEffect(() => {
@@ -55,29 +54,12 @@ export function PremiumFullscreenPlayer({
     }
   }, [isOpen])
 
-  // Init HLS when open + playbackId available
-  useEffect(() => {
-    const video = videoRef.current
-    if (!isOpen || !playbackId || !video) return
-
-    const src = getStreamUrl(playbackId)
-
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = src
-    } else if (Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true, startLevel: -1 })
-      hls.loadSource(src)
-      hls.attachMedia(video)
-      hlsRef.current = hls
-    }
-
-    return () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy()
-        hlsRef.current = null
-      }
-    }
-  }, [isOpen, playbackId])
+  // HLS через единую фабрику, только пока плеер открыт
+  useHlsSource(videoRef, {
+    src: playbackId ? getStreamUrl(playbackId) : null,
+    useCase: 'player',
+    enabled: isOpen,
+  })
 
   if (!playbackId) return null
 

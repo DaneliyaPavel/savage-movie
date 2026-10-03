@@ -3,6 +3,8 @@ import localFont from 'next/font/local'
 import './globals.css'
 import { JsonLdScripts } from '@/components/seo/json-ld-scripts'
 import { YandexMetrika } from '@/components/analytics/yandex-metrika'
+import { MediaBoot } from '@/components/media/media-boot'
+import { MediaRum } from '@/components/media/media-rum'
 import { TokenBootstrap } from '@/components/providers/token-bootstrap'
 import { EMAIL, PHONE_DISPLAY, PHONE_E164 } from '@/lib/contacts'
 
@@ -184,10 +186,13 @@ export default function RootLayout({
       <head>
         {/* Bunny CDN is now proxied through /cdn/ — no preconnect needed */}
         <YandexMetrika />
+        {/* Загрузчик медиа-поверхностей: инлайном, чтобы hero-видео стартовало до гидратации */}
+        <MediaBoot />
       </head>
       <body className={`${saNoRules.variable} font-sans antialiased`}>
         <JsonLdScripts scripts={jsonLdScripts} />
         <TokenBootstrap />
+        <MediaRum />
         {children}
       </body>
     </html>

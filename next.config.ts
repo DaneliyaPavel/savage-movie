@@ -29,6 +29,16 @@ const nextConfig: NextConfig = {
       '@radix-ui/react-tooltip',
     ],
   },
+  // Веб-видео и постеры (docs/media-pipeline.md): имя файла содержит хеш содержимого,
+  // поэтому кеш вечный. nginx отдаёт то же самое, это — для dev и прямого доступа
+  async headers() {
+    return [
+      {
+        source: '/media/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+    ]
+  },
   // Поддержка статических файлов из uploads через API route
   async rewrites() {
     return [

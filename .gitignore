@@ -79,3 +79,6 @@ SECURITY_AUDIT.md
 SECURITY_REMEDIATION_PLAN.md
 SECURITY_QUICK_WINS.md
 SECURITY_ARCHITECTURE_NOTES.md
+
+# Промежуточные файлы медиа-пайплайна (scripts/media)
+/media-build/

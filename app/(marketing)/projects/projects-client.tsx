@@ -13,8 +13,10 @@ import {
   HorizontalProjectMediaCard,
   VerticalProjectMediaCard,
 } from '@/features/projects/components/ProjectMediaCard'
-import Hls from 'hls.js'
-import { getStreamUrl } from '@/lib/integrations/bunny/client'
+import { MotionSurface } from '@/components/media/motion-surface'
+import { getThumbnailUrl } from '@/lib/integrations/bunny/client'
+import type { MediaSurfaceSpec } from '@/lib/media/manifest'
+import { extractVideoId } from '@/lib/media/video-id'
 import { getProjects } from '@/features/projects/api'
 import { toMarketingProject, type MarketingProject } from '@/features/projects/mappers'
 import {
@@ -149,26 +151,23 @@ function ProjectRow({
   project,
   index,
   language,
+  mediaSpec,
 }: {
   project: MarketingProject
   index: number
   language: 'ru' | 'en'
+  /** Постеры и MP4-превью из манифеста веб-медиа; без них карточка играет HLS на нужном уровне */
+  mediaSpec?: MediaSurfaceSpec | null
 }) {
   const [isHovered, setIsHovered] = useState(false)
   const [thumbnailWidth, setThumbnailWidth] = useState<string>('75%')
   const [activeThumbIndex, setActiveThumbIndex] = useState(0)
-  const [videoSrc, setVideoSrc] = useState<string | null>(null)
   const [mediaHeight, setMediaHeight] = useState<number | null>(null)
   const [scribbleSeed, setScribbleSeed] = useState(0)
   const [scribbleTrigger, setScribbleTrigger] = useState(0)
-  const [isInViewport, setIsInViewport] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const hlsRef = useRef<Hls | null>(null)
   const videoContainerRef = useRef<HTMLDivElement>(null)
   const videoAspectRef = useRef<HTMLDivElement>(null)
   const thumbnailsContainerRef = useRef<HTMLDivElement>(null)
-  const rowRef = useRef<HTMLDivElement>(null)
   const lastScribbleRef = useRef<number | null>(null)
 
   const visibleThumbs = useMemo(() => project.thumbnails.slice(0, 5), [project.thumbnails])
@@ -180,44 +179,14 @@ function ProjectRow({
   const thumbAspectClass = isVertical ? 'aspect-[9/16]' : 'aspect-video'
   const mediaCardClassName = 'w-full'
   const mediaAspectClassName = isVertical ? 'aspect-[16/9.2]' : undefined
-  const mediaFitClassName = isVertical ? 'object-contain' : 'object-cover'
-  const videoObjectFit = isVertical ? 'contain' : 'cover'
 
-  const shouldPlay = isMobile ? isInViewport : isHovered
+  // Подпись «смотреть» показывается только на десктопе, там же, где превью играет по наведению
+  const shouldPlay = isHovered
 
   const getTitle = () => (language === 'ru' ? project.titleRu : project.titleEn)
   const getClient = () => (language === 'ru' ? project.clientRu : project.clientEn)
   const getCategory = () => (language === 'ru' ? project.categoryRu : project.category)
   const getDescription = () => (language === 'ru' ? project.descriptionRu : project.descriptionEn)
-
-  // Detect mobile
-  useEffect(() => {
-    const mql = window.matchMedia('(max-width: 767px)')
-    setIsMobile(mql.matches)
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
-    mql.addEventListener('change', handler)
-    return () => mql.removeEventListener('change', handler)
-  }, [])
-
-  // IntersectionObserver for mobile auto-play
-  useEffect(() => {
-    const row = rowRef.current
-    if (!row) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const inView = entry?.isIntersecting ?? false
-        setIsInViewport(inView)
-        if (inView && project.videoUrl && !videoSrc && !playbackId) {
-          setVideoSrc(project.videoUrl)
-        }
-      },
-      { threshold: 0.3 }
-    )
-
-    observer.observe(row)
-    return () => observer.disconnect()
-  }, [project.videoUrl, videoSrc, playbackId])
 
   const handleMouseEnter = () => {
     setIsHovered(true)
@@ -230,9 +199,6 @@ function ProjectRow({
     lastScribbleRef.current = next
     setScribbleSeed(next)
     setScribbleTrigger(value => value + 1)
-    if (project.videoUrl && !videoSrc && !playbackId) {
-      setVideoSrc(project.videoUrl)
-    }
   }
 
   const handleMouseLeave = () => {
@@ -248,43 +214,6 @@ function ProjectRow({
     }, 1000)
     return () => window.clearInterval(intervalId)
   }, [isHovered, cycleLength])
-
-  // Init HLS for Bunny Stream
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video || !playbackId) return
-
-    const src = getStreamUrl(playbackId)
-
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = src
-    } else if (Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true, startLevel: -1 })
-      hls.loadSource(src)
-      hls.attachMedia(video)
-      hlsRef.current = hls
-    }
-
-    return () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy()
-        hlsRef.current = null
-      }
-    }
-  }, [playbackId])
-
-  // Video play/pause
-  useEffect(() => {
-    if (!videoRef.current) return
-    if (shouldPlay) {
-      const playPromise = videoRef.current.play()
-      if (playPromise) {
-        playPromise.catch(() => { })
-      }
-    } else {
-      videoRef.current.pause()
-    }
-  }, [shouldPlay, videoSrc, playbackId])
 
   // Calculate thumbnail size to match video height exactly (desktop only)
   useEffect(() => {
@@ -336,39 +265,26 @@ function ProjectRow({
     }
   }, [isVertical])
 
+  /*
+   * Превью работы: постер приходит в HTML, MP4/HLS подключается загрузчиком
+   * (lib/media/boot) только когда карточка нужна: на мыши по наведению, на
+   * таче когда она на экране, и не больше двух одновременно. Карточки вне
+   * экрана не качают ни байта видео.
+   */
+  const posterSrc =
+    project.thumbnails[0] || (playbackId ? getThumbnailUrl(playbackId) : '') || '/placeholder.svg'
   const videoContent = (
-    <>
-      {playbackId ? (
-        <video
-          ref={videoRef}
-          muted
-          loop
-          playsInline
-          title={getTitle()}
-          className="absolute inset-0 w-full h-full"
-          style={{ objectFit: videoObjectFit as 'cover' | 'contain' }}
-        />
-      ) : project.videoUrl ? (
-        <video
-          ref={videoRef}
-          src={videoSrc ?? undefined}
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          className={`absolute inset-0 w-full h-full ${mediaFitClassName}`}
-        />
-      ) : (
-        <Image
-          src={project.thumbnails[0] || '/placeholder.svg'}
-          alt={getTitle()}
-          fill
-          sizes={MAIN_IMAGE_SIZES}
-          quality={70}
-          className={mediaFitClassName}
-        />
-      )}
-    </>
+    <MotionSurface
+      name="project-card"
+      spec={mediaSpec ?? null}
+      streamId={playbackId}
+      fallbackPoster={posterSrc}
+      fallbackSizes={MAIN_IMAGE_SIZES}
+      play="hover"
+      hoverScope="[data-sm-card]"
+      fit={isVertical ? 'contain' : 'cover'}
+      className="absolute inset-0"
+    />
   )
 
   return (
@@ -385,7 +301,7 @@ function ProjectRow({
      * index-задержка на длинном списке означала лишь ожидание.
      */
     <div
-      ref={rowRef}
+      data-sm-card=""
       data-reveal=""
       data-reveal-group=""
       className="border-t-2 border-dashed border-muted-foreground/20 py-6 md:py-8"
@@ -472,7 +388,7 @@ function ProjectRow({
           >
             {videoContent}
 
-            {(playbackId || project.videoUrl) && (
+            {playbackId && (
               <motion.span
                 initial={false}
                 animate={shouldPlay ? { opacity: 1 } : { opacity: 0 }}
@@ -592,8 +508,11 @@ function ProjectRow({
 
 export default function ProjectsPageClient({
   initialProjects,
+  mediaSpecs = {},
 }: {
   initialProjects: MarketingProject[]
+  /** {id Bunny-видео → spec} из манифеста веб-медиа, собирается на сервере */
+  mediaSpecs?: Record<string, MediaSurfaceSpec>
 }) {
   const { language, t } = useI18n()
   const { setHeaderDark } = useMenu()
@@ -772,7 +691,13 @@ export default function ProjectsPageClient({
           /* AnimatePresence убран: у ProjectRow никогда не было exit, а сама
              строка больше не motion-компонент — обёртка не делала ничего */
           visibleProjects.map((project, index) => (
-            <ProjectRow key={project.id} project={project} index={index} language={language} />
+            <ProjectRow
+              key={project.id}
+              project={project}
+              index={index}
+              language={language}
+              mediaSpec={project.videoUrl ? (mediaSpecs[extractVideoId(project.videoUrl)] ?? null) : null}
+            />
           ))
         )}
 

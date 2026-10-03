@@ -2,13 +2,16 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { VideoPlayer } from '@/features/projects/components/mux-player'
 import { FilmstripCarousel } from '@/features/projects/components/filmstrip-carousel'
+import { FullScreenVideoPlayer } from '@/features/projects/components/FullScreenVideoPlayer'
+import { MotionSurface } from '@/components/media/motion-surface'
 import { TopBar } from '@/components/ui/top-bar'
 import { JalousieMenu } from '@/components/ui/jalousie-menu'
 import { Preloader } from '@/components/ui/preloader'
 import { useI18n } from '@/lib/i18n-context'
 import { getThumbnailUrl } from '@/lib/integrations/bunny/client'
+import type { MediaSurfaceSpec } from '@/lib/media/manifest'
+import { extractVideoId } from '@/lib/media/video-id'
 import { SHOWREEL_POSTER } from '@/lib/services/showreel-poster-path'
 
 /*
@@ -47,6 +50,15 @@ function shouldPlayOpening(): boolean {
 
 const HERO_STEP_COPY = '60ms'
 const HERO_STEP_SIGNATURE = '120ms'
+const HERO_STEP_ACTION = '180ms'
+
+/*
+ * Заставка (ident) может ещё висеть, когда видео уже готово. Пока она на
+ * экране, видео не проявляем: иначе кроссфейд постер → видео прошёл бы под
+ * красным полем и пользователь увидел бы сразу движущийся кадр без постера.
+ * Загрузчик ждёт исчезновения заставки, но не дольше ~1 с от старта документа.
+ */
+const OPENING_HOLD_SELECTOR = ".preloader-overlay:not([data-exiting='true'])"
 
 interface Project {
   id: string
@@ -63,11 +75,24 @@ interface Project {
 
 interface ShowreelHeroProps {
   showreelPlaybackId: string
+  /** Постеры и MP4 шоурила из манифеста веб-медиа (null — нет записи, остаётся HLS) */
+  showreelMedia?: MediaSurfaceSpec | null
+  /** То же для проектов ленты: {id видео → spec} */
+  projectMedia?: Record<string, MediaSurfaceSpec>
   projects?: Project[]
 }
 
-export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHeroProps) {
+export function ShowreelHero({
+  showreelPlaybackId,
+  showreelMedia = null,
+  projectMedia = {},
+  projects = [],
+}: ShowreelHeroProps) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [showreelOpen, setShowreelOpen] = useState(false)
+  // Плеер монтируется при первом открытии: его эффекты трогают body.overflow и
+  // слушают клавиатуру, на главной до клика им делать нечего
+  const [showreelMounted, setShowreelMounted] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   /*
    * Два отдельных сигнала, а не один: заставка снимается в конце ухода, а
@@ -180,19 +205,31 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
               transition={{ duration: 0.6, ease: 'easeInOut' }}
               className="absolute inset-0"
             >
-              <VideoPlayer
-                playbackId={currentPlaybackId}
-                poster={
-                  currentPlaybackId === showreelPlaybackId
-                    ? SHOWREEL_POSTER
-                    : getThumbnailUrl(currentPlaybackId)
-                }
-                autoPlay
-                muted
-                loop
-                controls={false}
-                className="w-full h-full"
-              />
+              {currentPlaybackId === showreelPlaybackId ? (
+                /*
+                  Hero: короткий отдельный MP4 (цикл из начала шоурила) поверх
+                  постера из его же нулевого кадра. Полный фильм остаётся на
+                  Bunny HLS и открывается кнопкой ниже.
+                */
+                <MotionSurface
+                  name="showreel"
+                  spec={showreelMedia}
+                  streamId={showreelPlaybackId}
+                  fallbackPoster={SHOWREEL_POSTER}
+                  hero
+                  holdUntil={OPENING_HOLD_SELECTOR}
+                  className="absolute inset-0"
+                />
+              ) : (
+                <MotionSurface
+                  name="project-hero"
+                  spec={projectMedia[extractVideoId(currentPlaybackId)] ?? null}
+                  streamId={currentPlaybackId}
+                  fallbackPoster={getThumbnailUrl(currentPlaybackId)}
+                  hero
+                  className="absolute inset-0"
+                />
+              )}
             </motion.div>
           </AnimatePresence>
 
@@ -248,6 +285,24 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
               >
                 [ {t('home.heroTagline')} ]
               </p>
+              {/* Полный шоурил: пользователь сам просит фильм, поэтому здесь
+                  можно грузить агрессивно и со звуком */}
+              <div data-hero-entry="" style={{ ['--reveal-delay' as string]: HERO_STEP_ACTION }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowreelMounted(true)
+                    setShowreelOpen(true)
+                  }}
+                  className="pointer-events-auto mt-3 inline-flex items-center gap-2.5 font-mono text-[0.65rem] md:text-xs uppercase tracking-[0.28em] text-white/70 transition-colors duration-[var(--motion-state)] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ff2936]"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-0 w-0 border-y-[5px] border-l-[8px] border-y-transparent border-l-current"
+                  />
+                  {t('home.watchShowreel')}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -291,6 +346,15 @@ export function ShowreelHero({ showreelPlaybackId, projects = [] }: ShowreelHero
           )
         )}
       </section>
+
+      {showreelMounted ? (
+        <FullScreenVideoPlayer
+          isOpen={showreelOpen}
+          onClose={() => setShowreelOpen(false)}
+          playbackId={showreelPlaybackId}
+          title="Savage Movie — showreel"
+        />
+      ) : null}
     </>
   )
 }

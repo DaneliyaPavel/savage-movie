@@ -1,0 +1,117 @@
+{
+  "assets": {
+    "showreel": {
+      "color": "#0e171b",
+      "lqip": "data:image/webp;base64,UklGRnIAAABXRUJQVlA4IGYAAADwAwCdASoYAA4APu1iqU2ppaOiMAgBMB2JZQC7ACG6R1tUvkVK8hQAAP7r+0OcCiWf5NuwtTMK2v1pKHqAAwhgCVDu+L9CcY9C1hoZ96NA+JH0ZunvsoCfq588/4QeX0GgCdDAAAA=",
+      "master": "bunny:83ad0e8e-c614-46fd-8324-2c26659ad721/original",
+      "poster": {
+        "desktop": {
+          "avif": [
+            {
+              "bytes": 77969,
+              "file": "showreel-poster-desktop-1280.80af26d1.avif",
+              "h": 720,
+              "w": 1280
+            },
+            {
+              "bytes": 118762,
+              "file": "showreel-poster-desktop-1920.ab0f961e.avif",
+              "h": 1080,
+              "w": 1920
+            }
+          ],
+          "height": 1080,
+          "jpeg": {
+            "bytes": 187155,
+            "file": "showreel-poster-desktop-1920.8ab72b9d.jpg",
+            "h": 1080,
+            "w": 1920
+          },
+          "webp": [
+            {
+              "bytes": 126954,
+              "file": "showreel-poster-desktop-1920.156d6270.webp",
+              "h": 1080,
+              "w": 1920
+            }
+          ],
+          "width": 1920
+        },
+        "mobile": {
+          "avif": [
+            {
+              "bytes": 27471,
+              "file": "showreel-poster-mobile-405.06ea2b23.avif",
+              "h": 719,
+              "w": 405
+            },
+            {
+              "bytes": 43679,
+              "file": "showreel-poster-mobile-608.17925b13.avif",
+              "h": 1080,
+              "w": 608
+            }
+          ],
+          "height": 1080,
+          "jpeg": {
+            "bytes": 65193,
+            "file": "showreel-poster-mobile-608.700955aa.jpg",
+            "h": 1080,
+            "w": 608
+          },
+          "webp": [
+            {
+              "bytes": 46110,
+              "file": "showreel-poster-mobile-608.329856cc.webp",
+              "h": 1080,
+              "w": 608
+            }
+          ],
+          "width": 608
+        }
+      },
+      "preview": {
+        "desktop": {
+          "audio": false,
+          "bitrate": 3541300,
+          "bytes": 3559007,
+          "codec": "avc1.640029",
+          "crf": 27,
+          "duration": 8.04,
+          "faststart": true,
+          "file": "showreel-preview-desktop.29d19dd9.mp4",
+          "fps": 25,
+          "frames": 201,
+          "height": 1080,
+          "pixFmt": "yuv420p",
+          "profile": "High",
+          "width": 1920
+        },
+        "end": 8.04,
+        "fps": 25,
+        "frames": 201,
+        "mobile": {
+          "audio": false,
+          "bitrate": 1550762,
+          "bytes": 1558516,
+          "codec": "avc1.640029",
+          "crf": 25,
+          "duration": 8.04,
+          "faststart": true,
+          "file": "showreel-preview-mobile.c1ffd7d0.mp4",
+          "fps": 25,
+          "frames": 201,
+          "height": 1080,
+          "pixFmt": "yuv420p",
+          "profile": "High",
+          "width": 608
+        },
+        "start": 0
+      },
+      "stream": {
+        "hls": "83ad0e8e-c614-46fd-8324-2c26659ad721"
+      }
+    }
+  },
+  "version": 1
+}
