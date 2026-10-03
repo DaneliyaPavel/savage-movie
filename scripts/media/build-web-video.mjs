@@ -25,6 +25,14 @@
  *   # прогнать лесенку CRF и сравнить размер и SSIM (ничего не пишет в manifest)
  *   node scripts/media/build-web-video.mjs --master master.mp4 --end 8.04 --candidates 24,26,28
  *
+ *   # превью проекта: профиль project. Мобильный вариант — тот же кадр 16:9 в меньшем размере
+ *   # (а не вертикальный кроп, как у hero), вертикальный мастер сохраняет свою ориентацию.
+ *   # Файлы идут в каталог для выкладки на VDS, запись — в отдельный манифест:
+ *   # сначала файлы, потом манифест (docs/media-pipeline.md)
+ *   node scripts/media/build-web-video.mjs --profile project --key project-naumi \
+ *     --master naumi.mp4 --hls <bunny-id> --end 8 \
+ *     --out media-build/files --manifest media-build/manifest.projects.json
+ *
  * Мастер может быть путём к файлу или http(s)-ссылкой на него (ffmpeg читает
  * её сам). Результат: файлы с хэшем содержимого в имени (безопасно отдавать
  * с immutable-кэшем) и запись в lib/media/manifest.json.
@@ -49,29 +57,80 @@ const require = createRequire(import.meta.url)
  * Мобильный профиль кодируется ЧУТЬ чище: на экране с DPR 3 каждый пиксель
  * кадра растягивается в 2,3 раза, и артефакты видны сильнее.
  */
-const TARGETS = {
-  desktop: {
-    aspect: [16, 9],
-    maxWidth: 1920,
-    maxHeight: 1080,
-    crf: 27,
-    maxrate: '6M',
-    bufsize: '8M',
+const PROFILES = {
+  // Hero: на телефоне ролик занимает весь вертикальный экран, поэтому мобильный
+  // вариант — вертикальный кроп центра кадра (то же, что делает object-fit: cover)
+  hero: {
+    targets: {
+      desktop: {
+        aspect: [16, 9],
+        maxWidth: 1920,
+        maxHeight: 1080,
+        crf: 27,
+        maxrate: '6M',
+        bufsize: '8M',
+      },
+      mobile: {
+        aspect: [9, 16],
+        maxWidth: 1080,
+        maxHeight: 1080,
+        crf: 25,
+        maxrate: '3M',
+        bufsize: '4M',
+      },
+    },
+    /** Ширины постеров. Меньшая нужна экранам DPR 1, большая — родное разрешение превью. */
+    posterWidths: { desktop: [1280, 1920], mobile: [405, 608] },
   },
-  mobile: {
-    aspect: [9, 16],
-    maxWidth: 1080,
-    maxHeight: 1080,
-    crf: 25,
-    maxrate: '3M',
-    bufsize: '4M',
+  // Проект: карточка и hero страницы. На телефоне карточка — широкая 16:9, поэтому
+  // мобильный вариант не кропается в вертикаль, а просто меньше (540p вместо 1080p)
+  project: {
+    targets: {
+      desktop: {
+        aspect: [16, 9],
+        maxWidth: 1920,
+        maxHeight: 1080,
+        crf: 27,
+        maxrate: '6M',
+        bufsize: '8M',
+      },
+      mobile: {
+        aspect: [16, 9],
+        maxWidth: 960,
+        maxHeight: 540,
+        crf: 25,
+        maxrate: '2500k',
+        bufsize: '3M',
+      },
+    },
+    posterWidths: { desktop: [1280, 1920], mobile: [480, 960] },
   },
 }
 
-/** Ширины постеров. Меньшая нужна экранам DPR 1, большая — родное разрешение превью. */
-const POSTER_WIDTHS = {
-  desktop: [1280, 1920],
-  mobile: [405, 608],
+/**
+ * Вертикальный мастер (9:16, телефонная съёмка) не кропается в 16:9: на сайте он
+ * лежит в широкой рамке с object-fit: contain, и обрезанный кадр потерял бы
+ * большую часть композиции. Сохраняем исходное соотношение сторон, меняется
+ * только размер. Только для профиля project: hero всегда заполняет экран.
+ */
+export function targetsFor(profileName, srcW, srcH) {
+  const profile = PROFILES[profileName]
+  if (!profile)
+    fail(`Неизвестный профиль ${profileName}; доступны: ${Object.keys(PROFILES).join(', ')}`)
+  const portrait = profileName === 'project' && srcH > srcW
+  const targets = {
+    desktop: { ...profile.targets.desktop },
+    mobile: { ...profile.targets.mobile },
+  }
+  if (portrait) {
+    Object.assign(targets.desktop, { aspect: [srcW, srcH], maxWidth: 1080, maxHeight: 1080 })
+    Object.assign(targets.mobile, { aspect: [srcW, srcH], maxWidth: 720, maxHeight: 720 })
+  }
+  return {
+    targets,
+    posterWidths: profile.posterWidths,
+    orientation: portrait ? 'portrait' : 'landscape',
+  }
 }
 
 const POSTER_QUALITY = { avif: 62, webp: 80, jpeg: 82 }
@@ -333,9 +392,10 @@ async function loadSharp() {
   }
 }
 
-async function buildPosters({ sharp, pngFile, key, targetName, outDir, tmpDir }) {
-  const widths = POSTER_WIDTHS[targetName]
+async function buildPosters({ sharp, pngFile, key, targetName, outDir, tmpDir, posterWidths }) {
   const meta = await sharp(pngFile).metadata()
+  // Постер не увеличиваем: ширины выше родной схлопываются в одну, дубликатов в srcset нет
+  const widths = [...new Set(posterWidths.map(w => Math.min(w, meta.width)))]
   const maxW = widths[widths.length - 1]
   const result = { width: meta.width, height: meta.height, avif: [], webp: [], jpeg: null }
 
@@ -400,12 +460,12 @@ function sortKeys(value) {
   return value
 }
 
-function runCandidates({ master, probeInfo, start, frames, fps, list, tmpDir }) {
+function runCandidates({ master, probeInfo, start, frames, fps, list, tmpDir, targets }) {
   const video = probeInfo.streams.find(s => s.codec_type === 'video')
   const rows = []
   for (const crf of list) {
     for (const name of ['desktop', 'mobile']) {
-      const target = { ...TARGETS[name] }
+      const target = { ...targets[name] }
       const file = join(tmpDir, `cand-${name}-crf${crf}.mp4`)
       const geo = encodePreview({
         master,
@@ -498,9 +558,12 @@ async function main() {
   const tmpDir = resolve(String(args.tmp ?? join(ROOT, 'media-build', '.tmp')))
   mkdirSync(tmpDir, { recursive: true })
 
+  const profileName = String(args.profile ?? 'hero')
+  const plan = targetsFor(profileName, video.width, video.height)
+
   if (args.candidates) {
     const list = String(args.candidates).split(',').map(Number).filter(Boolean)
-    runCandidates({ master, probeInfo, start, frames, fps, list, tmpDir })
+    runCandidates({ master, probeInfo, start, frames, fps, list, tmpDir, targets: plan.targets })
     return
   }
 
@@ -517,13 +580,15 @@ async function main() {
       args['master-label'] ??
         (/^https?:\/\//.test(master) ? master : `file:${master.split('/').pop()}`)
     ),
+    profile: profileName,
+    orientation: plan.orientation,
     preview: { start, end, fps, frames },
     poster: {},
   }
   if (args.hls) entry.stream = { hls: String(args.hls) }
 
   for (const name of ['desktop', 'mobile']) {
-    const target = { ...TARGETS[name] }
+    const target = { ...plan.targets[name] }
     if (args[`crf-${name}`]) target.crf = Number(args[`crf-${name}`])
     console.log(`▶ ${name}: кодирую ${frames} кадров (${start}–${end} с), CRF ${target.crf}`)
     const tmpVideo = join(tmpDir, `${key}-${name}.mp4`)
@@ -559,6 +624,7 @@ async function main() {
       targetName: name,
       outDir,
       tmpDir,
+      posterWidths: plan.posterWidths[name],
     })
     if (name === 'desktop') Object.assign(entry, await buildPlaceholder(sharp, png))
     const sizes = [...entry.poster[name].avif, ...entry.poster[name].webp, entry.poster[name].jpeg]

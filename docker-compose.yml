@@ -129,6 +129,8 @@ services:
       - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - /var/www/certbot:/var/www/certbot:ro
+      # Веб-видео и постеры, которые не входят в git (docs/media-pipeline.md)
+      - /var/www/savage-media:/srv/media:ro
     depends_on:
       - frontend
       - backend
