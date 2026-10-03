@@ -14,7 +14,7 @@
 import type { CSSProperties } from 'react'
 import Image from 'next/image'
 
-import { canOptimizePoster } from '@/lib/commercial-landing/poster-url'
+import { canOptimizePoster, normalizePosterUrl } from '@/lib/commercial-landing/poster-url'
 import { normalizeVideoId } from '@/lib/integrations/bunny/client'
 import { MOBILE_MEDIA_QUERY } from '@/lib/media/config'
 import type { MediaSurfaceSpec } from '@/lib/media/manifest'
@@ -104,13 +104,20 @@ export function MotionSurface({
   } as CSSProperties
 
   const altAttr = fallbackPosterAlt?.length ? fallbackPosterAlt.join('|') : undefined
+  /*
+   * В CMS у части работ в поле постера лежит анимированный preview.webp Bunny
+   * (1–2 МБ). Постер обязан быть лёгким статичным кадром: иначе плитка 180 px
+   * тянет мегабайты и отнимает канал у hero. normalizePosterUrl возвращает
+   * thumbnail.jpg того же видео, next/image ужимает его под размер блока.
+   */
+  const staticPoster = fallbackPoster ? normalizePosterUrl(fallbackPoster) : null
   const poster = spec ? (
     <PosterPicture spec={spec} priority={hero} />
-  ) : fallbackPoster ? (
-    canOptimizePoster(fallbackPoster) ? (
+  ) : staticPoster ? (
+    canOptimizePoster(staticPoster) ? (
       <Image
         className="sm-poster-img"
-        src={fallbackPoster}
+        src={staticPoster}
         alt=""
         fill
         sizes={fallbackSizes}
@@ -122,7 +129,7 @@ export function MotionSurface({
       // eslint-disable-next-line @next/next/no-img-element
       <img
         className="sm-poster-img sm-poster"
-        src={fallbackPoster}
+        src={staticPoster}
         alt=""
         decoding="async"
         loading={hero ? 'eager' : 'lazy'}

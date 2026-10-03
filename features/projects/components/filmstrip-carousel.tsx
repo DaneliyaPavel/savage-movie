@@ -6,6 +6,7 @@ import AutoScroll from 'embla-carousel-auto-scroll'
 import Image from 'next/image'
 import Link from 'next/link'
 import { MotionSurface } from '@/components/media/motion-surface'
+import { normalizePosterUrl } from '@/lib/commercial-landing/poster-url'
 import { useHeroSettled } from '@/lib/media/use-hero-settled'
 
 interface FilmstripProject {
@@ -232,7 +233,8 @@ const FilmstripItem = memo(function FilmstripItem({
     }
   }, [wantsGif, animate, gifRequested, index])
 
-  const thumbSrc = project.thumbnail || '/placeholder.svg'
+  // Статичный кадр: у части работ в CMS лежит анимированный preview.webp на 1–2 МБ
+  const thumbSrc = normalizePosterUrl(project.thumbnail || '/placeholder.svg')
 
   const content = (
     <div

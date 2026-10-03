@@ -144,13 +144,17 @@ const HOLD_CAP_MS = 1100
 const POSTER_WAIT_MS = 1500
 const FRAME_TIMEOUT_MS = 1800
 const STALL_AFTER_REVEAL_MS = 700
-const HERO_SETTLE_FAILSAFE_MS = 6000
+/** Последняя страховка (hero завис): его собственный таймаут загрузки 12 с */
+const HERO_SETTLE_FAILSAFE_MS = 13000
+/** Показанный MP4-hero докачивается: декоративное движение ждёт, но не дольше этого */
+const HERO_DOWNLOAD_WAIT_MS = 5000
 const KICKSTART_AFTER_MS = 700
 /** Нет первого кадра за это время — постер остаётся, сеть освобождается */
 const LOAD_TIMEOUT_MS = 12000
 const MAX_EXTERNAL_RESUMES = 3
 const MAX_KICK_RECHECKS = 6
-const FAR_UNLOAD_MS = 3000
+/** Карточка, ушедшая далеко от экрана, не должна ещё секунды докачивать видео */
+const FAR_UNLOAD_MS = 400
 const HOVER_INTENT_MS = 130
 const HOVER_HOLD_MS = 350
 const MAX_DEGRADES = 3
@@ -907,9 +911,38 @@ export function installMediaBoot(win: SmWindow): SmApi {
     return present
   }
 
+  /*
+   * hero уже показан, но его MP4 ещё качается. Анимированные плитки и превью
+   * «после hero» стартуют только когда канал освободился: на 4–8 Мбит/с
+   * они иначе делят его с hero и тот останавливается посреди цикла.
+   */
+  let settleRecheck: ReturnType<typeof setTimeout> | null = null
+  function heroDownloading(): boolean {
+    let busy = false
+    registry.forEach(s => {
+      if (!s.hero || s.state !== 'visible' || s.kind !== 'mp4') return
+      const visibleAt = s.t.visible
+      if (visibleAt !== undefined && now() - visibleAt > HERO_DOWNLOAD_WAIT_MS) return
+      const d = s.video.duration
+      const range = bufferedRange(s.video)
+      if (!d || !isFinite(d) || !range) return
+      if (range.end < d - 0.25) busy = true
+    })
+    return busy
+  }
+
   function settleHeroIfNeeded() {
     if (api.settled) return
     if (heroPresent() && heroPending()) return
+    if (heroDownloading()) {
+      if (!settleRecheck) {
+        settleRecheck = setTimeout(() => {
+          settleRecheck = null
+          settleHeroIfNeeded()
+        }, 400)
+      }
+      return
+    }
     api.settled = true
     emit('hero-settled', null)
     win.dispatchEvent(new win.CustomEvent('sm:hero-settled'))

@@ -767,6 +767,7 @@ describe('когда видео не оживает', () => {
     expect(h.api.settled).toBe(false)
 
     await h.reachSafe(hero)
+    h.buffer(hero, 8.04)
     h.presentFrame(hero, 0.05)
     await h.flush()
 
@@ -775,16 +776,56 @@ describe('когда видео не оживает', () => {
     expect(card.video.getAttribute('src')).toBe('/media/d.mp4')
   })
 
-  it('hero, который так и не определился, не держит страницу дольше страховки', async () => {
+  it('afterHero: hero показан, но ещё докачивается: плитки ждут конца загрузки', async () => {
+    const h = createHarness()
+    const hero = h.addSurface({ hero: true })
+    const card = h.addSurface({ afterHero: true })
+    await h.flush()
+    h.nearIO().trigger(card.el, 1)
+    h.viewIO().trigger(card.el, 1)
+    await h.reachSafe(hero)
+    h.presentFrame(hero, 0.05)
+    await h.advance(1000)
+
+    expect(h.state(hero)).toBe('visible')
+    expect(h.api.settled).toBe(false)
+    expect(card.video.getAttribute('src')).toBeNull()
+
+    h.buffer(hero, 8.04)
+    await h.advance(500)
+
+    expect(h.api.settled).toBe(true)
+    expect(card.video.getAttribute('src')).toBe('/media/d.mp4')
+  })
+
+  it('afterHero: докачка затянулась, плитки ждут не дольше 5 с после показа', async () => {
+    const h = createHarness()
+    const hero = h.addSurface({ hero: true })
+    const card = h.addSurface({ afterHero: true })
+    await h.flush()
+    h.nearIO().trigger(card.el, 1)
+    h.viewIO().trigger(card.el, 1)
+    await h.reachSafe(hero)
+    h.presentFrame(hero, 0.05)
+    await h.advance(4000)
+    expect(h.api.settled).toBe(false)
+
+    await h.advance(1500)
+
+    expect(h.api.settled).toBe(true)
+    expect(card.video.getAttribute('src')).toBe('/media/d.mp4')
+  })
+
+  it('hero, который завис, отпускает страницу по таймауту загрузки (12 с), а не держит вечно', async () => {
     const h = createHarness()
     h.addSurface({ hero: true })
     const card = h.addSurface({ afterHero: true })
     await h.flush()
     h.nearIO().trigger(card.el, 1)
     h.viewIO().trigger(card.el, 1)
-    await h.advance(6100)
+    await h.advance(13100)
 
-    expect(h.types('hero-settle-failsafe')).toHaveLength(1)
+    expect(h.types('hero-settled')).toHaveLength(1)
     expect(h.api.settled).toBe(true)
     expect(card.video.getAttribute('src')).toBe('/media/d.mp4')
   })

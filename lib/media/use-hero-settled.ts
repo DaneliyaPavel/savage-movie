@@ -11,7 +11,7 @@
  */
 import { useSyncExternalStore } from 'react'
 
-const FAILSAFE_MS = 7000
+const FAILSAFE_MS = 14000
 
 let failsafeElapsed = false
 

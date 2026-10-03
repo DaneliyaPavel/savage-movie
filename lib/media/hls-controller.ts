@@ -119,10 +119,11 @@ export function buildHlsConfig(useCase: HlsUseCase, progressive: boolean): Parti
   return {
     enableWorker: true,
     lowLatencyMode: false,
-    // Фон не копит запас: достаточно, чтобы сцена не спотыкалась
-    maxBufferLength: background ? 12 : 30,
-    maxMaxBufferLength: background ? 20 : 60,
-    maxBufferSize: background ? 24 * 1000 * 1000 : 60 * 1000 * 1000,
+    // Фон не копит запас: 6 с хватает, чтобы сцена не спотыкалась. В лаборатории
+    // (replica, Chrome 154) вдвое короче буфер даёт те же сроки до движения и на треть меньше байт
+    maxBufferLength: background ? 6 : 30,
+    maxMaxBufferLength: background ? 10 : 60,
+    maxBufferSize: background ? 12 * 1000 * 1000 : 60 * 1000 * 1000,
     maxBufferHole: 0.5,
     backBufferLength: background ? 8 : 30,
     // Без пробного сегмента для измерения скорости: он сам по себе тратит канал
@@ -162,9 +163,17 @@ export function buildHlsConfig(useCase: HlsUseCase, progressive: boolean): Parti
 
 /**
  * Какой уровень нужен контейнеру: ближайший сверху к физической высоте блока
- * (CSS-пиксели × DPR, но не больше 2×), в пределах 360–1080. Отдельная чистая
+ * (CSS-пиксели × DPR, но не больше 2×), в пределах 360–720. Отдельная чистая
  * функция, чтобы её можно было проверить без hls.js.
+ *
+ * Потолок 720, а не 1080: HLS остаётся запасным путём там, где нет короткого MP4
+ * (полный фильм играет режим player). В лаборатории на блоке 1920×1080 закреплённые
+ * 720p дают первое движение на 1,0 / 1,9 / 3,4 с (20 / 8 / 4 Мбит/с) против
+ * 1,6 / 3,1 / 5,8 с у 1080p и вдвое меньше байт, а кадр с первого до последнего
+ * остаётся одного качества, без «мыла» на старте.
  */
+const BACKGROUND_MAX_HEIGHT = 720
+
 export function pickLevelIndex(
   heights: number[],
   container: { width: number; height: number },
@@ -173,7 +182,7 @@ export function pickLevelIndex(
   if (!heights.length) return -1
   const scale = Math.min(Math.max(dpr, 1), 2)
   const need = Math.min(
-    1080,
+    BACKGROUND_MAX_HEIGHT,
     Math.max(360, Math.max(container.height, (container.width * 9) / 16) * scale)
   )
   let best = -1
