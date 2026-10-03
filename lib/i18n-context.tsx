@@ -34,6 +34,7 @@ const translations: Record<Language, Record<string, string>> = {
     'home.scroll': 'Скролл',
     'home.heroSubtitle': 'Продакшн-студия полного цикла в Санкт-Петербурге с проектами по всей России.\nРекламные ролики · Музыкальные клипы · Имиджевое видео · AI-генерация · Обучение',
     'home.heroTagline': 'Видим смысл',
+    'home.watchShowreel': 'Смотреть шоурил',
     'home.noFeaturedProjects': 'Нет избранных проектов для отображения в карусели',
 
     // Projects
@@ -190,6 +191,7 @@ const translations: Record<Language, Record<string, string>> = {
     'home.scroll': 'Scroll',
     'home.heroSubtitle': 'Full-cycle production studio in Saint Petersburg with projects across Russia.\nCommercials · Music Videos · Image Videos · AI Generation · Education',
     'home.heroTagline': 'We see the meaning',
+    'home.watchShowreel': 'Watch showreel',
     'home.noFeaturedProjects': 'No featured projects to display in carousel',
 
     // Projects

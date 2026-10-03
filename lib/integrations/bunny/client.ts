@@ -1,9 +1,10 @@
 /**
  * Утилиты для работы с Bunny Stream CDN
  */
-import { publicEnv } from '@/lib/env'
+import { STREAM_MEDIA_BASE_URL } from '@/lib/media/config'
 
-const CDN_HOSTNAME = publicEnv.NEXT_PUBLIC_BUNNY_CDN_HOSTNAME
+// База HLS и превью Bunny: хост из NEXT_PUBLIC_BUNNY_CDN_HOSTNAME или явный override (lib/media/config.ts)
+const CDN_BASE = STREAM_MEDIA_BASE_URL
 
 /**
  * Нормализует любой идентификатор видео к чистому UUID.
@@ -30,11 +31,11 @@ export function normalizeVideoId(idOrUrl: string): string {
  * HLS stream URL для видео
  */
 export function getStreamUrl(videoId: string): string {
-  if (!CDN_HOSTNAME) {
+  if (!CDN_BASE) {
     console.warn('[Bunny] NEXT_PUBLIC_BUNNY_CDN_HOSTNAME is not set')
     return ''
   }
-  return `https://${CDN_HOSTNAME}/${normalizeVideoId(videoId)}/playlist.m3u8`
+  return `${CDN_BASE}/${normalizeVideoId(videoId)}/playlist.m3u8`
 }
 
 /**
@@ -44,19 +45,19 @@ export function getThumbnailUrl(
   videoId: string,
   opts?: { width?: number, height?: number }
 ): string {
-  if (!CDN_HOSTNAME) return ''
+  if (!CDN_BASE) return ''
   const id = normalizeVideoId(videoId)
   const params = new URLSearchParams()
   if (opts?.width) params.set('width', String(opts.width))
   if (opts?.height) params.set('height', String(opts.height))
   const qs = params.toString()
-  return `https://${CDN_HOSTNAME}/${id}/thumbnail.jpg${qs ? `?${qs}` : ''}`
+  return `${CDN_BASE}/${id}/thumbnail.jpg${qs ? `?${qs}` : ''}`
 }
 
 /**
  * URL анимированного превью (animated gif/webp)
  */
 export function getAnimatedThumbnailUrl(videoId: string): string {
-  if (!CDN_HOSTNAME) return ''
-  return `https://${CDN_HOSTNAME}/${normalizeVideoId(videoId)}/preview.webp`
+  if (!CDN_BASE) return ''
+  return `${CDN_BASE}/${normalizeVideoId(videoId)}/preview.webp`
 }
