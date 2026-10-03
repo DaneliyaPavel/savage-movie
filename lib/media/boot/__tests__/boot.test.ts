@@ -81,6 +81,7 @@ interface SurfaceOptions {
   holdUntil?: string
   buffer?: number
   load?: 'eager' | 'near'
+  active?: 'off'
 }
 
 function createHarness(
@@ -217,6 +218,7 @@ function createHarness(
     if (o.afterHero) el.setAttribute('data-sm-after', 'hero')
     if (o.holdUntil) el.setAttribute('data-sm-hold-until', o.holdUntil)
     if (o.buffer) el.setAttribute('data-sm-buffer', String(o.buffer))
+    if (o.active) el.setAttribute('data-sm-active', o.active)
     const img = doc.createElement('img')
     const video = doc.createElement('video')
     el.append(img, video)
@@ -903,5 +905,296 @@ describe('жизненный цикл', () => {
     await h.flush()
     expect(seen).toContain('request')
     expect(h.api.events.length).toBeGreaterThan(0)
+  })
+})
+
+/* ───────────────────────── граничные случаи после независимого ревью ───────────────────────── */
+
+describe('системная пауза и остановки без сбоя', () => {
+  async function visibleHero(h: Harness) {
+    const s = h.addSurface({ hero: true })
+    await h.reachSafe(s)
+    h.presentFrame(s, 0.05)
+    await h.flush()
+    expect(h.state(s)).toBe('visible')
+    return s
+  }
+
+  it('ОС поставила видимое видео на паузу: оно продолжается, а не замерзает кадром', async () => {
+    const h = createHarness()
+    const s = await visibleHero(h)
+    const plays = s.v.playCalls
+
+    s.v.paused = true
+    h.fire(s.video, 'pause')
+    await h.flush()
+
+    expect(h.types('external-pause')).toHaveLength(1)
+    expect(s.v.playCalls).toBe(plays + 1)
+    expect(h.state(s)).toBe('visible')
+  })
+
+  it('продолжить не удалось: возврат на постер, а не замерзший кадр', async () => {
+    const h = createHarness()
+    const s = await visibleHero(h)
+
+    s.v.paused = true
+    s.v.playError = 'NotAllowedError'
+    h.fire(s.video, 'pause')
+    await h.flush()
+
+    expect(h.types('degrade')[0]).toMatchObject({ reason: 'resume-NotAllowedError' })
+    expect(h.state(s)).not.toBe('visible')
+  })
+
+  it('наша пауза при выходе из кадра не принимается за системную', async () => {
+    const h = createHarness()
+    const s = await visibleHero(h)
+    const plays = s.v.playCalls
+
+    h.viewIO().trigger(s.el, 0)
+    h.fire(s.video, 'pause')
+    await h.flush()
+
+    expect(h.types('external-pause')).toHaveLength(0)
+    expect(s.v.playCalls).toBe(plays)
+  })
+
+  it('пауза снова и снова: после трёх возвратов поверхность уходит на постер', async () => {
+    const h = createHarness()
+    const s = await visibleHero(h)
+
+    for (let i = 0; i < 4; i++) {
+      s.v.paused = true
+      h.fire(s.video, 'pause')
+      await h.flush()
+    }
+    expect(h.types('external-pause')).toHaveLength(4)
+    expect(h.types('degrade')[0]).toMatchObject({ reason: 'paused' })
+  })
+
+  it('кадр не пришёл, потому что блок вышел из кадра: попытка не сгорает', async () => {
+    const h = createHarness()
+    const s = h.addSurface({ hero: true })
+    await h.reachSafe(s)
+
+    h.viewIO().trigger(s.el, 0)
+    await h.advance(2500)
+
+    expect(h.types('frame-timeout')).toHaveLength(0)
+    expect(h.types('degrade')).toHaveLength(0)
+  })
+})
+
+describe('источник: нет сигнала и нет лишних перезагрузок', () => {
+  it('первый кадр так и не пришёл за 12 с: постер, сеть освобождена, сообщение отправлено', async () => {
+    const h = createHarness()
+    const s = h.addSurface({ hero: true })
+    await h.flush()
+    await h.advance(12100)
+
+    expect(h.state(s)).toBe('failed')
+    expect(h.types('load-timeout')).toHaveLength(1)
+    expect(h.report('failed')).toBeDefined()
+    expect(s.video.getAttribute('src')).toBeNull()
+  })
+
+  it('данные пришли вовремя: таймаут загрузки ничего не ломает', async () => {
+    const h = createHarness()
+    const s = h.addSurface({ hero: true })
+    await h.reachSafe(s)
+    h.presentFrame(s, 0.05)
+    await h.flush()
+    await h.advance(13000)
+
+    expect(h.types('load-timeout')).toHaveLength(0)
+    expect(h.state(s)).toBe('visible')
+  })
+
+  it('один и тот же MP4 для обоих экранов не перезагружается при смене ширины', async () => {
+    const h = createHarness()
+    const s = h.addSurface({ hero: true, srcD: '/media/same.mp4', srcM: '/media/same.mp4' })
+    await h.flush()
+    const loads = s.v.loadCalls
+
+    h.setMedia('(max-width: 767px)', true)
+    await h.advance(300)
+    await h.flush()
+
+    expect(h.types('source-swap')).toHaveLength(0)
+    expect(s.v.loadCalls).toBe(loads)
+    expect(s.video.getAttribute('src')).toBe('/media/same.mp4')
+    expect(h.state(s)).toBe('loading')
+  })
+
+  it('поток не перезагружается при смене ширины', async () => {
+    const h = createHarness()
+    const s = h.addSurface({ hero: true, stream: 'abc', srcD: '' })
+    await h.flush()
+
+    h.setMedia('(max-width: 767px)', true)
+    await h.advance(300)
+    await h.flush()
+
+    expect(h.types('source-swap')).toHaveLength(0)
+    expect(s.el.getAttribute('data-sm-want')).toBe('1')
+  })
+})
+
+describe('нативный HLS: прогрев', () => {
+  it('Safari/iOS (драйвер пометил data-sm-native=1): сеть простаивает, запускается скрытое воспроизведение', async () => {
+    const h = createHarness()
+    const s = h.addSurface({ hero: true, stream: 'abc', srcD: '' })
+    s.el.setAttribute('data-sm-native', '1')
+    await h.flush()
+    s.v.readyState = 1
+    s.v.networkState = 1
+    await h.advance(800)
+
+    expect(h.types('kickstart')).toHaveLength(1)
+    expect(s.v.playCalls).toBe(1)
+  })
+
+  it('hls.js (data-sm-native=0): прогрев не нужен, play() не вызывается', async () => {
+    const h = createHarness()
+    const s = h.addSurface({ hero: true, stream: 'abc', srcD: '' })
+    s.el.setAttribute('data-sm-native', '0')
+    await h.flush()
+    s.v.readyState = 1
+    s.v.networkState = 1
+    await h.advance(3000)
+
+    expect(h.types('kickstart')).toHaveLength(0)
+    expect(s.v.playCalls).toBe(0)
+  })
+
+  it('драйвер подключился позже загрузчика: пометка подхватывается при повторной проверке', async () => {
+    const h = createHarness()
+    const s = h.addSurface({ hero: true, stream: 'abc', srcD: '' })
+    await h.flush()
+    s.v.readyState = 1
+    s.v.networkState = 1
+    await h.advance(800)
+    expect(h.types('kickstart')).toHaveLength(0)
+
+    s.el.setAttribute('data-sm-native', '1')
+    await h.advance(600)
+    expect(h.types('kickstart')).toHaveLength(1)
+  })
+})
+
+describe('стопка карточек: data-sm-active', () => {
+  it('закрытая карточка не занимает слот, открытая получает его', async () => {
+    const h = createHarness()
+    const cards = [h.addSurface({ active: 'off' }), h.addSurface({ active: 'off' }), h.addSurface()]
+    await h.flush()
+    cards.forEach(card => {
+      h.nearIO().trigger(card.el, 1)
+      h.viewIO().trigger(card.el, 1)
+    })
+    await h.flush()
+
+    expect(cards[0]!.video.getAttribute('src')).toBeNull()
+    expect(cards[1]!.video.getAttribute('src')).toBeNull()
+    expect(cards[2]!.video.getAttribute('src')).toBe('/media/d.mp4')
+  })
+
+  it('карточку закрыли на лету: она выгружается, а следующая оживает', async () => {
+    const h = createHarness()
+    const first = h.addSurface()
+    const second = h.addSurface({ active: 'off' })
+    await h.flush()
+    ;[first, second].forEach(card => {
+      h.nearIO().trigger(card.el, 1)
+      h.viewIO().trigger(card.el, 1)
+    })
+    await h.flush()
+    expect(first.video.getAttribute('src')).not.toBeNull()
+    expect(second.video.getAttribute('src')).toBeNull()
+
+    first.el.setAttribute('data-sm-active', 'off')
+    second.el.removeAttribute('data-sm-active')
+    await h.flush()
+    await h.advance(3100)
+
+    expect(first.video.getAttribute('src')).toBeNull()
+    expect(second.video.getAttribute('src')).toBe('/media/d.mp4')
+  })
+
+  it('закрытый hero выгружается и не держит страницу в ожидании', async () => {
+    const h = createHarness()
+    const hero = h.addSurface({ hero: true, active: 'off' })
+    await h.flush()
+
+    expect(hero.video.getAttribute('src')).toBeNull()
+    expect(h.api.settled).toBe(true)
+  })
+})
+
+describe('постер: запасные адреса', () => {
+  it('ошибка загрузки переключает постер на следующий адрес списка', async () => {
+    const h = createHarness()
+    const img = h.doc.createElement('img')
+    img.setAttribute('src', '/a.jpg')
+    img.setAttribute('srcset', '/a.jpg 1x')
+    img.setAttribute('data-sm-alt', '/b.jpg|/c.jpg')
+    h.doc.body.append(img)
+
+    img.dispatchEvent(new Event('error'))
+    expect(img.getAttribute('src')).toBe('/b.jpg')
+    expect(img.hasAttribute('srcset')).toBe(false)
+
+    img.dispatchEvent(new Event('error'))
+    expect(img.getAttribute('src')).toBe('/c.jpg')
+
+    img.dispatchEvent(new Event('error'))
+    expect(img.getAttribute('src')).toBe('/c.jpg')
+  })
+
+  it('картинки без data-sm-alt не трогаются', () => {
+    const h = createHarness()
+    const img = h.doc.createElement('img')
+    img.setAttribute('src', '/a.jpg')
+    h.doc.body.append(img)
+
+    img.dispatchEvent(new Event('error'))
+    expect(img.getAttribute('src')).toBe('/a.jpg')
+  })
+})
+
+describe('TTFM', () => {
+  it('у карточки он считается от запроса видео, а не от начала навигации', async () => {
+    const h = createHarness()
+    const card = h.addSurface()
+    await h.flush()
+    await h.advance(40000)
+    h.nearIO().trigger(card.el, 1)
+    h.viewIO().trigger(card.el, 1)
+    await h.flush()
+    await h.advance(300)
+    h.buffer(card, 3.2)
+    h.fire(card.video, 'canplaythrough')
+    await h.flush()
+    h.presentFrame(card, 0.05)
+    await h.flush()
+
+    const rep = h.report('visible')!
+    expect(rep.hero).toBe(false)
+    expect(rep.ttfm as number).toBeLessThan(3000)
+  })
+
+  it('у hero он считается от начала навигации', async () => {
+    const h = createHarness()
+    const s = h.addSurface({ hero: true })
+    await h.advance(900)
+    h.buffer(s, 3.2)
+    h.fire(s.video, 'canplaythrough')
+    await h.flush()
+    h.presentFrame(s, 0.05)
+    await h.flush()
+
+    const rep = h.report('visible')!
+    expect(rep.hero).toBe(true)
+    expect(rep.ttfm as number).toBeGreaterThanOrEqual(900)
   })
 })

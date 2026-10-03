@@ -45,13 +45,27 @@ describe('манифест веб-медиа', () => {
       set.jpeg,
     ])
 
-    it.each([...files, ...posters].map(entry => [entry.file, entry] as const))(
+    // Превью проектов выкладываются на VDS в /var/www/savage-media, а не в git
+    // (docs/media-pipeline.md, дорожка 2): их файлов в public/media нет. Для них
+    // проверяется только форма записи, а наличие файлов гарантирует
+    // merge-manifest.mjs --check-files на этапе выкладки
+    const external = asset.profile === 'project'
+
+    it.skipIf(external).each([...files, ...posters].map(entry => [entry.file, entry] as const))(
       'файл %s есть на диске, размер и хеш в имени совпадают',
       (file, entry) => {
         const full = path.join(PUBLIC_MEDIA, file)
         expect(existsSync(full), `нет ${file} в public/media`).toBe(true)
         expect(statSync(full).size).toBe(entry.bytes)
         expect(file).toMatch(new RegExp(`\\.${sha8(full)}\\.[a-z0-9]+$`))
+      }
+    )
+
+    it.each([...files, ...posters].map(entry => [entry.file, entry] as const))(
+      'имя файла %s содержит хеш и расширение, размер положительный',
+      (file, entry) => {
+        expect(file).toMatch(/\.[0-9a-f]{8}\.[a-z0-9]+$/)
+        expect(entry.bytes).toBeGreaterThan(0)
       }
     )
 

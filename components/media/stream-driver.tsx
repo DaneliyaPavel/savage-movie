@@ -52,8 +52,13 @@ export function StreamDriver({ videoId }: StreamDriverProps) {
         },
       })
         .then(created => {
-          if (mine !== token) created.destroy()
-          else controller = created
+          if (mine !== token) {
+            created.destroy()
+            return
+          }
+          controller = created
+          // нативный HLS (Safari/iOS) игнорирует preload: загрузчику нужен прогрев
+          root.setAttribute('data-sm-native', created.strategy === 'native' ? '1' : '0')
         })
         .catch(() => video.dispatchEvent(new Event('error')))
     }

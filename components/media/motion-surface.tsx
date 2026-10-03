@@ -30,6 +30,13 @@ export interface MotionSurfaceProps {
   spec?: MediaSurfaceSpec | null
   /** Постер, когда записи в манифесте нет (кадр из CMS или Bunny) */
   fallbackPoster?: string | null
+  /**
+   * Запасные адреса постера: если основной не загрузился (автопостер Bunny ещё не
+   * сгенерирован и отвечает 404), загрузчик из <head> берёт следующий
+   */
+  fallbackPosterAlt?: string[]
+  /** false: блок сейчас закрыт другим (стопка карточек), не грузить и не играть */
+  active?: boolean
   /** Bunny id для HLS, когда у записи нет MP4 */
   streamId?: string | null
   /** Готовый MP4 (если нет записи в манифесте): прямой URL, один вариант на все экраны */
@@ -63,6 +70,8 @@ export function MotionSurface({
   name,
   spec = null,
   fallbackPoster = null,
+  fallbackPosterAlt,
+  active = true,
   streamId = null,
   mp4 = null,
   fallbackSizes = '100vw',
@@ -94,6 +103,7 @@ export function MotionSurface({
     ...(fit === 'contain' ? { '--sm-fit': 'contain' } : {}),
   } as CSSProperties
 
+  const altAttr = fallbackPosterAlt?.length ? fallbackPosterAlt.join('|') : undefined
   const poster = spec ? (
     <PosterPicture spec={spec} priority={hero} />
   ) : fallbackPoster ? (
@@ -106,6 +116,7 @@ export function MotionSurface({
         sizes={fallbackSizes}
         priority={hero}
         draggable={false}
+        data-sm-alt={altAttr}
       />
     ) : (
       // eslint-disable-next-line @next/next/no-img-element
@@ -117,6 +128,7 @@ export function MotionSurface({
         loading={hero ? 'eager' : 'lazy'}
         fetchPriority={hero ? 'high' : 'auto'}
         draggable={false}
+        data-sm-alt={altAttr}
       />
     )
   ) : null
@@ -135,6 +147,7 @@ export function MotionSurface({
       style={style}
       data-sm=""
       data-sm-name={name}
+      data-sm-active={active ? undefined : 'off'}
       data-sm-state="poster"
       data-sm-want="0"
       data-sm-src-d={mp4D}
@@ -150,6 +163,7 @@ export function MotionSurface({
       data-sm-after={afterHero ? 'hero' : undefined}
       data-sm-hold-until={holdUntil}
       data-sm-loop={loop ? undefined : 'off'}
+      suppressHydrationWarning
     >
       {poster}
       <video

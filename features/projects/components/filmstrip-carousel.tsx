@@ -260,6 +260,7 @@ const FilmstripItem = memo(function FilmstripItem({
             fallbackPoster={thumbSrc}
             fallbackSizes="180px"
             play="hover"
+            hoverScope=".group"
             afterHero
             className="absolute inset-0"
           />
@@ -270,6 +271,7 @@ const FilmstripItem = memo(function FilmstripItem({
             fallbackPoster={thumbSrc}
             fallbackSizes="180px"
             play="hover"
+            hoverScope=".group"
             afterHero
             className="absolute inset-0"
           />

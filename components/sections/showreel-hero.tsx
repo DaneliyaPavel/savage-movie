@@ -90,6 +90,9 @@ export function ShowreelHero({
 }: ShowreelHeroProps) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [showreelOpen, setShowreelOpen] = useState(false)
+  // Плеер монтируется при первом открытии: его эффекты трогают body.overflow и
+  // слушают клавиатуру, на главной до клика им делать нечего
+  const [showreelMounted, setShowreelMounted] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   /*
    * Два отдельных сигнала, а не один: заставка снимается в конце ухода, а
@@ -287,7 +290,10 @@ export function ShowreelHero({
               <div data-hero-entry="" style={{ ['--reveal-delay' as string]: HERO_STEP_ACTION }}>
                 <button
                   type="button"
-                  onClick={() => setShowreelOpen(true)}
+                  onClick={() => {
+                    setShowreelMounted(true)
+                    setShowreelOpen(true)
+                  }}
                   className="pointer-events-auto mt-3 inline-flex items-center gap-2.5 font-mono text-[0.65rem] md:text-xs uppercase tracking-[0.28em] text-white/70 transition-colors duration-[var(--motion-state)] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ff2936]"
                 >
                   <span
@@ -341,12 +347,14 @@ export function ShowreelHero({
         )}
       </section>
 
-      <FullScreenVideoPlayer
-        isOpen={showreelOpen}
-        onClose={() => setShowreelOpen(false)}
-        playbackId={showreelPlaybackId}
-        title="Savage Movie — showreel"
-      />
+      {showreelMounted ? (
+        <FullScreenVideoPlayer
+          isOpen={showreelOpen}
+          onClose={() => setShowreelOpen(false)}
+          playbackId={showreelPlaybackId}
+          title="Savage Movie — showreel"
+        />
+      ) : null}
     </>
   )
 }

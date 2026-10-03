@@ -14,7 +14,7 @@ MP4**, поэтому когда видео начинает играть, он�
 
 Видео проявляется не раньше, чем выполнены три условия: источник декодировал
 первый кадр, в буфере есть запас (1,5–3 с, по умолчанию 2), а браузер подтвердил
-через `requestVideoFrameCallback`, что показан кадр *после* нулевого, то есть
+через `requestVideoFrameCallback`, что показан кадр _после_ нулевого, то есть
 картинка действительно движется. Только тогда включается CSS-переход прозрачности
 на 600 мс (`--motion-media`, кривая `--ease-out-expo`). Любая ошибка оставляет постер.
 
@@ -32,19 +32,19 @@ FAILED  ошибка источника, автозапуск отклонён �
 
 ## Файлы
 
-| Что | Где |
-| --- | --- |
-| Сборка MP4 и постеров | `scripts/media/build-web-video.mjs` (`npm run media:build`) |
-| Манифест | `lib/media/manifest.json` (пишет скрипт, руками не править) |
-| Файлы hero | `public/media/*` (имя содержит хеш содержимого) |
-| Загрузчик в `<head>` | `lib/media/boot/boot.ts` → `boot.generated.ts` (`npm run media:boot`) |
-| Серверный компонент поверхности | `components/media/motion-surface.tsx` |
-| Постер (`<picture>`) | `components/media/poster-picture.tsx` |
-| HLS-драйвер для случаев без MP4 | `components/media/stream-driver.tsx` |
-| Единая фабрика hls.js | `lib/media/hls-controller.ts`, хук `components/media/use-hls-source.ts` |
-| Откуда берутся файлы | `lib/media/config.ts` (`WEB_MEDIA_BASE_URL`, `STREAM_MEDIA_BASE_URL`) |
-| Телеметрия | `components/media/media-rum.tsx`, `lib/media/telemetry.ts` |
-| Раздача | `infra/nginx/conf.d/default.conf` (`location ^~ /media/`), `next.config.ts` |
+| Что                             | Где                                                                         |
+| ------------------------------- | --------------------------------------------------------------------------- |
+| Сборка MP4 и постеров           | `scripts/media/build-web-video.mjs` (`npm run media:build`)                 |
+| Манифест                        | `lib/media/manifest.json` (пишет скрипт, руками не править)                 |
+| Файлы hero                      | `public/media/*` (имя содержит хеш содержимого)                             |
+| Загрузчик в `<head>`            | `lib/media/boot/boot.ts` → `boot.generated.ts` (`npm run media:boot`)       |
+| Серверный компонент поверхности | `components/media/motion-surface.tsx`                                       |
+| Постер (`<picture>`)            | `components/media/poster-picture.tsx`                                       |
+| HLS-драйвер для случаев без MP4 | `components/media/stream-driver.tsx`                                        |
+| Единая фабрика hls.js           | `lib/media/hls-controller.ts`, хук `components/media/use-hls-source.ts`     |
+| Откуда берутся файлы            | `lib/media/config.ts` (`WEB_MEDIA_BASE_URL`, `STREAM_MEDIA_BASE_URL`)       |
+| Телеметрия                      | `components/media/media-rum.tsx`, `lib/media/telemetry.ts`                  |
+| Раздача                         | `infra/nginx/conf.d/default.conf` (`location ^~ /media/`), `next.config.ts` |
 
 ## Сборка файлов (вне VDS)
 
@@ -95,10 +95,12 @@ node scripts/media/build-web-video.mjs --master master.mp4 --end 8.04 --candidat
 
 - `^~` обязателен: иначе regex статики (`.webp`, `.jpg`) перехватит постеры и отдаст
   их с 30-дневным кешем;
-- `Cache-Control: public, max-age=31536000, immutable` с `always`: заголовок есть и у
-  206, и у 304;
+- `Cache-Control: public, max-age=31536000, immutable` **без** `always`: nginx и так ставит
+  заголовок на 200/206/304, а `always` закрепил бы на год ещё и 403/404/5xx (например,
+  если манифест выложили раньше файлов);
 - `Range` обрабатывается статикой nginx. Safari не проигрывает MP4 без 206;
-- `proxy_hide_header Cache-Control` в `@media_frontend`: заголовок один и наш.
+- в `@media_frontend` заголовок кеша не подменяется: успешный ответ фронтенда несёт
+  `immutable` из `next.config.ts`, а его 404 остаётся `no-store`.
 
 Правила nginx стережёт `infra/nginx/__tests__/media-routing.test.ts`.
 
@@ -106,11 +108,11 @@ node scripts/media/build-web-video.mjs --master master.mp4 --end 8.04 --candidat
 
 `lib/media/config.ts` держит две независимые базы, чтобы их можно было переносить по отдельности:
 
-| Переменная | По умолчанию | Для чего |
-| --- | --- | --- |
-| `NEXT_PUBLIC_WEB_MEDIA_BASE_URL` | `/media` (тот же origin) | постеры и короткие MP4 |
-| `NEXT_PUBLIC_STREAM_MEDIA_BASE_URL` | `https://<NEXT_PUBLIC_BUNNY_CDN_HOSTNAME>` (прокси `/cdn`) | HLS и превью Bunny |
-| `NEXT_PUBLIC_HLS_PROGRESSIVE` | выключено | флаг hls.js `progressive` |
+| Переменная                          | По умолчанию                                               | Для чего                  |
+| ----------------------------------- | ---------------------------------------------------------- | ------------------------- |
+| `NEXT_PUBLIC_WEB_MEDIA_BASE_URL`    | `/media` (тот же origin)                                   | постеры и короткие MP4    |
+| `NEXT_PUBLIC_STREAM_MEDIA_BASE_URL` | `https://<NEXT_PUBLIC_BUNNY_CDN_HOSTNAME>` (прокси `/cdn`) | HLS и превью Bunny        |
+| `NEXT_PUBLIC_HLS_PROGRESSIVE`       | выключено                                                  | флаг hls.js `progressive` |
 
 Те же файлы можно выложить на отдельный домен или российский CDN: достаточно сменить
 `WEB_MEDIA_BASE_URL` и пересобрать. Прокси `/cdn` перед Bunny остаётся как есть.
@@ -119,19 +121,26 @@ node scripts/media/build-web-video.mjs --master master.mp4 --end 8.04 --candidat
 
 Корень поверхности рендерит `MotionSurface`; загрузчик читает атрибуты:
 
-| Атрибут | Смысл |
-| --- | --- |
-| `data-sm-src-d` / `-m` | URL MP4 для десктопа и мобайла: скачивается только нужный |
-| `data-sm-mq` | медиазапрос мобильного варианта (`(max-width: 767px)`) |
-| `data-sm-stream` | id Bunny, если MP4 нет: HLS подключает `StreamDriver` |
-| `data-sm-load` | `eager` (hero) или `near` (карточки) |
-| `data-sm-play` | `auto`, `hover` (мышь: наведение; тач: видимость), `hover-only` (на таче движения нет) |
-| `data-sm-only` | медиазапрос: блок оживает, только пока он выполняется |
-| `data-sm-hover-scope` | селектор предка, над которым ловится hover (карточка целиком) |
-| `data-sm-buffer` | запас буфера, 1,5–3 с |
-| `data-sm-hero` | hero: грузится сразу, не входит в лимит превью |
-| `data-sm-after="hero"` | не начинать, пока hero не определился |
-| `data-sm-hold-until` | селектор: не показывать, пока такой элемент в DOM (заставка), но не дольше 1,1 с |
+| Атрибут                    | Смысл                                                                                  |
+| -------------------------- | -------------------------------------------------------------------------------------- |
+| `data-sm-src-d` / `-m`     | URL MP4 для десктопа и мобайла: скачивается только нужный                              |
+| `data-sm-mq`               | медиазапрос мобильного варианта (`(max-width: 767px)`)                                 |
+| `data-sm-stream`           | id Bunny, если MP4 нет: HLS подключает `StreamDriver`                                  |
+| `data-sm-load`             | `eager` (hero) или `near` (карточки)                                                   |
+| `data-sm-play`             | `auto`, `hover` (мышь: наведение; тач: видимость), `hover-only` (на таче движения нет) |
+| `data-sm-only`             | медиазапрос: блок оживает, только пока он выполняется                                  |
+| `data-sm-hover-scope`      | селектор предка, над которым ловится hover (карточка целиком)                          |
+| `data-sm-buffer`           | запас буфера, 1,5–3 с                                                                  |
+| `data-sm-hero`             | hero: грузится сразу, не входит в лимит превью                                         |
+| `data-sm-after="hero"`     | не начинать, пока hero не определился                                                  |
+| `data-sm-hold-until`       | селектор: не показывать, пока такой элемент в DOM (заставка), но не дольше 1,1 с       |
+| `data-sm-active`           | `off`: блок закрыт другим (стопка карточек), не грузить и не играть                    |
+| `data-sm-native`           | `1`: HLS идёт нативно (Safari/iOS); ставит драйвер, нужен для «прогрева» без `preload` |
+| `data-sm-alt` (на `<img>`) | `url\|url`: запасные постеры, если основной не загрузился (кадр Bunny ещё не создан)   |
+
+Нет первого кадра за 12 с (манифест HLS не ответил, сеть оборвалась без ошибки): поверхность
+остаётся постером и освобождает сеть. Системная пауза видимого видео (экономия заряда, звонок)
+сразу снимается; если играть не дают, поверхность возвращается на постер.
 
 Лимиты: одновременно не больше двух превью без hero; карточка вне экрана не получает
 `src`; намерение наведения подтверждается за 130 мс; выгрузка карточки без слота идёт с задержкой.
@@ -154,9 +163,21 @@ node scripts/media/build-web-video.mjs --master master.mp4 --end 8.04 --candidat
 
 ### `progressive`
 
-Флаг hls.js `progressive` включается переменной `NEXT_PUBLIC_HLS_PROGRESSIVE=true`
-и только после сравнения на реальном Chrome с H.264. В песочнице разработки H.264 в
-Chromium нет, поэтому флаг оставлен выключенным: включать его вслепую нельзя.
+Флаг hls.js `progressive` включается переменной `NEXT_PUBLIC_HLS_PROGRESSIVE=true`.
+Сравнение на реальном Chrome 154 с H.264 (локальная реплика продакшна: nginx, Next, кеш Bunny; 5 холодных
+запусков на ячейку, контейнер 1920×1080, шоурил по HLS, до первого движущегося кадра):
+
+| Сеть             | старый конфиг (ABR)                             | закреплённый уровень | + `progressive`                  |
+| ---------------- | ----------------------------------------------- | -------------------- | -------------------------------- |
+| 20 Мбит/с, 50 мс | 2014 мс (1080p)                                 | 1733 мс (1080p)      | 599 мс (1080p)                   |
+| 8 Мбит/с, 100 мс | 2769 мс (первый кадр 720p, 83 кадра ниже цели)  | 3590 мс (1080p)      | 1114 мс, но 74 кадра ниже цели   |
+| 4 Мбит/с, 200 мс | 3797 мс (первый кадр 480p, 57 кадров ниже цели) | больше 6 с           | 2055 мс, но `bufferStalledError` |
+
+`progressive` втрое ускоряет первый движущийся кадр, но на средней и слабой сети ABR
+сбрасывает уровень, а на слабой появляются остановки буфера. Hero и превью теперь MP4 и
+HLS не используют, поэтому флаг оставлен **выключенным**: он касается только запасного
+пути (нет записи в манифесте) и полного фильма. Обновление hls.js 1.6.15 → 1.7.3 на тех
+же замерах разницы не дало (в пределах шума), поэтому версия не менялась.
 
 ## Телеметрия
 

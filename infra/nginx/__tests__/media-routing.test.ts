@@ -40,16 +40,18 @@ describe('nginx: /media/', () => {
     expect(media).toMatch(/try_files\s+\$uri\s+@media_frontend;/)
   })
 
-  it('кеш вечный и с always: ответы 206 и 304 тоже получают заголовок', () => {
-    expect(media).toContain(`add_header Cache-Control "${IMMUTABLE}" always;`)
+  it('кеш вечный, но без always: ошибки 403/404/5xx не должны закрепляться на год', () => {
+    expect(media).toContain(`add_header Cache-Control "${IMMUTABLE}";`)
+    expect(media).not.toMatch(/Cache-Control[^\n]*always/)
   })
 
-  it('фолбэк проксирует на фронтенд, а не на бэкенд, и тоже ставит immutable', () => {
+  it('фолбэк проксирует на фронтенд, а не на бэкенд, и не подменяет его Cache-Control', () => {
     expect(fallback, 'пропал именованный location @media_frontend').not.toBe('')
     expect(fallback).toContain('proxy_pass http://frontend:3000;')
     expect(fallback).not.toContain('backend:8000')
-    expect(fallback).toContain('proxy_hide_header Cache-Control;')
-    expect(fallback).toContain(`add_header Cache-Control "${IMMUTABLE}" always;`)
+    // 404 фронтенда остаётся no-store, а успешный ответ несёт immutable из next.config.ts
+    expect(fallback).not.toContain('proxy_hide_header Cache-Control')
+    expect(fallback).not.toMatch(/add_header Cache-Control/)
   })
 
   it('локация стоит раньше regex статики и Next-статики', () => {

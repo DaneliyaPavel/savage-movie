@@ -27,7 +27,12 @@
  *   data-sm-after        "hero": не грузить, пока hero не определился
  *   data-sm-hold-until   селектор: не показывать видео, пока такой элемент в DOM
  *                        (заставка), но не дольше HOLD_CAP_MS от начала навигации
+ *   data-sm-active       "off": блок сейчас закрыт другим (стопка карточек): не грузить и не играть
+ *   data-sm-native       "1": HLS идёт нативно (Safari/iOS), ставит React-драйвер; нужен для прогрева
  *   data-sm-state        poster | loading | decoded | safe | visible | failed | off
+ *
+ * Постер с data-sm-alt="url|url" при ошибке загрузки переключается на следующий адрес списка
+ * (кадр Bunny мог быть ещё не сгенерирован): слушатель стоит на документе, до гидратации.
  *
  * Состояния: POSTER → LOADING → DECODED → SAFE → VISIBLE.
  *   LOADING  источник назначен, ждём первый кадр;
@@ -108,6 +113,9 @@ interface Surface {
   waitTimer: ReturnType<typeof setTimeout> | null
   frameTimer: ReturnType<typeof setTimeout> | null
   kickTimer: ReturnType<typeof setTimeout> | null
+  loadTimer: ReturnType<typeof setTimeout> | null
+  kickChecks: number
+  resumes: number
   frameToken: number
   starting: boolean
   awaitingFrame: boolean
@@ -138,6 +146,10 @@ const FRAME_TIMEOUT_MS = 1800
 const STALL_AFTER_REVEAL_MS = 700
 const HERO_SETTLE_FAILSAFE_MS = 6000
 const KICKSTART_AFTER_MS = 700
+/** Нет первого кадра за это время — постер остаётся, сеть освобождается */
+const LOAD_TIMEOUT_MS = 12000
+const MAX_EXTERNAL_RESUMES = 3
+const MAX_KICK_RECHECKS = 6
 const FAR_UNLOAD_MS = 3000
 const HOVER_INTENT_MS = 130
 const HOVER_HOLD_MS = 350
@@ -215,8 +227,11 @@ export function installMediaBoot(win: SmWindow): SmApi {
       kind,
       src: s.kind,
       cls: s.cls,
-      // ttfm: когда пользователь впервые увидел движущийся кадр видео
-      ttfm: t.visible,
+      // ttfm: когда пользователь впервые увидел движущийся кадр видео. У hero это
+      // время от начала навигации, у остальных — от запроса видео (карточку могли
+      // навести через минуту после загрузки страницы)
+      ttfm: t.visible === undefined ? undefined : s.hero ? t.visible : t.visible - (t.request ?? 0),
+      hero: s.hero,
       posterAt: t.posterReady,
       requestAt: t.request,
       decodedAt: t.decoded,
@@ -271,7 +286,8 @@ export function installMediaBoot(win: SmWindow): SmApi {
     if (s.waitTimer) clearTimeout(s.waitTimer)
     if (s.frameTimer) clearTimeout(s.frameTimer)
     if (s.kickTimer) clearTimeout(s.kickTimer)
-    s.tickTimer = s.waitTimer = s.frameTimer = s.kickTimer = null
+    if (s.loadTimer) clearTimeout(s.loadTimer)
+    s.tickTimer = s.waitTimer = s.frameTimer = s.kickTimer = s.loadTimer = null
     cancelFrame(s)
   }
 
@@ -279,6 +295,8 @@ export function installMediaBoot(win: SmWindow): SmApi {
     s.starting = false
     s.awaitingFrame = false
     s.kick = false
+    s.kickChecks = 0
+    s.resumes = 0
     s.restarts = 0
     s.canThrough = false
     s.samples = []
@@ -315,6 +333,14 @@ export function installMediaBoot(win: SmWindow): SmApi {
     emit('request', s, { src: src.kind, cls: s.cls })
     startTick(s)
     s.kickTimer = setTimeout(() => maybeKickstart(s), KICKSTART_AFTER_MS)
+    s.loadTimer = setTimeout(() => {
+      s.loadTimer = null
+      // источник так и не дал кадр (манифест не загрузился, сеть оборвалась без ошибки)
+      if (s.loaded && s.state === 'loading' && s.video.readyState < 2) {
+        emit('load-timeout', s)
+        fail(s, 'load-timeout')
+      }
+    }, LOAD_TIMEOUT_MS)
   }
 
   function startTick(s: Surface) {
@@ -362,6 +388,17 @@ export function installMediaBoot(win: SmWindow): SmApi {
     const prev = s.cls
     const mqlNow = s.mql && s.mql.matches ? 'm' : 'd'
     if (prev === mqlNow) return
+    // поток и один и тот же MP4 для обоих экранов не перезагружаем: поворот
+    // телефона или изменение окна не должны возвращать видео к постеру
+    const urlOf = (c: 'd' | 'm') => (c === 'm' ? s.srcM || s.srcD : s.srcD || s.srcM)
+    if (!s.srcD && !s.srcM) {
+      s.cls = mqlNow
+      return
+    }
+    if (urlOf(prev) === urlOf(mqlNow)) {
+      s.cls = mqlNow
+      return
+    }
     emit('source-swap', s, { from: prev, to: mqlNow })
     if (wasLoaded) {
       unload(s, 'resize')
@@ -467,7 +504,20 @@ export function installMediaBoot(win: SmWindow): SmApi {
      буфер не растёт и сеть простаивает (networkState IDLE). Тогда запускаем
      скрытое воспроизведение «для прогрева», а перед показом вернёмся в нулевой кадр. */
   function maybeKickstart(s: Surface) {
-    if (!s.loaded || s.kind !== 'mp4' || s.state !== 'loading') return
+    if (!s.loaded || s.state !== 'loading') return
+    if (s.kind === 'stream') {
+      // нативный HLS (Safari/iOS) тоже игнорирует preload; hls.js (MSE) в прогреве не нуждается.
+      // Драйвер подключается позже загрузчика: ждём его пометку несколько раз
+      const native = s.el.getAttribute('data-sm-native')
+      if (native === null && s.kickChecks < MAX_KICK_RECHECKS) {
+        s.kickChecks++
+        s.kickTimer = setTimeout(() => maybeKickstart(s), 500)
+        return
+      }
+      if (native !== '1') return
+    } else if (s.kind !== 'mp4') {
+      return
+    }
     const v = s.video
     if (v.readyState >= 2 || v.readyState < 1) return
     if (v.networkState !== 1) return
@@ -555,6 +605,9 @@ export function installMediaBoot(win: SmWindow): SmApi {
     s.frameTimer = setTimeout(() => {
       if (token !== s.frameToken) return
       s.awaitingFrame = false
+      // видео стоит, потому что блок вышел из кадра или вкладка скрыта: кадров нет по делу,
+      // это не сбой. Вернёмся к ожиданию, когда поверхность снова понадобится
+      if (s.video.paused && !wantsPlayback(s)) return
       emit('frame-timeout', s)
       degrade(s, 'frame-timeout')
     }, FRAME_TIMEOUT_MS)
@@ -705,6 +758,18 @@ export function installMediaBoot(win: SmWindow): SmApi {
       }
       if (s.state === 'safe' && !s.awaitingFrame) awaitFrame(s)
     })
+    on('pause', () => {
+      // системная пауза (экономия заряда, звонок, медиа-сессия ОС): без этого на экране
+      // остался бы замерзший кадр. Наши собственные паузы идут не из состояния visible
+      if (s.state !== 'visible' || v.ended || !wantsPlayback(s)) return
+      emit('external-pause', s)
+      if (s.resumes >= MAX_EXTERNAL_RESUMES) {
+        degrade(s, 'paused')
+        return
+      }
+      s.resumes++
+      resumeVisible(s)
+    })
     on('timeupdate', () => {
       // в режиме kickstart видео крутится скрыто: как только данных достаточно,
       // возвращаем его в нулевой кадр и идём по обычному пути
@@ -853,6 +918,8 @@ export function installMediaBoot(win: SmWindow): SmApi {
 
   /** Блок «только для десктопа» и подобные: решает медиазапрос, а не раскладка */
   function eligible(s: Surface): boolean {
+    // data-sm-active="off": карточку закрыла другая (стопка), играть ей нечего
+    if (s.el.getAttribute('data-sm-active') === 'off') return false
     return !s.only || s.only.matches
   }
 
@@ -988,6 +1055,9 @@ export function installMediaBoot(win: SmWindow): SmApi {
       waitTimer: null,
       frameTimer: null,
       kickTimer: null,
+      loadTimer: null,
+      kickChecks: 0,
+      resumes: 0,
       frameToken: 0,
       starting: false,
       awaitingFrame: false,
@@ -1051,7 +1121,10 @@ export function installMediaBoot(win: SmWindow): SmApi {
     }
     if (s.only && typeof s.only.addEventListener === 'function') {
       const only = s.only
-      const onOnly = () => reconcile()
+      const onOnly = () => {
+        reconcile()
+        settleHeroIfNeeded()
+      }
       only.addEventListener('change', onOnly)
       s.cleanup.push(() => only.removeEventListener('change', onOnly))
     }
@@ -1060,8 +1133,8 @@ export function installMediaBoot(win: SmWindow): SmApi {
       load(s)
     }
     reconcile()
-    // hero без других поверхностей: settled выставится при его показе
-    if (!heroPresent()) settleHeroIfNeeded()
+    // нет hero (или он не подходит этому экрану): ждать нечего. Иначе settled выставится при показе hero
+    settleHeroIfNeeded()
   }
 
   function detach(el: HTMLElement) {
@@ -1113,6 +1186,37 @@ export function installMediaBoot(win: SmWindow): SmApi {
     }
   })
   mo.observe(doc.documentElement, { childList: true, subtree: true })
+
+  // Стопка карточек: React переключает data-sm-active, загрузчик пересчитывает слоты
+  const activeMo = new win.MutationObserver(() => {
+    reconcile()
+    settleHeroIfNeeded()
+  })
+  activeMo.observe(doc.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-sm-active'],
+    subtree: true,
+  })
+
+  // Постер, который не загрузился (кадр Bunny ещё не сгенерирован), заменяется следующим
+  // адресом из data-sm-alt. Событие error не всплывает, поэтому слушаем в фазе перехвата
+  doc.addEventListener(
+    'error',
+    (e: Event) => {
+      const img = e.target as HTMLImageElement | null
+      if (!img || img.tagName !== 'IMG') return
+      const alt = img.getAttribute('data-sm-alt')
+      if (!alt) return
+      const list = alt.split('|').filter(Boolean)
+      const next = list.shift()
+      if (!next) return
+      img.setAttribute('data-sm-alt', list.join('|'))
+      img.removeAttribute('srcset')
+      img.removeAttribute('sizes')
+      img.src = next
+    },
+    true
+  )
 
   doc.addEventListener('visibilitychange', () => {
     registry.forEach(s => {

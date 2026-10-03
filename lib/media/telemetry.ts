@@ -18,6 +18,7 @@ export interface MediaReport {
   src?: 'mp4' | 'stream' | 'none'
   cls?: 'd' | 'm'
   ttfm?: number
+  hero?: boolean
   posterAt?: number
   requestAt?: number
   decodedAt?: number

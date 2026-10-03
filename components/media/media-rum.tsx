@@ -23,6 +23,26 @@ export function MediaRum() {
   useEffect(() => {
     const sent = new Set<string>()
     const names = new Set<string>()
+    // Отчёты, пришедшие раньше счётчика Метрики: ждём его и отправляем позже
+    const pending: Array<Record<string, unknown>> = []
+    let flushTimer: ReturnType<typeof setTimeout> | null = null
+    let flushTries = 0
+
+    const flush = () => {
+      flushTimer = null
+      if (typeof window.ym !== 'function') {
+        if (pending.length && flushTries++ < 10) flushTimer = setTimeout(flush, 1500)
+        return
+      }
+      while (pending.length) {
+        const params = pending.shift()!
+        try {
+          window.ym(METRIKA_ID, 'params', params)
+        } catch {
+          /* телеметрия не должна ломать страницу */
+        }
+      }
+    }
 
     const send = (ev: RawEvent) => {
       if (ev.type !== 'report') return
@@ -35,12 +55,9 @@ export function MediaRum() {
       }
       sent.add(key)
       const params = buildMetrikaParams(report, navigator.userAgent)
-      if (!params || typeof window.ym !== 'function') return
-      try {
-        window.ym(METRIKA_ID, 'params', params)
-      } catch {
-        /* телеметрия не должна ломать страницу */
-      }
+      if (!params) return
+      pending.push(params)
+      if (!flushTimer) flush()
     }
 
     const sm = (window as unknown as { __sm?: { events: RawEvent[] } }).__sm
@@ -48,7 +65,10 @@ export function MediaRum() {
 
     const onEvent = (e: Event) => send((e as CustomEvent<RawEvent>).detail)
     window.addEventListener('savage:media', onEvent)
-    return () => window.removeEventListener('savage:media', onEvent)
+    return () => {
+      window.removeEventListener('savage:media', onEvent)
+      if (flushTimer) clearTimeout(flushTimer)
+    }
   }, [])
 
   return null

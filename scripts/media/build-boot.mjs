@@ -32,7 +32,7 @@ export async function renderBootModule() {
   const hash = createHash('sha256').update(code).digest('hex').slice(0, 8)
   return [
     '// Файл сгенерирован scripts/media/build-boot.mjs из lib/media/boot/boot.ts.',
-    '// Руками не править: npm run media:boot (проверяется тестом lib/media/__tests__/boot-generated.test.ts).',
+    '// Руками не править: npm run media:boot (проверяется тестом lib/media/__tests__/guards.test.ts).',
     `export const MEDIA_BOOT_HASH = '${hash}'`,
     `export const MEDIA_BOOT_SCRIPT = ${JSON.stringify(code)}`,
     '',

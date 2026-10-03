@@ -100,6 +100,10 @@ describe('pickLevelIndex', () => {
   it('пустая лестница даёт -1', () => {
     expect(pickLevelIndex([], { width: 100, height: 100 }, 1)).toBe(-1)
   })
+
+  it('уровни без высоты не закрепляются: решает ABR', () => {
+    expect(pickLevelIndex([0, 0, 0], { width: 1920, height: 1080 }, 1)).toBe(-1)
+  })
 })
 
 describe('buildHlsConfig', () => {

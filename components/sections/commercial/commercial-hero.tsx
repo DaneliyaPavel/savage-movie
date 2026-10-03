@@ -68,6 +68,7 @@ export function CommercialHero({
           <LazyHlsVideo
             playbackId={hero.videoPlaybackId}
             poster={posterUrl}
+            posterFallbacks={posterCandidates.slice(posterIndex + 1)}
             autoPlay
             loop
             eager

@@ -190,6 +190,8 @@ export function pickLevelIndex(
       bestHeight = h
     }
   })
+  // высоты не заданы ни у одного уровня: выбирать нечего, пусть решает ABR
+  if (tallest === 0) return -1
   return best === -1 ? tallestIdx : best
 }
 
@@ -315,7 +317,11 @@ export async function createHlsController(
       const delay = 1000 * 2 ** (networkRecoveries - 1)
       tel('recover', { kind: 'network', n: networkRecoveries, delay })
       setTimeout(() => {
-        if (!destroyed) hls.startLoad(-1)
+        if (destroyed) return
+        // startLoad не перезапрашивает манифест: если упал он сам (404, 502 прокси,
+        // таймаут), нужен повторный loadSource, иначе поверхность зависнет в loading
+        if (manifestParsed) hls.startLoad(-1)
+        else hls.loadSource(src)
       }, delay)
       return
     }

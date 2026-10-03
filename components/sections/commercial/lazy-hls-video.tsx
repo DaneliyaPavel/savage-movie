@@ -60,14 +60,15 @@ export interface LazyHlsVideoProps {
   /** sizes для постера; по умолчанию — полноширинный блок (hero, showreel) */
   sizes?: string
   /**
-   * Играет ли этот блок прямо сейчас. Сохранён ради совместимости: движением
-   * в режиме фона управляет загрузчик по видимости поверхности (вышла из кадра —
-   * пауза, вернулась — продолжение), а лимит одновременных превью не даёт
-   * нескольким сценам качать потоки сразу.
+   * Играет ли этот блок прямо сейчас. false: блок закрыт другим (стопка карточек
+   * на /services) — загрузчик его не грузит и не играет, даже если он ещё в кадре.
+   * Видимость и лимит одновременных превью он считает сам.
    */
   active?: boolean
   /** Медиазапрос: видео оживает, только пока он выполняется (блок только для десктопа) */
   onlyWhen?: string
+  /** Запасные постеры: следующий берётся, если предыдущий не загрузился */
+  posterFallbacks?: string[]
 }
 
 function useMilestones(
@@ -119,6 +120,8 @@ function SurfaceVariant({
   priority = eager,
   sizes = '100vw',
   onlyWhen,
+  active = true,
+  posterFallbacks,
 }: LazyHlsVideoProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const spec = useMediaSpec(playbackId)
@@ -138,6 +141,8 @@ function SurfaceVariant({
         spec={spec}
         streamId={playbackId}
         fallbackPoster={posterUrl || null}
+        fallbackPosterAlt={posterFallbacks}
+        active={active}
         fallbackSizes={sizes}
         hero={priority}
         play={autoPlay ? 'auto' : 'hover-only'}
