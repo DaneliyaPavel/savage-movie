@@ -23,8 +23,15 @@ jobs:
 
       - run: npm ci
 
-      - name: Run npm audit
+      # Блокирует только то, что попадает в production-образ.
+      - name: Run npm audit (production dependencies)
+        run: npm audit --omit=dev --audit-level=high
+
+      # braces (GHSA-vfj7-8cjw-p6xm) приходит только через eslint-config-next,
+      # исправленной версии нет. Остаётся видимым в логе, но сборку не роняет.
+      - name: Report npm audit (dev dependencies, non-blocking)
         run: npm audit --audit-level=high
+        continue-on-error: true
 
   pip-audit:
     name: pip audit
