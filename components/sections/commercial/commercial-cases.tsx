@@ -5,25 +5,19 @@
  * и площадки. Без него «MAVIN / Small Joys» ничего не сообщает человеку,
  * который пришёл из поиска по запросу «заказать рекламный ролик».
  *
- * Видео стартует по наведению на десктопе и не грузится вовсе, пока карточка
- * не подошла к вьюпорту: четыре потока при первом рендере убили бы LCP.
+ * Видео стартует по наведению на десктопе (порог намерения и лимит одновременных
+ * превью держит загрузчик медиа-поверхностей, components/media) и не грузится
+ * вовсе, пока карточка не подошла к вьюпорту: четыре потока при первом рендере
+ * убили бы LCP. На таче карточка остаётся постером.
  */
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ArrowRight, ArrowUpRight } from 'lucide-react'
 
 import type { CasesContent } from '@/lib/commercial-landing/content'
 import { LazyHlsVideo } from './lazy-hls-video'
-
-/**
- * Наведение подтверждается только спустя короткую паузу: курсор, идущий
- * к форме или следующей секции, часто задевает карточку по пути — без порога
- * каждый такой проход запускал бы HLS-поток, который никто не досмотрит.
- */
-const HOVER_INTENT_MS = 130
 
 export interface CommercialCase {
   slug: string
@@ -49,32 +43,6 @@ export function CommercialCases({
   onCaseOpen,
   onVideoMilestone,
 }: CommercialCasesProps) {
-  const [hovered, setHovered] = useState<string | null>(null)
-  const hoverTimeoutRef = useRef<number | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (hoverTimeoutRef.current !== null) window.clearTimeout(hoverTimeoutRef.current)
-    }
-  }, [])
-
-  const handleMouseEnter = (slug: string) => {
-    if (hoverTimeoutRef.current !== null) window.clearTimeout(hoverTimeoutRef.current)
-    hoverTimeoutRef.current = window.setTimeout(() => {
-      hoverTimeoutRef.current = null
-      setHovered(slug)
-    }, HOVER_INTENT_MS)
-  }
-
-  const handleMouseLeave = (slug: string) => {
-    // Курсор ушёл раньше порога — отменяем ещё не выстреливший запуск потока
-    if (hoverTimeoutRef.current !== null) {
-      window.clearTimeout(hoverTimeoutRef.current)
-      hoverTimeoutRef.current = null
-    }
-    setHovered(current => (current === slug ? null : current))
-  }
-
   if (cases.length === 0) return null
 
   return (
@@ -104,8 +72,6 @@ export function CommercialCases({
             <Link
               href={`/projects/${item.slug}`}
               onClick={() => onCaseOpen(item.slug)}
-              onMouseEnter={() => handleMouseEnter(item.slug)}
-              onMouseLeave={() => handleMouseLeave(item.slug)}
               className="group block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
               {/* Медиа занимает основную площадь карточки */}
@@ -115,7 +81,6 @@ export function CommercialCases({
                     playbackId={item.playbackId}
                     poster={item.posterUrl}
                     loop
-                    autoPlay={hovered === item.slug}
                     aspect="16 / 9"
                     title={`${item.client} — ${item.title}`}
                     onProgressMilestone={milestone => onVideoMilestone(milestone, item.slug)}

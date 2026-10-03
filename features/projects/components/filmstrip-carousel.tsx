@@ -1,12 +1,12 @@
 'use client'
 
-import { useCallback, useRef, useEffect, memo } from 'react'
+import { useCallback, useRef, useEffect, useState, memo } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import AutoScroll from 'embla-carousel-auto-scroll'
 import Image from 'next/image'
 import Link from 'next/link'
-import Hls from 'hls.js'
-import { getStreamUrl } from '@/lib/integrations/bunny/client'
+import { MotionSurface } from '@/components/media/motion-surface'
+import { useHeroSettled } from '@/lib/media/use-hero-settled'
 
 interface FilmstripProject {
   id: string
@@ -49,6 +49,11 @@ export function FilmstripCarousel({
     },
     [autoScroll.current]
   )
+  /*
+   * Плитки живут статичными кадрами, пока hero не определился: анимированные
+   * webp по 9 МБ и потоки HLS на старте отнимали канал у первого экрана.
+   */
+  const heroSettled = useHeroSettled()
   const wheelTargetRef = useRef<HTMLDivElement | null>(null)
   const wheelResumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -142,7 +147,8 @@ export function FilmstripCarousel({
                     key={`${project.id}-carousel-${index}`}
                     project={project}
                     isSelected={selectedId === project.id}
-                    isLCP={index === 0}
+                    index={index}
+                    animate={heroSettled}
                     // Pick a random note based on index + id hash roughly
                     noteText={HOVER_NOTES[index % HOVER_NOTES.length] ?? 'Смотреть'}
                     onSelect={() => onProjectSelect(project)}
@@ -157,22 +163,35 @@ export function FilmstripCarousel({
   )
 }
 
+const TILE_STAGGER_MS = 350
+
+/** Анимацию плиток не включаем при reduced-motion и Save-Data */
+function tileMotionAllowed(): boolean {
+  if (typeof window === 'undefined') return false
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return false
+  const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
+  return !conn?.saveData
+}
+
 const FilmstripItem = memo(function FilmstripItem({
   project,
   isSelected,
-  isLCP = false,
+  index,
+  animate,
   noteText,
   onSelect,
 }: {
   project: FilmstripProject
   isSelected: boolean
-  isLCP?: boolean
+  index: number
+  /** hero определился: можно подключать движение */
+  animate: boolean
   noteText?: string
   onSelect: () => void
 }) {
-  const videoRef = useRef<HTMLVideoElement | null>(null)
-  const hlsRef = useRef<Hls | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const [gifRequested, setGifRequested] = useState(false)
+  const [gifLoaded, setGifLoaded] = useState(false)
 
   // Determine which media source to use for the "GIF" effect
   // Priority: carousel_gif_url > playbackId > thumbnail
@@ -187,50 +206,33 @@ const FilmstripItem = memo(function FilmstripItem({
   // HLS init for Bunny video IDs or playbackId fallback
   const hlsVideoId = isBunnyVideoId ? rawCarouselGifUrl : (usePlaybackHls ? project.playbackId : null)
 
+  /*
+   * Анимированный gif/webp подключаем, когда hero определился, плитка на
+   * экране и движение разрешено, с небольшой задержкой по номеру плитки,
+   * чтобы загрузки не стартовали одной пачкой.
+   */
+  const wantsGif = isUrlGif && isGifImage
   useEffect(() => {
-    const video = videoRef.current
-    if (!video || !hlsVideoId) return
-
-    const src = getStreamUrl(hlsVideoId)
-
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = src
-    } else if (Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true, startLevel: -1, capLevelToPlayerSize: true })
-      hls.loadSource(src)
-      hls.attachMedia(video)
-      hlsRef.current = hls
-    }
-
-    return () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy()
-        hlsRef.current = null
-      }
-    }
-  }, [hlsVideoId])
-
-  // Intersection Observer for autoplay performance
-  useEffect(() => {
+    if (!wantsGif || !animate || gifRequested) return
     const container = containerRef.current
-    if (!container) return
-
+    if (!container || !tileMotionAllowed()) return
+    let timer: ReturnType<typeof setTimeout> | null = null
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            if (videoRef.current) videoRef.current.play().catch(() => { })
-          } else {
-            if (videoRef.current) videoRef.current.pause()
-          }
-        })
+      entries => {
+        if (!entries.some(e => e.isIntersecting)) return
+        observer.disconnect()
+        timer = setTimeout(() => setGifRequested(true), (index % 8) * TILE_STAGGER_MS)
       },
       { threshold: 0.1, rootMargin: '100px' }
     )
-
     observer.observe(container)
-    return () => observer.disconnect()
-  }, [])
+    return () => {
+      observer.disconnect()
+      if (timer) clearTimeout(timer)
+    }
+  }, [wantsGif, animate, gifRequested, index])
+
+  const thumbSrc = project.thumbnail || '/placeholder.svg'
 
   const content = (
     <div
@@ -245,49 +247,57 @@ const FilmstripItem = memo(function FilmstripItem({
         ref={containerRef}
         className="relative w-[180px] h-[101px] overflow-hidden bg-zinc-900 rounded-sm shadow-xl transition-transform duration-500 ease-out group-hover:scale-[1.02]"
       >
-        {/* GIF/Video Layer */}
-        {(isBunnyVideoId || usePlaybackHls) ? (
-          <video
-            ref={videoRef}
-            muted
-            loop
-            playsInline
-            preload={isBunnyVideoId ? 'auto' : 'metadata'}
-            className="absolute inset-0 w-full h-full object-cover"
+        {/*
+          Статичный кадр всегда под движением. Поток HLS и прямой MP4 ведёт
+          общий медиа-слой: на мыши плитка оживает при наведении, на таче — не
+          больше двух плиток в кадре; анимированный gif/webp подгружается
+          поверх кадра, когда hero определился.
+        */}
+        {isBunnyVideoId || usePlaybackHls ? (
+          <MotionSurface
+            name="filmstrip-tile"
+            streamId={hlsVideoId}
+            fallbackPoster={thumbSrc}
+            fallbackSizes="180px"
+            play="hover"
+            afterHero
+            className="absolute inset-0"
           />
-        ) : isUrlGif ? (
-          isGifImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={rawCarouselGifUrl}
-              alt={project.title}
-              loading={isLCP ? 'eager' : 'lazy'}
-              decoding={isLCP ? 'sync' : 'async'}
-              fetchPriority={isLCP ? 'high' : 'auto'}
-              width={180}
-              height={101}
-              draggable={false}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          ) : (
-            <video
-              ref={videoRef}
-              src={rawCarouselGifUrl}
-              muted
-              loop
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          )
+        ) : isUrlGif && !isGifImage ? (
+          <MotionSurface
+            name="filmstrip-tile"
+            mp4={{ desktop: rawCarouselGifUrl, mobile: rawCarouselGifUrl }}
+            fallbackPoster={thumbSrc}
+            fallbackSizes="180px"
+            play="hover"
+            afterHero
+            className="absolute inset-0"
+          />
         ) : (
-          <Image
-            src={project.thumbnail || '/placeholder.svg'}
-            alt={project.title}
-            fill
-            sizes="180px"
-            draggable={false}
-            className="object-cover"
-          />
+          <>
+            <Image
+              src={thumbSrc}
+              alt={project.title}
+              fill
+              sizes="180px"
+              draggable={false}
+              className="object-cover"
+            />
+            {wantsGif && gifRequested ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={rawCarouselGifUrl}
+                alt=""
+                aria-hidden="true"
+                decoding="async"
+                width={180}
+                height={101}
+                draggable={false}
+                onLoad={() => setGifLoaded(true)}
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[var(--motion-media)] ease-[var(--ease-out-expo)] ${gifLoaded ? 'opacity-100' : 'opacity-0'}`}
+              />
+            ) : null}
+          </>
         )}
 
         {/* Hover-only dim to match reference (no darkening at rest) */}

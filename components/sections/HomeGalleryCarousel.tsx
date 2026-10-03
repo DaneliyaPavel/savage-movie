@@ -8,7 +8,7 @@ import { motion } from 'framer-motion'
 import type { Project } from '@/features/projects/api'
 import { Play } from 'lucide-react'
 import NextImage from 'next/image'
-import Hls from 'hls.js'
+import { useHlsSource } from '@/components/media/use-hls-source'
 import { getStreamUrl } from '@/lib/integrations/bunny/client'
 
 interface HomeGalleryCarouselProps {
@@ -95,36 +95,17 @@ const CarouselItem = memo(function CarouselItem({
   const thumbnailUrl = project.images && project.images[0] ? project.images[0] : null
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
-  const hlsRef = useRef<Hls | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Determine which media source to use for the "GIF" effect
   const isBunnyVideoId = project.carousel_gif_url && !project.carousel_gif_url.includes('/') && !project.carousel_gif_url.includes('.')
   const isUrlGif = project.carousel_gif_url && (project.carousel_gif_url.startsWith('http') || project.carousel_gif_url.startsWith('/'))
 
-  // Init HLS for Bunny video IDs
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video || !isBunnyVideoId || !project.carousel_gif_url) return
-
-    const src = getStreamUrl(project.carousel_gif_url)
-
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = src
-    } else if (Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true, startLevel: 0 })
-      hls.loadSource(src)
-      hls.attachMedia(video)
-      hlsRef.current = hls
-    }
-
-    return () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy()
-        hlsRef.current = null
-      }
-    }
-  }, [isBunnyVideoId, project.carousel_gif_url])
+  // HLS через единую фабрику
+  useHlsSource(videoRef, {
+    src: isBunnyVideoId && project.carousel_gif_url ? getStreamUrl(project.carousel_gif_url) : null,
+    useCase: 'background',
+  })
 
   // Intersection Observer for autoplay performance
   useEffect(() => {

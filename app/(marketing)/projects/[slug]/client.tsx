@@ -5,7 +5,7 @@
 
 import { useCallback, useRef, useState, type MouseEvent } from 'react'
 import { motion, useMotionValue, useSpring } from 'framer-motion'
-import { VideoPlayer } from '@/features/projects/components/VideoPlayer'
+import { MotionSurface } from '@/components/media/motion-surface'
 import { FullScreenVideoPlayer } from '@/features/projects/components/FullScreenVideoPlayer'
 import { TopBar } from '@/components/ui/top-bar'
 import { JalousieMenu } from '@/components/ui/jalousie-menu'
@@ -16,6 +16,9 @@ import { ArrowRight } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { ProjectsJalousieFooter } from '@/components/sections/ProjectsJalousieFooter'
 import { trackMetrikaGoal } from '@/lib/analytics/metrika'
+import { getThumbnailUrl } from '@/lib/integrations/bunny/client'
+import type { MediaSurfaceSpec } from '@/lib/media/manifest'
+import { extractVideoId } from '@/lib/media/video-id'
 import type { Project, ProjectVideo } from '@/features/projects/api'
 
 type Orientation = 'landscape' | 'portrait' | 'unknown'
@@ -70,9 +73,16 @@ interface ProjectDetailClientProps {
   project: Project
   nextProject: Project | null
   projectVideos?: ProjectVideo[]
+  /** {id Bunny-видео → spec} из манифеста веб-медиа; собирается на сервере */
+  mediaSpecs?: Record<string, MediaSurfaceSpec>
 }
 
-export function ProjectDetailClient({ project, nextProject, projectVideos = [] }: ProjectDetailClientProps) {
+export function ProjectDetailClient({
+  project,
+  nextProject,
+  projectVideos = [],
+  mediaSpecs = {},
+}: ProjectDetailClientProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [isVideoOpen, setIsVideoOpen] = useState(false)
   const [activeVideoPlaybackId, setActiveVideoPlaybackId] = useState<string | null>(null)
@@ -109,15 +119,18 @@ export function ProjectDetailClient({ project, nextProject, projectVideos = [] }
         >
           {hasVideo ? (
             playbackId ? (
-              <VideoPlayer
-                playbackId={playbackId}
-                title={project.title}
-                autoplay
-                muted
-                loop
-                controls={false}
-                objectFit="cover"
-                className="absolute inset-0 w-full h-full pointer-events-none"
+              /*
+                Постер приходит в HTML, MP4/HLS подключается загрузчиком до
+                гидратации и проявляется поверх постера, когда есть запас
+                буфера. Полный фильм — по клику, в плеере с контролами.
+              */
+              <MotionSurface
+                name="project-hero"
+                spec={mediaSpecs[extractVideoId(playbackId)] ?? null}
+                streamId={playbackId}
+                fallbackPoster={getThumbnailUrl(playbackId)}
+                hero
+                className="absolute inset-0 pointer-events-none"
               />
             ) : (
               <video
@@ -239,6 +252,7 @@ export function ProjectDetailClient({ project, nextProject, projectVideos = [] }
                   {projectVideos.map((video, index) => (
                     <motion.div
                       key={video.id}
+                      data-sm-card=""
                       initial={{ opacity: 0, y: 30 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
@@ -254,15 +268,18 @@ export function ProjectDetailClient({ project, nextProject, projectVideos = [] }
                         setIsVideoOpen(true)
                       }}
                     >
-                      <VideoPlayer
-                        playbackId={video.mux_playback_id}
-                        title={video.title ?? undefined}
-                        autoplay
-                        muted
-                        loop
-                        controls={false}
-                        objectFit="cover"
-                className="absolute inset-0 w-full h-full pointer-events-none"
+                      {/* Дополнительные ролики оживают по наведению (тач — по видимости),
+                          не больше двух одновременно, после готовности hero */}
+                      <MotionSurface
+                        name="project-extra"
+                        spec={mediaSpecs[extractVideoId(video.mux_playback_id)] ?? null}
+                        streamId={video.mux_playback_id}
+                        fallbackPoster={getThumbnailUrl(video.mux_playback_id)}
+                        fallbackSizes="(min-width: 768px) 50vw, 100vw"
+                        play="hover"
+                        hoverScope="[data-sm-card]"
+                        afterHero
+                        className="absolute inset-0 pointer-events-none"
                       />
                       <span className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
                       {video.title && (

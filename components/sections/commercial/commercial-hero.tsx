@@ -16,6 +16,9 @@ import type { HeroContent, SlaContent } from '@/lib/commercial-landing/content'
 import { getThumbnailUrl } from '@/lib/integrations/bunny/client'
 import { LazyHlsVideo } from './lazy-hls-video'
 
+/** Совпадает с брейкпоинтом md: на узких экранах фон остаётся постером */
+const DESKTOP_MEDIA_QUERY = '(min-width: 768px)'
+
 interface CommercialHeroProps {
   hero: HeroContent
   sla: SlaContent
@@ -56,36 +59,22 @@ export function CommercialHero({
     <section className="relative flex min-h-[100svh] w-full items-end overflow-hidden bg-[#000000] pb-16 pt-28 md:pb-20 md:items-center">
       {/* Фон: видео на десктопе, на мобильных остаётся постером —
           мобильный трафик Директа не должен платить за фоновый луп.
+          Одна поверхность на оба размера: постер приходит в HTML и скачивается
+          один раз, а видео оживает только там, где выполняется onlyWhen.
           Без dedicated видео, но с постером (свой или кейса) — статичный
           кадр на обеих платформах. */}
       <div className="absolute inset-0 z-0">
         {hero.videoPlaybackId ? (
-          <>
-            <div className="hidden h-full w-full md:block">
-              <LazyHlsVideo
-                playbackId={hero.videoPlaybackId}
-                poster={posterUrl}
-                autoPlay
-                loop
-                eager
-                aspect="auto"
-                className="h-full w-full"
-              />
-            </div>
-            <div className="h-full w-full md:hidden">
-              {posterUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={posterUrl}
-                  alt=""
-                  aria-hidden="true"
-                  fetchPriority="high"
-                  onError={handlePosterError}
-                  className="h-full w-full object-cover"
-                />
-              ) : null}
-            </div>
-          </>
+          <LazyHlsVideo
+            playbackId={hero.videoPlaybackId}
+            poster={posterUrl}
+            autoPlay
+            loop
+            eager
+            aspect="auto"
+            onlyWhen={DESKTOP_MEDIA_QUERY}
+            className="h-full w-full"
+          />
         ) : posterUrl ? (
           <div className="h-full w-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}

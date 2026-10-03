@@ -13,8 +13,10 @@
  */
 import type { Metadata } from 'next'
 
+import { MediaSpecsProvider } from '@/components/media/media-specs-context'
 import { JsonLdScripts } from '@/components/seo/json-ld-scripts'
 import { getProjectsServer, type Project } from '@/features/projects/api'
+import { mediaSpecsForContent } from '@/lib/media/manifest'
 import { logger } from '@/lib/utils/logger'
 import { SERVICES_PATH } from '@/lib/services/directions'
 import { getShowreelPlaybackId } from '@/lib/services/showreel'
@@ -147,15 +149,20 @@ export default async function ServicesPage() {
   // Кадр выхода выбран раскадровкой отдельно от монтажа, см. lib/services/frames.ts
   const closing = closingFrame(projects, montage)
 
+  // Веб-превью (MP4 + постеры) для видео, которые реально стоят на странице
+  const mediaSpecs = mediaSpecsForContent(showreelId, montage, closing)
+
   return (
     <>
       <JsonLdScripts scripts={buildJsonLd(directions)} />
-      <ServicesPageClient
-        directions={directions}
-        montage={montage}
-        closing={closing}
-        showreelId={showreelId}
-      />
+      <MediaSpecsProvider specs={mediaSpecs}>
+        <ServicesPageClient
+          directions={directions}
+          montage={montage}
+          closing={closing}
+          showreelId={showreelId}
+        />
+      </MediaSpecsProvider>
     </>
   )
 }

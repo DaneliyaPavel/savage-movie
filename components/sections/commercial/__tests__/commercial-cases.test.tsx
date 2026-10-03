@@ -1,8 +1,8 @@
 /**
  * Кейсы на лендинге — четыре видео подряд, и это самое дорогое место страницы.
  *
- * Проверяем то, что легко сломать незаметно: до наведения не должно быть
- * ни одного <video> (иначе четыре HLS-потока начнут качаться сами по себе
+ * Проверяем то, что легко сломать незаметно: до наведения ни у одного <video>
+ * не должно быть источника (иначе четыре потока начнут качаться сами по себе
  * и утянут LCP), а у медиаконтейнера должно быть заданное соотношение сторон,
  * иначе появление видео двигает вёрстку и портит CLS.
  */
@@ -76,44 +76,50 @@ describe('Блок коммерческих кейсов', () => {
     vi.stubGlobal('IntersectionObserver', IntersectionObserverStub)
   })
 
-  it('до наведения показывает только постеры, без потоков', () => {
+  it('до наведения показывает только постеры: <video> без src и без preload', () => {
     const { container } = renderCases()
 
-    expect(container.querySelectorAll('video')).toHaveLength(0)
+    // Разметка поверхности приходит с сервера целиком, но видео в ней пустое:
+    // источник назначает загрузчик из <head> (lib/media/boot), а он не трогает
+    // карточку, пока на неё не навели мышь
+    const videos = container.querySelectorAll('video')
+    expect(videos).toHaveLength(cases.length)
+    videos.forEach(video => {
+      expect(video).not.toHaveAttribute('src')
+      expect(video).toHaveAttribute('preload', 'none')
+    })
+    container.querySelectorAll('[data-sm]').forEach(surface => {
+      expect(surface).toHaveAttribute('data-sm-state', 'poster')
+      expect(surface).toHaveAttribute('data-sm-want', '0')
+    })
     expect(container.querySelectorAll('img')).toHaveLength(cases.length)
   })
 
-  it('наведение на карточку поднимает видео только у неё — после hover-intent паузы', () => {
+  it('карточка живёт по наведению на всю ссылку, а на таче не оживает вовсе', () => {
+    const { container } = renderCases()
+
+    const surfaces = container.querySelectorAll('[data-sm]')
+    expect(surfaces).toHaveLength(cases.length)
+    surfaces.forEach(surface => {
+      // hover-only: на таче движения нет; hover ловится на предке .group, то есть на ссылке-карточке
+      expect(surface).toHaveAttribute('data-sm-play', 'hover-only')
+      expect(surface).toHaveAttribute('data-sm-hover-scope', '.group')
+      expect(surface.closest('.group')).toBe(surface.closest('a'))
+    })
+  })
+
+  it('решение о запуске принимает загрузчик, а не React: наведение само по себе ничего не качает', () => {
     vi.useFakeTimers()
     const { container } = renderCases()
 
     fireEvent.mouseEnter(screen.getByRole('link', { name: /WELLERY/ }))
-    // До истечения intent-паузы поток ещё не должен запускаться
-    expect(container.querySelectorAll('video')).toHaveLength(0)
-
     act(() => {
-      vi.advanceTimersByTime(130)
-    })
-    expect(container.querySelectorAll('video')).toHaveLength(1)
-
-    vi.useRealTimers()
-  })
-
-  it('быстрый проход курсором короче hover-intent паузы не запускает поток', () => {
-    vi.useFakeTimers()
-    const { container } = renderCases()
-
-    const link = screen.getByRole('link', { name: /WELLERY/ })
-    fireEvent.mouseEnter(link)
-    act(() => {
-      vi.advanceTimersByTime(60)
-    })
-    fireEvent.mouseLeave(link)
-    act(() => {
-      vi.advanceTimersByTime(200)
+      vi.advanceTimersByTime(300)
     })
 
-    expect(container.querySelectorAll('video')).toHaveLength(0)
+    // Порог намерения, лимит одновременных превью и выгрузка проверены на настоящем
+    // загрузчике в lib/media/boot/__tests__/boot.test.ts
+    container.querySelectorAll('video').forEach(video => expect(video).not.toHaveAttribute('src'))
 
     vi.useRealTimers()
   })

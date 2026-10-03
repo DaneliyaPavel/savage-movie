@@ -3,8 +3,8 @@
  */
 'use client'
 
-import { useEffect, useRef } from 'react'
-import Hls from 'hls.js'
+import { useRef } from 'react'
+import { useHlsSource } from '@/components/media/use-hls-source'
 import { getStreamUrl } from '@/lib/integrations/bunny/client'
 
 interface VideoPlayerProps {
@@ -31,37 +31,13 @@ export function VideoPlayer({
   onCanPlay,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const hlsRef = useRef<Hls | null>(null)
   const effectiveMuted = autoplay ? true : muted
 
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video || !playbackId) return
-
-    const src = getStreamUrl(playbackId)
-
-    // Safari supports HLS natively
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = src
-    } else if (Hls.isSupported()) {
-      const hls = new Hls({
-        enableWorker: true,
-        capLevelToPlayerSize: true,
-        startLevel: -1,
-        maxBufferLength: 30,
-      })
-      hls.loadSource(src)
-      hls.attachMedia(video)
-      hlsRef.current = hls
-    }
-
-    return () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy()
-        hlsRef.current = null
-      }
-    }
-  }, [playbackId])
+  // Плеер с контролами: обычный ABR, стратегия (нативный HLS / hls.js) — в фабрике
+  useHlsSource(videoRef, {
+    src: playbackId ? getStreamUrl(playbackId) : null,
+    useCase: 'player',
+  })
 
   return (
     <div className={className}>

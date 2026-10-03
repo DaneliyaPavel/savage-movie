@@ -1,26 +1,32 @@
 /**
- * Видео коммерческого лендинга: постер сразу, поток — по приближении к экрану.
+ * Видео коммерческого лендинга и направлений: постер сразу, движение — по делу.
  *
- * Лендинг насыщен видео, и четыре HLS-потока, стартующие при первом рендере,
- * съедают LCP и мобильный трафик до того, как человек вообще доскроллит до
- * кейсов. Поэтому здесь:
- *   — постер лежит в <img> и рисуется первым, размер контейнера задан заранее
- *     (aspect-ratio), поэтому подгрузка видео не двигает вёрстку;
- *   — hls.js подгружается динамическим импортом и только когда блок и подошёл
- *     к вьюпорту, и действительно должен играть. Одного приближения мало:
- *     hls.js начинает качать сегменты сразу после attach, и четыре карточки
- *     кейсов молча выкачивали бы четыре потока, которые никто не смотрит;
- *   — при prefers-reduced-motion автозапуска нет: фоновый луп для такого
- *     пользователя остаётся картинкой, пока он сам не нажмёт play.
+ * Лендинг насыщен видео, и четыре потока, стартующие при первом рендере,
+ * съедают LCP и мобильный трафик до того, как человек доскроллит до кейсов.
+ * Поэтому у компонента два режима:
+ *
+ *   фон / карточка (без controls) — единая медиа-поверхность (components/media):
+ *     постер приходит в HTML, видео подключает загрузчик из <head> только когда
+ *     поверхность нужна: фоновый луп (autoPlay) — рядом с вьюпортом; карточка
+ *     (autoPlay=false) — по наведению мыши, на таче движения нет вовсе. Видео
+ *     проявляется поверх постера, когда первый кадр показан и запаса буфера
+ *     хватает; одновременно не больше двух превью;
+ *
+ *   плеер (controls) — постер, видео с контролами, hls.js через общую фабрику
+ *     и только когда блок подошёл к вьюпорту; при prefers-reduced-motion
+ *     автозапуска нет.
+ *
+ * Публичный API компонента прежний: страницы и тесты его не замечают.
  */
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import Image from 'next/image'
 
+import { MotionSurface } from '@/components/media/motion-surface'
+import { useMediaSpec } from '@/components/media/media-specs-context'
+import { useHlsSource } from '@/components/media/use-hls-source'
 import { canOptimizePoster } from '@/lib/commercial-landing/poster-url'
-import type Hls from 'hls.js'
-
 import { getStreamUrl, getThumbnailUrl } from '@/lib/integrations/bunny/client'
 import { cn } from '@/lib/utils'
 
@@ -30,6 +36,10 @@ export interface LazyHlsVideoProps {
   poster?: string | null
   /** Фоновый луп: без звука, зациклен, стартует сам */
   loop?: boolean
+  /**
+   * true — фоновый луп (грузится рядом с вьюпортом); false без controls —
+   * карточка, оживающая по наведению мыши.
+   */
   autoPlay?: boolean
   controls?: boolean
   className?: string
@@ -42,28 +52,102 @@ export interface LazyHlsVideoProps {
   /** Постер не откладывается до приближения к вьюпорту */
   eager?: boolean
   /**
-   * Постер — LCP страницы: <link rel=preload> и fetchpriority=high. По
-   * умолчанию совпадает с eager, потому что раньше это было одно и то же
-   * свойство. Разводятся они там, где кадр нужен сразу, но канал первого
-   * экрана забирать не должен: второй priority на странице не ускоряет
-   * второй кадр, он замедляет первый.
+   * Постер — LCP страницы: fetchpriority=high, видео грузится сразу. По
+   * умолчанию совпадает с eager. На странице такой блок один: второй
+   * priority не ускоряет второй кадр, он замедляет первый.
    */
   priority?: boolean
-  /** sizes для next/image; по умолчанию — полноширинный блок (hero, showreel) */
+  /** sizes для постера; по умолчанию — полноширинный блок (hero, showreel) */
   sizes?: string
   /**
-   * Играет ли этот блок прямо сейчас.
-   *
-   * Нужно страницам, где подряд идут несколько полноэкранных сцен со своим
-   * видео: одного приближения к вьюпорту мало, потому что при быстром скролле
-   * в зоне наблюдения оказываются сразу две-три сцены и браузер начинает
-   * качать столько же потоков, хотя виден один. Пока active=false, поток не
-   * поднимается вовсе, а уже поднятый ставится на паузу — но не уничтожается,
-   * иначе возврат к сцене моргал бы постером.
-   *
-   * По умолчанию true: одиночное видео на странице ведёт себя как раньше.
+   * Играет ли этот блок прямо сейчас. Сохранён ради совместимости: движением
+   * в режиме фона управляет загрузчик по видимости поверхности (вышла из кадра —
+   * пауза, вернулась — продолжение), а лимит одновременных превью не даёт
+   * нескольким сценам качать потоки сразу.
    */
   active?: boolean
+  /** Медиазапрос: видео оживает, только пока он выполняется (блок только для десктопа) */
+  onlyWhen?: string
+}
+
+function useMilestones(
+  containerRef: RefObject<HTMLElement | null>,
+  onProgressMilestone: LazyHlsVideoProps['onProgressMilestone']
+) {
+  const marksRef = useRef({ start: false, half: false, complete: false })
+
+  useEffect(() => {
+    const video = containerRef.current?.querySelector('video')
+    if (!video || !onProgressMilestone) return
+
+    const onTime = () => {
+      const marks = marksRef.current
+      if (!marks.start && video.currentTime > 0.5) {
+        marks.start = true
+        onProgressMilestone('start')
+      }
+      if (!marks.half && video.duration > 0 && video.currentTime / video.duration >= 0.5) {
+        marks.half = true
+        onProgressMilestone('half')
+      }
+    }
+    const onEnded = () => {
+      const marks = marksRef.current
+      if (marks.complete) return
+      marks.complete = true
+      onProgressMilestone('complete')
+    }
+    video.addEventListener('timeupdate', onTime)
+    video.addEventListener('ended', onEnded)
+    return () => {
+      video.removeEventListener('timeupdate', onTime)
+      video.removeEventListener('ended', onEnded)
+    }
+  }, [containerRef, onProgressMilestone])
+}
+
+function SurfaceVariant({
+  playbackId,
+  poster,
+  loop = false,
+  autoPlay = false,
+  className,
+  aspect = '16 / 9',
+  title,
+  onProgressMilestone,
+  eager = false,
+  priority = eager,
+  sizes = '100vw',
+  onlyWhen,
+}: LazyHlsVideoProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const spec = useMediaSpec(playbackId)
+  useMilestones(containerRef, onProgressMilestone)
+
+  const posterUrl = poster || getThumbnailUrl(playbackId)
+
+  return (
+    <div
+      ref={containerRef}
+      title={title}
+      className={cn('relative overflow-hidden bg-[#0A0A0A]', className)}
+      style={{ aspectRatio: aspect }}
+    >
+      <MotionSurface
+        name={priority ? 'landing-hero' : autoPlay ? 'landing-loop' : 'landing-card'}
+        spec={spec}
+        streamId={playbackId}
+        fallbackPoster={posterUrl || null}
+        fallbackSizes={sizes}
+        hero={priority}
+        play={autoPlay ? 'auto' : 'hover-only'}
+        hoverScope={autoPlay ? undefined : '.group'}
+        onlyWhen={onlyWhen}
+        loop={loop || autoPlay}
+        className="absolute inset-0"
+      />
+    </div>
+  )
 }
 
 function prefersReducedMotion(): boolean {
@@ -71,7 +155,7 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-export function LazyHlsVideo({
+function PlayerVariant({
   playbackId,
   poster,
   loop = false,
@@ -88,8 +172,6 @@ export function LazyHlsVideo({
 }: LazyHlsVideoProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
-  const hlsRef = useRef<Hls | null>(null)
-  const milestonesRef = useRef({ start: false, half: false, complete: false })
 
   const [isNear, setIsNear] = useState(false)
   const [shouldLoad, setShouldLoad] = useState(false)
@@ -103,7 +185,8 @@ export function LazyHlsVideo({
     if (!node || isNear) return
 
     if (typeof IntersectionObserver === 'undefined') {
-      setIsNear(true)
+      // без наблюдателя считаем блок близким; не синхронно, чтобы не плодить каскад рендеров
+      queueMicrotask(() => setIsNear(true))
       return
     }
 
@@ -121,64 +204,21 @@ export function LazyHlsVideo({
     return () => observer.disconnect()
   }, [isNear])
 
-  /**
-   * Второе условие: видео действительно нужно играть — фоновый луп, наведение
-   * на карточку кейса или плеер с управлением. До этого момента карточка живёт
-   * одним постером; на мобильных, где наведения не бывает, поток не грузится
-   * вовсе — там тап уводит на страницу кейса.
-   *
-   * Флаг залипающий: снимать его на mouseleave значило бы размонтировать
-   * <video> и мигать постером при каждом повторном наведении.
-   */
-  useEffect(() => {
-    if (shouldLoad) return
-    if (isNear && active && (autoPlay || controls)) setShouldLoad(true)
-  }, [isNear, active, autoPlay, controls, shouldLoad])
+  // Второе условие: видео действительно нужно играть. Флаг залипающий: снимать
+  // его значило бы размонтировать <video> и мигать постером при каждом возврате.
+  // Производное состояние выставляется прямо в рендере (так рекомендует React),
+  // а не в эффекте: лишнего прохода рендера нет
+  if (!shouldLoad && isNear && active && (autoPlay || controls)) setShouldLoad(true)
 
-  useEffect(() => {
-    if (!shouldLoad) return
-    const video = videoRef.current
-    if (!video || !playbackId) return
+  // Единая фабрика: стратегия, буфер, retry и destroy в одном месте
+  useHlsSource(videoRef, {
+    src: playbackId ? getStreamUrl(playbackId) : null,
+    useCase: 'player',
+    enabled: shouldLoad,
+  })
 
-    const src = getStreamUrl(playbackId)
-    if (!src) return
-
-    let cancelled = false
-
-    const attach = async () => {
-      // Safari играет HLS нативно — hls.js там только лишний вес
-      if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = src
-        return
-      }
-
-      const { default: HlsPlayer } = await import('hls.js')
-      if (cancelled || !HlsPlayer.isSupported()) return
-
-      const hls = new HlsPlayer({
-        enableWorker: true,
-        capLevelToPlayerSize: true,
-        startLevel: -1,
-        maxBufferLength: 20,
-      })
-      hls.loadSource(src)
-      hls.attachMedia(video)
-      hlsRef.current = hls
-    }
-
-    void attach()
-
-    return () => {
-      cancelled = true
-      if (hlsRef.current) {
-        hlsRef.current.destroy()
-        hlsRef.current = null
-      }
-    }
-  }, [shouldLoad, playbackId])
-
-  // Автозапуск фонового лупа — только если пользователь не просил уменьшить
-  // движение и только пока сцена действительно на экране
+  // Автозапуск — только если пользователь не просил уменьшить движение и
+  // только пока сцена действительно на экране
   useEffect(() => {
     if (!shouldLoad || !autoPlay) return
     const video = videoRef.current
@@ -200,27 +240,7 @@ export function LazyHlsVideo({
     return () => video.removeEventListener('canplay', play)
   }, [shouldLoad, autoPlay, active])
 
-  const handleTimeUpdate = useCallback(() => {
-    const video = videoRef.current
-    if (!video || !onProgressMilestone) return
-
-    const marks = milestonesRef.current
-    if (!marks.start && video.currentTime > 0.5) {
-      marks.start = true
-      onProgressMilestone('start')
-    }
-    if (!marks.half && video.duration > 0 && video.currentTime / video.duration >= 0.5) {
-      marks.half = true
-      onProgressMilestone('half')
-    }
-  }, [onProgressMilestone])
-
-  const handleEnded = useCallback(() => {
-    const marks = milestonesRef.current
-    if (marks.complete || !onProgressMilestone) return
-    marks.complete = true
-    onProgressMilestone('complete')
-  }, [onProgressMilestone])
+  useMilestones(containerRef, onProgressMilestone)
 
   return (
     <div
@@ -241,7 +261,7 @@ export function LazyHlsVideo({
             priority={priority}
             loading={priority ? undefined : eager ? 'eager' : 'lazy'}
             className={cn(
-              'object-cover transition-opacity duration-700',
+              'object-cover transition-opacity duration-[var(--motion-media)] ease-[var(--ease-out-expo)]',
               isPlaying ? 'opacity-0' : 'opacity-100'
             )}
           />
@@ -255,7 +275,7 @@ export function LazyHlsVideo({
             fetchPriority={priority ? 'high' : 'auto'}
             decoding="async"
             className={cn(
-              'absolute inset-0 h-full w-full object-cover transition-opacity duration-700',
+              'absolute inset-0 h-full w-full object-cover transition-opacity duration-[var(--motion-media)] ease-[var(--ease-out-expo)]',
               isPlaying ? 'opacity-0' : 'opacity-100'
             )}
           />
@@ -265,11 +285,7 @@ export function LazyHlsVideo({
       {shouldLoad ? (
         <video
           ref={videoRef}
-          /*
-            Атрибут poster намеренно пуст, когда постер уже нарисован
-            оптимизированным слоем выше: иначе браузер вторым запросом тянет
-            тот же кадр исходником, а исходники в этой CMS весят мегабайтами.
-          */
+          /* poster-атрибут пуст, когда кадр уже нарисован оптимизированным слоем выше */
           poster={posterUrl && !canOptimizePoster(posterUrl) ? posterUrl : undefined}
           muted
           loop={loop}
@@ -279,11 +295,13 @@ export function LazyHlsVideo({
           title={title}
           onPlaying={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
-          onTimeUpdate={handleTimeUpdate}
-          onEnded={handleEnded}
           className="absolute inset-0 h-full w-full object-cover"
         />
       ) : null}
     </div>
   )
+}
+
+export function LazyHlsVideo(props: LazyHlsVideoProps) {
+  return props.controls ? <PlayerVariant {...props} /> : <SurfaceVariant {...props} />
 }
