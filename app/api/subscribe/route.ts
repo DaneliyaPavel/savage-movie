@@ -15,6 +15,9 @@ import {
   isTelegramConfigured,
   sendTelegramMessage,
 } from '@/lib/integrations/telegram/client'
+import { getClientIp, UNKNOWN_CLIENT_IP } from '@/lib/leads/client-ip'
+import { mailtoHref } from '@/lib/leads/mailto'
+import { readJsonBody } from '@/lib/leads/read-json-body'
 import { logger } from '@/lib/utils/logger'
 
 const API_URL = serverEnv.API_URL || publicEnv.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
@@ -23,6 +26,13 @@ const API_URL = serverEnv.API_URL || publicEnv.NEXT_PUBLIC_API_URL || 'http://lo
 const CONTACT_EMAIL = process.env.ADMIN_EMAIL || 'hello@savagemovie.ru'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/**
+ * Потолок тела запроса. nginx уже режет /api/subscribe на 16 КБ; настоящая
+ * подписка весит меньше килобайта (email до 200 знаков, источник и язык),
+ * так что порог приложения ничего не меняет для корректных запросов.
+ */
+const MAX_BODY_BYTES = 32 * 1024
 
 /** Бэкенд не должен держать запрос: человек ждёт ответ формы */
 const BACKEND_TIMEOUT_MS = 5000
@@ -57,14 +67,21 @@ function formatSubmittedAt(): string {
 async function storeSubscriber(
   email: string,
   source: string,
-  language: string
+  language: string,
+  clientIp: string
 ): Promise<StoreResult> {
   const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL
+
+  // Лимит подписки в бэкенде считается по IP. Бэкенд видит только адрес контейнера Next,
+  // поэтому настоящий адрес (его выставил nginx) передаём в X-Real-IP: бэкенд верит ему
+  // только от пира во внутренней сети. Иначе все посетители делили бы один лимит 5/мин.
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (clientIp !== UNKNOWN_CLIENT_IP) headers['X-Real-IP'] = clientIp
 
   try {
     const response = await fetch(`${baseUrl}/api/newsletter/subscribe`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ email, source, language }),
       cache: 'no-store',
       signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
@@ -98,9 +115,15 @@ async function notify(email: string, source: string, stored: StoreResult): Promi
       ? '<p style="color:#c00"><strong>Внимание:</strong> адрес не сохранён в базе, добавьте вручную.</p>'
       : ''
 
+  // Ссылка только для безопасного адреса: «?bcc=…» в mailto подмешивает чужих получателей
+  const emailHref = mailtoHref(email)
+  const emailHtml = escapeHtml(email)
+
   const html = [
     '<h2>Новая подписка на рассылку</h2>',
-    `<p><strong>Email:</strong> <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></p>`,
+    `<p><strong>Email:</strong> ${
+      emailHref ? `<a href="${escapeHtml(emailHref)}">${emailHtml}</a>` : emailHtml
+    }</p>`,
     `<p><strong>Источник:</strong> ${escapeHtml(source)}</p>`,
     warning,
     `<p style="color:#888"><small>Отправлено: ${escapeHtml(formatSubmittedAt())}</small></p>`,
@@ -160,7 +183,11 @@ async function notify(email: string, source: string, stored: StoreResult): Promi
 
 export async function POST(request: NextRequest) {
   try {
-    const body: SubscribeBody = await request.json()
+    const parsed = await readJsonBody(request, MAX_BODY_BYTES)
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: parsed.status })
+    }
+    const body = parsed.body as SubscribeBody
 
     const email = sanitizeString(body.email, 200).toLowerCase()
     if (!EMAIL_PATTERN.test(email)) {
@@ -170,7 +197,7 @@ export async function POST(request: NextRequest) {
     const source = sanitizeString(body.source, 64) || 'site'
     const language = sanitizeString(body.language, 8) || 'ru'
 
-    const stored = await storeSubscriber(email, source, language)
+    const stored = await storeSubscriber(email, source, language, getClientIp(request.headers))
 
     // Повторную подписку не рассылаем уведомлениями — это шум.
     if (stored === 'duplicate') {

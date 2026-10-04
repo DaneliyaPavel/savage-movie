@@ -1,5 +1,6 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { NextRequest } from 'next/server'
+import { NextRequest } from 'next/server'
 
 const sendEmail = vi.fn()
 const sendSmtpMail = vi.fn()
@@ -18,8 +19,21 @@ vi.mock('@/lib/utils/logger', () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
 }))
 
+/** Настоящий запрос: маршрут сам читает поток тела с потолком по размеру */
+function makeRawRequest(
+  body: string | ReadableStream<Uint8Array>,
+  headers: Record<string, string> = {}
+): NextRequest {
+  return new NextRequest('http://localhost/api/contact', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...headers },
+    body,
+    ...(typeof body === 'string' ? {} : { duplex: 'half' }),
+  } as RequestInit)
+}
+
 function makeRequest(body: unknown): NextRequest {
-  return { json: async () => body } as unknown as NextRequest
+  return makeRawRequest(JSON.stringify(body))
 }
 
 /** Роут читает env на уровне модуля, поэтому импортируем его заново на каждый кейс */
@@ -380,6 +394,132 @@ describe('POST /api/contact — SMTP и реле Telegram', () => {
       const mail = sendSmtpMail.mock.calls[0][0]
       expect(mail.subject).toBe('Новая заявка с сайта — Иван — Коммерция')
       expect(mail).not.toHaveProperty('text')
+    })
+  })
+})
+
+describe('POST /api/contact — безопасность письма и тела запроса', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    delete process.env.RESEND_API_KEY
+    delete process.env.ADMIN_EMAIL
+    delete process.env.TELEGRAM_BOT_TOKEN
+    delete process.env.TELEGRAM_CHAT_ID
+    process.env.SMTP_HOST = 'smtp.yandex.ru'
+    process.env.SMTP_USER = 'hello@savagemovie.ru'
+    process.env.SMTP_PASSWORD = 'app-password'
+    sendSmtpMail.mockResolvedValue({ messageId: 'smtp_1' })
+  })
+
+  describe('ссылка mailto: в письме', () => {
+    it('обычный email остаётся ссылкой, Reply-To на месте', async () => {
+      const { POST } = await loadRoute()
+
+      await POST(makeRequest({ name: 'Иван', email: 'client@example.com', message: 'Привет' }))
+
+      const mail = sendSmtpMail.mock.calls[0][0]
+      expect(mail.html).toContain('<a href="mailto:client@example.com">client@example.com</a>')
+      expect(mail.replyTo).toBe('client@example.com')
+    })
+
+    it('email с параметрами mailto (bcc, subject, body) не превращается в ссылку', async () => {
+      const { POST } = await loadRoute()
+      const injected = 'x@y.zz?bcc=attacker%40evil.example&subject=hi&body=call%20me'
+
+      const response = await POST(makeRequest({ name: 'Иван', email: injected, message: 'Привет' }))
+
+      // Заявка принимается — отказывать настоящим людям из-за экзотического адреса нельзя
+      expect(response.status).toBe(200)
+      const mail = sendSmtpMail.mock.calls[0][0]
+      expect(mail.html).not.toContain('mailto:')
+      expect(mail.html).not.toContain('<a href="mailto')
+      // Адрес виден владельцу обычным текстом (с экранированным амперсандом)
+      expect(mail.html).toContain('x@y.zz?bcc=attacker%40evil.example&amp;subject=hi')
+    })
+
+    it('экзотический, но настоящий адрес (апостроф) показывается текстом и не теряется', async () => {
+      const { POST } = await loadRoute()
+
+      const response = await POST(
+        makeRequest({ name: 'Иван', email: "o'brien@example.com", message: 'Привет' })
+      )
+
+      expect(response.status).toBe(200)
+      const mail = sendSmtpMail.mock.calls[0][0]
+      expect(mail.html).not.toContain('mailto:')
+      expect(mail.html).toContain('o&#039;brien@example.com')
+      expect(mail.replyTo).toBe("o'brien@example.com")
+    })
+  })
+
+  describe('потолок размера тела', () => {
+    it('большой Content-Length даёт 413, заявка не уходит', async () => {
+      const { POST } = await loadRoute()
+
+      const response = await POST(
+        makeRawRequest(JSON.stringify({ name: 'Иван', phone: '+79990000000' }), {
+          'content-length': String(100 * 1024 * 1024),
+        })
+      )
+
+      expect(response.status).toBe(413)
+      await expect(response.json()).resolves.toEqual({ error: expect.any(String) })
+      expect(sendSmtpMail).not.toHaveBeenCalled()
+    })
+
+    it('без Content-Length поток обрывается у потолка и даёт 413', async () => {
+      const { POST } = await loadRoute()
+
+      const chunk = new Uint8Array(16 * 1024).fill(0x20)
+      let pulled = 0
+      const stream = new ReadableStream<Uint8Array>(
+        {
+          pull(controller) {
+            if (pulled >= 6400) {
+              controller.close()
+              return
+            }
+            pulled += 1
+            controller.enqueue(chunk)
+          },
+        },
+        { highWaterMark: 0 }
+      )
+
+      const response = await POST(makeRawRequest(stream))
+
+      expect(response.status).toBe(413)
+      // Потолок 32 КБ = 2 куска по 16 КБ; третий переполняет счётчик
+      expect(pulled).toBeLessThanOrEqual(3)
+      expect(sendSmtpMail).not.toHaveBeenCalled()
+    })
+
+    it('битый JSON даёт 400', async () => {
+      const { POST } = await loadRoute()
+
+      const response = await POST(makeRawRequest('{"name":'))
+
+      expect(response.status).toBe(400)
+      expect(sendSmtpMail).not.toHaveBeenCalled()
+    })
+
+    it('заявка со всеми полями на максимуме проходит', async () => {
+      const { POST } = await loadRoute()
+      const biggest = {
+        name: 'я'.repeat(100),
+        phone: '1'.repeat(20),
+        telegram: 'a'.repeat(32),
+        email: `${'я'.repeat(50)}@example.com`,
+        company: 'я'.repeat(200),
+        message: 'я'.repeat(2000),
+        budget: 5_000_000,
+        projectType: 'commercial',
+      }
+      expect(new TextEncoder().encode(JSON.stringify(biggest)).byteLength).toBeLessThan(16 * 1024)
+
+      const response = await POST(makeRequest(biggest))
+
+      expect(response.status).toBe(200)
     })
   })
 })

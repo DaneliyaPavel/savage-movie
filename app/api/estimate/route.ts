@@ -20,6 +20,10 @@ import {
   isTelegramConfigured,
   sendTelegramMessage,
 } from '@/lib/integrations/telegram/client'
+import { getClientIp } from '@/lib/leads/client-ip'
+import { createRateLimiter, createRecentSet } from '@/lib/leads/memory-limits'
+import { readJsonBody } from '@/lib/leads/read-json-body'
+import { normalizeBriefUrl } from '@/lib/leads/safe-url'
 import { logger } from '@/lib/utils/logger'
 import {
   DEFAULT_COMMERCIAL_LANDING,
@@ -42,6 +46,17 @@ const RATE_LIMIT_MAX = 5
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
 
 /**
+ * Потолок тела запроса. Все поля вместе при максимальной длине (имя, компания,
+ * контакт, ссылка на бриф, комментарий 2000, метки по 300 знаков, лендинг и
+ * реферер) дают около 10 тысяч знаков, то есть до ~20 КБ в UTF-8 для кириллицы;
+ * обычная заявка весит 1-3 КБ. Запас втрое нужен потому, что в поле
+ * комментария на форме нет maxLength: человек может вставить длинное ТЗ, и
+ * сервер раньше молча обрезал его до 2000 знаков. Отказ на 413 потерял бы
+ * заявку целиком, поэтому порог выше разумной вставки текста.
+ */
+const MAX_BODY_BYTES = 64 * 1024
+
+/**
  * Порог для телеметрии, а не отсева: реальный человек с автозаполнением
  * браузера или предзаполненным типом проекта из блока задач может пройти
  * обе формы меньше чем за секунду. Отклонять по одной этой метрике — терять
@@ -54,41 +69,22 @@ const MIN_FILL_TIME_MS = 4000
 const DEDUPE_WINDOW_MS = 10 * 60 * 1000
 
 /**
- * Счётчики живут в памяти процесса: приложение крутится одним контейнером,
- * а терять состояние при рестарте здесь не страшно — это защита от шума,
- * а не от целенаправленной атаки. Перед распределённым деплоем заменить на Redis.
+ * Предел числа ключей в памяти (политика вытеснения описана в
+ * lib/leads/memory-limits.ts). Запись лимита занимает порядка 200 байт, запись
+ * дедупликации ещё меньше, так что оба потолка укладываются в пару мегабайт.
  */
-const rateLimitHits = new Map<string, number[]>()
-const recentSubmissions = new Map<string, number>()
+const RATE_LIMIT_MAX_KEYS = 10_000
+const DEDUPE_MAX_KEYS = 5_000
 
-function pruneExpired(now: number): void {
-  for (const [key, timestamps] of rateLimitHits) {
-    const fresh = timestamps.filter(time => now - time < RATE_LIMIT_WINDOW_MS)
-    if (fresh.length === 0) rateLimitHits.delete(key)
-    else rateLimitHits.set(key, fresh)
-  }
-  for (const [key, time] of recentSubmissions) {
-    if (now - time > DEDUPE_WINDOW_MS) recentSubmissions.delete(key)
-  }
-}
-
-function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for')
-  if (forwarded) return forwarded.split(',')[0]!.trim()
-  return request.headers.get('x-real-ip') || 'unknown'
-}
-
-function isRateLimited(ip: string, now: number): boolean {
-  const timestamps = rateLimitHits.get(ip) ?? []
-  const fresh = timestamps.filter(time => now - time < RATE_LIMIT_WINDOW_MS)
-  if (fresh.length >= RATE_LIMIT_MAX) {
-    rateLimitHits.set(ip, fresh)
-    return true
-  }
-  fresh.push(now)
-  rateLimitHits.set(ip, fresh)
-  return false
-}
+const rateLimiter = createRateLimiter({
+  limit: RATE_LIMIT_MAX,
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  maxKeys: RATE_LIMIT_MAX_KEYS,
+})
+const recentSubmissions = createRecentSet({
+  windowMs: DEDUPE_WINDOW_MS,
+  maxKeys: DEDUPE_MAX_KEYS,
+})
 
 function sanitize(value: unknown, maxLength = 500): string {
   if (typeof value !== 'string') return ''
@@ -134,16 +130,9 @@ export function detectContactKind(raw: string): ContactKind {
   return TELEGRAM_HANDLE_PATTERN.test(handle) ? 'telegram' : 'unknown'
 }
 
-/** Ссылка на бриф принимается только по http(s) — javascript: в письмо не попадёт */
+/** Ссылка на бриф: только http(s) и без логина с паролем, см. lib/leads/safe-url.ts */
 function sanitizeUrl(value: unknown): string {
-  const raw = sanitize(value, 500)
-  if (!raw) return ''
-  try {
-    const url = new URL(raw)
-    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : ''
-  } catch {
-    return ''
-  }
+  return normalizeBriefUrl(sanitize(value, 500))
 }
 
 /**
@@ -454,10 +443,29 @@ function pickAttribution(value: unknown): Record<string, string | null> {
 
 export async function POST(request: NextRequest) {
   const now = Date.now()
-  pruneExpired(now)
+
+  // Лимит по IP проверяем первым, до чтения тела: дешёвый отказ не должен
+  // стоить ни буферизации, ни разбора JSON. Заодно в счёт идут и заявки,
+  // которые отсеются позже (honeypot, нет согласия), — бот с одного адреса
+  // не получает безлимитных попыток.
+  const ip = getClientIp(request.headers)
+  if (rateLimiter.isLimited(ip, now)) {
+    return NextResponse.json(
+      { error: 'Слишком много заявок. Напишите нам в Telegram или на почту.' },
+      { status: 429 }
+    )
+  }
 
   try {
-    const body: EstimateBody = await request.json()
+    const parsed = await readJsonBody(request, MAX_BODY_BYTES)
+    if (!parsed.ok) {
+      logger.warn('Тело заявки отклонено до разбора', {
+        route: '/api/estimate',
+        status: parsed.status,
+      })
+      return NextResponse.json({ error: parsed.error }, { status: parsed.status })
+    }
+    const body = parsed.body as EstimateBody
 
     // Honeypot: молча отвечаем успехом (без filtered), чтобы бот не подбирал
     // обход — но флаг filtered:true отдельно говорит фронтенду не считать это
@@ -484,14 +492,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Нужно согласие на обработку персональных данных' },
         { status: 400 }
-      )
-    }
-
-    const ip = clientIp(request)
-    if (isRateLimited(ip, now)) {
-      return NextResponse.json(
-        { error: 'Слишком много заявок. Напишите нам в Telegram или на почту.' },
-        { status: 429 }
       )
     }
 
@@ -565,8 +565,7 @@ export async function POST(request: NextRequest) {
       .update([lead.contact, lead.project_type, lead.budget_range, lead.comment].join('|'))
       .digest('hex')
 
-    const previous = recentSubmissions.get(fingerprint)
-    if (previous && now - previous < DEDUPE_WINDOW_MS) {
+    if (recentSubmissions.has(fingerprint, now)) {
       logger.warn('Повторная заявка в окне дедупликации', {
         route: '/api/estimate',
         lead_id: lead.lead_id,
@@ -627,7 +626,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ошибка отправки заявки' }, { status: 500 })
     }
 
-    recentSubmissions.set(fingerprint, now)
+    recentSubmissions.add(fingerprint, now)
     await forwardToWebhook(lead)
 
     return NextResponse.json({ success: true, leadId: lead.lead_id })
