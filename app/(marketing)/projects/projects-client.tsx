@@ -160,7 +160,15 @@ function ProjectRow({
   mediaSpec?: MediaSurfaceSpec | null
 }) {
   const [isHovered, setIsHovered] = useState(false)
-  const [thumbnailWidth, setThumbnailWidth] = useState<string>('75%')
+  /*
+   * Стартовая ширина миниатюр близка к расчётной (см. эффект ниже): 75% делали
+   * колонку миниатюр выше кадра, и после гидратации строка схлопывалась на
+   * 100+ px, сдвигая нижние работы (CLS 0.06 на десктопе). 40% / 12% оставляют
+   * её чуть ниже кадра, поэтому высоту строки задаёт кадр с первого рендера.
+   */
+  const [thumbnailWidth, setThumbnailWidth] = useState<string>(() =>
+    getProjectOrientation(project) === 'vertical' ? '12%' : '40%'
+  )
   const [activeThumbIndex, setActiveThumbIndex] = useState(0)
   const [mediaHeight, setMediaHeight] = useState<number | null>(null)
   const [scribbleSeed, setScribbleSeed] = useState(0)
