@@ -46,6 +46,12 @@ export interface MotionSurfaceProps {
   /** Hero страницы: грузится сразу, не входит в лимит превью, постер с высоким приоритетом */
   hero?: boolean
   /**
+   * Постер с высоким приоритетом, а видео остаётся по правилам карточки. Нужен
+   * первой карточке списка: её кадр и есть LCP, и lazy-загрузка откладывала его
+   * на секунду-две. По умолчанию следует за hero.
+   */
+  posterPriority?: boolean
+  /**
    * auto: фоновые лупы; hover: карточки (мышь — наведение, тач — видимость);
    * hover-only: на таче движения нет вовсе (мобильный трафик Директа не оплачивает лупы)
    */
@@ -76,6 +82,7 @@ export function MotionSurface({
   mp4 = null,
   fallbackSizes = '100vw',
   hero = false,
+  posterPriority = hero,
   play = 'auto',
   onlyWhen,
   hoverScope,
@@ -121,7 +128,7 @@ export function MotionSurface({
    */
   const staticPoster = fallbackPoster ? normalizePosterUrl(fallbackPoster) : null
   const poster = spec ? (
-    <PosterPicture spec={spec} priority={hero} />
+    <PosterPicture spec={spec} priority={posterPriority} />
   ) : staticPoster ? (
     canOptimizePoster(staticPoster) ? (
       <Image
@@ -130,7 +137,7 @@ export function MotionSurface({
         alt=""
         fill
         sizes={fallbackSizes}
-        priority={hero}
+        priority={posterPriority}
         draggable={false}
         data-sm-alt={altAttr}
       />
@@ -141,8 +148,8 @@ export function MotionSurface({
         src={staticPoster}
         alt=""
         decoding="async"
-        loading={hero ? 'eager' : 'lazy'}
-        fetchPriority={hero ? 'high' : 'auto'}
+        loading={posterPriority ? 'eager' : 'lazy'}
+        fetchPriority={posterPriority ? 'high' : 'auto'}
         draggable={false}
         data-sm-alt={altAttr}
       />

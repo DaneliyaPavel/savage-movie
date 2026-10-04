@@ -283,6 +283,7 @@ function ProjectRow({
       play="hover"
       hoverScope="[data-sm-card]"
       fit={isVertical ? 'contain' : 'cover'}
+      posterPriority={index === 0}
       className="absolute inset-0"
     />
   )
