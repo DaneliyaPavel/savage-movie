@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from decimal import Decimal, InvalidOperation
 from uuid import UUID
 import base64
 import hashlib
@@ -25,7 +26,6 @@ from app.infrastructure.db.models.payment import Payment
 from app.infrastructure.db.repositories.courses import SqlAlchemyCoursesRepository
 from app.infrastructure.db.repositories.enrollments import SqlAlchemyEnrollmentsRepository
 from app.infrastructure.db.repositories.users import SqlAlchemyUsersRepository
-from app.rate_limit import limiter
 
 
 router = APIRouter(prefix="/api/payments", tags=["payments"])
@@ -83,6 +83,26 @@ async def _notify_platform_enrollment(
         logger.info("Platform enrollment (mock): %s", body)
 
 
+def _verified_amount(payment: Dict[str, Any], course_price: Any) -> Optional[Decimal]:
+    """
+    Сумма платежа из YooKassa, если она в рублях и равна цене курса, иначе None.
+    Сумму при создании платежа задаёт покупатель (app/api/payments/create), поэтому
+    без этой сверки за курс можно заплатить любую копейку и получить доступ.
+    """
+    amount = payment.get("amount")
+    if not isinstance(amount, dict) or amount.get("currency") != "RUB" or course_price is None:
+        return None
+    try:
+        paid = Decimal(str(amount.get("value")))
+        expected = Decimal(str(course_price)).quantize(Decimal("0.01"))
+    except (InvalidOperation, ValueError):
+        return None
+    # paid > 0: бесплатный курс (цена 0) оплатой не выдаётся, для него есть самозапись
+    if not paid.is_finite() or paid <= 0 or paid != expected:
+        return None
+    return paid
+
+
 def _verify_webhook_signature(raw_body: bytes, signature_header: str | None) -> None:
     """
     Проверяет HMAC-SHA256 подпись webhook от YooKassa.
@@ -108,13 +128,21 @@ def _verify_webhook_signature(raw_body: bytes, signature_header: str | None) -> 
         hashlib.sha256,
     ).hexdigest()
 
-    if not hmac.compare_digest(expected, parts[1]):
+    # Сравниваем байты: заголовок приходит строкой в latin-1, и compare_digest для str с
+    # не-ASCII символами бросает TypeError (500 вместо 401)
+    if not hmac.compare_digest(expected.encode("utf-8"), parts[1].encode("utf-8", "replace")):
         logger.warning("Webhook rejected: HMAC mismatch")
         raise HTTPException(status_code=401, detail="Invalid webhook signature")
 
 
+# Лимита по IP здесь нет намеренно. Backend вызывает только Next-маршрут
+# (app/api/payments/webhook), он не передаёт X-Real-IP, и get_client_key видит адрес
+# контейнера Next: YooKassa и любой аноним делили бы один бакет, а поток неподписанных POST
+# вытеснял бы настоящие уведомления (429), и покупатель платил бы без доступа. Неподписанный
+# запрос и так отбивается дёшево: подпись проверяется до разбора JSON и запросов наружу.
+# Лимит по IP вернуть в nginx (limit_req на /api/payments/webhook) или здесь, когда маршрут
+# начнёт передавать X-Real-IP.
 @router.post("/yookassa/webhook")
-@limiter.limit("30/minute")
 async def yookassa_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Webhook от YooKassa.
@@ -123,7 +151,10 @@ async def yookassa_webhook(request: Request, db: AsyncSession = Depends(get_db))
     """
     raw_body = await request.body()
 
-    # Проверяем HMAC-подпись
+    # Проверяем HMAC-подпись.
+    # До запуска оплаты заменить проверку подписи: YooKassa не шлёт Content-Hmac, нужна
+    # проверка по IP + повторный запрос платежа через API (он ниже уже есть). Пока настоящие
+    # уведомления YooKassa, скорее всего, отклоняются здесь с 401.
     signature = request.headers.get("Content-Hmac")
     _verify_webhook_signature(raw_body, signature)
 
@@ -136,7 +167,16 @@ async def yookassa_webhook(request: Request, db: AsyncSession = Depends(get_db))
     if event != "payment.succeeded" or not payment_id:
         return JSONResponse({"received": True})
 
-    payment = await _get_payment(str(payment_id))
+    # id попадает в URL запроса к YooKassa API и в БД: принимаем только UUID (так выглядят
+    # id платежей YooKassa), чтобы из уведомления нельзя было подставить свой кусок пути.
+    # Исходное значение в лог не пишем: оно приходит снаружи.
+    try:
+        payment_id = str(UUID(str(payment_id)))
+    except ValueError:
+        logger.warning("Webhook rejected: payment id is not a UUID")
+        raise HTTPException(status_code=400, detail="Invalid payment id")
+
+    payment = await _get_payment(payment_id)
     if payment.get("status") != "succeeded":
         # Не подтверждено через API — считаем неуспешным
         return JSONResponse({"received": True})
@@ -161,8 +201,23 @@ async def yookassa_webhook(request: Request, db: AsyncSession = Depends(get_db))
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
+    # Сумма и валюта из YooKassa должны совпасть с ценой курса. При расхождении доступ не
+    # выдаём, но отвечаем 200: ретраи YooKassa ничего не исправят, разбирать будем вручную.
+    paid_amount = _verified_amount(payment, course.price)
+    if paid_amount is None:
+        logger.warning(
+            "Webhook: payment amount does not match course price, enrollment skipped "
+            "(payment_id=%s, course_id=%s)",
+            payment_id,
+            course_id,
+        )
+        return JSONResponse({"received": True})
+
     user_id: UUID
     users_repo = SqlAlchemyUsersRepository(db)
+    # Что отправить в платформу обучения: для существующего аккаунта (гость с чужим email)
+    # это данные самого аккаунта, а не то, что ввёл покупатель
+    notify_name, notify_phone = user_name, user_phone
 
     if user_id_raw:
         try:
@@ -173,17 +228,13 @@ async def yookassa_webhook(request: Request, db: AsyncSession = Depends(get_db))
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid metadata userId")
     elif user_email:
-        # Гость: get_or_create по email
+        # Гость: get_or_create по email. Email и ФИО/телефон в metadata никем не подтверждены,
+        # поэтому существующий аккаунт по ним НЕ меняем (иначе чужую оплату можно использовать,
+        # чтобы переписать имя и телефон владельца адреса, в том числе админа).
         user = await users_repo.get_by_email(user_email.strip().lower())
         if user:
-            updates = {}
-            if user_name is not None and (user.full_name is None or user.full_name != user_name):
-                updates["full_name"] = user_name
-            if user_phone is not None and user.phone != user_phone:
-                updates["phone"] = user_phone
-            if updates:
-                await users_repo.update(user, updates)
             user_id = user.id
+            notify_name, notify_phone = user.full_name, user.phone
         else:
             new_user = await users_repo.create({
                 "email": user_email.strip().lower(),
@@ -221,33 +272,25 @@ async def yookassa_webhook(request: Request, db: AsyncSession = Depends(get_db))
             user_id=user_id,
             course_id=course_id,
             user_email=user_email or "",
-            user_name=user_name,
-            user_phone=user_phone,
+            user_name=notify_name,
+            user_phone=notify_phone,
             course_title=course.title,
         )
     except Exception:
         pass
 
-    # Записываем платёж для аналитики (идемпотентно по external_id)
-    amount_value = payment.get("amount")
-    if amount_value is not None:
-        if isinstance(amount_value, dict):
-            amount = amount_value.get("value")
-            if amount is not None:
-                amount = float(amount)
-        else:
-            amount = float(amount_value) if isinstance(amount_value, (int, float)) else None
-        if amount is not None:
-            existing = await db.execute(select(Payment).where(Payment.external_id == str(payment_id)))
-            if existing.scalar_one_or_none() is None:
-                pay_record = Payment(
-                    user_id=user_id,
-                    course_id=course_id,
-                    amount=amount,
-                    status="succeeded",
-                    external_id=str(payment_id),
-                )
-                db.add(pay_record)
-                await db.commit()
+    # Записываем платёж для аналитики (идемпотентно по external_id).
+    # Сумма уже сверена с ценой курса выше, пишем именно её.
+    existing = await db.execute(select(Payment).where(Payment.external_id == payment_id))
+    if existing.scalar_one_or_none() is None:
+        pay_record = Payment(
+            user_id=user_id,
+            course_id=course_id,
+            amount=paid_amount,
+            status="succeeded",
+            external_id=payment_id,
+        )
+        db.add(pay_record)
+        await db.commit()
 
     return JSONResponse({"received": True})

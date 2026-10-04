@@ -12,11 +12,20 @@ import {
   sendTelegramMessage,
 } from '@/lib/integrations/telegram/client'
 import { buildAiCourseMail, parseAiCourseLead } from '@/lib/leads/ai-course'
+import { mailtoHref } from '@/lib/leads/mailto'
+import { readJsonBody } from '@/lib/leads/read-json-body'
 import { logger } from '@/lib/utils/logger'
 
 /** Почта, на которую падают все заявки с сайта */
 const DEFAULT_CONTACT_EMAIL = 'hello@savagemovie.ru'
 const CONTACT_EMAIL = process.env.ADMIN_EMAIL || DEFAULT_CONTACT_EMAIL
+
+/**
+ * Потолок тела запроса. nginx уже режет /api/contact на 16 КБ; порог приложения
+ * вдвое выше, поэтому на корректных заявках (до ~7 КБ даже с блоком ai-course)
+ * ничего не меняет, а прямой запрос в обход nginx не буферизуется без предела.
+ */
+const MAX_BODY_BYTES = 32 * 1024
 
 interface ContactFormBody {
   name?: unknown
@@ -117,10 +126,11 @@ function buildEmailHtml(data: ContactSubmission): string {
   }
 
   if (data.email) {
+    // Ссылка только для безопасного адреса: «?bcc=…» в mailto подмешивает чужих получателей
+    const href = mailtoHref(data.email)
+    const label = escapeHtml(data.email)
     rows.push(
-      `<p><strong>Email:</strong> <a href="mailto:${escapeHtml(data.email)}">${escapeHtml(
-        data.email
-      )}</a></p>`
+      `<p><strong>Email:</strong> ${href ? `<a href="${escapeHtml(href)}">${label}</a>` : label}</p>`
     )
   }
 
@@ -196,7 +206,11 @@ function buildSubject(data: ContactSubmission): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: ContactFormBody = await request.json()
+    const parsed = await readJsonBody(request, MAX_BODY_BYTES)
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: parsed.status })
+    }
+    const body = parsed.body as ContactFormBody
     const { name, email, phone, telegram, company, message, budget, projectType } = body
 
     const sanitizedName = sanitizeString(name, 100)

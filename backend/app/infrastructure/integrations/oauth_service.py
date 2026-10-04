@@ -16,11 +16,17 @@ async def get_google_user_info(access_token: str) -> Optional[Dict]:
             )
             if response.status_code == 200:
                 data = response.json()
+                provider_id = data.get("id")
                 return {
                     "email": data.get("email"),
+                    # Google отдаёт verified_email (userinfo v2) или email_verified (OIDC);
+                    # строго bool True: строки и прочее считаем неподтверждённым.
+                    "email_verified": (
+                        data.get("verified_email") is True or data.get("email_verified") is True
+                    ),
                     "full_name": data.get("name"),
                     "avatar_url": data.get("picture"),
-                    "provider_id": data.get("id"),
+                    "provider_id": str(provider_id) if provider_id else None,
                 }
     except Exception as e:
         print(f"Ошибка получения данных Google: {e}")
@@ -37,11 +43,16 @@ async def get_yandex_user_info(access_token: str) -> Optional[Dict]:
             )
             if response.status_code == 200:
                 data = response.json()
+                default_email = data.get("default_email")
+                emails = data.get("emails") or []
+                provider_id = data.get("id")
                 return {
-                    "email": data.get("default_email") or data.get("emails", [None])[0],
+                    "email": default_email or (emails[0] if emails else None),
+                    # default_email Яндекс подтверждает сам; адрес из общего списка emails — нет
+                    "email_verified": bool(default_email),
                     "full_name": f"{data.get('first_name', '')} {data.get('last_name', '')}".strip(),
                     "avatar_url": None,  # Yandex не предоставляет аватар в этом API
-                    "provider_id": data.get("id"),
+                    "provider_id": str(provider_id) if provider_id else None,
                 }
     except Exception as e:
         print(f"Ошибка получения данных Yandex: {e}")

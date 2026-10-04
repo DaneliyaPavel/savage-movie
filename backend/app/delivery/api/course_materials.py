@@ -9,25 +9,15 @@ from uuid import UUID
 from app.infrastructure.db.session import get_db
 from app.infrastructure.db.models.user import User
 from app.infrastructure.db.repositories.course_materials import SqlAlchemyCourseMaterialsRepository
-from app.infrastructure.db.repositories.enrollments import SqlAlchemyEnrollmentsRepository
 from app.interfaces.schemas.course_material import (
     CourseMaterial as CourseMaterialSchema,
     CourseMaterialCreate,
     CourseMaterialUpdate,
 )
 from app.delivery.api.auth import get_current_user
+from app.delivery.api.courses import can_access_course_content
 
 router = APIRouter(prefix="/api/course-materials", tags=["course-materials"])
-
-
-async def _can_access_course_materials(
-    user: User, course_id: UUID, db: AsyncSession
-) -> bool:
-    if user.role == "admin":
-        return True
-    repo = SqlAlchemyEnrollmentsRepository(db)
-    enrollment = await repo.get_by_user_and_course(user.id, course_id)
-    return enrollment is not None
 
 
 @router.get("", response_model=List[CourseMaterialSchema])
@@ -37,7 +27,8 @@ async def list_materials(
     db: AsyncSession = Depends(get_db),
 ):
     """Список материалов курса (доступно записанным и админам)"""
-    can = await _can_access_course_materials(current_user, course_id, db)
+    # Единое правило доступа к платному контенту: то же, что у GET /api/courses/{id}/content
+    can = await can_access_course_content(current_user, course_id, db)
     if not can:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

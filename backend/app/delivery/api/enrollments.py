@@ -89,7 +89,17 @@ async def create_enrollment(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Вы уже записаны на этот курс"
         )
-    
+
+    # Самозапись только на бесплатные курсы. На платный запись создаёт успешная оплата:
+    # webhook (payments.py) пишет через репозиторий напрямую, этот эндпоинт ему не нужен.
+    # Админ записывается на любой курс (предпросмотр кабинета студента).
+    # Fail-closed: price NULL или отрицательная цена бесплатной не считаются.
+    if current_user.role != "admin" and not (course.price is not None and course.price == 0):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Курс платный: запись на него открывается после успешной оплаты"
+        )
+
     # Создаем запись
     return await repo.create(
         user_id=current_user.id,

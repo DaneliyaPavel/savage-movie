@@ -78,6 +78,15 @@ if [ ! -f "$ENV_FILE" ]; then
   fi
 fi
 
+# Проверка имени БД (is_valid_db_name): имя из Postgres нельзя писать в .env без неё
+DB_NAME_LIB="$ROOT_DIR/scripts/lib/validate-db-name.sh"
+if [ ! -f "$DB_NAME_LIB" ]; then
+  echo "Не найден $DB_NAME_LIB: без проверки имени БД не продолжаю."
+  exit 1
+fi
+# shellcheck source=lib/validate-db-name.sh
+. "$DB_NAME_LIB"
+
 read_env_var() {
   local key="$1"
   awk -F= -v k="$key" '$1==k {sub("^" k "=", "", $0); print $0; exit}' "$ENV_FILE"
@@ -125,6 +134,10 @@ sync_db_name_from_running_db() {
   if [ -z "$current_db_name" ] && [ "$db_count" -eq 1 ]; then
     local detected_db
     detected_db=$(echo "$db_names" | head -n 1)
+    if ! is_valid_db_name "$detected_db"; then
+      warn_invalid_db_name "$detected_db"
+      return 0
+    fi
     write_env_var "DB_NAME" "$detected_db"
     echo "ℹ️  DB_NAME не был задан. Установлен из текущей базы: $detected_db"
     return 0
@@ -135,6 +148,10 @@ sync_db_name_from_running_db() {
       if [ "$db_count" -eq 1 ]; then
         local detected_db
         detected_db=$(echo "$db_names" | head -n 1)
+        if ! is_valid_db_name "$detected_db"; then
+          warn_invalid_db_name "$detected_db"
+          return 0
+        fi
         write_env_var "DB_NAME" "$detected_db"
         echo "ℹ️  DB_NAME=$current_db_name не найден. Переключено на $detected_db"
       else

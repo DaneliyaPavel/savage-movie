@@ -4,8 +4,9 @@
  * успех только при реальной доставке, антиспам не пропускает ботов и
  * не режет людей, атрибуция доезжает до письма и до внешнего приёмника.
  */
+// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { NextRequest } from 'next/server'
+import { NextRequest } from 'next/server'
 
 const sendEmail = vi.fn()
 const sendSmtpMail = vi.fn()
@@ -38,12 +39,28 @@ vi.mock('@/lib/utils/logger', () => ({
   },
 }))
 
-/** Заявка приходит через nginx, поэтому адрес читается из x-forwarded-for */
-function makeRequest(body: unknown, ip = '10.0.0.1'): NextRequest {
-  return {
-    json: async () => body,
-    headers: new Headers({ 'x-forwarded-for': ip }),
-  } as unknown as NextRequest
+/**
+ * Настоящий запрос, а не заглушка с json(): маршрут сам читает поток тела с
+ * потолком по размеру. Заявка приходит через nginx, а он выставляет x-real-ip.
+ */
+function makeRawRequest(
+  body: string | ReadableStream<Uint8Array>,
+  headers: Record<string, string> = {}
+): NextRequest {
+  return new NextRequest('http://localhost/api/estimate', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...headers },
+    body,
+    ...(typeof body === 'string' ? {} : { duplex: 'half' }),
+  } as RequestInit)
+}
+
+function makeRequest(
+  body: unknown,
+  ip = '10.0.0.1',
+  extraHeaders: Record<string, string> = {}
+): NextRequest {
+  return makeRawRequest(JSON.stringify(body), { 'x-real-ip': ip, ...extraHeaders })
 }
 
 /** Счётчики антиспама живут в модуле — на каждый кейс берём свежий инстанс */
@@ -372,5 +389,281 @@ describe('POST /api/estimate', () => {
 
     expect(response.status).toBe(200)
     vi.unstubAllGlobals()
+  })
+})
+
+describe('POST /api/estimate — защита от злоупотреблений', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    process.env.SMTP_HOST = 'smtp.example.com'
+    process.env.SMTP_USER = 'user'
+    process.env.SMTP_PASSWORD = 'password'
+    delete process.env.RESEND_API_KEY
+    delete process.env.TELEGRAM_BOT_TOKEN
+    delete process.env.TELEGRAM_CHAT_ID
+    delete process.env.LEAD_WEBHOOK_URL
+    delete process.env.LEAD_WEBHOOK_TOKEN
+    sendSmtpMail.mockResolvedValue({ messageId: 'smtp_1' })
+    sendEmail.mockResolvedValue({ id: 'email_1' })
+    sendTelegramMessage.mockResolvedValue({ ok: true })
+  })
+
+  describe('адрес клиента для лимита', () => {
+    it('подмена X-Forwarded-For не создаёт новую корзину лимита', async () => {
+      const { POST } = await loadRoute()
+
+      // nginx выставил настоящий x-real-ip, а клиент каждый раз присылает свой «адрес»
+      for (let index = 0; index < 5; index += 1) {
+        const response = await POST(
+          makeRequest({ ...validLead, comment: `Заявка ${index}` }, '198.51.100.20', {
+            'x-forwarded-for': `203.0.113.${index}`,
+          })
+        )
+        expect(response.status).toBe(200)
+      }
+
+      const blocked = await POST(
+        makeRequest({ ...validLead, comment: 'Шестая' }, '198.51.100.20', {
+          'x-forwarded-for': '203.0.113.200',
+        })
+      )
+      expect(blocked.status).toBe(429)
+      expect(sendSmtpMail).toHaveBeenCalledTimes(5)
+    })
+
+    it('без x-real-ip берётся последний элемент X-Forwarded-For, а не первый', async () => {
+      const { POST } = await loadRoute()
+
+      // Первые элементы цепочки присылает клиент, последний дописывает nginx
+      for (let index = 0; index < 5; index += 1) {
+        const response = await POST(
+          makeRawRequest(JSON.stringify({ ...validLead, comment: `Заявка ${index}` }), {
+            'x-forwarded-for': `10.9.8.${index}, 198.51.100.21`,
+          })
+        )
+        expect(response.status).toBe(200)
+      }
+
+      const blocked = await POST(
+        makeRawRequest(JSON.stringify({ ...validLead, comment: 'Шестая' }), {
+          'x-forwarded-for': '10.9.8.99, 198.51.100.21',
+        })
+      )
+      expect(blocked.status).toBe(429)
+    })
+
+    it('разные клиенты за nginx не делят корзину из-за одинаковой подделки', async () => {
+      const { POST } = await loadRoute()
+
+      for (let index = 0; index < 5; index += 1) {
+        await POST(
+          makeRequest({ ...validLead, comment: `A${index}` }, '198.51.100.30', {
+            'x-forwarded-for': '1.2.3.4',
+          })
+        )
+      }
+
+      const other = await POST(
+        makeRequest({ ...validLead, comment: 'B' }, '198.51.100.31', {
+          'x-forwarded-for': '1.2.3.4',
+        })
+      )
+      expect(other.status).toBe(200)
+    })
+
+    it('отказ по лимиту приходит до чтения тела', async () => {
+      const { POST } = await loadRoute()
+
+      for (let index = 0; index < 5; index += 1) {
+        await POST(makeRequest({ ...validLead, comment: `Заявка ${index}` }, '198.51.100.40'))
+      }
+
+      let pulled = 0
+      const stream = new ReadableStream<Uint8Array>(
+        {
+          pull(controller) {
+            pulled += 1
+            controller.enqueue(new TextEncoder().encode(JSON.stringify(validLead)))
+            controller.close()
+          },
+        },
+        { highWaterMark: 0 }
+      )
+      const blocked = await POST(makeRawRequest(stream, { 'x-real-ip': '198.51.100.40' }))
+
+      expect(blocked.status).toBe(429)
+      expect(pulled).toBe(0)
+    })
+  })
+
+  describe('потолок размера тела', () => {
+    it('большой Content-Length даёт 413 до разбора, заявка не уходит', async () => {
+      const { POST } = await loadRoute()
+
+      const response = await POST(
+        makeRawRequest(JSON.stringify(validLead), {
+          'x-real-ip': '198.51.100.50',
+          'content-length': String(100 * 1024 * 1024),
+        })
+      )
+
+      expect(response.status).toBe(413)
+      await expect(response.json()).resolves.toEqual({ error: expect.any(String) })
+      expect(sendSmtpMail).not.toHaveBeenCalled()
+    })
+
+    it('без Content-Length поток на 100 МБ обрывается у потолка', async () => {
+      const { POST } = await loadRoute()
+
+      const chunkSize = 16 * 1024
+      const chunk = new Uint8Array(chunkSize).fill(0x20)
+      let pulled = 0
+      let cancelled = false
+      const stream = new ReadableStream<Uint8Array>(
+        {
+          pull(controller) {
+            // Тело «на 100 МБ»: целиком оно бы не прочиталось
+            if (pulled >= 6400) {
+              controller.close()
+              return
+            }
+            pulled += 1
+            controller.enqueue(chunk)
+          },
+          cancel() {
+            cancelled = true
+          },
+        },
+        { highWaterMark: 0 }
+      )
+      const request = makeRawRequest(stream, { 'x-real-ip': '198.51.100.51' })
+      expect(request.headers.get('content-length')).toBeNull()
+
+      const response = await POST(request)
+
+      expect(response.status).toBe(413)
+      // Потолок 64 КБ = 4 куска по 16 КБ; ещё один кусок переполняет счётчик
+      expect(pulled).toBeLessThanOrEqual(5)
+      expect(cancelled).toBe(true)
+      expect(sendSmtpMail).not.toHaveBeenCalled()
+    })
+
+    it('битый JSON даёт 400, а не 500 и не засоряет лог ошибок', async () => {
+      const { POST } = await loadRoute()
+
+      const response = await POST(makeRawRequest('{"name": ', { 'x-real-ip': '198.51.100.52' }))
+
+      expect(response.status).toBe(400)
+      await expect(response.json()).resolves.toEqual({ error: expect.any(String) })
+      expect(loggerError).not.toHaveBeenCalled()
+      expect(sendSmtpMail).not.toHaveBeenCalled()
+    })
+
+    it('самая большая законная заявка (все поля на максимуме, кириллица) проходит', async () => {
+      const { POST } = await loadRoute()
+
+      const attribution = Object.fromEntries(
+        [
+          'utm_source',
+          'utm_medium',
+          'utm_campaign',
+          'utm_content',
+          'utm_term',
+          'yclid',
+          'gclid',
+          'first_utm_source',
+          'first_utm_medium',
+          'first_utm_campaign',
+          'first_landing_path',
+          'first_referrer',
+          'first_touch_at',
+          'extra',
+        ].map(key => [key, 'я'.repeat(300)])
+      )
+      const biggest = {
+        ...validLead,
+        name: 'я'.repeat(100),
+        company: 'я'.repeat(200),
+        contact: `${'я'.repeat(20)}@example.com`,
+        comment: 'я'.repeat(2000),
+        briefUrl: `https://disk.yandex.ru/d/${'a'.repeat(450)}`,
+        clientId: '1'.repeat(100),
+        attribution,
+        landingPath: `/${'я'.repeat(499)}`,
+        referrer: `https://yandex.ru/${'я'.repeat(480)}`,
+      }
+      const size = new TextEncoder().encode(JSON.stringify(biggest)).byteLength
+      // Заявка заметно больше обычной, но с большим запасом под потолком в 64 КБ
+      expect(size).toBeGreaterThan(10 * 1024)
+      expect(size).toBeLessThan(32 * 1024)
+
+      const response = await POST(makeRequest(biggest, '198.51.100.53'))
+
+      expect(response.status).toBe(200)
+      expect(sendSmtpMail).toHaveBeenCalledTimes(1)
+    })
+
+    it('длинное ТЗ, вставленное в комментарий, принимается и обрезается до 2000 знаков', async () => {
+      const { POST } = await loadRoute()
+
+      // ~40 КБ кириллицы: в поле на форме maxLength нет, человек может вставить документ
+      const pasted = 'ж'.repeat(20_000)
+      const response = await POST(makeRequest({ ...validLead, comment: pasted }, '198.51.100.54'))
+
+      expect(response.status).toBe(200)
+      const html = sendSmtpMail.mock.calls[0]![0].html as string
+      expect(html).toContain('ж'.repeat(2000))
+      expect(html).not.toContain('ж'.repeat(2001))
+    })
+  })
+
+  describe('ссылка на бриф', () => {
+    async function submitWithBriefUrl(briefUrl: string) {
+      process.env.LEAD_WEBHOOK_URL = 'https://n8n.example/webhook/lead'
+      process.env.TELEGRAM_BOT_TOKEN = 'bot-token'
+      process.env.TELEGRAM_CHAT_ID = 'chat-id'
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+      vi.stubGlobal('fetch', fetchMock)
+
+      const { POST } = await loadRoute()
+      const response = await POST(makeRequest({ ...validLead, briefUrl }, '198.51.100.60'))
+
+      const payload = JSON.parse(fetchMock.mock.calls[0]![1].body as string)
+      vi.unstubAllGlobals()
+      return {
+        response,
+        html: sendSmtpMail.mock.calls[0]![0].html as string,
+        telegram: sendTelegramMessage.mock.calls[0]![0] as string,
+        briefUrlInPayload: payload.brief_url as string | null,
+      }
+    }
+
+    it('ссылка с логином (подмена домена студии) отбрасывается везде, заявка принимается', async () => {
+      const { response, html, telegram, briefUrlInPayload } = await submitWithBriefUrl(
+        'https://savagemovie.ru@evil.example/brief.pdf'
+      )
+
+      expect(response.status).toBe(200)
+      expect(html).not.toContain('evil.example')
+      expect(html).not.toContain('Бриф:')
+      expect(telegram).not.toContain('evil.example')
+      expect(briefUrlInPayload).toBeNull()
+    })
+
+    it.each([
+      ['Яндекс.Диск', 'https://disk.yandex.ru/d/AbCdEf123'],
+      ['Google Drive', 'https://drive.google.com/drive/folders/1AbC_dEf?usp=sharing'],
+      ['Dropbox', 'https://www.dropbox.com/scl/fo/xyz123/h?rlkey=abc&dl=0'],
+      ['WeTransfer', 'https://we.tl/t-AbCdEf1234'],
+      ['http без TLS', 'http://files.example.com/brief.pdf'],
+    ])('обычная ссылка (%s) доходит до письма, Telegram и n8n', async (_label, url) => {
+      const { response, html, telegram, briefUrlInPayload } = await submitWithBriefUrl(url)
+
+      expect(response.status).toBe(200)
+      // В HTML амперсанд экранируется, в Telegram и n8n уходит как есть
+      expect(html).toContain(`href="${url.replace(/&/g, '&amp;')}"`)
+      expect(telegram).toContain(url)
+      expect(briefUrlInPayload).toBe(url)
+    })
   })
 })

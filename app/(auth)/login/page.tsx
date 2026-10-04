@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { OAuthButtons } from '@/components/auth/OAuthButtons'
 import { login } from '@/lib/api/auth'
+import { getSafeRedirect } from '@/lib/auth/safe-redirect'
 import { Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -47,15 +48,8 @@ function LoginForm() {
     try {
       await login({ email, password })
 
-      // Проверяем, есть ли redirect параметр (только относительные пути)
-      const redirectParam = searchParams.get('redirect')
-      const redirectTo =
-        redirectParam &&
-        redirectParam.startsWith('/') &&
-        !redirectParam.startsWith('//') &&
-        !redirectParam.includes('\\')
-          ? redirectParam
-          : '/admin'
+      // Только пути внутри сайта; всё остальное (в т.ч. "/\t/host") уходит на /admin
+      const redirectTo = getSafeRedirect(searchParams.get('redirect'), '/admin')
 
       // Используем window.location для полного перезапуска страницы
       window.location.href = redirectTo
