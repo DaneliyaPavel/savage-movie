@@ -71,6 +71,28 @@ chmod +x up scripts/*.sh
 
 После merge в `main` GitHub Action соберет и загрузит Docker‑образы в GHCR, а сервер только сделает `pull` и перезапуск (быстро и без сборки на сервере).
 
+## HTTP/2 на nginx: проверка после деплоя и откат
+
+Строка `http2 on;` стоит в блоках `savagemovie.ru` и `www.savagemovie.ru` файла `infra/nginx/conf.d/default.conf` (и в `ai.savagemovie.ru.conf`). Нужен nginx 1.25.1 или новее.
+
+Проверка после деплоя (с вашего компьютера):
+
+```bash
+curl -sI --http2 https://savagemovie.ru/ -o /dev/null -w 'http=%{http_version} code=%{http_code}\n'     # http=2 code=200
+curl -sI --http1.1 https://savagemovie.ru/ -o /dev/null -w 'http=%{http_version} code=%{http_code}\n'   # http=1.1 code=200
+curl -sI --http2 https://www.savagemovie.ru/ -o /dev/null -w 'http=%{http_version} code=%{http_code} -> %{redirect_url}\n'   # http=2 code=301 -> https://savagemovie.ru/
+```
+
+Откат. Быстро, на сервере (до следующего деплоя):
+
+```bash
+cd /root/opt/savagemovie/savage-movie
+sed -i '/^    http2 on;$/d' infra/nginx/conf.d/default.conf
+docker exec savage_movie_nginx nginx -t && docker exec savage_movie_nginx nginx -s reload
+```
+
+Это временно: `scripts/deploy.sh` делает `git reset --hard origin/main`, и при следующем деплое строки вернутся. Поэтому следом нужно смержить revert коммита с `http2 on;` в `main`.
+
 ## Важно
 
 - Не используйте `docker compose down -v`, иначе удалятся данные.

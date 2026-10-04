@@ -27,7 +27,7 @@ push/merge в **main** → GitHub Actions `deploy.yml` (нет lint/test/type-ch
 - **Backend-код на проде монтируется из git-чекаута** (`./backend:/app/backend` перекрывает образ) — образ и код могут разойтись.
 - **Health:** backend `GET /health` (docker healthcheck); frontend healthcheck нет; deploy.sh не ждёт здоровья и не проверяет.
 - **Rollback:** формального нет: тег только `latest`; откат = revert-коммит в main (новая сборка) либо ручной `IMAGE_TAG`. Бэкапы БД: `scripts/backup.sh` (расписание **UNVERIFIED**).
-- **nginx:** `infra/nginx/conf.d/default.conf` (монтируется, restart при деплое; TLS Let's Encrypt с хоста; www→non-www; HSTS). Отдельный security.yml: npm audit, pip-audit, gitleaks, trivy (не блокирует deploy — отдельный workflow).
+- **nginx:** `infra/nginx/conf.d/default.conf` (монтируется, restart при деплое; TLS Let's Encrypt с хоста; www→non-www; HSTS; HTTP/2 через `http2 on;` в блоках savagemovie.ru, www и ai, нужен nginx ≥ 1.25.1, образ `nginx:alpine` плавающий; HTTP/3 и Alt-Svc нет). Отдельный security.yml: npm audit, pip-audit, gitleaks, trivy (не блокирует deploy — отдельный workflow).
 - Порт VDS/IP и `VDS_PATH` есть в DEPLOY_VDS.md (устаревшие http://IP примеры).
 
 ## Опасные зоны (не трогать без прямого разрешения)

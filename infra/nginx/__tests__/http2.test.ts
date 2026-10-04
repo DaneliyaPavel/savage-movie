@@ -13,6 +13,8 @@
  *  - директива именно на уровне server: внутри location nginx её не принимает.
  *  - старая форма `listen 443 ssl http2;` не нужна: с nginx 1.25.1 она считается устаревшей.
  *  - сервер, который только обрывает чужие рукопожатия (ssl_reject_handshake), h2 не получает.
+ *  - HTTP/3 не включён (нет quic, Alt-Svc и UDP 443): откат HTTP/2 сводится к удалению строки,
+ *    потому что браузер не запоминает альтернативный протокол.
  * Живую работу проверяет `nginx -t` на деплое и ручной прогон curl --http2.
  */
 import fs from 'fs'
@@ -85,6 +87,7 @@ function servers(file: string): Node[] {
   return tree.children.filter(node => node.header === 'server')
 }
 
+const compose = fs.readFileSync(path.join(REPO_ROOT, 'docker-compose.yml'), 'utf-8')
 const confFiles = fs.readdirSync(CONF_DIR).filter(file => file.endsWith('.conf'))
 const allServers = confFiles.flatMap(file => servers(file).map(server => ({ file, server })))
 
@@ -115,10 +118,13 @@ describe('nginx: HTTP/2', () => {
   })
 
   it('каждый обслуживающий HTTPS-сервер включает http2 на своём уровне', () => {
-    expect(servingServers.length).toBeGreaterThanOrEqual(3)
+    const names = servingServers.flatMap(({ server }) => args(server, 'server_name'))
+    expect(names).toEqual(
+      expect.arrayContaining(['savagemovie.ru', 'www.savagemovie.ru', 'ai.savagemovie.ru'])
+    )
     for (const { file, server } of servingServers) {
-      const names = args(server, 'server_name').join(' ')
-      expect(args(server, 'http2'), `${file}: ${names}`).toEqual(['on'])
+      const serverNames = args(server, 'server_name').join(' ')
+      expect(args(server, 'http2'), `${file}: ${serverNames}`).toEqual(['on'])
     }
   })
 
@@ -137,6 +143,14 @@ describe('nginx: HTTP/2', () => {
         expect(listen, `${file}: listen ${listen}`).not.toMatch(/\bhttp2\b/)
       }
     }
+  })
+
+  it('HTTP/3 не включён: нет quic, Alt-Svc и UDP 443', () => {
+    for (const file of confFiles) {
+      const code = stripComments(fs.readFileSync(path.join(CONF_DIR, file), 'utf-8'))
+      expect(code, file).not.toMatch(/\bquic\b|\bhttp3\b|alt-svc/i)
+    }
+    expect(compose).not.toMatch(/443(:\d+)?\/udp/)
   })
 
   it('сервер, обрывающий чужие рукопожатия, остаётся без http2 и без сайта', () => {
