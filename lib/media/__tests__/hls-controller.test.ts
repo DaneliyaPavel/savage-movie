@@ -85,8 +85,9 @@ describe('pickLevelIndex', () => {
     expect(pickLevelIndex(ladder, { width: 640, height: 360 }, 3)).toBe(2)
   })
 
-  it('полноэкранный блок упирается в 1080, а не в самый высокий из возможных', () => {
-    expect(pickLevelIndex([360, 720, 1080, 2160], { width: 2560, height: 1440 }, 2)).toBe(2)
+  it('полноэкранный блок упирается в 720, а не в самый высокий из возможных', () => {
+    expect(pickLevelIndex([360, 720, 1080, 2160], { width: 2560, height: 1440 }, 2)).toBe(1)
+    expect(pickLevelIndex([360, 540, 720, 1080], { width: 1920, height: 1080 }, 1)).toBe(2)
   })
 
   it('крошечный блок не опускается ниже 360', () => {
