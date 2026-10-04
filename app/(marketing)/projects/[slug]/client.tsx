@@ -3,7 +3,7 @@
  */
 'use client'
 
-import { useCallback, useRef, useState, type MouseEvent } from 'react'
+import { useCallback, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { motion, useMotionValue, useSpring } from 'framer-motion'
 import { MotionSurface } from '@/components/media/motion-surface'
 import { FullScreenVideoPlayer } from '@/features/projects/components/FullScreenVideoPlayer'
@@ -13,7 +13,6 @@ import { BackButton } from '@/components/ui/back-button'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
 import { ProjectsJalousieFooter } from '@/components/sections/ProjectsJalousieFooter'
 import { trackMetrikaGoal } from '@/lib/analytics/metrika'
 import { getThumbnailUrl } from '@/lib/integrations/bunny/client'
@@ -75,6 +74,11 @@ interface ProjectDetailClientProps {
   projectVideos?: ProjectVideo[]
   /** {id Bunny-видео → spec} из манифеста веб-медиа; собирается на сервере */
   mediaSpecs?: Record<string, MediaSurfaceSpec>
+  /**
+   * Описание проекта, уже отрисованное из markdown на сервере: react-markdown
+   * (~34 КБ gzip) в браузер не уходит, разметка остаётся прежней.
+   */
+  description?: ReactNode
 }
 
 export function ProjectDetailClient({
@@ -82,6 +86,7 @@ export function ProjectDetailClient({
   nextProject,
   projectVideos = [],
   mediaSpecs = {},
+  description,
 }: ProjectDetailClientProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [isVideoOpen, setIsVideoOpen] = useState(false)
@@ -108,7 +113,7 @@ export function ProjectDetailClient({
   return (
     <>
       {/* Curtain: sits above fixed footer; when it scrolls up, footer (under spacer) becomes visible */}
-      <div className="relative z-20 min-h-screen bg-[#000000]">
+      <main className="relative z-20 min-h-screen bg-[#000000]">
         <TopBar />
         <JalousieMenu />
 
@@ -222,13 +227,7 @@ export function ProjectDetailClient({
                   (Описание)
                 </div>
                 <div className="max-w-3xl mx-auto text-center text-[#FFFFFF]/80 font-secondary text-lg md:text-xl leading-relaxed">
-                  <ReactMarkdown
-                    components={{
-                      p: ({ children }) => <p className="mb-5 last:mb-0">{children}</p>,
-                    }}
-                  >
-                    {project.description}
-                  </ReactMarkdown>
+                  {description}
                 </div>
               </motion.div>
             )}
@@ -361,7 +360,7 @@ export function ProjectDetailClient({
                   className="flex items-center justify-between group"
                 >
                   <div>
-                    <div className="text-sm md:text-base text-[#FFFFFF]/40 uppercase tracking-wider mb-2 font-secondary">
+                    <div className="text-sm md:text-base text-[#FFFFFF]/[0.47] uppercase tracking-wider mb-2 font-secondary">
                       Похожая задача?
                     </div>
                     <div className="text-2xl md:text-3xl font-oranienbaum text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">
@@ -389,7 +388,7 @@ export function ProjectDetailClient({
                     transition={{ duration: 0.3 }}
                   >
                     <div>
-                      <div className="text-sm md:text-base text-[#FFFFFF]/40 uppercase tracking-wider mb-2 font-secondary">
+                      <div className="text-sm md:text-base text-[#FFFFFF]/[0.47] uppercase tracking-wider mb-2 font-secondary">
                         Следующий проект
                       </div>
                       <div className="text-2xl md:text-3xl font-oranienbaum text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">
@@ -403,7 +402,7 @@ export function ProjectDetailClient({
             )}
           </div>
         </div>
-      </div>
+      </main>
 
       {/* Transparent spacer: creates scroll room; footer (z-10) paints on top so it's visible here */}
       <div className="min-h-screen" aria-hidden="true" />

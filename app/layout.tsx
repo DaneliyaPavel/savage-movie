@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
+import { preload } from 'react-dom'
 import './globals.css'
 import { JsonLdScripts } from '@/components/seo/json-ld-scripts'
 import { YandexMetrika } from '@/components/analytics/yandex-metrika'
@@ -19,6 +20,9 @@ const saNoRules = localFont({
   ],
   variable: '--font-handwritten',
   display: 'swap',
+  // Рукописная подпись под заставкой, не первый экран: 72 КБ шрифта не должны идти
+  // в предзагрузку наравне с CSS и шрифтом заголовка
+  preload: false,
   fallback: ['Kalam', 'Caveat', 'cursive'],
 })
 
@@ -176,6 +180,18 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  /*
+   * Шрифт заголовка hero (h1 на главной, заголовки направлений) качается параллельно
+   * с CSS, а не после его разбора и первой раскладки. Без этого заголовок
+   * перерисовывается, когда шрифт приходит, и самый крупный текст страницы
+   * появляется только к этому моменту.
+   */
+  preload('/fonts/Montserrat-BlackItalic.woff2', {
+    as: 'font',
+    type: 'font/woff2',
+    crossOrigin: 'anonymous',
+  })
+
   const jsonLdScripts = [
     JSON.stringify({ ...organizationJsonLd, '@id': `${baseUrl}/#organization` }),
     JSON.stringify(websiteJsonLd),

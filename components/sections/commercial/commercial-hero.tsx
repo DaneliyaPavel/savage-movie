@@ -128,18 +128,14 @@ export function CommercialHero({
             <button
               type="button"
               onClick={onEstimateClick}
-              aria-label={hero.ctaPrimary}
               className="group relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-sm bg-white px-8 py-4 text-base font-medium text-black transition-transform hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
               {/* На 360px полная формулировка переносится на две строки —
-                  до 640px показываем короткий эквивалент того же действия,
-                  aria-label выше сохраняет полную формулировку для скринридера */}
-              <span aria-hidden="true" className="relative z-10 sm:hidden">
-                Получить смету
-              </span>
-              <span aria-hidden="true" className="relative z-10 hidden sm:inline">
-                {hero.ctaPrimary}
-              </span>
+                  до 640px показываем короткий эквивалент того же действия.
+                  Скрытый display:none вариант не входит в доступное имя, поэтому
+                  имя кнопки всегда совпадает с тем, что видно (WCAG 2.5.3) */}
+              <span className="relative z-10 sm:hidden">Получить смету</span>
+              <span className="relative z-10 hidden sm:inline">{hero.ctaPrimary}</span>
               <ArrowRight className="relative z-10 h-4 w-4 transition-transform group-hover:translate-x-1" />
               <span className="absolute inset-0 -translate-x-full bg-accent transition-transform duration-500 group-hover:translate-x-0" />
             </button>

@@ -277,7 +277,10 @@ export default function ContactPage() {
             </span>
 
             <div className="flex items-center justify-between mb-8">
-              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              <label
+                htmlFor="contact-budget"
+                className="text-xs uppercase tracking-widest text-muted-foreground"
+              >
                 {t('contact.budget')}
               </label>
               {/* Large numeric readout */}
@@ -294,6 +297,7 @@ export default function ContactPage() {
             {/* Custom Slider */}
             <div className="relative">
               <input
+                id="contact-budget"
                 type="range"
                 min={budgetConfig.min}
                 max={budgetConfig.max}
@@ -431,31 +435,31 @@ export default function ContactPage() {
           className="mt-20 pt-20 border-t border-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12"
         >
           <div>
-            <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-4">
+            <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-4">
               {t('contact.phone')}
-            </h3>
+            </h2>
             <a href={PHONE_HREF} className="text-lg hover:text-accent transition-colors">
               {PHONE_DISPLAY}
             </a>
           </div>
           <div>
-            <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-4">
+            <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-4">
               {t('contact.emailLabel')}
-            </h3>
+            </h2>
             <a href={EMAIL_HREF} className="text-lg hover:text-accent transition-colors">
               {EMAIL}
             </a>
           </div>
           <div>
-            <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-4">
+            <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-4">
               {t('contact.location')}
-            </h3>
+            </h2>
             <p className="text-lg">{language === 'ru' ? 'Санкт-Петербург, Россия' : 'St. Petersburg, Russia'}</p>
           </div>
           <div>
-            <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-4">
+            <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-4">
               {t('contact.social')}
-            </h3>
+            </h2>
             <div className="flex gap-4">
               {SOCIAL_LINKS.map(social => (
                 <a

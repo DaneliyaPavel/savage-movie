@@ -6,8 +6,10 @@ import AutoScroll from 'embla-carousel-auto-scroll'
 import Image from 'next/image'
 import Link from 'next/link'
 import { MotionSurface } from '@/components/media/motion-surface'
-import { normalizePosterUrl } from '@/lib/commercial-landing/poster-url'
+import { canOptimizePoster, normalizePosterUrl } from '@/lib/commercial-landing/poster-url'
+import type { MediaSurfaceSpec } from '@/lib/media/manifest'
 import { useHeroSettled } from '@/lib/media/use-hero-settled'
+import { extractVideoId } from '@/lib/media/video-id'
 
 interface FilmstripProject {
   id: string
@@ -24,6 +26,8 @@ interface FilmstripCarouselProps {
   projects: FilmstripProject[]
   onProjectSelect: (project: FilmstripProject) => void
   selectedId: string | null
+  /** Постеры манифеста по id видео: статичный кадр плитки без обращения к Bunny */
+  mediaSpecs?: Record<string, MediaSurfaceSpec>
 }
 
 const HOVER_NOTES = ['смотреть', 'включить', 'взглянуть', 'версия режиссера', 'узнать больше']
@@ -32,6 +36,7 @@ export function FilmstripCarousel({
   projects,
   onProjectSelect,
   selectedId,
+  mediaSpecs,
 }: FilmstripCarouselProps) {
   const autoScroll = useRef(
     AutoScroll({
@@ -148,6 +153,11 @@ export function FilmstripCarousel({
                     key={`${project.id}-carousel-${index}`}
                     project={project}
                     isSelected={selectedId === project.id}
+                    mediaSpec={
+                      project.playbackId
+                        ? (mediaSpecs?.[extractVideoId(project.playbackId)] ?? null)
+                        : null
+                    }
                     index={index}
                     animate={heroSettled}
                     // Pick a random note based on index + id hash roughly
@@ -177,6 +187,7 @@ function tileMotionAllowed(): boolean {
 const FilmstripItem = memo(function FilmstripItem({
   project,
   isSelected,
+  mediaSpec,
   index,
   animate,
   noteText,
@@ -184,6 +195,8 @@ const FilmstripItem = memo(function FilmstripItem({
 }: {
   project: FilmstripProject
   isSelected: boolean
+  /** Постер из манифеста: если он есть, плитка не ходит за кадром в CMS/Bunny */
+  mediaSpec: MediaSurfaceSpec | null
   index: number
   /** hero определился: можно подключать движение */
   animate: boolean
@@ -279,14 +292,30 @@ const FilmstripItem = memo(function FilmstripItem({
           />
         ) : (
           <>
-            <Image
-              src={thumbSrc}
-              alt={project.title}
-              fill
-              sizes="180px"
-              draggable={false}
-              className="object-cover"
-            />
+            {/*
+              Кадр из манифеста лежит на нашем сервере и не зависит от Bunny:
+              у части работ thumbnail.jpg там не существует (404), а ссылка на
+              свой же /cdn/ не проходит через next/image (400). Без записи в
+              манифесте остаётся кадр из CMS: через оптимизатор, если хост ему
+              известен, и напрямую, если нет.
+            */}
+            {mediaSpec ? (
+              <MotionSurface
+                name="filmstrip-tile"
+                spec={mediaSpec}
+                className="absolute inset-0"
+              />
+            ) : (
+              <Image
+                src={thumbSrc}
+                alt={project.title}
+                fill
+                sizes="180px"
+                draggable={false}
+                unoptimized={!canOptimizePoster(thumbSrc)}
+                className="object-cover"
+              />
+            )}
             {wantsGif && gifRequested ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -331,12 +360,12 @@ const FilmstripItem = memo(function FilmstripItem({
         )}
 
         {/* Project Title - Bottom */}
-        <h3
+        <h2
           className="text-lg md:text-xl text-white font-black leading-none transition-colors duration-300 whitespace-nowrap"
           style={{ fontFamily: 'var(--font-brand-hero)' }}
         >
           {project.title}
-        </h3>
+        </h2>
       </div>
     </div>
   )

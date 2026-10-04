@@ -1526,9 +1526,12 @@ function Process({
               style={{ '--i': index } as CSSProperties}
               className="dir-beauty-step"
             >
-              <span aria-hidden="true" className="dir-beauty-step-num font-brand-hero tabular-nums">
-                ×{index + 1}
-              </span>
+              {/* Цифра шага — украшение (aria-hidden): лежит в CSS, чтобы не считаться текстом */}
+              <span
+                aria-hidden="true"
+                data-n={`×${index + 1}`}
+                className="dir-beauty-step-num font-brand-hero tabular-nums"
+              />
               <span aria-hidden="true" className="dir-beauty-step-node" />
               <div className="dir-beauty-step-body">
                 <p className="dir-beauty-step-label dir-kit-meta font-mono uppercase tabular-nums">

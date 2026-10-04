@@ -236,7 +236,7 @@ function DirectionCard({
             aria-hidden="true"
             className={cn(
               'type-meta w-14 shrink-0 font-mono transition-colors duration-[var(--motion-state)] ease-[var(--ease-out-expo)] md:w-20',
-              current ? 'text-accent' : 'text-white/40'
+              current ? 'text-[#f40f35]' : 'text-white/[0.47]'
             )}
           >
             {direction.index} / {String(count).padStart(2, '0')}

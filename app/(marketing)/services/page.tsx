@@ -149,8 +149,9 @@ export default async function ServicesPage() {
   // Кадр выхода выбран раскадровкой отдельно от монтажа, см. lib/services/frames.ts
   const closing = closingFrame(projects, montage)
 
-  // Веб-превью (MP4 + постеры) для видео, которые реально стоят на странице
-  const mediaSpecs = mediaSpecsForContent(showreelId, montage, closing)
+  // Веб-превью (MP4 + постеры) для видео, которые реально стоят на странице. Работы
+  // направлений тоже: без них карточка с Diesel тянула hls.js (+160 КБ gzip JS, +190 мс TBT)
+  const mediaSpecs = mediaSpecsForContent(showreelId, montage, closing, directions)
 
   return (
     <>

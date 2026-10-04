@@ -902,7 +902,11 @@ function ProgressSegment({
   )
 }
 
-/** Цифра формата: колонка 01/02/03 едет ступенями вслед за сгибом листа */
+/**
+ * Цифра формата: колонка 01/02/03 едет ступенями вслед за сгибом листа.
+ * Это украшение (aria-hidden), поэтому цифра лежит в CSS (data-n → ::before):
+ * вид тот же, а аудит контраста не принимает декор за текст.
+ */
 function Numeral({ y, outline }: { y: MotionValue<string>; outline?: boolean }) {
   return (
     <div
@@ -916,9 +920,11 @@ function Numeral({ y, outline }: { y: MotionValue<string>; outline?: boolean }) 
       <div className="h-[0.8em] overflow-hidden">
         <motion.div style={{ y }}>
           {FORMATS.map(format => (
-            <span key={format.index} className="block h-[0.8em] leading-[0.8]">
-              {format.index}
-            </span>
+            <span
+              key={format.index}
+              data-n={format.index}
+              className="block h-[0.8em] leading-[0.8] before:content-[attr(data-n)]"
+            />
           ))}
         </motion.div>
       </div>
@@ -1080,7 +1086,7 @@ function Spread({ frames }: { frames: SceneFrame[] }) {
                     {format.index}
                   </span>
                   <div>
-                    <h3 className="font-stage text-[clamp(1.1rem,min(2.1vw,3.6svh),2.6rem)] uppercase leading-[0.98] tracking-[-0.02em] text-white/45 transition-colors duration-[var(--motion-state)] group-hover:text-white/80 group-data-[active=true]:text-white group-data-[active=true]:group-hover:text-white">
+                    <h3 className="font-stage text-[clamp(1.1rem,min(2.1vw,3.6svh),2.6rem)] uppercase leading-[0.98] tracking-[-0.02em] text-white/[0.47] transition-colors duration-[var(--motion-state)] group-hover:text-white/80 group-data-[active=true]:text-white group-data-[active=true]:group-hover:text-white">
                       <button
                         type="button"
                         onClick={() => goToFormat(i)}

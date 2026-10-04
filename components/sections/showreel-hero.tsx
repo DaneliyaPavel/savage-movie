@@ -336,6 +336,7 @@ export function ShowreelHero({
             projects={carouselProjects}
             onProjectSelect={handleProjectSelect}
             selectedId={selectedProject?.id || null}
+            mediaSpecs={projectMedia}
           />
         ) : (
           // Fallback если нет проектов
