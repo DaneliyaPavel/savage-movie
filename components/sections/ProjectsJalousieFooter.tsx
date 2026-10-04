@@ -6,14 +6,18 @@
  */
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { useI18n } from '@/lib/i18n-context'
+import { cn } from '@/lib/utils'
 import { EMAIL, EMAIL_HREF, PHONE_DISPLAY, PHONE_HREF } from '@/lib/contacts'
 
 /** already — адрес уже в списке: это не ошибка, но и не повод благодарить дважды */
 type SubscribeStatus = 'idle' | 'loading' | 'success' | 'already'
+
+/** Дольше этого футер не ждёт шрифты: он под занавесом и до конца списка всё равно не виден */
+const FONTS_WAIT_MS = 2500
 
 export function ProjectsJalousieFooter() {
   const { language } = useI18n()
@@ -21,6 +25,25 @@ export function ProjectsJalousieFooter() {
   const [consent, setConsent] = useState(false)
   const [status, setStatus] = useState<SubscribeStatus>('idle')
   const [error, setError] = useState('')
+  // Футер лежит под занавесом на весь экран, и Chrome считает сдвигом каждое
+  // перестроение его текста при подмене шрифта (на /projects это CLS 0,19, хотя
+  // глазом ничего не видно). Пока шрифты не готовы, футер скрыт от отрисовки:
+  // скрытые узлы в сдвиги не входят, а к концу списка он уже открыт.
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    const show = () => {
+      if (active) setReady(true)
+    }
+    const timer = window.setTimeout(show, FONTS_WAIT_MS)
+    if (document.fonts?.ready) void document.fonts.ready.then(show, show)
+    else show()
+    return () => {
+      active = false
+      window.clearTimeout(timer)
+    }
+  }, [])
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -79,7 +102,12 @@ export function ProjectsJalousieFooter() {
   const isSubscribed = status === 'success' || status === 'already'
 
   return (
-    <footer className="fixed inset-x-0 bottom-0 z-10 min-h-screen bg-[#ff2936] flex flex-col overflow-hidden">
+    <footer
+      className={cn(
+        'fixed inset-x-0 bottom-0 z-10 min-h-screen bg-[#ff2936] flex flex-col overflow-hidden',
+        !ready && 'invisible'
+      )}
+    >
         <div className="flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12 text-background">
           {/* Hashtag icon */}
           <div className="mb-6">
