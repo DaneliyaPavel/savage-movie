@@ -22,6 +22,8 @@ export const publicEnv = {
   NEXT_PUBLIC_SHOWREEL_VIDEO_ID: emptyToUndefined(process.env.NEXT_PUBLIC_SHOWREEL_VIDEO_ID),
   // Медиа-слой (lib/media/config.ts): базы доставки и флаг hls.js progressive
   NEXT_PUBLIC_WEB_MEDIA_BASE_URL: emptyToUndefined(process.env.NEXT_PUBLIC_WEB_MEDIA_BASE_URL),
-  NEXT_PUBLIC_STREAM_MEDIA_BASE_URL: emptyToUndefined(process.env.NEXT_PUBLIC_STREAM_MEDIA_BASE_URL),
+  NEXT_PUBLIC_STREAM_MEDIA_BASE_URL: emptyToUndefined(
+    process.env.NEXT_PUBLIC_STREAM_MEDIA_BASE_URL
+  ),
   NEXT_PUBLIC_HLS_PROGRESSIVE: emptyToUndefined(process.env.NEXT_PUBLIC_HLS_PROGRESSIVE),
 }
