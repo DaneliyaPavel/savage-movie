@@ -968,6 +968,8 @@ function Nle({ frame }: { frame: Frame }) {
                       <span className="dir-kit-meta font-mono tabular-nums">
                         {pad(plan.output + 1)}
                       </span>
+                      {/* Пробел между flex-элементами не рисуется, зато видимый текст
+                          читается как «01 HERO» и входит в aria-label целиком */}{' '}
                       <span className="dir-content-clip-name dir-kit-meta font-mono uppercase">
                         {outputAt(plan.output).label}
                       </span>
