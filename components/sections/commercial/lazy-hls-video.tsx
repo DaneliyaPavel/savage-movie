@@ -145,6 +145,9 @@ function SurfaceVariant({
         active={active}
         fallbackSizes={sizes}
         hero={priority}
+        /* Фоновые лупы под hero не должны делить с ним канал: пока MP4 hero
+           докачивается, они ждут (на 4 Мбит/с /services иначе стартовал 7,3 с вместо 5,3 с) */
+        afterHero={autoPlay && !priority}
         play={autoPlay ? 'auto' : 'hover-only'}
         hoverScope={autoPlay ? undefined : '.group'}
         onlyWhen={onlyWhen}

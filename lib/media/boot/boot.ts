@@ -988,18 +988,21 @@ export function installMediaBoot(win: SmWindow): SmApi {
     })
     wanted.sort((a, b) => score(b) - score(a))
     const granted = new Set(wanted.slice(0, MAX_ACTIVE_PREVIEWS))
+    // Кто-то ждёт загрузки: слот нужен сейчас, поэтому лишняя карточка уходит сразу,
+    // иначе её поток доживает свою паузу и на 350–400 мс потоков становится три
+    const waiting = Array.from(granted).some(s => !s.loaded)
     registry.forEach(s => {
-      if (s.hero) return
-      if (granted.has(s)) {
+      if (s.hero || granted.has(s) || !s.loaded) return
+      if (waiting) {
         if (s.holdTimer) {
           clearTimeout(s.holdTimer)
           s.holdTimer = null
         }
-        if (!s.loaded) load(s)
+        unload(s, 'slot')
         return
       }
-      // не получили слот: выгружаем с небольшой задержкой, чтобы не мигать
-      if (s.loaded && !s.holdTimer) {
+      // слот никому не нужен: выгружаем с небольшой задержкой, чтобы не мигать
+      if (!s.holdTimer) {
         s.holdTimer = setTimeout(
           () => {
             s.holdTimer = null
@@ -1008,6 +1011,13 @@ export function installMediaBoot(win: SmWindow): SmApi {
           s.near ? HOVER_HOLD_MS : FAR_UNLOAD_MS
         )
       }
+    })
+    granted.forEach(s => {
+      if (s.holdTimer) {
+        clearTimeout(s.holdTimer)
+        s.holdTimer = null
+      }
+      if (!s.loaded) load(s)
     })
   }
 
