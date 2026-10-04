@@ -42,3 +42,17 @@ describe('MotionSurface: заливка по бокам при fit="contain"', (
     expect(root.style.backgroundSize).toBe('')
   })
 })
+
+describe('MotionSurface: плитка 180 px', () => {
+  const spec = getMediaSpec('project-ohtapark')
+
+  it('sizes постера по умолчанию во всю ширину, для плитки задаётся явно', () => {
+    const wide = rootOf({ spec })
+    expect(wide.querySelector('source')?.getAttribute('sizes')).toBe('100vw')
+
+    const tile = rootOf({ spec, posterSizes: '180px' })
+    const sources = Array.from(tile.querySelectorAll('source[sizes]'))
+    expect(sources.length).toBeGreaterThan(0)
+    sources.forEach(source => expect(source.getAttribute('sizes')).toBe('180px'))
+  })
+})
