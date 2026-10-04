@@ -93,6 +93,13 @@ export function MotionSurface({
   const stream = rawStream ? normalizeVideoId(rawStream) : null
   const hasVideo = Boolean(mp4D || mp4M || stream)
 
+  /*
+   * contain: вертикальная работа в горизонтальной рамке. Заливка LQIP и средний цвет
+   * кадра тянулись бы на всю рамку и рисовали по бокам размытые цветные полосы.
+   * Боковины должны быть цветом фона сайта, а LQIP остаётся только под самим кадром
+   * (background-size: contain повторяет его раскладку).
+   */
+  const contained = fit === 'contain'
   const style = {
     ...(spec
       ? {
@@ -100,7 +107,9 @@ export function MotionSurface({
           backgroundImage: spec.lqip ? `url("${spec.lqip}")` : undefined,
         }
       : {}),
-    ...(fit === 'contain' ? { '--sm-fit': 'contain' } : {}),
+    ...(contained
+      ? { '--sm-fit': 'contain', backgroundColor: 'var(--background)', backgroundSize: 'contain' }
+      : {}),
   } as CSSProperties
 
   const altAttr = fallbackPosterAlt?.length ? fallbackPosterAlt.join('|') : undefined
