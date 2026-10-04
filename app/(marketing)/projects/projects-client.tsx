@@ -359,12 +359,12 @@ function ProjectRow({
           style={{ ['--reveal-delay' as string]: STEP_IDENTITY }}
         >
           <div>
-            <h3
+            <p
               className="text-xs uppercase tracking-[0.28em] mb-0.5 opacity-80"
               style={{ fontFamily: 'var(--font-brand-hero)' }}
             >
               {getClient()}
-            </h3>
+            </p>
             <h2
               className="text-2xl font-black uppercase tracking-tighter leading-[0.92]"
               style={{ fontFamily: 'var(--font-brand-hero)' }}
@@ -437,7 +437,6 @@ function ProjectRow({
         <Link
           href={`/projects/${project.slug}`}
           className="hidden md:block md:col-span-4 h-full cursor-pointer"
-          aria-label={`Открыть проект ${getTitle()}`}
         >
           <div
             className="flex flex-col justify-between h-full overflow-hidden transition-opacity hover:opacity-90"
@@ -455,12 +454,12 @@ function ProjectRow({
                   seed={scribbleSeed}
                   trigger={scribbleTrigger}
                 />
-                <h3
+                <p
                   className="text-xs md:text-sm uppercase tracking-[0.28em] mb-0.5 relative z-[1] opacity-80"
                   style={{ fontFamily: 'var(--font-brand-hero)' }}
                 >
                   {getClient()}
-                </h3>
+                </p>
                 <h2
                   className="text-3xl md:text-4xl lg:text-[2.6rem] font-black uppercase tracking-tighter leading-[0.92] relative z-[1]"
                   style={{ fontFamily: 'var(--font-brand-hero)' }}

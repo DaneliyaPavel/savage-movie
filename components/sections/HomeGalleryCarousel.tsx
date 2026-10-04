@@ -201,9 +201,9 @@ const CarouselItem = memo(function CarouselItem({
           )}
 
           {/* Project Title - Bottom */}
-          <h3 className="text-lg md:text-xl text-white font-cormorant font-light italic leading-none group-hover:text-[#FF322E] transition-colors duration-300">
+          <h2 className="text-lg md:text-xl text-white font-cormorant font-light italic leading-none group-hover:text-[#FF322E] transition-colors duration-300">
             {project.title}
-          </h3>
+          </h2>
         </div>
       </div>
     </div>

@@ -331,12 +331,12 @@ const FilmstripItem = memo(function FilmstripItem({
         )}
 
         {/* Project Title - Bottom */}
-        <h3
+        <h2
           className="text-lg md:text-xl text-white font-black leading-none transition-colors duration-300 whitespace-nowrap"
           style={{ fontFamily: 'var(--font-brand-hero)' }}
         >
           {project.title}
-        </h3>
+        </h2>
       </div>
     </div>
   )

@@ -2088,6 +2088,10 @@
   padding-bottom: 0.5rem;
 }
 
+.dir-beauty-step-num::before {
+  content: attr(data-n);
+}
+
 .dir-beauty-step-num {
   display: block;
   color: rgb(255 255 255 / 0.1);

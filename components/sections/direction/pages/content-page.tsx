@@ -946,9 +946,9 @@ function Nle({ frame }: { frame: Frame }) {
                       className="dir-content-clip"
                       data-state={stateOf(index)}
                       aria-current={index === active ? 'true' : undefined}
-                      aria-label={`${outputAt(plan.output).label}${
+                      aria-label={`${pad(plan.output + 1)} ${outputAt(plan.output).label}${
                         plan.note ? `, ${plan.note}` : ''
-                      }: выдача ${plan.output + 1}, недели ${weekRange(plan)}`}
+                      }: недели ${weekRange(plan)}`}
                       style={{
                         gridColumn: `${plan.week + 1} / span ${plan.span}`,
                         gridRow: trackRow(plan.track),

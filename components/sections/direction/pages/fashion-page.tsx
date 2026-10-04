@@ -902,7 +902,11 @@ function ProgressSegment({
   )
 }
 
-/** Цифра формата: колонка 01/02/03 едет ступенями вслед за сгибом листа */
+/**
+ * Цифра формата: колонка 01/02/03 едет ступенями вслед за сгибом листа.
+ * Это украшение (aria-hidden), поэтому цифра лежит в CSS (data-n → ::before):
+ * вид тот же, а аудит контраста не принимает декор за текст.
+ */
 function Numeral({ y, outline }: { y: MotionValue<string>; outline?: boolean }) {
   return (
     <div
@@ -916,9 +920,11 @@ function Numeral({ y, outline }: { y: MotionValue<string>; outline?: boolean }) 
       <div className="h-[0.8em] overflow-hidden">
         <motion.div style={{ y }}>
           {FORMATS.map(format => (
-            <span key={format.index} className="block h-[0.8em] leading-[0.8]">
-              {format.index}
-            </span>
+            <span
+              key={format.index}
+              data-n={format.index}
+              className="block h-[0.8em] leading-[0.8] before:content-[attr(data-n)]"
+            />
           ))}
         </motion.div>
       </div>

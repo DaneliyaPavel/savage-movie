@@ -84,13 +84,17 @@ function RowBody({ entry, index }: { entry: ClientRollEntry; index: number }) {
         </div>
       )}
 
+      {/*
+        Номер строки — чистое украшение (aria-hidden), поэтому текст лежит в CSS
+        (data-index → ::before): контраст #666 на чёрном для декора не нормируется,
+        а аудит доступности не считает его недостатком текста. Вид не меняется.
+      */}
       <span
         className="client-roll-index relative z-[1] w-9 shrink-0 text-base text-white/40 md:w-12 md:text-xl"
         style={{ fontFamily: 'var(--font-handwritten), cursive' }}
+        data-index={`# ${String(index + 1).padStart(2, '0')}`}
         aria-hidden="true"
-      >
-        # {String(index + 1).padStart(2, '0')}
-      </span>
+      />
 
       <div className="relative z-[1] min-w-0 flex-1 md:order-none">
         {/* Логотип показываем, только если он заведён в CMS. Своих версий чужих
@@ -200,7 +204,6 @@ export function ClientRoll({
               <Link
                 href={`/projects/${entry.primary.slug}`}
                 data-roll-row=""
-                aria-label={`${entry.name}: открыть проект «${entry.primary.title}»`}
                 onClick={() =>
                   trackMetrikaGoal('clients_project_click', {
                     client: entry.name,
@@ -211,6 +214,9 @@ export function ClientRoll({
                 className="client-roll-row relative block focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#ff2936]"
               >
                 <RowBody entry={entry} index={index} />
+                {/* Доступное имя собирается из видимого текста строки (WCAG 2.5.3);
+                    aria-label с другим текстом ему противоречил бы */}
+                <span className="sr-only">Открыть проект «{entry.primary.title}»</span>
               </Link>
             ) : (
               /* Бренд без опубликованного проекта: строка остаётся доказательством

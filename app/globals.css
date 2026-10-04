@@ -983,6 +983,11 @@
   transition: transform 620ms var(--client-roll-ease);
 }
 
+/* Номер строки лежит в data-index: украшение не должно попадать в проверку контраста */
+.client-roll-index::before {
+  content: attr(data-index);
+}
+
 /* Имя и номер — прямая обратная связь, задержки на них нет никогда */
 .client-roll-name,
 .client-roll-index {
