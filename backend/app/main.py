@@ -39,6 +39,20 @@ from app.utils.security import hash_password
 
 _is_production = os.getenv("ENV", "").lower() == "production"
 
+# Значения-заглушки, которые встречаются в примерах и шаблонах (сравнение без регистра)
+_JWT_SECRET_PLACEHOLDERS = {
+    "change_me_in_production",
+    "change_me",
+    "changeme",
+    "secret",
+    "your_secret_key",
+    "your-secret-key",
+    "your_jwt_secret",
+    "your-jwt-secret",
+    "jwt_secret",
+    "jwt-secret",
+}
+
 app = FastAPI(
     title="SAVAGE MOVIE API",
     description="API для сайта видеографа и продюсера",
@@ -91,6 +105,24 @@ app.include_router(platform.router)
 @app.on_event("startup")
 async def validate_security_config() -> None:
     """Проверка критических настроек безопасности при старте."""
+    # ENV на проде в backend не передаётся, поэтому жёсткая проверка ниже там не срабатывает.
+    # Предупреждаем независимо от ENV, но не падаем: рестарт-луп уронил бы весь API.
+    # Сам секрет и его длину в лог не пишем.
+    secret = settings.JWT_SECRET or ""
+    if secret:
+        if secret.strip().lower() in _JWT_SECRET_PLACEHOLDERS:
+            weak_reason = "совпадает с известным placeholder"
+        elif len(secret) < 32:
+            weak_reason = "слишком короткий"
+        else:
+            weak_reason = ""
+        if weak_reason:
+            logger.warning(
+                "JWT_SECRET %s. Задайте случайный секрет от 32 символов (лучше 48+); "
+                "после смены все выданные токены перестанут действовать.",
+                weak_reason,
+            )
+
     if _is_production:
         if not settings.JWT_SECRET or settings.JWT_SECRET == "change_me_in_production":
             raise RuntimeError(
@@ -130,6 +162,16 @@ async def seed_admin_user() -> None:
         result = await db.execute(select(User).where(User.email == email))
         user = result.scalar_one_or_none()
 
+        if user is not None and user.role != "admin":
+            # Публичная регистрация открыта: этот email мог занять посторонний заранее.
+            # Повышать существующий обычный аккаунт нельзя; без raise, чтобы не ронять запуск API.
+            logger.warning(
+                "SEED_ADMIN: %s уже зарегистрирован как обычный аккаунт, повышение до admin "
+                "отключено. Удалите строку из users вручную и перезапустите backend.",
+                email,
+            )
+            return
+
         password_hash = hash_password(password)
 
         if user is None:
@@ -143,8 +185,8 @@ async def seed_admin_user() -> None:
             db.add(user)
             action = "created"
         else:
-            # Гарантируем админскую роль, и при необходимости обновляем пароль.
-            user.role = "admin"
+            # Уже админ (обычные аккаунты отсечены выше): роль не трогаем,
+            # пароль обновляем только при необходимости.
             if settings.SEED_ADMIN_FORCE_PASSWORD or not user.password_hash:
                 user.password_hash = password_hash
 

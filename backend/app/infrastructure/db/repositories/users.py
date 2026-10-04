@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import select, or_, and_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.db.models.user import User
@@ -32,21 +32,17 @@ class SqlAlchemyUsersRepository:
         result = await self._session.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
 
-    async def get_by_email_or_provider(
-        self,
-        email: str,
-        provider: str,
-        provider_id: str,
-    ) -> Optional[User]:
+    async def get_by_provider(self, provider: str, provider_id: str) -> Optional[User]:
+        # Без provider_id не ищем: иначе "IS NULL" совпал бы с любым аккаунтом без привязки.
+        # Уникального индекса на (provider, provider_id) нет, поэтому first(), а не one_or_none.
+        if not provider_id:
+            return None
         result = await self._session.execute(
-            select(User).where(
-                or_(
-                    User.email == email,
-                    and_(User.provider == provider, User.provider_id == provider_id),
-                )
-            )
+            select(User)
+            .where(User.provider == provider, User.provider_id == provider_id)
+            .order_by(User.created_at)
         )
-        return result.scalar_one_or_none()
+        return result.scalars().first()
 
     async def create(self, data: dict) -> User:
         user = User(**data)

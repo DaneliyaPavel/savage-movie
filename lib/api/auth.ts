@@ -1,7 +1,7 @@
 /**
  * API функции для аутентификации
  */
-import { apiGet, apiPost } from './client'
+import { apiGet, apiPost, apiRequest } from './client'
 import { setAccessToken } from './token-store'
 
 export interface User {
@@ -171,17 +171,28 @@ export async function logout(): Promise<void> {
 }
 
 /**
+ * Старт OAuth: backend кладёт одноразовый state в HttpOnly cookie ответа и в auth_url.
+ * credentials: 'include' нужен, чтобы браузер принял эту cookie и при кросс-доменном
+ * NEXT_PUBLIC_API_URL (локальная разработка); на проде домен тот же.
+ */
+async function getOAuthUrl(provider: 'google' | 'yandex'): Promise<string> {
+  const response = await apiRequest<{ auth_url: string }>(`/api/auth/oauth/${provider}`, {
+    method: 'GET',
+    credentials: 'include',
+  })
+  return response.auth_url
+}
+
+/**
  * Получение URL для OAuth Google
  */
 export async function getGoogleOAuthUrl(): Promise<string> {
-  const response = await apiGet<{ auth_url: string }>('/api/auth/oauth/google')
-  return response.auth_url
+  return getOAuthUrl('google')
 }
 
 /**
  * Получение URL для OAuth Yandex
  */
 export async function getYandexOAuthUrl(): Promise<string> {
-  const response = await apiGet<{ auth_url: string }>('/api/auth/oauth/yandex')
-  return response.auth_url
+  return getOAuthUrl('yandex')
 }
