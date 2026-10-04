@@ -30,14 +30,22 @@ export function ProjectsJalousieFooter() {
   const [error, setError] = useState('')
   // Футер лежит под занавесом на весь экран, и Chrome считает сдвигом каждое
   // перестроение его текста при подмене шрифта (на /projects это CLS 0,19, хотя
-  // глазом ничего не видно). Пока шрифты не применены, футер скрыт от отрисовки:
-  // скрытые узлы в сдвиги не входят. Открываем по самим шрифтам (не по таймеру и не
-  // по document.fonts.ready: они срабатывают раньше подмены), с запасом в два кадра;
-  // страховки: прокрутка к концу страницы и 6 секунд.
+  // глазом ничего не видно). Он же становится кандидатом в LCP, едва его текст
+  // покрасится. Поэтому футер скрыт от отрисовки (скрытые узлы не входят ни в сдвиги,
+  // ни в LCP), пока до него далеко: показываем, когда до конца страницы меньше
+  // полутора экранов и шрифты применены (по самим шрифтам, не по таймеру и не по
+  // document.fonts.ready: они срабатывают раньше подмены), с запасом в два кадра.
+  // На длинных страницах это происходит при прокрутке, когда шрифты давно на месте.
+  // Страховки: сама прокрутка к концу показывает футер сразу, а через 6 секунд
+  // шрифты считаются загруженными.
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
     let done = false
+    const isNearEnd = () => {
+      const rest = document.documentElement.scrollHeight - window.scrollY - window.innerHeight
+      return rest < window.innerHeight * 1.5
+    }
     const show = () => {
       if (done) return
       done = true
@@ -46,12 +54,14 @@ export function ProjectsJalousieFooter() {
       setReady(true)
     }
     function onScroll() {
-      const rest = document.documentElement.scrollHeight - window.scrollY - window.innerHeight
-      if (rest < window.innerHeight * 2) show()
+      if (isNearEnd()) show()
     }
-    const timer = window.setTimeout(show, FOOTER_REVEAL_FALLBACK_MS)
+    const fontsReady = () => {
+      if (isNearEnd()) show()
+    }
+    const timer = window.setTimeout(fontsReady, FOOTER_REVEAL_FALLBACK_MS)
     window.addEventListener('scroll', onScroll, { passive: true })
-    const reveal = () => requestAnimationFrame(() => requestAnimationFrame(show))
+    const reveal = () => requestAnimationFrame(() => requestAnimationFrame(fontsReady))
     const fonts = document.fonts
     if (fonts?.load) {
       void (async () => {
