@@ -1,7 +1,7 @@
 """
 API роуты для курсов
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Response, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
 from uuid import UUID
@@ -9,14 +9,35 @@ from uuid import UUID
 from app.infrastructure.db.session import get_db
 from app.infrastructure.db.models.user import User
 from app.infrastructure.db.repositories.courses import SqlAlchemyCoursesRepository
-from app.interfaces.schemas.course import Course as CourseSchema, CourseCreate, CourseUpdate
+from app.infrastructure.db.repositories.enrollments import SqlAlchemyEnrollmentsRepository
+from app.interfaces.schemas.course import (
+    Course as CourseSchema,
+    CourseContent,
+    CourseCreate,
+    CourseUpdate,
+    PublicCourse,
+)
 from app.interfaces.schemas.reorder import ReorderRequest
 from app.delivery.api.auth import get_current_user
 
 router = APIRouter(prefix="/api/courses", tags=["courses"])
 
 
-@router.get("", response_model=List[CourseSchema])
+async def can_access_course_content(user: User, course_id: UUID, db: AsyncSession) -> bool:
+    """Платный контент курса (ссылки на видео, материалы) видят админ и записанный студент"""
+    if user.role == "admin":
+        return True
+    repo = SqlAlchemyEnrollmentsRepository(db)
+    enrollment = await repo.get_by_user_and_course(user.id, course_id)
+    return enrollment is not None
+
+
+# Публичные GET отдают PublicCourse: response_model отсекает video_url и instructor_id
+# для всех, включая админа. Полные данные — только через GET /{course_id}/content ниже,
+# который закрыт авторизацией (fail-closed). Опциональную авторизацию на публичных GET
+# намеренно не делаем: клиент без токена (например, редактор админки до загрузки токена)
+# молча получил бы пустые video_url, а следующее сохранение курса затёрло бы их в БД.
+@router.get("", response_model=List[PublicCourse])
 async def get_courses(
     category: Optional[str] = Query(None),
     limit: int = Query(100, ge=1, le=100),
@@ -36,9 +57,9 @@ def _is_uuid(value: str) -> bool:
         return False
 
 
-@router.get("/{id_or_slug}", response_model=CourseSchema)
+@router.get("/{id_or_slug}", response_model=PublicCourse)
 async def get_course(id_or_slug: str, db: AsyncSession = Depends(get_db)):
-    """Получить курс по id (UUID) или slug с модулями и уроками"""
+    """Получить курс по id (UUID) или slug с модулями и уроками (без ссылок на видео)"""
     repo = SqlAlchemyCoursesRepository(db)
     if _is_uuid(id_or_slug):
         course = await repo.get_by_id_with_relations(UUID(id_or_slug))
@@ -51,6 +72,35 @@ async def get_course(id_or_slug: str, db: AsyncSession = Depends(get_db)):
             detail="Курс не найден"
         )
 
+    return course
+
+
+@router.get("/{course_id}/content", response_model=CourseContent)
+async def get_course_content(
+    course_id: UUID,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Полный курс с video_url (доступно записанным студентам и админам)"""
+    # NOTE (ops): этот гейт закрывает только API. Сами видео защищает Bunny: платные уроки
+    # должны лежать в отдельной библиотеке с Token Authentication (см. schemas/course.py).
+    if not await can_access_course_content(current_user, course_id, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Нет доступа к урокам курса",
+        )
+
+    repo = SqlAlchemyCoursesRepository(db)
+    course = await repo.get_by_id_with_relations(course_id)
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Курс не найден"
+        )
+
+    # Ответ зависит от пользователя: промежуточные кеши хранить его не должны
+    response.headers["Cache-Control"] = "private, no-store"
     return course
 
 

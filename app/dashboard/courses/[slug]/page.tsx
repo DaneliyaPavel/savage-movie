@@ -3,7 +3,7 @@
  */
 import { notFound, redirect } from 'next/navigation'
 import { getCurrentUserServer } from '@/lib/api/auth'
-import { getCourseBySlugServer } from '@/features/courses/api'
+import { getCourseBySlugServer, getCourseContentServer } from '@/features/courses/api'
 import { getEnrollmentByCourseServer } from '@/lib/api/enrollments'
 import { getCourseMaterialsServer } from '@/lib/api/course-materials'
 import { DashboardCoursePlayer } from '@/features/courses/components/DashboardCoursePlayer'
@@ -47,6 +47,16 @@ export default async function DashboardCoursePage({
     redirect(`/courses/${slug}`)
   }
 
+  // Публичный GET отдаёт курс без video_url: ссылки на уроки берём из закрытого /content
+  // (запись проверена выше, токен уходит из cookies).
+  let courseContent: Course | null = null
+  try {
+    courseContent = await getCourseContentServer(course.id, cookieStore)
+  } catch (error) {
+    console.warn('Ошибка загрузки уроков курса:', error)
+    redirect(`/courses/${slug}`)
+  }
+
   let materials: Awaited<ReturnType<typeof getCourseMaterialsServer>> = []
   try {
     materials = await getCourseMaterialsServer(course.id, cookieStore)
@@ -77,7 +87,7 @@ export default async function DashboardCoursePage({
           />
         </div>
 
-        <DashboardCoursePlayer course={course} enrollment={enrollment} />
+        <DashboardCoursePlayer course={courseContent} enrollment={enrollment} />
 
         {materials.length > 0 && (
           <Card className="mt-8">

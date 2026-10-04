@@ -2,13 +2,15 @@
  * API функции для курсов
  */
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api/client'
+import { getAccessToken, setAccessToken } from '@/lib/api/token-store'
 
 export interface Lesson {
   id: string
   module_id: string
   title: string
   description: string | null
-  video_url: string | null
+  /** Приходит только из /content (админ и записанные); в публичной выдаче поля нет */
+  video_url?: string | null
   duration: number | null
   order: number
   created_at: string
@@ -57,7 +59,8 @@ export interface Course {
   duration: number | null
   cover_image: string | null
   video_promo_url: string | null
-  instructor_id: string | null
+  /** Только в ответах админских POST/PUT; из GET не отдаётся */
+  instructor_id?: string | null
   category: 'ai' | 'shooting' | 'editing' | 'production'
   requirements: string[] | null
   what_you_learn: string[] | null
@@ -87,10 +90,34 @@ export async function getCourses(category?: string): Promise<Course[]> {
 }
 
 /**
- * Получить курс по ID (client-side)
+ * Токен живёт в памяти и после жёсткой перезагрузки появляется асинхронно
+ * (TokenBootstrap). Закрытый запрос не должен уйти раньше, поэтому подтягиваем его из
+ * HttpOnly cookie через /api/auth/session. Если не вышло — запрос уйдёт без токена и
+ * получит 401: лучше явная ошибка загрузки, чем тихо пустые video_url в форме.
+ */
+async function ensureAccessToken(): Promise<void> {
+  if (getAccessToken()) return
+  try {
+    const res = await fetch('/api/auth/session', { method: 'GET', cache: 'no-store' })
+    if (!res.ok) return
+    const data = (await res.json()) as { access_token?: string | null }
+    if (typeof data.access_token === 'string' && data.access_token) {
+      setAccessToken(data.access_token)
+    }
+  } catch {
+    // без токена backend ответит 401 — вызывающий код покажет ошибку
+  }
+}
+
+/**
+ * Получить полный курс по ID с video_url (client-side, для редактора админки).
+ * Идёт в закрытый /content (админ или записанный студент), публичный GET ссылок на видео
+ * не отдаёт. Намеренно без отката на публичный GET: иначе при сбое авторизации редактор
+ * загрузил бы курс без video_url, а сохранение затёрло бы их в БД.
  */
 export async function getCourseById(id: string): Promise<Course> {
-  return apiGet<Course>(`/api/courses/${id}`)
+  await ensureAccessToken()
+  return apiGet<Course>(`/api/courses/${id}/content`)
 }
 
 /**
@@ -109,6 +136,18 @@ export async function getCourseByIdServer(
 ): Promise<Course> {
   const { apiGet: apiGetServer } = await import('@/lib/api/server')
   return apiGetServer<Course>(`/api/courses/${id}`, cookies)
+}
+
+/**
+ * Получить полный курс с video_url (server-side, токен берётся из cookies).
+ * Только для записанного студента или админа: иначе backend ответит 401/403.
+ */
+export async function getCourseContentServer(
+  id: string,
+  cookies?: { get: (name: string) => { value: string } | undefined }
+): Promise<Course> {
+  const { apiGet: apiGetServer } = await import('@/lib/api/server')
+  return apiGetServer<Course>(`/api/courses/${id}/content`, cookies)
 }
 
 /**
