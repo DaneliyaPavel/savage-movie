@@ -16,8 +16,11 @@ import { EMAIL, EMAIL_HREF, PHONE_DISPLAY, PHONE_HREF } from '@/lib/contacts'
 /** already — адрес уже в списке: это не ошибка, но и не повод благодарить дважды */
 type SubscribeStatus = 'idle' | 'loading' | 'success' | 'already'
 
-/** Дольше этого футер не ждёт шрифты: он под занавесом и до конца списка всё равно не виден */
-const FONTS_WAIT_MS = 2500
+/** Шрифты футера: пока они не применены, футер скрыт от отрисовки (он под «занавесом») */
+const FOOTER_FONTS = ['200 1em "Inter 28pt ExtraLight"', '900 1em "Epilogue Black"']
+
+/** Страховка: дольше этого футер скрытым не остаётся, даже если шрифт так и не пришёл */
+const FOOTER_REVEAL_FALLBACK_MS = 6000
 
 export function ProjectsJalousieFooter() {
   const { language } = useI18n()
@@ -27,20 +30,46 @@ export function ProjectsJalousieFooter() {
   const [error, setError] = useState('')
   // Футер лежит под занавесом на весь экран, и Chrome считает сдвигом каждое
   // перестроение его текста при подмене шрифта (на /projects это CLS 0,19, хотя
-  // глазом ничего не видно). Пока шрифты не готовы, футер скрыт от отрисовки:
-  // скрытые узлы в сдвиги не входят, а к концу списка он уже открыт.
+  // глазом ничего не видно). Пока шрифты не применены, футер скрыт от отрисовки:
+  // скрытые узлы в сдвиги не входят. Открываем по самим шрифтам (не по таймеру и не
+  // по document.fonts.ready: они срабатывают раньше подмены), с запасом в два кадра;
+  // страховки: прокрутка к концу страницы и 6 секунд.
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    let active = true
+    let done = false
     const show = () => {
-      if (active) setReady(true)
+      if (done) return
+      done = true
+      window.removeEventListener('scroll', onScroll)
+      window.clearTimeout(timer)
+      setReady(true)
     }
-    const timer = window.setTimeout(show, FONTS_WAIT_MS)
-    if (document.fonts?.ready) void document.fonts.ready.then(show, show)
-    else show()
+    function onScroll() {
+      const rest = document.documentElement.scrollHeight - window.scrollY - window.innerHeight
+      if (rest < window.innerHeight * 2) show()
+    }
+    const timer = window.setTimeout(show, FOOTER_REVEAL_FALLBACK_MS)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    const reveal = () => requestAnimationFrame(() => requestAnimationFrame(show))
+    const fonts = document.fonts
+    if (fonts?.load) {
+      void (async () => {
+        for (let i = 0; i < 3 && !done; i++) {
+          const loaded = await Promise.allSettled(FOOTER_FONTS.map(font => fonts.load(font)))
+          if (loaded.some(item => item.status === 'fulfilled' && item.value.length > 0)) break
+          await new Promise<void>(resolve =>
+            fonts.addEventListener('loadingdone', () => resolve(), { once: true })
+          )
+        }
+        reveal()
+      })()
+    } else {
+      reveal()
+    }
     return () => {
-      active = false
+      done = true
+      window.removeEventListener('scroll', onScroll)
       window.clearTimeout(timer)
     }
   }, [])
