@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useEffect, useState, memo } from 'react'
+import { useCallback, useRef, useEffect, useMemo, useState, memo } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import AutoScroll from 'embla-carousel-auto-scroll'
 import Image from 'next/image'
@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { MotionSurface } from '@/components/media/motion-surface'
 import { canOptimizePoster, normalizePosterUrl } from '@/lib/commercial-landing/poster-url'
 import type { MediaSurfaceSpec } from '@/lib/media/manifest'
+import { TILE_POSTER_SIZES, toTileSpec } from '@/lib/media/tile-spec'
 import { useHeroSettled } from '@/lib/media/use-hero-settled'
 import { extractVideoId } from '@/lib/media/video-id'
 
@@ -226,8 +227,9 @@ const FilmstripItem = memo(function FilmstripItem({
    * чтобы загрузки не стартовали одной пачкой.
    */
   const wantsGif = isUrlGif && isGifImage
+  const tileSpec = useMemo(() => (mediaSpec ? toTileSpec(mediaSpec) : null), [mediaSpec])
   useEffect(() => {
-    if (!wantsGif || !animate || gifRequested) return
+    if (!wantsGif || tileSpec || !animate || gifRequested) return
     const container = containerRef.current
     if (!container || !tileMotionAllowed()) return
     let timer: ReturnType<typeof setTimeout> | null = null
@@ -244,7 +246,7 @@ const FilmstripItem = memo(function FilmstripItem({
       observer.disconnect()
       if (timer) clearTimeout(timer)
     }
-  }, [wantsGif, animate, gifRequested, index])
+  }, [wantsGif, tileSpec, animate, gifRequested, index])
 
   // Статичный кадр: у части работ в CMS лежит анимированный preview.webp на 1–2 МБ
   const thumbSrc = normalizePosterUrl(project.thumbnail || '/placeholder.svg')
@@ -298,11 +300,19 @@ const FilmstripItem = memo(function FilmstripItem({
               свой же /cdn/ не проходит через next/image (400). Без записи в
               манифесте остаётся кадр из CMS: через оптимизатор, если хост ему
               известен, и напрямую, если нет.
+
+              Есть запись в манифесте: движение даёт её MP4-превью (мобильный
+              вариант) вместо анимированного webp из CMS на 1–1,5 МБ, и стартует
+              оно только после hero. Постер ужат до кадра плитки: sizes="180px".
             */}
-            {mediaSpec ? (
+            {tileSpec ? (
               <MotionSurface
                 name="filmstrip-tile"
-                spec={mediaSpec}
+                spec={tileSpec}
+                posterSizes={TILE_POSTER_SIZES}
+                play={wantsGif ? 'auto' : 'hover'}
+                hoverScope=".group"
+                afterHero
                 className="absolute inset-0"
               />
             ) : (
@@ -316,7 +326,7 @@ const FilmstripItem = memo(function FilmstripItem({
                 className="object-cover"
               />
             )}
-            {wantsGif && gifRequested ? (
+            {!tileSpec && wantsGif && gifRequested ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={rawCarouselGifUrl}

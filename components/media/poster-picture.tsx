@@ -15,10 +15,17 @@ interface PosterPictureProps {
   spec: MediaSurfaceSpec
   /** Кадр первого экрана: eager и fetchpriority=high */
   priority?: boolean
+  /** Ширина кадра на экране для выбора из srcset; по умолчанию во всю ширину окна */
+  sizes?: string
   className?: string
 }
 
-export function PosterPicture({ spec, priority = false, className }: PosterPictureProps) {
+export function PosterPicture({
+  spec,
+  priority = false,
+  sizes = '100vw',
+  className,
+}: PosterPictureProps) {
   const { desktop, mobile } = spec.poster
   return (
     <picture className={cn('sm-poster', className)}>
@@ -28,12 +35,12 @@ export function PosterPicture({ spec, priority = false, className }: PosterPictu
           media={MOBILE_MEDIA_QUERY}
           type={source.type}
           srcSet={source.srcSet}
-          sizes="100vw"
+          sizes={sizes}
         />
       ))}
       <source media={MOBILE_MEDIA_QUERY} srcSet={mobile.src} />
       {desktop.sources.map(source => (
-        <source key={`d-${source.type}`} type={source.type} srcSet={source.srcSet} sizes="100vw" />
+        <source key={`d-${source.type}`} type={source.type} srcSet={source.srcSet} sizes={sizes} />
       ))}
       <img
         className="sm-poster-img"

@@ -43,6 +43,8 @@ export interface MotionSurfaceProps {
   mp4?: { desktop?: string; mobile?: string } | null
   /** sizes для постера из fallbackPoster; по умолчанию во всю ширину */
   fallbackSizes?: string
+  /** sizes для постера из записи манифеста: плитка 180 px не должна тянуть кадр на всю ширину окна */
+  posterSizes?: string
   /** Hero страницы: грузится сразу, не входит в лимит превью, постер с высоким приоритетом */
   hero?: boolean
   /**
@@ -81,6 +83,7 @@ export function MotionSurface({
   streamId = null,
   mp4 = null,
   fallbackSizes = '100vw',
+  posterSizes,
   hero = false,
   posterPriority = hero,
   play = 'auto',
@@ -128,7 +131,7 @@ export function MotionSurface({
    */
   const staticPoster = fallbackPoster ? normalizePosterUrl(fallbackPoster) : null
   const poster = spec ? (
-    <PosterPicture spec={spec} priority={posterPriority} />
+    <PosterPicture spec={spec} priority={posterPriority} sizes={posterSizes} />
   ) : staticPoster ? (
     canOptimizePoster(staticPoster) ? (
       <Image
