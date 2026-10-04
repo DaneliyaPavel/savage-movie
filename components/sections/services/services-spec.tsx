@@ -112,7 +112,7 @@ export function ServicesSpec({ directions, onCaseOpen, onNavigate }: ServicesSpe
         ))}
       </dl>
 
-      <p className="type-meta mt-10 border-t border-white/10 pt-6 font-mono uppercase leading-relaxed text-white/35">
+      <p className="type-meta mt-10 border-t border-white/10 pt-6 font-mono uppercase leading-relaxed text-white/[0.47]">
         Состав выдачи регулярного продакшна: {DELIVERABLES}
       </p>
     </section>

@@ -586,7 +586,7 @@
 }
 
 .dir-ai-box-gen .dir-ai-box-tag > span {
-  color: rgb(0 0 0 / 0.82);
+  color: #000;
 }
 
 /* Шов: контейнер во всю ширину, сдвинутый transform; линия и ручка живут на его левой кромке */
@@ -2134,7 +2134,8 @@
 .dir-ai-work-note > span {
   display: block;
   margin-bottom: 0.4rem;
-  color: var(--accent);
+  /* Мелкая подпись на #050505: чистый accent даёт 4,47:1, этот оттенок — 4,8:1 */
+  color: #f2162d;
 }
 
 .dir-ai-work-go {

@@ -360,7 +360,7 @@ export function ProjectDetailClient({
                   className="flex items-center justify-between group"
                 >
                   <div>
-                    <div className="text-sm md:text-base text-[#FFFFFF]/40 uppercase tracking-wider mb-2 font-secondary">
+                    <div className="text-sm md:text-base text-[#FFFFFF]/[0.47] uppercase tracking-wider mb-2 font-secondary">
                       Похожая задача?
                     </div>
                     <div className="text-2xl md:text-3xl font-oranienbaum text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">
@@ -388,7 +388,7 @@ export function ProjectDetailClient({
                     transition={{ duration: 0.3 }}
                   >
                     <div>
-                      <div className="text-sm md:text-base text-[#FFFFFF]/40 uppercase tracking-wider mb-2 font-secondary">
+                      <div className="text-sm md:text-base text-[#FFFFFF]/[0.47] uppercase tracking-wider mb-2 font-secondary">
                         Следующий проект
                       </div>
                       <div className="text-2xl md:text-3xl font-oranienbaum text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">

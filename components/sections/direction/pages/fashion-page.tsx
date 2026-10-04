@@ -1086,7 +1086,7 @@ function Spread({ frames }: { frames: SceneFrame[] }) {
                     {format.index}
                   </span>
                   <div>
-                    <h3 className="font-stage text-[clamp(1.1rem,min(2.1vw,3.6svh),2.6rem)] uppercase leading-[0.98] tracking-[-0.02em] text-white/45 transition-colors duration-[var(--motion-state)] group-hover:text-white/80 group-data-[active=true]:text-white group-data-[active=true]:group-hover:text-white">
+                    <h3 className="font-stage text-[clamp(1.1rem,min(2.1vw,3.6svh),2.6rem)] uppercase leading-[0.98] tracking-[-0.02em] text-white/[0.47] transition-colors duration-[var(--motion-state)] group-hover:text-white/80 group-data-[active=true]:text-white group-data-[active=true]:group-hover:text-white">
                       <button
                         type="button"
                         onClick={() => goToFormat(i)}

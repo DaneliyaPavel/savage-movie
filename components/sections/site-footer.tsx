@@ -80,7 +80,7 @@ export function SiteFooter() {
 
           {COLUMNS.map(column => (
             <nav key={column.titleKey} aria-label={t(column.titleKey)}>
-              <h2 className="mb-4 text-[11px] uppercase tracking-[0.25em] text-white/35">
+              <h2 className="mb-4 text-[11px] uppercase tracking-[0.25em] text-white/[0.47]">
                 {t(column.titleKey)}
               </h2>
               <ul className="space-y-2.5">
@@ -99,8 +99,8 @@ export function SiteFooter() {
           ))}
         </div>
 
-        <div className="flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-5">
+        <div className="flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-white/[0.47] sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-5">
             <a
               href={PHONE_HREF}
               className="tracking-[0.15em] uppercase transition-colors hover:text-white/70"

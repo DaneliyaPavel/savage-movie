@@ -236,7 +236,7 @@ export function CommercialLandingClient({
         />
 
         <footer ref={footerRef} className="border-t border-[#1A1A1A] px-6 py-10 md:px-10 lg:px-20">
-          <div className="flex flex-col items-start justify-between gap-4 text-sm text-white/40 md:flex-row md:items-center">
+          <div className="flex flex-col items-start justify-between gap-4 text-sm text-white/[0.47] md:flex-row md:items-center">
             <span>© {new Date().getFullYear()} Savage Movie. Все права защищены.</span>
             <div className="flex flex-wrap gap-x-6 gap-y-2">
               <Link href="/projects" className="transition-colors hover:text-white">
