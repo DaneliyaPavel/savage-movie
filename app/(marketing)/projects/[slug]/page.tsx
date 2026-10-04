@@ -3,6 +3,7 @@
  */
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import ReactMarkdown from 'react-markdown'
 import { getProjectBySlugServer, getProjectsServer, getProjectVideosServer } from '@/features/projects/api'
 import { mediaSpecsByVideoIds } from '@/lib/media/manifest'
 import { ProjectDetailClient } from './client'
@@ -100,6 +101,17 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       nextProject={nextProject}
       projectVideos={projectVideos}
       mediaSpecs={mediaSpecs}
+      description={
+        project.description ? (
+          <ReactMarkdown
+            components={{
+              p: ({ children }) => <p className="mb-5 last:mb-0">{children}</p>,
+            }}
+          >
+            {project.description}
+          </ReactMarkdown>
+        ) : null
+      }
     />
   )
 }
