@@ -26,27 +26,16 @@ export interface AboutWork {
 }
 
 export interface AboutNumbers {
-  brands: number
-  projects: number
-  /** Первый и последний год по опубликованным проектам; null, если годов нет */
-  years: [number, number] | null
+  /** Опубликованные направления: единственное число, которое считается по коду */
   directions: number
 }
 
 export interface AboutData {
-  numbers: AboutNumbers | null
+  numbers: AboutNumbers
   /** Бренды в порядке ролла /clients: для бегущей строки */
   brands: string[]
   works: AboutWork[]
   team: TeamMember[]
-}
-
-export function yearSpan(projects: Pick<Project, 'year'>[]): [number, number] | null {
-  const years = projects
-    .map(project => project.year)
-    .filter((year): year is number => typeof year === 'number' && year > 1990)
-  if (years.length === 0) return null
-  return [Math.min(...years), Math.max(...years)]
 }
 
 export function toAboutWorks(projects: Project[]): AboutWork[] {
@@ -90,17 +79,11 @@ export async function loadAboutData(): Promise<AboutData> {
   ])
 
   const roll = buildClientRoll(projects, [], ROLL_PRIORITY)
-  const hasPortfolio = roll.brandCount > 0 && roll.projectCount > 0
 
   return {
-    numbers: hasPortfolio
-      ? {
-          brands: roll.brandCount,
-          projects: roll.projectCount,
-          years: yearSpan(projects),
-          directions: SERVICE_DIRECTIONS.filter(direction => direction.route.published).length,
-        }
-      : null,
+    numbers: {
+      directions: SERVICE_DIRECTIONS.filter(direction => direction.route.published).length,
+    },
     brands: roll.entries.map(entry => entry.name),
     works: toAboutWorks(projects),
     team,

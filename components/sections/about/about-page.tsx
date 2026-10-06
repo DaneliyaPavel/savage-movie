@@ -7,7 +7,7 @@
  * финал → бриф → футер. Каждый блок — своя «сцена» с номером 01…09.
  *
  * Композиция приходит с сервера готовыми данными (lib/about/load.ts); без
- * портфолио пропадают цифры и работы, без команды — карточки людей.
+ * портфолио пропадают работы и лента брендов, без команды — карточки людей.
  */
 'use client'
 
@@ -30,7 +30,7 @@ export function AboutPage({ data }: { data: AboutData }) {
     <AboutShell>
       <AboutHud />
       <AboutHero />
-      {data.numbers ? <AboutNumbers numbers={data.numbers} brands={data.brands} /> : null}
+      <AboutNumbers numbers={data.numbers} brands={data.brands} />
       <AboutDirections />
       <AboutInterlude />
       <AboutPrinciples />
