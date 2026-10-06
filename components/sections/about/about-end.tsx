@@ -42,6 +42,7 @@ export function AboutEnd() {
       aria-labelledby="about-end-title"
       className="relative isolate flex min-h-[92svh] flex-col justify-between overflow-hidden border-t border-white/10 bg-black px-6 pt-12 md:px-10 md:pt-16 lg:px-20"
     >
+      <span aria-hidden="true" className="about-glow -bottom-1/3 -left-1/4 -z-10 scale-125" />
       <div
         data-reveal=""
         className="dir-kit-meta flex flex-wrap items-center gap-x-4 gap-y-2 font-mono uppercase text-white/70"

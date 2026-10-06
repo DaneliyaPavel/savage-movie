@@ -12,6 +12,7 @@ import { Plus } from 'lucide-react'
 import { ABOUT_FAQ, ABOUT_READING } from '@/lib/about/content'
 import { cn } from '@/lib/utils'
 import { KIT_KICKER, setTitle, typo } from '../direction/direction-kit'
+import { SplitWords } from './split-words'
 
 export function AboutFaq() {
   const baseId = useId()
@@ -66,7 +67,7 @@ export function AboutFaq() {
             data-reveal=""
             className="mt-6 font-stage text-[clamp(1.9rem,3.7vw,3.4rem)] uppercase leading-[0.98] tracking-[-0.03em] text-white text-balance [overflow-wrap:anywhere]"
           >
-            {setTitle('О студии и работе с нами')}
+            <SplitWords text={'О студии и работе с нами'} />
           </h2>
           <ul className="mt-8 space-y-3">
             {ABOUT_READING.map(link => (

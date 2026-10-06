@@ -26,6 +26,7 @@ import {
 import { ABOUT_PROCESS_NOTE, ABOUT_STAGES } from '@/lib/about/content'
 import { KIT_KICKER, setTitle, typo } from '../direction/direction-kit'
 import { useReduced } from './use-reduced'
+import { SplitWords } from './split-words'
 
 export function AboutProcess() {
   const reduced = useReduced()
@@ -96,7 +97,7 @@ export function AboutProcess() {
                 data-reveal=""
                 className="mt-6 font-stage text-[clamp(1.9rem,3.6vw,3.4rem)] uppercase leading-[0.95] tracking-[-0.035em] text-white text-balance [overflow-wrap:anywhere]"
               >
-                {setTitle('От задачи до готовых версий — пять этапов')}
+                <SplitWords text={'От задачи до готовых версий — пять этапов'} />
               </h2>
             </div>
             <p
@@ -112,7 +113,7 @@ export function AboutProcess() {
           <motion.ol
             ref={trackRef}
             className="about-track flex gap-5 px-6 md:px-10 lg:gap-6 lg:px-20"
-            style={reduced ? undefined : { x }}
+            style={{ x: reduced ? 0 : x }}
           >
             {ABOUT_STAGES.map((item, index) => (
               <li

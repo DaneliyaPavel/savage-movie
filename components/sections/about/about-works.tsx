@@ -9,17 +9,18 @@
  */
 'use client'
 
-import { useRef, type CSSProperties } from 'react'
+import { useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { motion, useMotionValue, useScroll, useSpring, useTransform } from 'framer-motion'
 
 import type { AboutWork } from '@/lib/about/load'
 import { trackMetrikaGoal } from '@/lib/analytics/metrika'
 import { cn } from '@/lib/utils'
-import { KIT_KICKER, setTitle, typo } from '../direction/direction-kit'
+import { KIT_KICKER, typo } from '../direction/direction-kit'
 import { useReduced } from './use-reduced'
+import { SplitWords } from './split-words'
 
 function Cell({
   work,
@@ -99,6 +100,19 @@ export function AboutWorks({ works }: { works: AboutWork[] }) {
   const ref = useRef<HTMLElement>(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
 
+  // Курсор «Кейс» над кадрами: только мышь, на телефоне и с клавиатуры его нет
+  const [cursorOn, setCursorOn] = useState(false)
+  const cursorX = useMotionValue(-100)
+  const cursorY = useMotionValue(-100)
+  const smoothX = useSpring(cursorX, { stiffness: 380, damping: 34, mass: 0.5 })
+  const smoothY = useSpring(cursorY, { stiffness: 380, damping: 34, mass: 0.5 })
+  const onListMove = (event: ReactPointerEvent<HTMLUListElement>) => {
+    if (event.pointerType !== 'mouse' || reduced) return
+    cursorX.set(event.clientX)
+    cursorY.set(event.clientY)
+    setCursorOn(Boolean((event.target as HTMLElement).closest('a')))
+  }
+
   if (works.length === 0) return null
 
   return (
@@ -119,7 +133,7 @@ export function AboutWorks({ works }: { works: AboutWork[] }) {
             data-reveal=""
             className="mt-6 font-stage text-[clamp(2rem,4.6vw,4.25rem)] uppercase leading-[0.95] tracking-[-0.035em] text-white text-balance [overflow-wrap:anywhere]"
           >
-            {setTitle('Что мы снимали')}
+            <SplitWords text={'Что мы снимали'} />
           </h2>
         </div>
         <p
@@ -131,7 +145,11 @@ export function AboutWorks({ works }: { works: AboutWork[] }) {
         </p>
       </div>
 
-      <ul className="mt-12 grid grid-cols-1 items-start gap-x-5 gap-y-12 sm:grid-cols-2 md:mt-16 lg:grid-cols-4 lg:gap-x-6">
+      <ul
+        onPointerMove={onListMove}
+        onPointerLeave={() => setCursorOn(false)}
+        className="mt-12 grid grid-cols-1 items-start gap-x-5 gap-y-12 sm:grid-cols-2 md:mt-16 lg:grid-cols-4 lg:gap-x-6"
+      >
         {works.map((work, index) => (
           <Cell
             key={work.slug}
@@ -143,6 +161,15 @@ export function AboutWorks({ works }: { works: AboutWork[] }) {
           />
         ))}
       </ul>
+
+      <motion.span
+        aria-hidden="true"
+        className="about-cursor"
+        data-on={cursorOn ? 'true' : undefined}
+        style={{ x: smoothX, y: smoothY }}
+      >
+        <span className="about-cursor-dot">Кейс</span>
+      </motion.span>
 
       <div className="mt-14 flex flex-wrap items-center gap-x-10 gap-y-4 border-t border-white/15 pt-8">
         <Link

@@ -19,6 +19,7 @@ import { ArrowUpRight } from 'lucide-react'
 import { SERVICE_DIRECTIONS, directionHref, type ServiceDirection } from '@/lib/services/directions'
 import { sceneFrame, sceneFramesFor } from '@/lib/services/scene-stills'
 import { KIT_KICKER, setTitle, typo } from '../direction/direction-kit'
+import { SplitWords } from './split-words'
 
 /** У коммерческого направления нет собственной сцены: берём нейтральный кадр */
 const COMMERCIAL_FRAME = sceneFrame('cinema-suits')
@@ -143,7 +144,7 @@ export function AboutDirections() {
             data-reveal=""
             className="font-stage text-[clamp(2rem,5vw,4.5rem)] uppercase leading-[0.95] tracking-[-0.035em] text-white text-balance [overflow-wrap:anywhere]"
           >
-            {setTitle('Семь направлений — у каждого своя страница')}
+            <SplitWords text={'Семь направлений — у каждого своя страница'} />
           </h2>
           <p
             data-reveal=""

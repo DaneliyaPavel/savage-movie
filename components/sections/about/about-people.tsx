@@ -14,7 +14,8 @@ import Image from 'next/image'
 import { ABOUT_PLACES } from '@/lib/about/content'
 import type { TeamMember } from '@/lib/about/team'
 import { cn } from '@/lib/utils'
-import { KIT_KICKER, setTitle } from '../direction/direction-kit'
+import { KIT_KICKER } from '../direction/direction-kit'
+import { SplitWords } from './split-words'
 
 function Member({ member, index }: { member: TeamMember; index: number }) {
   const { crop } = member
@@ -71,7 +72,7 @@ export function AboutPeople({ team }: { team: TeamMember[] }) {
         data-reveal=""
         className="mt-6 max-w-[56rem] font-stage text-[clamp(1.9rem,3.7vw,3.4rem)] uppercase leading-[0.95] tracking-[-0.035em] text-white text-balance [overflow-wrap:anywhere]"
       >
-        {setTitle(hasTeam ? 'Кто с вами работает и где мы снимаем' : 'Где мы снимаем')}
+        <SplitWords text={hasTeam ? 'Кто с вами работает и где мы снимаем' : 'Где мы снимаем'} />
       </h2>
 
       <div

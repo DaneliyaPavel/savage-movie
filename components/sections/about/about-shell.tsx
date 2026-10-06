@@ -43,6 +43,12 @@ export function AboutShell({ children }: { children: ReactNode }) {
     captureAttribution()
   }, [])
 
+  // Заголовки прячут слова под маски только после гидрации: без JS текст виден сразу
+  useEffect(() => {
+    const root = rootRef.current
+    if (root) root.dataset.armed = ''
+  }, [rootRef])
+
   // Скрим под шапкой появляется, когда первые 48px страницы ушли с экрана
   useEffect(() => {
     const root = rootRef.current
@@ -104,6 +110,7 @@ export function AboutShell({ children }: { children: ReactNode }) {
             className="pointer-events-none absolute left-0 top-0 h-12 w-px"
           />
           <span aria-hidden="true" className="about-header-scrim" />
+          <span aria-hidden="true" className="about-grain" />
 
           {children}
 

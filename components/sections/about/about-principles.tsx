@@ -12,6 +12,7 @@ import type { CSSProperties } from 'react'
 
 import { ABOUT_PRINCIPLES } from '@/lib/about/content'
 import { KIT_KICKER, setTitle, typo } from '../direction/direction-kit'
+import { SplitWords } from './split-words'
 
 export function AboutPrinciples() {
   return (
@@ -20,7 +21,10 @@ export function AboutPrinciples() {
       aria-labelledby="about-principles-title"
       className="relative border-t border-white/10 bg-black px-6 py-20 md:px-10 md:py-32 lg:px-20"
     >
-      <div className="grid gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-20">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <span className="about-glow -right-1/4 -top-1/4" />
+      </div>
+      <div className="relative grid gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-20">
         <div className="lg:sticky lg:top-28 lg:self-start">
           <div data-reveal="" className={KIT_KICKER}>
             <span aria-hidden="true" className="h-px w-8 bg-accent" />
@@ -31,7 +35,7 @@ export function AboutPrinciples() {
             data-reveal=""
             className="mt-6 font-stage text-[clamp(1.9rem,3.7vw,3.4rem)] uppercase leading-[0.95] tracking-[-0.035em] text-white text-balance [overflow-wrap:anywhere]"
           >
-            {setTitle('Как мы думаем о работе')}
+            <SplitWords text={'Как мы думаем о работе'} />
           </h2>
 
           <p

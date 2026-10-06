@@ -18,10 +18,17 @@
  */
 'use client'
 
-import { useRef, type CSSProperties } from 'react'
-import Image from 'next/image'
+import { useEffect, useRef, type CSSProperties } from 'react'
+import { getImageProps } from 'next/image'
 import { ArrowDown } from 'lucide-react'
-import { motion, useScroll, useTransform, type MotionValue } from 'framer-motion'
+import {
+  motion,
+  useMotionValue,
+  useScroll,
+  useSpring,
+  useTransform,
+  type MotionValue,
+} from 'framer-motion'
 
 import { ABOUT_HERO, ABOUT_MANIFESTO } from '@/lib/about/content'
 import { sceneFrame } from '@/lib/services/scene-stills'
@@ -30,8 +37,66 @@ import { DirectionButton, typo } from '../direction/direction-kit'
 import { useAboutPage } from './about-context'
 import { useReduced } from './use-reduced'
 
-/** Одинокая фигура на лестнице: без лица, логотипов и клиента */
-const FRAME = sceneFrame('stairs-figure')
+/**
+ * Кадр первого экрана: модель с лебедем на красной стене. Две пропорции
+ * (вертикаль для телефона, широкий для остальных) подаются через <picture>:
+ * браузер скачивает только нужную, а не обе, как было бы с двумя next/image.
+ * Без клиента, проекта и логотипов (кадр из библиотеки сцен).
+ */
+const FRAME_WIDE = sceneFrame('swan-red-wall-wide')
+const FRAME_TALL = sceneFrame('swan-red-wall')
+
+function HeroPicture() {
+  const common = { alt: '', fill: true, quality: 65 } as const
+  const wide = getImageProps({ ...common, src: FRAME_WIDE.src, sizes: '100vw' })
+  const tall = getImageProps({ ...common, src: FRAME_TALL.src, sizes: '200vw' })
+  return (
+    <picture>
+      <source media="(min-width: 768px)" srcSet={wide.props.srcSet} sizes="100vw" />
+      <img
+        {...tall.props}
+        alt=""
+        loading="eager"
+        fetchPriority="high"
+        decoding="async"
+        className="about-hero-img object-cover"
+        style={
+          {
+            ...tall.props.style,
+            '--pos-tall': FRAME_TALL.position,
+            '--pos-wide': FRAME_WIDE.position,
+          } as CSSProperties
+        }
+      />
+    </picture>
+  )
+}
+
+/** Разбитая на буквы строка теряет кернинг: возвращаем его для пар, где он заметен */
+const KERN: Record<string, string> = { AV: '-0.05em', VA: '-0.05em', OV: '-0.02em', VI: '-0.02em' }
+
+/** Буквы названия: каждая поднимается из своей маски; текст остаётся текстом H1 */
+function Letters({ text, from = 0 }: { text: string; from?: number }) {
+  const chars = Array.from(text.toUpperCase())
+  return (
+    <>
+      {chars.map((char, index) => (
+        <span
+          key={`${index}-${char}`}
+          className="about-letter"
+          style={
+            {
+              '--i': from + index,
+              marginLeft: index > 0 ? KERN[chars[index - 1] + char] : undefined,
+            } as CSSProperties
+          }
+        >
+          {char}
+        </span>
+      ))}
+    </>
+  )
+}
 
 /** Окно видоискателя в начале: правее центра, чуть выше середины */
 const WINDOW_START = 'inset(14% 6% 30% 38%)'
@@ -80,7 +145,27 @@ export function AboutHero() {
   const clipPath = useTransform(scrollYProgress, [0, OPEN_END], [WINDOW_START, WINDOW_FULL], {
     clamp: true,
   })
-  const frameScale = useTransform(scrollYProgress, [0, OPEN_END], [1.22, 1], { clamp: true })
+  const frameScale = useTransform(scrollYProgress, [0, OPEN_END], [1.24, 1.06], { clamp: true })
+
+  // Кадр чуть следует за курсором: глубина без тяжёлого 3D. Только мышь, не телефон
+  const pointerX = useMotionValue(0)
+  const pointerY = useMotionValue(0)
+  const frameX = useSpring(pointerX, { stiffness: 60, damping: 18, mass: 0.6 })
+  const frameY = useSpring(pointerY, { stiffness: 60, damping: 18, mass: 0.6 })
+  const stageRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage || reduced || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      return
+    }
+    const onMove = (event: PointerEvent) => {
+      const rect = stage.getBoundingClientRect()
+      pointerX.set(((event.clientX - rect.left) / rect.width - 0.5) * -26)
+      pointerY.set(((event.clientY - rect.top) / rect.height - 0.5) * -18)
+    }
+    stage.addEventListener('pointermove', onMove)
+    return () => stage.removeEventListener('pointermove', onMove)
+  }, [reduced, pointerX, pointerY])
   const dim = useTransform(scrollYProgress, [0.16, 0.42], [0.12, 0.66], { clamp: true })
   const savageX = useTransform(scrollYProgress, [0, 0.24], ['0%', '-22%'], { clamp: true })
   const movieX = useTransform(scrollYProgress, [0, 0.24], ['0%', '22%'], { clamp: true })
@@ -107,6 +192,7 @@ export function AboutHero() {
       className={cn('about-hero relative', reduced ? 'min-h-svh' : 'h-[360svh]')}
     >
       <div
+        ref={stageRef}
         className={cn(
           'overflow-hidden bg-black',
           reduced ? 'relative min-h-svh' : 'sticky top-0 h-svh'
@@ -116,28 +202,22 @@ export function AboutHero() {
         <motion.div
           aria-hidden="true"
           className="absolute inset-0"
-          style={reduced ? undefined : { clipPath }}
+          style={{ clipPath: reduced ? WINDOW_FULL : clipPath }}
         >
           <motion.div
             className="absolute inset-0"
-            style={reduced ? undefined : { scale: frameScale }}
+            style={reduced ? { scale: 1.06 } : { scale: frameScale, x: frameX, y: frameY }}
           >
-            <Image
-              src={FRAME.src}
-              alt=""
-              fill
-              priority
-              quality={65}
-              sizes="(max-aspect-ratio: 4/5) 200vw, 100vw"
-              className="object-cover"
-              style={{ objectPosition: FRAME.position }}
-            />
+            <HeroPicture />
           </motion.div>
+          {/* Световая утечка: тёплое красное пятно медленно плывёт по кадру */}
+          <span className="about-leak" />
           <motion.span
             className="absolute inset-0 bg-black"
             style={{ opacity: reduced ? 0.6 : dim }}
           />
           <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 to-transparent" />
+          <span className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-black/70 to-transparent" />
         </motion.div>
 
         {/* Рамка видоискателя: четыре угла и точка записи */}
@@ -181,15 +261,14 @@ export function AboutHero() {
               style={{ opacity: reduced ? 1 : titleOpacity }}
             >
               <span className="about-brand">
-                <motion.span className="about-mask" style={reduced ? undefined : { x: savageX }}>
-                  <span className="about-line about-rise">{ABOUT_HERO.brand[0]}</span>
+                <motion.span className="about-mask" style={{ x: reduced ? 0 : savageX }}>
+                  <span className="about-line">
+                    <Letters text={ABOUT_HERO.brand[0]} />
+                  </span>
                 </motion.span>
-                <motion.span className="about-mask" style={reduced ? undefined : { x: movieX }}>
-                  <span
-                    className="about-line about-rise"
-                    style={{ '--d': '120ms' } as CSSProperties}
-                  >
-                    {ABOUT_HERO.brand[1]}
+                <motion.span className="about-mask" style={{ x: reduced ? 0 : movieX }}>
+                  <span className="about-line">
+                    <Letters text={ABOUT_HERO.brand[1]} from={ABOUT_HERO.brand[0].length} />
                   </span>
                 </motion.span>
               </span>
