@@ -12,7 +12,7 @@ import { SERVICE_DIRECTIONS } from '@/lib/services/directions'
 import * as content from '../content'
 import { aboutJsonLd, aboutMetadata } from '../seo'
 import { normalizeTeam } from '../team'
-import { toAboutWorks, yearSpan } from '../load'
+import { toAboutWorks } from '../load'
 import { formatTimecode } from '@/components/sections/about/about-hud'
 
 const ROOT = path.resolve(__dirname, '../../..')
@@ -112,11 +112,9 @@ describe('Команда из CMS', () => {
 })
 
 describe('Данные страницы', () => {
-  it('yearSpan: диапазон лет без пустых значений', () => {
-    expect(yearSpan([{ year: 2023 }, { year: 2025 }, { year: null }] as never)).toEqual([
-      2023, 2025,
-    ])
-    expect(yearSpan([])).toBeNull()
+  it('цифры студии: 50+ брендов и 100+ проектов — слова владельца', () => {
+    expect(content.ABOUT_NUMBERS.brands).toMatchObject({ value: 50, plus: true })
+    expect(content.ABOUT_NUMBERS.projects).toMatchObject({ value: 100, plus: true })
   })
 
   it('toAboutWorks: берёт только известные проекты с кадром', () => {
