@@ -145,7 +145,7 @@ export function AboutNumbers({ numbers, brands }: { numbers: AboutNumbers; brand
               style={{ '--reveal-delay': `${index * 90}ms` } as CSSProperties}
               className="border-b border-white/15 py-8 sm:border-b-0 sm:border-l sm:px-8 sm:first:border-l-0 sm:first:pl-0 md:py-12"
             >
-              <dd className="font-stage text-[clamp(4.5rem,11vw,10rem)] leading-[0.85] tracking-[-0.04em] text-white">
+              <dd className="font-stage text-[clamp(4.5rem,18vw,8rem)] sm:text-[clamp(3.4rem,7.4vw,7.5rem)] leading-[0.85] tracking-[-0.04em] text-white">
                 <CountUp value={cell.value} plus={cell.plus} />
               </dd>
               <dt className="dir-kit-meta mt-5 font-mono uppercase text-white/70">{cell.unit}</dt>
