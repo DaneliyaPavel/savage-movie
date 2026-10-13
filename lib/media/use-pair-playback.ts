@@ -77,6 +77,7 @@ export function usePairPlayback(
     const mobile = window.matchMedia(MOBILE_MEDIA_QUERY).matches
     let disposed = false
     let started = false
+    let wantStart = false
     let live = false
     let inView = true
     let timer = 0
@@ -175,7 +176,13 @@ export function usePairPlayback(
     }
 
     const begin = () => {
-      if (disposed || started || !runnable()) return
+      // Качать можно и вне экрана (вторая пара стартует за полтора экрана); играть — только на экране
+      if (disposed || started || reducedQuery.matches) return
+      if (document.hidden) {
+        // Вкладка открыта в фоне: старт ждёт, пока её покажут
+        wantStart = true
+        return
+      }
       started = true
       setState('loading')
       for (const video of videos) {
@@ -203,7 +210,10 @@ export function usePairPlayback(
       }, START_TIMEOUT_MS)
     }
 
-    const onVisibility = () => tick()
+    const onVisibility = () => {
+      if (wantStart && !started && !document.hidden) begin()
+      else tick()
+    }
     const onReduced = () => {
       if (reducedQuery.matches) {
         stop()

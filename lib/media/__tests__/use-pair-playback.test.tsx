@@ -142,6 +142,39 @@ describe('usePairPlayback', () => {
     expect(sources).toEqual(['/media/before-d.mp4', '/media/after-d.mp4'])
   })
 
+  it('вторая пара начинает качаться, когда блок подошёл к экрану, а не когда стал виден', () => {
+    mockMatchMedia(false)
+    const { getByTestId } = render(<Pair eager={false} />)
+    const root = getByTestId('root')
+    expect(root.dataset.pairState).toBe('poster')
+    const near = FakeObserver.last as unknown as IntersectionObserver
+    act(() => {
+      FakeObserver.last?.callback([{ isIntersecting: true } as IntersectionObserverEntry], near)
+    })
+    expect(root.dataset.pairState).toBe('loading')
+    expect([...root.querySelectorAll('video')].map(v => v.getAttribute('src'))).toEqual([
+      '/media/before-d.mp4',
+      '/media/after-d.mp4',
+    ])
+  })
+
+  it('во вкладке, открытой в фоне, старт ждёт, пока вкладку покажут', () => {
+    mockMatchMedia(false)
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true })
+    try {
+      const { getByTestId } = render(<Pair />)
+      const root = getByTestId('root')
+      expect(root.dataset.pairState).toBe('poster')
+      Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'))
+      })
+      expect(root.dataset.pairState).toBe('loading')
+    } finally {
+      Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+    }
+  })
+
   it('первый экран стартует сразу после монтирования, без события load', () => {
     mockMatchMedia(false)
     Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true })
