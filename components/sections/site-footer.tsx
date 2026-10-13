@@ -20,6 +20,17 @@
 import Link from 'next/link'
 import { useI18n } from '@/lib/i18n-context'
 import { EMAIL, EMAIL_HREF, PHONE_DISPLAY, PHONE_HREF } from '@/lib/contacts'
+import { SERVICE_DIRECTIONS } from '@/lib/services/directions'
+
+/**
+ * Страницы направлений. Лендинг «Рекламные ролики» уже стоит в колонке «Услуги»,
+ * поэтому здесь остальные шесть. До этой колонки ни из футера, ни с главной на них
+ * не было ссылок: Google обнаруживал их только через /services и /about
+ * (на 13.10.2026 пять из шести ни разу не сканировались).
+ */
+const DIRECTION_LINKS = SERVICE_DIRECTIONS.filter(
+  direction => direction.route.published && direction.id !== 'commercial'
+).map(direction => ({ href: direction.route.path, label: direction.title }))
 
 /** Колонки футера. Анкоры — из nav.*, теми же словами, что и в меню. */
 const COLUMNS: ReadonlyArray<{
@@ -57,9 +68,9 @@ export function SiteFooter() {
   return (
     <footer className="relative z-20 border-t border-white/10 bg-background px-6 py-16 md:px-10 md:py-20">
       <div className="mx-auto flex max-w-6xl flex-col gap-12 md:gap-16">
-        <div className="grid grid-cols-1 gap-12 md:grid-cols-[1.4fr_repeat(3,1fr)] md:gap-10">
+        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-[1.3fr_repeat(4,1fr)] lg:gap-10">
           {/* Бренд + одна строка позиционирования с контекстной ссылкой */}
-          <div className="max-w-sm">
+          <div className="max-w-sm sm:col-span-2 lg:col-span-1">
             <Link
               href="/"
               className="font-brand text-2xl uppercase tracking-tight text-white transition-opacity hover:opacity-70 md:text-3xl"
@@ -77,6 +88,24 @@ export function SiteFooter() {
               {t('siteFooter.leadTail')}
             </p>
           </div>
+
+          <nav aria-label={t('siteFooter.directions')}>
+            <h2 className="mb-4 text-[11px] uppercase tracking-[0.25em] text-white/[0.47]">
+              {t('siteFooter.directions')}
+            </h2>
+            <ul className="space-y-2.5">
+              {DIRECTION_LINKS.map(link => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-white/70 transition-colors hover:text-white"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
           {COLUMNS.map(column => (
             <nav key={column.titleKey} aria-label={t(column.titleKey)}>

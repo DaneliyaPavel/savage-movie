@@ -22,6 +22,13 @@ const REQUIRED_HREFS = [
   '/blog',
   '/contact',
   '/booking',
+  // Страницы направлений: до колонки «Направления» робот находил их только через /services
+  '/fashion-video',
+  '/beauty-video',
+  '/content-production',
+  '/corporate-video',
+  '/ai-video',
+  '/music-video',
 ] as const
 
 function renderFooter() {

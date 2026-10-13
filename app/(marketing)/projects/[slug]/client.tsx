@@ -13,6 +13,7 @@ import { BackButton } from '@/components/ui/back-button'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
+import { DirectionLinks } from '@/components/seo/direction-links'
 import { ProjectsJalousieFooter } from '@/components/sections/ProjectsJalousieFooter'
 import { trackMetrikaGoal } from '@/lib/analytics/metrika'
 import { getThumbnailUrl } from '@/lib/integrations/bunny/client'
@@ -81,6 +82,25 @@ interface ProjectDetailClientProps {
   description?: ReactNode
 }
 
+/**
+ * Куда вести посетителя после кейса. Коммерческие и имиджевые работы — на смету
+ * (цель Метрики estimate_cta_click), клипы и AI — на страницу своего направления.
+ * Подписи — те же, что в CTA этих страниц.
+ */
+function projectCta(category: Project['category']): {
+  href: string
+  label: string
+  estimate: boolean
+} {
+  if (category === 'music-video') {
+    return { href: '/music-video', label: 'Какой трек станет клипом?', estimate: false }
+  }
+  if (category === 'ai-content') {
+    return { href: '/ai-video', label: 'Что нельзя снять камерой?', estimate: false }
+  }
+  return { href: '/reklamny-rolik#estimate', label: 'Получить предварительную смету', estimate: true }
+}
+
 export function ProjectDetailClient({
   project,
   nextProject,
@@ -95,6 +115,7 @@ export function ProjectDetailClient({
   // Предпочитаем mux_playback_id (Bunny Video ID), fallback на video_url
   const playbackId = project.mux_playback_id || project.video_url || null
   const hasVideo = Boolean(playbackId || project.video_url)
+  const cta = projectCta(project.category)
   const hasGallery = (project.images?.length ?? 0) > 0 || (project.behind_scenes?.length ?? 0) > 0
   const heroRef = useRef<HTMLDivElement>(null)
   const cursorX = useMotionValue(0)
@@ -343,34 +364,42 @@ export function ProjectDetailClient({
             )}
 
             {/*
-              Возврат к смете для коммерческих кейсов: посетитель, пришедший
-              с /reklamny-rolik (или из поиска на конкретный кейс), досмотрел
+              Возврат к заявке для всех кейсов: посетитель, пришедший с
+              /reklamny-rolik или из поиска на конкретный кейс, досмотрел
               работу — до этой правки страница проекта не предлагала никакого
               пути обратно к заявке и была тупиком для платного трафика.
+              Раньше блок был только у коммерческих кейсов, остальные (клипы,
+              AI, имиджевые) оставались тупиками: теперь каждый ведёт на
+              страницу своего направления, а прочие — на смету.
               Тот же визуальный паттерн, что у навигации «Следующий проект»
               ниже — новый компонент не вводим.
             */}
-            {project.category === 'commercial' && (
-              <div className="border-t border-[#1A1A1A] pt-12 mb-12 md:mb-16">
-                <Link
-                  href="/reklamny-rolik#estimate"
-                  onClick={() =>
+            <div className="border-t border-[#1A1A1A] pt-12 mb-12 md:mb-16">
+              <Link
+                href={cta.href}
+                onClick={() => {
+                  if (cta.estimate) {
                     trackMetrikaGoal('estimate_cta_click', { location: 'project_detail' })
                   }
-                  className="flex items-center justify-between group"
-                >
-                  <div>
-                    <div className="text-sm md:text-base text-[#FFFFFF]/[0.47] uppercase tracking-wider mb-2 font-secondary">
-                      Похожая задача?
-                    </div>
-                    <div className="text-2xl md:text-3xl font-oranienbaum text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">
-                      Получить предварительную смету
-                    </div>
+                }}
+                className="flex items-center justify-between group"
+              >
+                <div>
+                  <div className="text-sm md:text-base text-[#FFFFFF]/[0.47] uppercase tracking-wider mb-2 font-secondary">
+                    Похожая задача?
                   </div>
-                  <ArrowRight className="w-6 h-6 text-[#FFFFFF]/40 group-hover:text-[#FFFFFF] transition-colors" />
-                </Link>
-              </div>
-            )}
+                  <div className="text-2xl md:text-3xl font-oranienbaum text-[#FFFFFF] group-hover:text-[#ff2936] transition-colors">
+                    {cta.label}
+                  </div>
+                </div>
+                <ArrowRight className="w-6 h-6 text-[#FFFFFF]/40 group-hover:text-[#FFFFFF] transition-colors" />
+              </Link>
+              <DirectionLinks
+                showEstimate={false}
+                exclude={cta.estimate ? undefined : cta.href}
+                className="mt-10"
+              />
+            </div>
 
             {/* Next Project Navigation */}
             {nextProject && (

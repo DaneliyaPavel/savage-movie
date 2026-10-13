@@ -13,6 +13,20 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/projects',
   },
+  /*
+   * openGraph задаётся целиком: Next заменяет объект, а не сливает с корневым layout.
+   * Без него превью ссылки на /projects уходило в мессенджеры с заголовком главной.
+   */
+  openGraph: {
+    type: 'website',
+    locale: 'ru_RU',
+    siteName: 'SAVAGE MOVIE',
+    url: '/projects',
+    title: 'Портфолио — рекламные ролики, клипы, AI-видео | Savage Movie СПб',
+    description:
+      'Видеопроекты Savage Movie: рекламные ролики, имиджевое видео, музыкальные клипы, AI-контент. Смотреть кейсы →',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Savage Movie' }],
+  },
 }
 
 export default async function ProjectsPage() {
