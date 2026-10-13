@@ -1,8 +1,9 @@
 /**
  * Позиция студии: «правка» и четыре принципа.
  *
- * Слева — липкая колонка с редакторской правкой («креативное агентство»
- * зачёркивается красной линией, рядом — «продакшн-студия»), справа — список
+ * Слева — липкая колонка с редакторской правкой («идея на бумаге»
+ * зачёркивается красной линией, рядом — «идея в кадре»; противопоставление
+ * «агентство / студия» уже в манифесте, здесь его не повторяем), справа — список
  * принципов, у каждого красная риска прорисовывается при входе в экран.
  * Принципы — позиция владельца (BRAND.md), не обещания с цифрами.
  */
@@ -43,9 +44,9 @@ export function AboutPrinciples() {
             style={{ '--reveal-delay': '120ms' } as CSSProperties}
             className="about-correction mt-10 font-brand-hero uppercase leading-[0.95] tracking-tighter"
           >
-            <span className="about-correction-wrong text-white/45">Креативное агентство</span>
+            <span className="about-correction-wrong text-white/45">Идея на бумаге</span>
             <span className="sr-only"> — исправлено на: </span>
-            <span className="mt-2 block text-white">Продакшн-студия</span>
+            <span className="mt-2 block text-white">Идея в кадре</span>
           </p>
         </div>
 
