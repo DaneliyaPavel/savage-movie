@@ -20,30 +20,58 @@ interface PairLayerProps {
   sizes?: string
 }
 
+interface PairPosterProps {
+  spec: PairSideSpec
+  priority?: boolean
+  sizes?: string
+  /** Кадр всегда 16:9, даже на телефоне: для карточек, где вертикальный кроп не подходит */
+  wide?: boolean
+  imgClassName?: string
+}
+
+/** Постер стороны пары: AVIF → JPEG, свой кадр для телефона и для десктопа */
+export function PairPoster({
+  spec,
+  priority = false,
+  sizes = '100vw',
+  wide = false,
+  imgClassName,
+}: PairPosterProps) {
+  const { desktop, mobile } = spec
+  return (
+    <picture className="dir-pair-poster" style={{ backgroundColor: desktop.color }}>
+      {wide ? null : (
+        <>
+          <source
+            media={MOBILE_MEDIA_QUERY}
+            type="image/avif"
+            srcSet={mobile.posterAvif}
+            sizes={sizes}
+          />
+          <source media={MOBILE_MEDIA_QUERY} srcSet={mobile.posterJpeg} sizes={sizes} />
+        </>
+      )}
+      <source type="image/avif" srcSet={desktop.posterAvif} sizes={sizes} />
+      <img
+        src={desktop.posterJpeg}
+        width={desktop.width}
+        height={desktop.height}
+        alt=""
+        className={imgClassName}
+        decoding={priority ? 'sync' : 'async'}
+        loading={priority ? 'eager' : 'lazy'}
+        fetchPriority={priority ? 'high' : 'auto'}
+        draggable={false}
+      />
+    </picture>
+  )
+}
+
 export function PairLayer({ side, spec, priority = false, sizes = '100vw' }: PairLayerProps) {
   const { desktop, mobile } = spec
   return (
     <>
-      <picture className="dir-pair-poster" style={{ backgroundColor: desktop.color }}>
-        <source
-          media={MOBILE_MEDIA_QUERY}
-          type="image/avif"
-          srcSet={mobile.posterAvif}
-          sizes={sizes}
-        />
-        <source media={MOBILE_MEDIA_QUERY} srcSet={mobile.posterJpeg} sizes={sizes} />
-        <source type="image/avif" srcSet={desktop.posterAvif} sizes={sizes} />
-        <img
-          src={desktop.posterJpeg}
-          width={desktop.width}
-          height={desktop.height}
-          alt=""
-          decoding={priority ? 'sync' : 'async'}
-          loading={priority ? 'eager' : 'lazy'}
-          fetchPriority={priority ? 'high' : 'auto'}
-          draggable={false}
-        />
-      </picture>
+      <PairPoster spec={spec} priority={priority} sizes={sizes} />
       <video
         className="dir-pair-video"
         data-pair-side={side}

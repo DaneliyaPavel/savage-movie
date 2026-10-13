@@ -49,7 +49,7 @@ import Link from 'next/link'
 import { motion, useMotionValueEvent, useScroll } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
 
-import { PairLayer } from '@/components/media/pair-layer'
+import { PairLayer, PairPoster } from '@/components/media/pair-layer'
 import { comparePair } from '@/lib/media/compare-pairs'
 import { usePairPlayback } from '@/lib/media/use-pair-playback'
 import { DIRECTION_READING } from '@/lib/services/pages'
@@ -365,13 +365,14 @@ function PlateMarks() {
 }
 
 /**
- * Рамки «съёмка» и «генерация» лежат на кадре первой пары: «Съёмка» — на герое (лицо, руки),
- * «Генерация» — на стене за ним, которую ИИ заменяет на библиотеку. Координаты заданы в долях
- * самого кадра, а не экрана: .dir-ai-boxzone повторяет «cover» видео (см. CSS), поэтому рамки
- * остаются на своих местах при любом размере окна. Срез швом тот же, что у плёнки: левее шва
- * рамки есть, правее — нет.
+ * Рамки лежат на кадре первой пары и подписывают то, что под ними. «Съёмка» — на герое (лицо,
+ * руки) и живёт на плёнке, левее шва. «Генерация» — на книжных полках за героем, которые ИИ
+ * дорисовывает на пустой стене: она живёт на стороне «после ИИ», правее шва, поэтому не
+ * пропадает, когда смотришь только на результат. Координаты заданы в долях самого кадра, а не
+ * экрана: .dir-ai-boxzone повторяет «cover» видео (см. CSS), поэтому рамки остаются на своих
+ * местах при любом размере окна.
  */
-function PlateBoxes() {
+function KeepBox() {
   return (
     <div aria-hidden="true" className="dir-ai-boxzone">
       <span className="dir-ai-box dir-ai-box-keep">
@@ -379,6 +380,13 @@ function PlateBoxes() {
           Съёмка<span>лицо · руки</span>
         </span>
       </span>
+    </div>
+  )
+}
+
+function GenBox() {
+  return (
+    <div aria-hidden="true" className="dir-ai-boxzone">
       <span className="dir-ai-box dir-ai-box-gen">
         <span className="dir-ai-box-tag type-meta-sm font-mono uppercase">
           Генерация<span>фон · свет</span>
@@ -781,7 +789,13 @@ function Hero() {
           <PlateMarks />
           {/* Рамки привязаны к кадру пары, а не к вёрстке экрана: лежат на том, что подписано */}
           <div className="dir-ai-photo">
-            <PlateBoxes />
+            <KeepBox />
+          </div>
+        </div>
+        {/* «Генерация» — на стороне результата: правее шва, над скримом, как и метки плёнки */}
+        <div className="dir-ai-layer dir-ai-after">
+          <div className="dir-ai-photo">
+            <GenBox />
           </div>
         </div>
       </div>
@@ -886,85 +900,46 @@ const activeAt = (progress: number) =>
     : Math.min(LAYER_COUNT - 1, Math.floor(((progress - EXPLODE) / (1 - EXPLODE)) * LAYER_COUNT))
 const middleOf = (index: number) => EXPLODE + ((index + 0.5) / LAYER_COUNT) * (1 - EXPLODE)
 
-function CompGraphic() {
-  const handles = [
-    [144, 44],
-    [130, 72],
-    [99, 79],
-    [68, 72],
-    [54, 44],
-    [68, 16],
-    [99, 9],
-    [130, 16],
-  ]
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 160 96"
-      className="absolute inset-0 h-full w-full"
-      fill="none"
-      strokeWidth="1"
-    >
-      <path
-        d="M0 57.5H160M80 0V96"
-        stroke="rgb(255 255 255 / 0.34)"
-        vectorEffect="non-scaling-stroke"
-      />
-      <ellipse
-        cx="99"
-        cy="44"
-        rx="45"
-        ry="35"
-        fill="rgb(255 255 255 / 0.13)"
-        stroke="rgb(255 255 255 / 0.92)"
-        vectorEffect="non-scaling-stroke"
-      />
-      <ellipse
-        cx="99"
-        cy="44"
-        rx="54"
-        ry="42"
-        strokeDasharray="3 4"
-        style={{ stroke: 'var(--accent)' }}
-        vectorEffect="non-scaling-stroke"
-      />
-      {handles.map(([x, y]) => (
-        <rect
-          key={`${x}-${y}`}
-          x={(x ?? 0) - 1.6}
-          y={(y ?? 0) - 1.6}
-          width="3.2"
-          height="3.2"
-          fill="#000"
-          stroke="rgb(255 255 255 / 0.9)"
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
-      <path
-        d="M12 70C30 62 40 78 58 70"
-        stroke="rgb(255 255 255 / 0.72)"
-        vectorEffect="non-scaling-stroke"
-      />
-      <rect
-        x="10"
-        y="26"
-        width="26"
-        height="22"
-        stroke="rgb(255 255 255 / 0.66)"
-        strokeDasharray="2 2"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  )
-}
+/**
+ * Кадр первой пары (hero), разложенный на слои. Доли ширины и высоты кадра 16:9.
+ * Фон за героем — то, что дорисовывает ИИ (на «до» там пустая стена); герой, стол, ноутбук
+ * и предметы на столе — снято. Контур грубый: это схема слоёв, а не маска из проекта.
+ */
+const GEN_REGION: [number, number][] = [
+  [0, 0],
+  [100, 0],
+  [100, 46],
+  [77, 46],
+  [77, 73],
+  [70, 73],
+  [69.8, 68.5],
+  [60.7, 44.4],
+  [57.3, 27.8],
+  [49, 16.7],
+  [46.9, 21.3],
+  [45.8, 30.6],
+  [41.7, 45.4],
+  [36.5, 66],
+  [26, 64],
+  [26, 44],
+  [12, 44],
+  [12, 66],
+  [0, 66],
+]
+/** Точки контура героя: на них ставятся маркеры маски в слое «Сведение» */
+const MATTE_HANDLES = GEN_REGION.slice(5, 14)
+
+const pointsOf = (points: [number, number][]) => points.map(([x, y]) => `${x}% ${y}%`).join(', ')
+/** Область генерации и всё остальное (evenodd: внешняя рамка минус область) */
+const GEN_CLIP = `polygon(${pointsOf(GEN_REGION)})`
+const SHOT_CLIP = `polygon(evenodd, 0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, ${pointsOf(GEN_REGION)}, 0% 0%)`
+const REGION_LINE = GEN_REGION.map(([x, y]) => `${x},${y * 0.5625}`).join(' ')
 
 function LayerCard({
   index,
-  frame,
   state,
 }: {
   index: number
-  frame: SceneFrame | null
   /** idle — стопка ещё не раскрыта, выбранного слоя нет */
   state: 'on' | 'off' | 'idle'
 }) {
@@ -983,34 +958,67 @@ function LayerCard({
     >
       {index === 0 ? (
         <>
-          <Photo frame={frame} tone="plate" sizes={sizes} quality={65} />
+          <PairPoster spec={HERO_PAIR.before} wide sizes={sizes} imgClassName="dir-ai-plate-img" />
           <span className="dir-ai-grid" />
           <span className="dir-ai-safe" />
           {[0, 1, 2].map(n => (
-            <Cross key={n} x={[16, 41, 68][n] ?? 16} y={[26, 62, 30][n] ?? 26} hide={n === 2} />
+            <Cross key={n} x={[13, 42, 69][n] ?? 13} y={[45, 47, 70][n] ?? 45} hide={n === 2} />
           ))}
         </>
       ) : null}
       {index === 1 ? (
         <>
           <span className="dir-ai-hatch" />
-          <span className="dir-ai-genregion">
-            <Photo frame={frame} tone="final" sizes={sizes} quality={65} />
+          <span className="dir-ai-genregion" style={{ clipPath: GEN_CLIP }}>
+            <PairPoster spec={HERO_PAIR.after} wide sizes={sizes} />
             <span className="dir-ai-diff" />
           </span>
-          <span className="dir-ai-genring" />
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 100 56.25"
+            preserveAspectRatio="none"
+            className="dir-ai-matte"
+          >
+            <polygon points={REGION_LINE} className="dir-ai-matte-gen" />
+          </svg>
         </>
       ) : null}
       {index === 2 ? (
         <>
           <span className="dir-ai-hatch dir-ai-hatch-dense" />
-          <CompGraphic />
+          <span className="dir-ai-shot" style={{ clipPath: SHOT_CLIP }}>
+            <PairPoster
+              spec={HERO_PAIR.before}
+              wide
+              sizes={sizes}
+              imgClassName="dir-ai-plate-img"
+            />
+          </span>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 100 56.25"
+            preserveAspectRatio="none"
+            className="dir-ai-matte"
+          >
+            <polygon points={REGION_LINE} className="dir-ai-matte-gen" />
+            <polygon points={REGION_LINE} className="dir-ai-matte-edge" />
+            {MATTE_HANDLES.map(([x, y]) => (
+              <rect
+                key={`${x}-${y}`}
+                x={x - 0.8}
+                y={y * 0.5625 - 0.8}
+                width="1.6"
+                height="1.6"
+                className="dir-ai-matte-handle"
+              />
+            ))}
+          </svg>
         </>
       ) : null}
       {index === 3 ? (
         <>
-          <Photo frame={frame} tone="final" sizes={sizes} quality={65} />
-          <span className="dir-ai-genregion dir-ai-genregion-mark">
+          <PairPoster spec={HERO_PAIR.after} wide sizes={sizes} />
+          <span className="dir-ai-genregion dir-ai-genregion-mark" style={{ clipPath: GEN_CLIP }}>
             <span className="dir-ai-diff" />
           </span>
           <span className="dir-ai-bars">
@@ -1026,7 +1034,7 @@ function LayerCard({
   )
 }
 
-function Layers({ frame, index }: { frame: SceneFrame | null; index: string }) {
+function Layers({ index }: { index: string }) {
   const ref = useRef<HTMLElement>(null)
   const reduced = useReduced()
   const [active, setActive] = useState(-1)
@@ -1161,7 +1169,6 @@ function Layers({ frame, index }: { frame: SceneFrame | null; index: string }) {
               <LayerCard
                 key={layer.number}
                 index={position}
-                frame={frame}
                 state={shown < 0 ? 'idle' : shown === position ? 'on' : 'off'}
               />
             ))}
@@ -1187,7 +1194,9 @@ function Layers({ frame, index }: { frame: SceneFrame | null; index: string }) {
             </p>
           </div>
           <p className="dir-ai-stage-note type-meta-sm font-mono uppercase">
-            {tidy('Схема слоёв, а не разбор конкретного кадра.')}
+            {tidy(
+              'Кадр из ролика на первом экране, разложенный на слои. Схема, а не рабочий файл.'
+            )}
           </p>
         </div>
       </div>
@@ -1744,12 +1753,11 @@ function Process({ index }: { index: string }) {
  * первый экран и выход на телефоне получают вертикальный кадр той же сцены.
  * Кадры от портфолио не зависят.
  *
- *  - шов первого экрана и стопка слоёв — лебедь в зале и в накидке: «кадр, который нельзя снять»;
+ *  - шов первого экрана и стопка слоёв — пара «до / после» из HERO_PAIR, не сцена;
  *  - «Где что»: слева генерация, справа макро кожи — то, что лучше снять камерой;
  *  - лента: шесть разных съёмок, на каждой свой шов.
  */
 const FRAME = {
-  layers: sceneFrame('swan-cape-wide'),
   fitGen: sceneFrame('swan-red-wall-wide'),
   fitCam: sceneFrame('skin-eyes-wide'),
   closing: sceneFrame('swan-embrace'),
@@ -1779,7 +1787,7 @@ export function AiPage({ works }: AiPageProps) {
       <div className="dir-ai">
         <Hero />
         <Cut from="Склейка 01" to="00:00:08:12" />
-        <Layers frame={FRAME.layers} index={layersIndex} />
+        <Layers index={layersIndex} />
         <Fit index={fitIndex} genFrame={FRAME.fitGen} camFrame={FRAME.fitCam} />
         <AiCompare
           kicker={<Kicker index={compareIndex} label="До и после" />}

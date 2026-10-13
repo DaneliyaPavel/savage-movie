@@ -234,6 +234,11 @@
   clip-path: inset(0 calc(100% - var(--dir-ai-seam) * 1%) 0 0);
 }
 
+/* Результат — правее шва: на нём живут метки «после» */
+.dir-ai-after {
+  clip-path: inset(0 0 0 calc(var(--dir-ai-seam) * 1%));
+}
+
 /* Кадр «садится» на место; масштабируется сам кадр, а не кромка среза */
 .dir-ai-photo {
   position: absolute;
@@ -433,7 +438,11 @@
   }
 }
 
-/* Положение рамок — доли кадра пары: человек в середине, пустая стена слева от него */
+/*
+ * Положение рамок — доли кадра пары. «Съёмка» — человек в середине. «Генерация» — книжные полки
+ * справа от головы: на «до» там пустая стена. Шов гуляет между 33 и 67 %, а рамка стоит правее
+ * 70 %, поэтому остаётся на стороне «после» всё время.
+ */
 .dir-ai-box-keep {
   --x: 36%;
   --y: 21%;
@@ -442,17 +451,26 @@
 }
 
 .dir-ai-box-gen {
-  --x: 12%;
-  --y: 21%;
-  --w: 21%;
-  --h: 25%;
+  --x: 72%;
+  --y: 24%;
+  --w: 20%;
+  --h: 22%;
 }
 
-/* Окно ближе к квадрату: кадр режется по бокам, левая рамка уходила бы за край */
+/* Окно ближе к квадрату: кадр режется по бокам, правая рамка уходила бы за край */
 @media (min-width: 48rem) and (max-aspect-ratio: 3 / 2) {
   .dir-ai-box-gen {
-    --x: 19%;
+    --x: 62%;
     --w: 15%;
+    --h: 20%;
+  }
+}
+
+@media (min-width: 48rem) and (max-aspect-ratio: 1 / 1) {
+  .dir-ai-box-gen {
+    --x: 59%;
+    --w: 9%;
+    --h: 16%;
   }
 }
 
@@ -464,11 +482,12 @@
     --h: 36%;
   }
 
+  /* Ниже строки «до / после» у шва: подпись рамки не должна лечь на подписи шва */
   .dir-ai-box-gen {
-    --x: 11%;
-    --y: 29%;
-    --w: 17%;
-    --h: 14%;
+    --x: 71%;
+    --y: 28%;
+    --w: 20%;
+    --h: 11%;
   }
 }
 
@@ -505,7 +524,18 @@
 }
 
 /* Метки лежат над скримом: красная плашка — чистый accent, чёрный текст на нём даёт 5,4:1 */
+/*
+ * Подпись «Съёмки» стоит внутри рамки, на уровне глаз: подписи шва «до / после» лежат в верхней
+ * полосе экрана и ходят вместе с ним над рамкой, поэтому над рамкой подпись они закрывали бы.
+ */
+.dir-ai-box-keep .dir-ai-box-tag {
+  top: 38%;
+  bottom: auto;
+}
+
 .dir-ai-box-gen .dir-ai-box-tag {
+  right: -1px;
+  left: auto;
   background: var(--accent);
   color: #000;
 }
@@ -1133,7 +1163,8 @@
 .dir-ai-deck {
   position: relative;
   width: var(--dw);
-  aspect-ratio: 5 / 3;
+  /* Карточки несут кадр пары 16:9 целиком: контур областей в долях кадра совпадает с картинкой */
+  aspect-ratio: 16 / 9;
   transform-style: preserve-3d;
   transform: translate3d(0, calc(var(--ai-e) * 9svh), 0) rotateX(calc(var(--ai-e) * 60deg))
     rotateZ(calc(var(--ai-e) * -34deg));
@@ -1222,11 +1253,11 @@
   background-image: linear-gradient(to right, rgb(255 255 255 / 0.2) 1px, transparent 1px);
 }
 
+/* Область генерации: контур задаёт clip-path в разметке (GEN_REGION) */
 .dir-ai-genregion {
   position: absolute;
   inset: 0;
   background: rgb(255 255 255 / 0.12);
-  clip-path: ellipse(28% 36% at 62% 46%);
 }
 
 /* Та же область на итоговом кадре: сюда разница ставит красную штриховку */
@@ -1234,14 +1265,40 @@
   background: none;
 }
 
-.dir-ai-genring {
+/* Снятое: всё, что не область генерации. Лежит над штриховкой слоя */
+.dir-ai-shot {
   position: absolute;
-  top: 10%;
-  left: 34%;
-  width: 56%;
-  height: 72%;
-  border: 1px dashed var(--accent);
-  border-radius: 9999px;
+  inset: 0;
+}
+
+/* Контуры и маркеры маски в долях кадра: viewBox 100 × 56,25, как у карточки 16:9 */
+.dir-ai-matte {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  overflow: visible;
+}
+
+.dir-ai-matte-gen {
+  stroke: var(--accent);
+  stroke-dasharray: 3 3;
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.dir-ai-matte-edge {
+  stroke: rgb(255 255 255 / 0.9);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.dir-ai-matte-handle {
+  fill: #000;
+  stroke: rgb(255 255 255 / 0.9);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
 }
 
 /* Диф: красная штриховка поверх того, что дала генерация */
