@@ -1,0 +1,209 @@
+{
+  "version": 1,
+  "pairs": {
+    "student": {
+      "fps": 24,
+      "frames": 257,
+      "duration": 10.708,
+      "speed": 1.0225,
+      "before": {
+        "desktop": {
+          "video": {
+            "file": "ai-student-before-desktop.c160636a.mp4",
+            "width": 1920,
+            "height": 1080,
+            "bytes": 1802769
+          },
+          "poster": {
+            "color": "#b6ada6",
+            "avif": {
+              "file": "ai-student-before-desktop-poster.ea029380.avif",
+              "w": 1920,
+              "h": 1080,
+              "bytes": 61738
+            },
+            "jpeg": {
+              "file": "ai-student-before-desktop-poster.ae8a24cc.jpg",
+              "w": 1920,
+              "h": 1080,
+              "bytes": 108458
+            }
+          }
+        },
+        "mobile": {
+          "video": {
+            "file": "ai-student-before-mobile.6c33bceb.mp4",
+            "width": 608,
+            "height": 1080,
+            "bytes": 1206695
+          },
+          "poster": {
+            "color": "#b89a91",
+            "avif": {
+              "file": "ai-student-before-mobile-poster.f917ccf6.avif",
+              "w": 608,
+              "h": 1080,
+              "bytes": 29151
+            },
+            "jpeg": {
+              "file": "ai-student-before-mobile-poster.4227db36.jpg",
+              "w": 608,
+              "h": 1080,
+              "bytes": 45893
+            }
+          }
+        }
+      },
+      "after": {
+        "desktop": {
+          "video": {
+            "file": "ai-student-after-desktop.0c06d130.mp4",
+            "width": 1920,
+            "height": 1080,
+            "bytes": 1844705
+          },
+          "poster": {
+            "color": "#776c67",
+            "avif": {
+              "file": "ai-student-after-desktop-poster.5db67f17.avif",
+              "w": 1920,
+              "h": 1080,
+              "bytes": 82338
+            },
+            "jpeg": {
+              "file": "ai-student-after-desktop-poster.dc908521.jpg",
+              "w": 1920,
+              "h": 1080,
+              "bytes": 165022
+            }
+          }
+        },
+        "mobile": {
+          "video": {
+            "file": "ai-student-after-mobile.d2ce5a06.mp4",
+            "width": 608,
+            "height": 1080,
+            "bytes": 1011686
+          },
+          "poster": {
+            "color": "#7d635c",
+            "avif": {
+              "file": "ai-student-after-mobile-poster.bc241c91.avif",
+              "w": 608,
+              "h": 1080,
+              "bytes": 31965
+            },
+            "jpeg": {
+              "file": "ai-student-after-mobile-poster.56080920.jpg",
+              "w": 608,
+              "h": 1080,
+              "bytes": 57447
+            }
+          }
+        }
+      }
+    },
+    "lech": {
+      "fps": 24,
+      "frames": 185,
+      "duration": 7.708,
+      "speed": 1.031,
+      "before": {
+        "desktop": {
+          "video": {
+            "file": "ai-lech-before-desktop.4e9479bf.mp4",
+            "width": 1920,
+            "height": 1080,
+            "bytes": 738835
+          },
+          "poster": {
+            "color": "#bcb5a7",
+            "avif": {
+              "file": "ai-lech-before-desktop-poster.be5af43d.avif",
+              "w": 1920,
+              "h": 1080,
+              "bytes": 32684
+            },
+            "jpeg": {
+              "file": "ai-lech-before-desktop-poster.3e2950b3.jpg",
+              "w": 1920,
+              "h": 1080,
+              "bytes": 63554
+            }
+          }
+        },
+        "mobile": {
+          "video": {
+            "file": "ai-lech-before-mobile.de9066a0.mp4",
+            "width": 720,
+            "height": 900,
+            "bytes": 483581
+          },
+          "poster": {
+            "color": "#ac9b88",
+            "avif": {
+              "file": "ai-lech-before-mobile-poster.d7346a1c.avif",
+              "w": 720,
+              "h": 900,
+              "bytes": 23632
+            },
+            "jpeg": {
+              "file": "ai-lech-before-mobile-poster.c7a89f19.jpg",
+              "w": 720,
+              "h": 900,
+              "bytes": 42305
+            }
+          }
+        }
+      },
+      "after": {
+        "desktop": {
+          "video": {
+            "file": "ai-lech-after-desktop.f8371614.mp4",
+            "width": 1920,
+            "height": 1080,
+            "bytes": 722009
+          },
+          "poster": {
+            "color": "#7f6a56",
+            "avif": {
+              "file": "ai-lech-after-desktop-poster.df15f29f.avif",
+              "w": 1920,
+              "h": 1080,
+              "bytes": 36376
+            },
+            "jpeg": {
+              "file": "ai-lech-after-desktop-poster.f3b418ca.jpg",
+              "w": 1920,
+              "h": 1080,
+              "bytes": 76285
+            }
+          }
+        },
+        "mobile": {
+          "video": {
+            "file": "ai-lech-after-mobile.6b63d394.mp4",
+            "width": 720,
+            "height": 900,
+            "bytes": 476928
+          },
+          "poster": {
+            "color": "#896e59",
+            "avif": {
+              "file": "ai-lech-after-mobile-poster.a19c912d.avif",
+              "w": 720,
+              "h": 900,
+              "bytes": 21709
+            },
+            "jpeg": {
+              "file": "ai-lech-after-mobile-poster.c4e9534d.jpg",
+              "w": 720,
+              "h": 900,
+              "bytes": 40536
+            }
+          }
+        }
+      }
+    }
+  }
+}
