@@ -119,103 +119,6 @@
   }
 }
 
-/* ---------- Лента кадров: шов на каждом ---------- */
-
-.dir-ai-reel {
-  padding-block: clamp(2.5rem, 6vw, 5.5rem);
-  background: #000;
-}
-
-.dir-ai-reel-head {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  margin-bottom: 1.5rem;
-  color: var(--ai-mute);
-}
-
-.dir-ai-reel-rule {
-  height: 1px;
-  flex: 1;
-  background: var(--ai-line);
-}
-
-/* Телефон: лента едет пальцем, края кадров видны — понятно, что дальше есть ещё */
-.dir-ai-reel-track {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 58vw;
-  align-items: start;
-  gap: 0.75rem;
-  margin: 0;
-  padding: 0 var(--ai-pad);
-  overflow-x: auto;
-  list-style: none;
-  scroll-padding-inline: var(--ai-pad);
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-}
-
-.dir-ai-reel-track::-webkit-scrollbar {
-  display: none;
-}
-
-@media (min-width: 64rem) {
-  .dir-ai-reel-track {
-    grid-auto-flow: row;
-    grid-auto-columns: auto;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 1rem;
-    overflow: visible;
-  }
-
-  /* Через один кадры сдвинуты вниз: лента читается как плёнка, а не как сетка */
-  .dir-ai-reel-tile:nth-child(even) {
-    margin-top: 2.5rem;
-  }
-}
-
-.dir-ai-reel-tile {
-  position: relative;
-  aspect-ratio: 3 / 4;
-  overflow: hidden;
-  background: #0d0d0d;
-  outline: 1px solid rgb(255 255 255 / 0.2);
-  outline-offset: -1px;
-  scroll-snap-align: start;
-}
-
-.dir-ai-reel-photo,
-.dir-ai-reel-plate {
-  position: absolute;
-  inset: 0;
-}
-
-/* Левее шва — плоская плёнка, правее — цвет */
-.dir-ai-reel-plate {
-  clip-path: inset(0 calc(100% - var(--seam)) 0 0);
-}
-
-.dir-ai-reel-plate .dir-ai-plate-img {
-  filter: grayscale(1) contrast(0.92) brightness(0.96);
-}
-
-.dir-ai-reel-seam {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: var(--seam);
-  width: 1px;
-  background: var(--accent);
-}
-
-.dir-ai-reel-tile .dir-ai-reel-tag {
-  top: auto;
-  right: auto;
-  bottom: 0.75rem;
-  left: 0.75rem;
-}
-
 /* ---------- Склейка между секциями ---------- */
 
 .dir-ai-cut {
@@ -504,44 +407,68 @@
  * рамок считаются от зоны, а не от кадра, поэтому на низком окне они сжимаются вместе
  * с ней. Верхний вылет среза -3rem оставляет место подписи над рамкой.
  */
+/*
+ * Зона рамок — копия кадра видео: та же «cover»-посадка, что у object-fit: cover, поэтому
+ * проценты внутри — это доли кадра пары. --va — соотношение сторон файла (десктоп 16:9,
+ * телефон 608:1080); размеры контейнера берутся у .dir-ai-frames (container-type: size).
+ */
+.dir-ai-frames {
+  container-type: size;
+}
+
 .dir-ai-boxzone {
-  position: relative;
-  z-index: 5;
-  flex: 1 1 0;
-  min-height: 6.5rem;
-  margin: 0 calc(var(--ai-pad) * -1) 1.25rem;
-  clip-path: inset(-3rem calc(100% - var(--dir-ai-seam) * 1%) 0 0);
+  --va: 1.7778;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100cqw, calc(100cqh * var(--va)));
+  aspect-ratio: var(--va);
+  translate: -50% -50%;
   pointer-events: none;
 }
 
-/* Положение рамок задано здесь, а не в разметке: на телефоне они встают столбиком у левого края */
+@media (max-width: 47.99rem) {
+  .dir-ai-boxzone {
+    --va: 0.563;
+  }
+}
+
+/* Положение рамок — доли кадра пары: человек в середине, пустая стена слева от него */
 .dir-ai-box-keep {
-  --x: 7%;
-  --y: 32%;
-  --w: 25%;
-  --h: 60%;
+  --x: 36%;
+  --y: 21%;
+  --w: 35%;
+  --h: 57%;
 }
 
 .dir-ai-box-gen {
-  --x: 35%;
-  --y: 38%;
-  --w: 25%;
-  --h: 40%;
+  --x: 12%;
+  --y: 21%;
+  --w: 21%;
+  --h: 25%;
+}
+
+/* Окно ближе к квадрату: кадр режется по бокам, левая рамка уходила бы за край */
+@media (min-width: 48rem) and (max-aspect-ratio: 3 / 2) {
+  .dir-ai-box-gen {
+    --x: 19%;
+    --w: 15%;
+  }
 }
 
 @media (max-width: 47.99rem) {
   .dir-ai-box-keep {
-    --x: 6%;
-    --y: 26%;
-    --w: 26%;
-    --h: 32%;
+    --x: 30%;
+    --y: 25%;
+    --w: 62%;
+    --h: 36%;
   }
 
   .dir-ai-box-gen {
-    --x: 6%;
-    --y: 68%;
-    --w: 26%;
-    --h: 16%;
+    --x: 11%;
+    --y: 29%;
+    --w: 17%;
+    --h: 14%;
   }
 }
 
@@ -551,8 +478,6 @@
   left: var(--x);
   width: var(--w);
   height: var(--h);
-  /* На планшете зона высокая: рамка остаётся рамкой, а не колонной */
-  max-height: 15rem;
   border: 1px solid rgb(255 255 255 / 0.9);
 }
 

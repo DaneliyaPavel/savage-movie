@@ -7,15 +7,16 @@
  *
  * Страница идёт как сборка кадра:
  *   шов (первый экран) → слои (закреплённая стопка карточек) → где что
- *   (разрез по шву) → работы → разбор задачи (плоская «плёнка») → процесс
- *   (монтажные дорожки) → вопросы → финальный CTA.
+ *   (разрез по шву) → до и после (вторая пара) → работы → разбор задачи
+ *   (плоская «плёнка») → процесс (монтажные дорожки) → вопросы → финальный CTA.
  *
- * Фирменный жест первого экрана — шов сам ходит по кадру: слева плоская серая
- * плёнка с метками трекинга, справа финал. Заголовок «проявляется» вместе с
- * кадром: левее шва он серый, правее — белый. Без ввода шов плавно качается,
- * курсор ведёт его за собой, на телефоне его тянут пальцем, с клавиатуры —
- * стрелками. Шов — демонстрация цвета и постпродакшна, а не заявление «слева
- * камера, справа нейросеть»; подпись об этом сказана прямо.
+ * Фирменный жест первого экрана — шов сам ходит по кадру: слева исходный ролик
+ * с метками трекинга, справа тот же ролик после ИИ. Это настоящая пара из двух
+ * MP4 одной длины, подогнанных кадр в кадр (usePairPlayback держит их вровень);
+ * до старта видео на месте постеры из нулевого кадра. Заголовок «проявляется»
+ * вместе с кадром: левее шва он серый, правее — белый. Без ввода шов плавно
+ * качается, курсор ведёт его за собой, на телефоне его тянут пальцем, с
+ * клавиатуры — стрелками. Вторая пара — секция «До и после» (ai-compare.tsx).
  *
  * Движение: только transform, clip-path и opacity декора. Текст — в разметке
  * и виден с первого кадра (вход — keyframes со сдвигом, без opacity:0).
@@ -48,6 +49,9 @@ import Link from 'next/link'
 import { motion, useMotionValueEvent, useScroll } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
 
+import { PairLayer } from '@/components/media/pair-layer'
+import { comparePair } from '@/lib/media/compare-pairs'
+import { usePairPlayback } from '@/lib/media/use-pair-playback'
 import { DIRECTION_READING } from '@/lib/services/pages'
 import { AI_PAGE, type AiCta } from '@/lib/services/pages/content/ai'
 import type { DirectionPageWork, SceneFrame } from '@/lib/services/pages/resolve'
@@ -59,7 +63,8 @@ import { DirectionEnd } from '../direction-end'
 import { DirectionFaq } from '../direction-faq'
 import { DirectionButton, KIT_KICKER, typo } from '../direction-kit'
 import { OtherDirections } from '../other-directions'
-import { COVER_SIZES, Still } from '../still'
+import { Still } from '../still'
+import { AiCompare } from './ai-compare'
 import './ai-page.css'
 
 export interface AiPageProps {
@@ -360,26 +365,25 @@ function PlateMarks() {
 }
 
 /**
- * Рамки «снять» и «генерация» лежат в потоке первого экрана, между строкой меток и
- * заголовком, и занимают ровно то место, что осталось: заголовок растёт от ширины
- * экрана, и на низком окне рамки сжимаются, а не наезжают на буквы. Срез швом тот же,
- * что у плёнки: левее шва рамки есть, правее — нет.
+ * Рамки «съёмка» и «генерация» лежат на кадре первой пары: «Съёмка» — на герое (лицо, руки),
+ * «Генерация» — на стене за ним, которую ИИ заменяет на библиотеку. Координаты заданы в долях
+ * самого кадра, а не экрана: .dir-ai-boxzone повторяет «cover» видео (см. CSS), поэтому рамки
+ * остаются на своих местах при любом размере окна. Срез швом тот же, что у плёнки: левее шва
+ * рамки есть, правее — нет.
  */
 function PlateBoxes() {
   return (
     <div aria-hidden="true" className="dir-ai-boxzone">
       <span className="dir-ai-box dir-ai-box-keep">
         <span className="dir-ai-box-tag type-meta-sm font-mono uppercase">
-          Снять<span>продукт · лицо · руки</span>
+          Съёмка<span>лицо · руки</span>
         </span>
       </span>
       <span className="dir-ai-box dir-ai-box-gen">
         <span className="dir-ai-box-tag type-meta-sm font-mono uppercase">
-          Генерация<span>фон · метаморфоза</span>
+          Генерация<span>фон · свет</span>
         </span>
       </span>
-      <Cross x={30} y={92} hide />
-      <Cross x={64} y={84} />
     </div>
   )
 }
@@ -516,7 +520,7 @@ function useSeam(heroRef: RefObject<HTMLElement | null>, handleRef: RefObject<HT
       ariaAt = now
       const plate = Math.round(clamp(value, 0, 100))
       handle.setAttribute('aria-valuenow', String(plate))
-      handle.setAttribute('aria-valuetext', `Плёнка ${plate} %, финал ${100 - plate} %`)
+      handle.setAttribute('aria-valuetext', `До ИИ ${plate} %, после ИИ ${100 - plate} %`)
     }
 
     const tick = (now: number) => {
@@ -745,33 +749,40 @@ function useSeam(heroRef: RefObject<HTMLElement | null>, handleRef: RefObject<HT
   }, [heroRef, handleRef])
 }
 
-function Hero({ frame, portrait }: { frame: SceneFrame | null; portrait: SceneFrame | null }) {
-  const sizes = portrait ? '100vw' : COVER_SIZES
+const HERO_PAIR = comparePair('student')
+
+function Hero() {
   const page = useDirectionPage()
   const heroRef = useRef<HTMLElement>(null)
+  const framesRef = useRef<HTMLDivElement>(null)
   const handleRef = useRef<HTMLDivElement>(null)
   useSeam(heroRef, handleRef)
+  usePairPlayback(framesRef, { eager: true })
 
   return (
     <section ref={heroRef} aria-labelledby="ai-title" data-live="true" className="dir-ai-hero">
-      {/* Кадр: финал снизу, плёнка сверху обрезана швом */}
-      <div aria-hidden="true" className="dir-ai-frames">
+      {/* Кадр: «после» снизу, «до» сверху обрезано швом. Обе стороны — одна пара: два MP4 одной
+          длины играют вровень (usePairPlayback), до их старта на месте постеры из нулевого кадра */}
+      <div ref={framesRef} aria-hidden="true" className="dir-ai-frames">
         <div className="dir-ai-layer dir-ai-final">
           <div className="dir-ai-photo">
-            <Photo frame={frame} tone="final" sizes={sizes} priority adaptive portrait={portrait} />
+            <PairLayer side="after" spec={HERO_PAIR.after} priority />
           </div>
           <span className="dir-ai-light" />
         </div>
         <div className="dir-ai-layer dir-ai-plate">
           <div className="dir-ai-photo">
-            {/* То же качество, что у финала: оптимизатор отдаёт один файл, серость делает CSS */}
-            <Photo frame={frame} tone="plate" sizes={sizes} adaptive portrait={portrait} />
+            <PairLayer side="before" spec={HERO_PAIR.before} priority />
           </div>
         </div>
         <span className="dir-ai-scrim" />
         {/* Метки лежат над скримом, иначе тускнеют: их срез идёт тем же швом, что и у плёнки */}
         <div className="dir-ai-layer dir-ai-plate">
           <PlateMarks />
+          {/* Рамки привязаны к кадру пары, а не к вёрстке экрана: лежат на том, что подписано */}
+          <div className="dir-ai-photo">
+            <PlateBoxes />
+          </div>
         </div>
       </div>
 
@@ -790,7 +801,6 @@ function Hero({ frame, portrait }: { frame: SceneFrame | null; portrait: SceneFr
       </div>
 
       <div className="dir-ai-top">
-        <PlateBoxes />
         <div className="dir-ai-copy">
           {/* H1 — название направления и уточнение через тире; лид лежит отдельным абзацем ниже.
               Тире скрыто визуально (его роль играет красная риска), но остаётся в тексте заголовка */}
@@ -816,23 +826,23 @@ function Hero({ frame, portrait }: { frame: SceneFrame | null; portrait: SceneFr
         <div className="dir-ai-seam">
           <span aria-hidden="true" className="dir-ai-seam-line" />
           <span aria-hidden="true" className="dir-ai-seam-tag dir-ai-seam-tag-l">
-            <span className="type-meta font-mono uppercase">Плёнка</span>
-            <span className="type-meta-sm font-mono uppercase">плоский кадр</span>
+            <span className="type-meta font-mono uppercase">До ИИ</span>
+            <span className="type-meta-sm font-mono uppercase">исходный кадр</span>
           </span>
           <span aria-hidden="true" className="dir-ai-seam-tag dir-ai-seam-tag-r">
-            <span className="type-meta font-mono uppercase">Финал</span>
-            <span className="type-meta-sm font-mono uppercase">цвет и сведение</span>
+            <span className="type-meta font-mono uppercase">После ИИ</span>
+            <span className="type-meta-sm font-mono uppercase">среда и свет</span>
           </span>
           <div
             ref={handleRef}
             role="slider"
             tabIndex={0}
-            aria-label="Шов между плёнкой и финалом"
+            aria-label="Шов между кадром до ИИ и кадром после ИИ"
             aria-orientation="horizontal"
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={SEAM_REST}
-            aria-valuetext={`Плёнка ${SEAM_REST} %, финал ${100 - SEAM_REST} %`}
+            aria-valuetext={`До ИИ ${SEAM_REST} %, после ИИ ${100 - SEAM_REST} %`}
             className="dir-ai-handle"
           >
             <span aria-hidden="true" className="dir-ai-ring" />
@@ -1330,43 +1340,6 @@ function Fit({
   )
 }
 
-/* ───────────────────────────── Лента кадров: шов на каждом ───────────────────────────── */
-
-/**
- * Шесть кадров, у каждого свой шов: слева плоская плёнка, справа цвет. Тот же жест, что на
- * первом экране, но на разных кадрах: видно, что шов — приём постпродакшна, а не один
- * удачный кадр. Лента декоративная: подписей, клиентов и ссылок на кейсы здесь нет.
- */
-const REEL_SIZES = '(min-width: 1024px) 17vw, 60vw'
-
-function Reel({ frames }: { frames: { frame: SceneFrame; seam: number }[] }) {
-  return (
-    <section aria-hidden="true" className="dir-ai-reel">
-      <div className="dir-ai-pad dir-ai-reel-head type-meta font-mono uppercase tabular-nums">
-        <span>Шов на каждом кадре</span>
-        <span className="dir-ai-reel-rule" />
-        <span>Плёнка → финал</span>
-      </div>
-      <ul role="presentation" className="dir-ai-reel-track">
-        {frames.map(({ frame, seam }, index) => (
-          <li key={frame.key} className="dir-ai-reel-tile" style={vars({ '--seam': `${seam}%` })}>
-            <div className="dir-ai-reel-photo">
-              <Photo frame={frame} tone="final" sizes={REEL_SIZES} quality={65} />
-            </div>
-            <div className="dir-ai-reel-plate">
-              <Photo frame={frame} tone="plate" sizes={REEL_SIZES} quality={65} />
-            </div>
-            <span className="dir-ai-reel-seam" />
-            <span className="dir-ai-frame-tag dir-ai-reel-tag type-meta-sm font-mono uppercase tabular-nums">
-              Ген {pad2(index + 1)}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  )
-}
-
 /* ───────────────────────────── Работы ───────────────────────────── */
 
 function Works({ works, index }: { works: DirectionPageWork[]; index: string }) {
@@ -1776,8 +1749,6 @@ function Process({ index }: { index: string }) {
  *  - лента: шесть разных съёмок, на каждой свой шов.
  */
 const FRAME = {
-  hero: sceneFrame('swan-hall'),
-  heroPhone: sceneFrame('swan-red-wall'),
   layers: sceneFrame('swan-cape-wide'),
   fitGen: sceneFrame('swan-red-wall-wide'),
   fitCam: sceneFrame('skin-eyes-wide'),
@@ -1785,15 +1756,6 @@ const FRAME = {
   // У swan-cape лицо стояло под заголовком «Что нельзя снять»; у swan-wing оно над ним
   closingPhone: sceneFrame('swan-wing'),
 }
-
-const REEL_FRAMES = [
-  { frame: sceneFrame('redhead-lowkey'), seam: 46 },
-  { frame: sceneFrame('burgundy-hall'), seam: 62 },
-  { frame: sceneFrame('redhead-leaf'), seam: 38 },
-  { frame: sceneFrame('swan-wing'), seam: 55 },
-  { frame: sceneFrame('helmet'), seam: 70 },
-  { frame: sceneFrame('redhead-dunes'), seam: 42 },
-]
 
 /** Лицо на выходе уходит левее: правая часть кадра светлая, там его и видно */
 const CLOSING_POSITION = '15% 20%'
@@ -1807,6 +1769,7 @@ export function AiPage({ works }: AiPageProps) {
   const next = () => pad2(++counter)
   const layersIndex = next()
   const fitIndex = next()
+  const compareIndex = next()
   const worksIndex = hasWorks ? next() : ''
   const processIndex = next()
   const faqIndex = next()
@@ -1814,11 +1777,17 @@ export function AiPage({ works }: AiPageProps) {
   return (
     <DirectionShell id="ai" stickyLabel={AI_PAGE.stickyLabel}>
       <div className="dir-ai">
-        <Hero frame={FRAME.hero} portrait={FRAME.heroPhone} />
+        <Hero />
         <Cut from="Склейка 01" to="00:00:08:12" />
         <Layers frame={FRAME.layers} index={layersIndex} />
         <Fit index={fitIndex} genFrame={FRAME.fitGen} camFrame={FRAME.fitCam} />
-        <Reel frames={REEL_FRAMES} />
+        <AiCompare
+          kicker={<Kicker index={compareIndex} label="До и после" />}
+          title={tidy('Один кадр до и после ИИ')}
+          lead={tidy(
+            'Слева исходный ролик, справа тот же ролик после ИИ. Тяните шов: движение и композиция совпадают кадр в кадр, меняются среда и свет.'
+          )}
+        />
         {hasWorks ? (
           <>
             <Cut from="Склейка 02" to="00:00:21:04" tone="deep" />
