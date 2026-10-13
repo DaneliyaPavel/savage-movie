@@ -4,15 +4,24 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
-import { getProjectBySlugServer, getProjectsServer, getProjectVideosServer } from '@/features/projects/api'
+import {
+  getProjectBySlugServer,
+  getProjectsServer,
+  getProjectVideosServer,
+} from '@/features/projects/api'
 import { mediaSpecsByVideoIds } from '@/lib/media/manifest'
+import { JsonLdScripts } from '@/components/seo/json-ld-scripts'
+import { buildDescription, buildTitle } from '@/lib/seo/snippet'
 import { ProjectDetailClient } from './client'
 
 const SITE_NAME = 'SAVAGE MOVIE'
 
-function truncate(str: string, max: number): string {
-  if (str.length <= max) return str
-  return str.slice(0, max - 1).trim() + '…'
+/** Тип работы для заголовка: «Название — рекламный ролик для клиента | Savage Movie» */
+const CATEGORY_LABEL: Record<string, string> = {
+  commercial: 'рекламный ролик',
+  'music-video': 'музыкальный клип',
+  'ai-content': 'AI-видео',
+  other: 'видеопроект',
 }
 
 export async function generateMetadata({
@@ -29,10 +38,13 @@ export async function generateMetadata({
   }
   if (!project) return { title: SITE_NAME }
 
-  const title = truncate(`${project.title} | Проекты | ${SITE_NAME}`, 60)
+  const type = CATEGORY_LABEL[project.category] ?? CATEGORY_LABEL.other
+  const client = project.client?.trim()
+  const title = buildTitle(`${project.title} — ${type}${client ? ` для ${client}` : ''}`)
   const description = project.description
-    ? truncate(project.description, 160)
+    ? buildDescription(project.description)
     : `Проект ${project.title} — видеопродакшн Savage Movie.`
+  const image = project.thumbnail_url ?? project.cover_image_url ?? project.images?.[0] ?? null
 
   return {
     title,
@@ -46,14 +58,13 @@ export async function generateMetadata({
       description,
       type: 'website',
       url: `/projects/${slug}`,
-      images: project.thumbnail_url
-        ? [{ url: project.thumbnail_url, width: 1200, height: 630, alt: project.title }]
-        : undefined,
+      images: image ? [{ url: image, alt: project.title }] : undefined,
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
+      ...(image ? { images: [image] } : {}),
     },
   }
 }
@@ -95,23 +106,42 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     ...projectVideos.map(video => video.mux_playback_id),
   ])
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://savagemovie.ru'
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Главная', item: baseUrl },
+      { '@type': 'ListItem', position: 2, name: 'Проекты', item: `${baseUrl}/projects` },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: project.title,
+        item: `${baseUrl}/projects/${project.slug}`,
+      },
+    ],
+  }
+
   return (
-    <ProjectDetailClient
-      project={project}
-      nextProject={nextProject}
-      projectVideos={projectVideos}
-      mediaSpecs={mediaSpecs}
-      description={
-        project.description ? (
-          <ReactMarkdown
-            components={{
-              p: ({ children }) => <p className="mb-5 last:mb-0">{children}</p>,
-            }}
-          >
-            {project.description}
-          </ReactMarkdown>
-        ) : null
-      }
-    />
+    <>
+      <JsonLdScripts scripts={[JSON.stringify(breadcrumbJsonLd)]} />
+      <ProjectDetailClient
+        project={project}
+        nextProject={nextProject}
+        projectVideos={projectVideos}
+        mediaSpecs={mediaSpecs}
+        description={
+          project.description ? (
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <p className="mb-5 last:mb-0">{children}</p>,
+              }}
+            >
+              {project.description}
+            </ReactMarkdown>
+          ) : null
+        }
+      />
+    </>
   )
 }

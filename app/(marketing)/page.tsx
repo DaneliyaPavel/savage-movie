@@ -4,6 +4,7 @@
  */
 import type { Metadata } from 'next'
 import { ShowreelHero } from '@/components/sections/showreel-hero'
+import { HomeIntro } from '@/components/sections/home-intro'
 import { SiteFooter } from '@/components/sections/site-footer'
 import { getProjectsServer } from '@/features/projects/api'
 import { publicEnv } from '@/lib/env'
@@ -132,6 +133,7 @@ export default async function HomePage() {
           главной. Hero остаётся h-svh и первым экраном; футер открывается
           скроллом. Подробности — в components/sections/site-footer.tsx.
         */}
+        <HomeIntro />
         <SiteFooter />
       </main>
     </>

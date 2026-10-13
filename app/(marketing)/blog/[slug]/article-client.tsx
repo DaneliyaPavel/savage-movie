@@ -12,6 +12,7 @@ import { ReadingProgress } from '@/components/features/blog/reading-progress'
 import { ShareButtons } from '@/components/features/blog/share-buttons'
 import { RelatedPosts } from '@/components/features/blog/related-posts'
 import { TableOfContents, slugifyHeading } from '@/components/features/blog/table-of-contents'
+import { DirectionLinks } from '@/components/seo/direction-links'
 import type { BlogPost } from '@/lib/api/blog'
 
 const EASE = [0.16, 1, 0.3, 1] as const
@@ -231,6 +232,9 @@ export default function ArticleClient({ post, relatedPosts, articleUrl }: Articl
                   </p>
                 )}
               </motion.article>
+
+              {/* Путь к заявке: лендинг со сметой и страницы направлений */}
+              <DirectionLinks className="mt-16 border-t border-dashed border-muted-foreground/20 pt-10" />
 
               {/* Author block + Share */}
               <motion.div
