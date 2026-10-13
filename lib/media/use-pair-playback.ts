@@ -6,7 +6,8 @@
  * видны сразу.
  *
  * Контракт разметки (корень — элемент, на который указывает ref):
- *   video[data-pair-side="before"|"after"]  без src и с preload="none": адрес ставит хук
+ *   video[data-pair-side="before"|"after"]  без src и с preload="none": адрес ставит хук или, на первом
+ *                                           экране, ранний скрипт (pair-early.ts)
  *   data-src-d / data-src-m                 MP4 для десктопа и мобильного (MOBILE_MEDIA_QUERY)
  * Состояние пишется в root.dataset.pairState:
  *   poster  — ничего не качается (reduced-motion, Save-Data, 2g) или ещё не начали
@@ -32,10 +33,11 @@ const SYNC_INTERVAL_MS = 200
 const HARD_SEEK_S = 0.0625
 const SOFT_SEEK_S = 0.012
 const START_TIMEOUT_MS = 12000
-const NEAR_MARGIN = '320px'
+/** Файлы второй пары небольшие: качаем заранее, за полтора экрана, чтобы к приходу видео уже играло */
+const NEAR_MARGIN = '150% 0px'
 
 export interface PairPlaybackOptions {
-  /** hero: начать после загрузки страницы; иначе — когда блок подошёл к экрану */
+  /** hero: начать сразу после монтирования; иначе — когда блок подошёл к экрану */
   eager?: boolean
 }
 
@@ -185,9 +187,14 @@ export function usePairPlayback(
         video.addEventListener('canplay', tick)
         video.addEventListener('waiting', onWaiting)
         video.addEventListener('error', fail)
-        video.preload = 'auto'
-        video.src = src
-        video.load()
+        // Ранний скрипт (pair-early.ts) мог уже поставить адрес: перезапуск обнулил бы загрузку
+        if (video.getAttribute('src') !== src) {
+          video.preload = 'auto'
+          video.src = src
+          video.load()
+        } else if (video.readyState >= 3) {
+          tick()
+        }
       }
       timer = window.setInterval(tick, SYNC_INTERVAL_MS)
       // Нет первого кадра за 12 с: остаёмся постером и отпускаем сеть
@@ -224,8 +231,8 @@ export function usePairPlayback(
     }
 
     if (eager) {
-      if (document.readyState === 'complete') begin()
-      else window.addEventListener('load', begin, { once: true })
+      // Первый экран: ждать load нечего, постер уже на месте, а ролики могли начать качаться раньше
+      begin()
     } else if (typeof IntersectionObserver !== 'undefined') {
       nearObserver = new IntersectionObserver(
         ([entry]) => {
@@ -241,7 +248,6 @@ export function usePairPlayback(
 
     return () => {
       disposed = true
-      window.removeEventListener('load', begin)
       document.removeEventListener('visibilitychange', onVisibility)
       reducedQuery.removeEventListener('change', onReduced)
       stop()

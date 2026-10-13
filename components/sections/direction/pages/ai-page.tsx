@@ -51,6 +51,7 @@ import { ArrowUpRight } from 'lucide-react'
 
 import { PairLayer, PairPoster } from '@/components/media/pair-layer'
 import { comparePair } from '@/lib/media/compare-pairs'
+import { PAIR_EARLY_SCRIPT } from '@/lib/media/pair-early'
 import { usePairPlayback } from '@/lib/media/use-pair-playback'
 import { DIRECTION_READING } from '@/lib/services/pages'
 import { AI_PAGE, type AiCta } from '@/lib/services/pages/content/ai'
@@ -771,7 +772,7 @@ function Hero() {
     <section ref={heroRef} aria-labelledby="ai-title" data-live="true" className="dir-ai-hero">
       {/* Кадр: «после» снизу, «до» сверху обрезано швом. Обе стороны — одна пара: два MP4 одной
           длины играют вровень (usePairPlayback), до их старта на месте постеры из нулевого кадра */}
-      <div ref={framesRef} aria-hidden="true" className="dir-ai-frames">
+      <div ref={framesRef} aria-hidden="true" className="dir-ai-frames" data-pair-early="">
         <div className="dir-ai-layer dir-ai-final">
           <div className="dir-ai-photo">
             <PairLayer side="after" spec={HERO_PAIR.after} priority />
@@ -798,6 +799,8 @@ function Hero() {
             <GenBox />
           </div>
         </div>
+        {/* После <video>: ролики начинают качаться при разборе HTML, не дожидаясь гидратации */}
+        <script dangerouslySetInnerHTML={{ __html: PAIR_EARLY_SCRIPT }} />
       </div>
 
       {/* Три метки на весь экран: рубрика, таймкод шва и подписи «плёнка / финал» у самого шва */}

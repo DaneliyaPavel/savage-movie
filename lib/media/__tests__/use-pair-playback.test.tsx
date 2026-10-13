@@ -13,7 +13,8 @@ interface FakeVideo extends HTMLVideoElement {
   __time: number
 }
 
-function Pair({ eager = true }: { eager?: boolean }) {
+/** early — адрес уже поставил ранний скрипт из HTML (lib/media/pair-early.ts) до гидратации */
+function Pair({ eager = true, early = false }: { eager?: boolean; early?: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
   usePairPlayback(ref, { eager })
   return (
@@ -21,6 +22,11 @@ function Pair({ eager = true }: { eager?: boolean }) {
       {(['before', 'after'] as const).map(side => (
         <video
           key={side}
+          ref={node => {
+            if (early && node && !node.getAttribute('src')) {
+              node.setAttribute('src', `/media/${side}-d.mp4`)
+            }
+          }}
           data-pair-side={side}
           data-src-d={`/media/${side}-d.mp4`}
           data-src-m={`/media/${side}-m.mp4`}
@@ -123,6 +129,24 @@ describe('usePairPlayback', () => {
       v.getAttribute('src')
     )
     expect(phone).toEqual(['/media/before-m.mp4', '/media/after-m.mp4'])
+  })
+
+  it('берёт адрес, который уже поставил ранний скрипт, и не перезапускает загрузку', () => {
+    mockMatchMedia(false)
+    const load = vi.spyOn(HTMLMediaElement.prototype, 'load')
+    const { getByTestId } = render(<Pair early />)
+    const root = getByTestId('root')
+    expect(root.dataset.pairState).toBe('loading')
+    expect(load).not.toHaveBeenCalled()
+    const sources = [...root.querySelectorAll('video')].map(v => v.getAttribute('src'))
+    expect(sources).toEqual(['/media/before-d.mp4', '/media/after-d.mp4'])
+  })
+
+  it('первый экран стартует сразу после монтирования, без события load', () => {
+    mockMatchMedia(false)
+    Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true })
+    const { getByTestId } = render(<Pair />)
+    expect(getByTestId('root').dataset.pairState).toBe('loading')
   })
 
   it('открывает видео, только когда обе стороны играют вровень', async () => {
