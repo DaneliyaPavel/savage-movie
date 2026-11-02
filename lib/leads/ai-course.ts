@@ -1,5 +1,5 @@
 /**
- * Предзапись на следующий поток AI-курса (лендинг ai.savagemovie.ru).
+ * Запись на обучение AI-контенту (лендинг ai.savagemovie.ru).
  *
  * Форма на лендинге шлёт обычные поля /api/contact плюс `source: 'ai-course'`
  * и объект `lead` с тарифом, согласиями и метками. Здесь они проверяются и
@@ -49,7 +49,7 @@ interface MailRow {
 
 const TIER_LABELS: Record<AiCourseTier, string> = {
   basic: 'Базовый (4 занятия)',
-  advanced: 'Продвинутый (6 занятий)',
+  advanced: 'Продвинутый (6+1)',
   undecided: 'Пока не выбран',
 }
 
@@ -282,9 +282,9 @@ function buildRows(
   return rows
 }
 
-/** Тема письма: «ПРЕДЗАПИСЬ НА КУРС - Имя». Фиксированное начало удобно для правила в почте. */
+/** Тема письма: «ЗАПИСЬ НА КУРС - Имя». Фиксированное начало удобно для правила в почте. */
 function buildSubject(name: string): string {
-  return `ПРЕДЗАПИСЬ НА КУРС - ${name}`.replace(/[\r\n]/g, ' ').trim()
+  return `ЗАПИСЬ НА КУРС - ${name}`.replace(/[\r\n]/g, ' ').trim()
 }
 
 function contactSummary(contact: AiCourseContact): string {
@@ -294,7 +294,7 @@ function contactSummary(contact: AiCourseContact): string {
 function buildText(rows: MailRow[], contact: AiCourseContact): string {
   const lines = rows.map(row => `${row.label}: ${row.value}`)
   return [
-    'НОВАЯ ПРЕДЗАПИСЬ НА СЛЕДУЮЩИЙ ПОТОК · обучение AI-контенту',
+    'НОВАЯ ЗАПИСЬ НА ОБУЧЕНИЕ · обучение AI-контенту',
     `(${contact.name}, ${contactSummary(contact)})`,
     '',
     ...lines,
@@ -342,7 +342,7 @@ function buildHtml(
     actions.push(
       actionButton(
         'Написать на почту',
-        `mailto:${contact.email}?subject=${encodeURIComponent('Предзапись на следующий поток')}`,
+        `mailto:${contact.email}?subject=${encodeURIComponent('Запись на обучение')}`,
         lead.channel === 'email'
       )
     )
@@ -376,7 +376,7 @@ function buildHtml(
 
   return `<!doctype html>
 <html lang="ru">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Предзапись на следующий поток</title></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Запись на обучение</title></head>
 <body style="margin:0;padding:0;background:${COLOR.page};">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${preheader}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLOR.page};">
@@ -385,12 +385,12 @@ function buildHtml(
 <tr><td style="background:${COLOR.ink};padding:20px 28px;font-family:${FONT};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
 <td style="font-family:${FONT};font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:${COLOR.bone};">Savage Movie · <b>Mari Seven</b></td>
-<td align="right" style="font-family:${FONT};font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:${COLOR.ember};">Предзапись</td>
+<td align="right" style="font-family:${FONT};font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:${COLOR.ember};">Запись</td>
 </tr></table>
 </td></tr>
 <tr><td style="height:3px;line-height:3px;font-size:0;background:${COLOR.ember};">&nbsp;</td></tr>
 <tr><td style="padding:28px 28px 8px;">
-<div style="font-family:${FONT};font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${COLOR.muted};">Новая заявка на следующий поток · обучение AI-контенту</div>
+<div style="font-family:${FONT};font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${COLOR.muted};">Новая запись на обучение · обучение AI-контенту</div>
 <div style="font-family:${FONT};font-size:28px;line-height:1.2;font-weight:700;color:${COLOR.ink};margin:10px 0 14px;">${name}</div>
 <div>${chips}</div>
 </td></tr>

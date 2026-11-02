@@ -343,7 +343,7 @@ describe('POST /api/contact — SMTP и реле Telegram', () => {
 
     expect(response.status).toBe(500)
   })
-  describe('предзапись на AI-курс (source: ai-course)', () => {
+  describe('запись на AI-курс (source: ai-course)', () => {
     const aiSubmission = {
       name: 'Анна Тестова',
       email: 'Anna@Mail.RU',
@@ -358,7 +358,7 @@ describe('POST /api/contact — SMTP и реле Telegram', () => {
       },
     }
 
-    it('отправляет письмо по шаблону предзаписи с текстовой версией', async () => {
+    it('отправляет письмо по шаблону записи с текстовой версией', async () => {
       configureSmtp()
       const { POST } = await loadRoute()
 
@@ -366,7 +366,7 @@ describe('POST /api/contact — SMTP и реле Telegram', () => {
 
       expect(response.status).toBe(200)
       const mail = sendSmtpMail.mock.calls[0][0]
-      expect(mail.subject).toBe('ПРЕДЗАПИСЬ НА КУРС - Анна Тестова')
+      expect(mail.subject).toBe('ЗАПИСЬ НА КУРС - Анна Тестова')
       expect(mail.html).toContain('Для CRM')
       expect(mail.text).toContain('Email: anna@mail.ru · удобнее всего')
       expect(mail.replyTo).toBe('anna@mail.ru')
