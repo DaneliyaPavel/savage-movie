@@ -32,3 +32,7 @@ Snapshot **2026-09-29**. Этот файл + [DECISIONS.md](DECISIONS.md) гла
 
 ## Карта контекста
 [BRAND](BRAND.md) · [BUSINESS](BUSINESS.md) · [SITE](SITE.md) · [DESIGN_SYSTEM](DESIGN_SYSTEM.md) · [CONTENT](CONTENT.md) · [SEO](SEO.md) · [TECH](TECH.md) · [DECISIONS](DECISIONS.md) · [ROADMAP](ROADMAP.md)
+
+## AI-лендинг: диагностика уведомлений 02.11.2026
+
+Подтверждено read-only: текущий набор открыт; сайт шлёт заявки через `/api/contact`. Telegram-реле отвечает 403 новому IP ru-sites, разрешая только прежний сервер. Почта доставляется независимо. По явному разрешению владельца применён ACL реле и обновлён только frontend: письмо «ЗАПИСЬ НА КУРС», тариф 6+1. Telegram getMe и одна помеченная тестовая отправка успешны (200/ok); лендинг 200, пустая форма 400 без доставки. Остальные 7 контейнеров rootful-стека сохранили ID. Backup конфигурации и прежний образ сохранены; миграций нет. Подробности: `sites/ai/README.md`.

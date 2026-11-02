@@ -36,7 +36,7 @@ interface ContactFormBody {
   message?: unknown
   budget?: unknown
   projectType?: unknown
-  /** 'ai-course': предзапись с лендинга ai.savagemovie.ru, см. lib/leads/ai-course.ts */
+  /** 'ai-course': запись с лендинга ai.savagemovie.ru, см. lib/leads/ai-course.ts */
   source?: unknown
   lead?: unknown
 }
@@ -260,7 +260,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: aiLead.error }, { status: 400 })
     }
 
-    // Предзапись на AI-курс получает свой шаблон письма, остальные формы остаются как были
+    // Запись на AI-курс получает свой шаблон письма, остальные формы остаются как были
     const mail =
       aiLead.kind === 'ok'
         ? buildAiCourseMail(aiLead.lead, {

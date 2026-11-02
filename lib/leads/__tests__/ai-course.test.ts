@@ -29,7 +29,7 @@ describe('parseAiCourseLead', () => {
     expect(parseAiCourseLead({ source: 'other', lead: okBody.lead })).toEqual({ kind: 'none' })
   })
 
-  it('не принимает предзапись без согласия на обработку данных', () => {
+  it('не принимает запись без согласия на обработку данных', () => {
     for (const lead of [undefined, {}, { consent: {} }, { consent: { personalData: 'yes' } }]) {
       expect(parseAiCourseLead({ source: 'ai-course', lead })).toMatchObject({ kind: 'invalid' })
     }
@@ -96,9 +96,9 @@ describe('makeLeadId', () => {
 describe('buildAiCourseMail', () => {
   const contact = { name: 'Анна Тестова', email: null, phone: null, telegram: '@anna_test' }
 
-  it('формирует тему «ПРЕДЗАПИСЬ НА КУРС - Имя» для фильтров почты', () => {
+  it('формирует тему «ЗАПИСЬ НА КУРС - Имя» для фильтров почты', () => {
     const mail = buildAiCourseMail(parseOk(okBody), contact, receivedAt, fixedRandom)
-    expect(mail.subject).toBe('ПРЕДЗАПИСЬ НА КУРС - Анна Тестова')
+    expect(mail.subject).toBe('ЗАПИСЬ НА КУРС - Анна Тестова')
     expect(mail.leadId).toBe('AI-261001-1750-I000')
   })
 
@@ -107,7 +107,7 @@ describe('buildAiCourseMail', () => {
     for (const part of [
       'Анна Тестова',
       'https://t.me/anna_test',
-      'Продвинутый (6 занятий)',
+      'Продвинутый (6+1)',
       'Карточка тарифа «Продвинутый»',
       'utm_source=instagram, utm_campaign=oct',
       'instagram.com',
@@ -117,10 +117,19 @@ describe('buildAiCourseMail', () => {
     ]) {
       expect(mail.html, part).toContain(part)
     }
-    expect(mail.text).toContain('Тариф: Продвинутый (6 занятий)')
+    expect(mail.text).toContain('Тариф: Продвинутый (6+1)')
     expect(mail.text).toContain('Telegram: @anna_test · удобнее всего')
     expect(mail.text).toContain('Согласие на анонсы: Да, можно присылать анонсы и новости')
     expect(mail.text).toContain('ID заявки: AI-261001-1750-I000')
+  })
+
+  it('обозначает текущую запись, а не ожидание следующего набора', () => {
+    const mail = buildAiCourseMail(parseOk(okBody), contact, receivedAt, fixedRandom)
+    for (const content of [mail.subject, mail.html, mail.text]) {
+      expect(content).not.toMatch(/предзапис|следующий поток/i)
+    }
+    expect(mail.html).toContain('Запись на обучение')
+    expect(mail.text).toContain('НОВАЯ ЗАПИСЬ НА ОБУЧЕНИЕ')
   })
 
   it('делает кнопки связи по каждому указанному контакту', () => {
@@ -181,7 +190,7 @@ describe('buildAiCourseMail', () => {
   it('пишет «Пока не выбран», если тариф не указан, а тему не меняет', () => {
     const lead = parseOk({ source: 'ai-course', lead: { consent: { personalData: true } } })
     const mail = buildAiCourseMail(lead, contact, receivedAt, fixedRandom)
-    expect(mail.subject).toBe('ПРЕДЗАПИСЬ НА КУРС - Анна Тестова')
+    expect(mail.subject).toBe('ЗАПИСЬ НА КУРС - Анна Тестова')
     expect(mail.text).toContain('Тариф: Пока не выбран')
   })
 })
