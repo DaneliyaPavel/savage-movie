@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { JsonLdScripts } from '@/components/seo/json-ld-scripts'
-import { getBlogPostBySlugServer, getBlogPostsServer } from '@/lib/api/blog'
+import { getBlogPostBySlugServer, getBlogSummariesServer } from '@/lib/api/blog'
 import { buildDescription, buildTitle, stripBrandTail } from '@/lib/seo/snippet'
 import { TopBar } from '@/components/ui/top-bar'
 import { JalousieMenu } from '@/components/ui/jalousie-menu'
@@ -61,34 +61,28 @@ export async function generateMetadata({
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  let post
-  try {
-    post = await getBlogPostBySlugServer(slug)
-  } catch {
-    post = null
-  }
+  // Статья и список для «похожих» не зависят друг от друга: ждём их вместе, а не по очереди.
+  // Ошибка списка не должна ронять статью, поэтому она гасится отдельно.
+  const [post, allPosts] = await Promise.all([
+    getBlogPostBySlugServer(slug).catch(() => null),
+    getBlogSummariesServer(true).catch(() => []),
+  ])
   if (!post) return notFound()
 
-  // Fetch related posts (same category, excluding current)
-  let relatedPosts: Awaited<ReturnType<typeof getBlogPostsServer>> = []
-  try {
-    const allPosts = await getBlogPostsServer(true)
-    relatedPosts = allPosts
-      .filter(p => p.slug !== slug)
-      .filter(p => post.category ? p.category === post.category : true)
-      .slice(0, 3)
+  // Related posts (same category, excluding current)
+  let relatedPosts = allPosts
+    .filter(p => p.slug !== slug)
+    .filter(p => (post.category ? p.category === post.category : true))
+    .slice(0, 3)
 
-    // If not enough from same category, fill with other posts
-    if (relatedPosts.length < 3) {
-      const morePostsNeeded = 3 - relatedPosts.length
-      const relatedIds = new Set(relatedPosts.map(p => p.id))
-      const otherPosts = allPosts
-        .filter(p => p.slug !== slug && !relatedIds.has(p.id))
-        .slice(0, morePostsNeeded)
-      relatedPosts = [...relatedPosts, ...otherPosts]
-    }
-  } catch {
-    relatedPosts = []
+  // If not enough from same category, fill with other posts
+  if (relatedPosts.length < 3) {
+    const morePostsNeeded = 3 - relatedPosts.length
+    const relatedIds = new Set(relatedPosts.map(p => p.id))
+    const otherPosts = allPosts
+      .filter(p => p.slug !== slug && !relatedIds.has(p.id))
+      .slice(0, morePostsNeeded)
+    relatedPosts = [...relatedPosts, ...otherPosts]
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://savagemovie.ru'

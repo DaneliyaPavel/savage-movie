@@ -33,12 +33,25 @@ export const metadata: Metadata = {
 // Fallback Bunny Video ID из env — используется, если в админке не задан hero_video_playback_id
 const SHOWREEL_VIDEO_ID_FALLBACK = publicEnv.NEXT_PUBLIC_SHOWREEL_VIDEO_ID || ''
 
+async function loadSettings(): Promise<{ settings: Record<string, unknown> }> {
+  const { apiGet: apiGetServer } = await import('@/lib/api/server')
+  return apiGetServer<{ settings: Record<string, unknown> }>('/api/settings')
+}
+
 export default async function HomePage() {
+  // Настройки и featured-проекты не зависят друг от друга: запрашиваем вместе. Раньше они
+  // шли по очереди, и пересборка страницы (ISR раз в час) ждала сумму двух ответов бэкенда.
+  const [settingsResult, featuredResult] = await Promise.allSettled([
+    loadSettings(),
+    // Только featured проекты для главной страницы (server-side)
+    getProjectsServer(undefined, true),
+  ])
+
   // Showreel video ID: приоритет настройке из админки, фолбэк на env
   let showreelVideoId = SHOWREEL_VIDEO_ID_FALLBACK
   try {
-    const { apiGet: apiGetServer } = await import('@/lib/api/server')
-    const response = await apiGetServer<{ settings: Record<string, unknown> }>('/api/settings')
+    if (settingsResult.status === 'rejected') throw settingsResult.reason
+    const response = settingsResult.value
     const fromAdmin = response.settings?.hero_video_playback_id
     if (typeof fromAdmin === 'string' && fromAdmin.trim() !== '') {
       showreelVideoId = fromAdmin.trim()
@@ -67,8 +80,8 @@ export default async function HomePage() {
   }> = []
 
   try {
-    // Получаем только featured проекты для главной страницы (server-side)
-    const featuredProjects = await getProjectsServer(undefined, true)
+    if (featuredResult.status === 'rejected') throw featuredResult.reason
+    const featuredProjects = featuredResult.value
     // Преобразуем проекты в формат для ShowreelHero
     projects = featuredProjects.map(p => {
       // Определяем thumbnail: сначала thumbnail_url, потом cover_image_url, потом первое изображение из массива

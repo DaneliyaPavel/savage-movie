@@ -66,12 +66,14 @@ class SqlAlchemyProjectsRepository:
         await self._session.commit()
 
     async def reorder(self, updates: list[dict]) -> None:
-        for update in updates:
-            project_id = UUID(update["id"])
-            display_order = update["display_order"]
+        if not updates:
+            return
 
-            project = await self.get_by_id(project_id)
-            if project:
-                project.display_order = display_order
+        new_order = {UUID(update["id"]): update["display_order"] for update in updates}
+
+        # Один запрос на все проекты вместо SELECT на каждый (было N+1)
+        result = await self._session.execute(select(Project).where(Project.id.in_(new_order)))
+        for project in result.scalars().all():
+            project.display_order = new_order[project.id]
 
         await self._session.commit()

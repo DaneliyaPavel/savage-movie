@@ -21,8 +21,20 @@ class SqlAlchemyBlogRepository:
         published: Optional[bool],
         limit: int,
         offset: int,
-    ) -> List[BlogPost]:
-        query = select(BlogPost)
+        include_content: bool = True,
+    ) -> List[BlogPost] | List[dict]:
+        """
+        include_content=False — карточки для списков без текста статьи.
+
+        Текст — самая тяжёлая колонка (12 статей ≈ 85 КБ), а ленте блога, «похожим
+        статьям» и счётчику в меню он не нужен. Выбираем остальные колонки явно и
+        возвращаем словари: через defer() доступ к content в async-сессии падал бы
+        на ленивой загрузке (MissingGreenlet). Схема ответа допускает content=None.
+        """
+        if include_content:
+            query = select(BlogPost)
+        else:
+            query = select(*[column for column in BlogPost.__table__.columns if column.name != "content"])
         if published is not None:
             query = query.where(BlogPost.is_published == published)
 
@@ -32,7 +44,9 @@ class SqlAlchemyBlogRepository:
         ).limit(limit).offset(offset)
 
         result = await self._session.execute(query)
-        return result.scalars().all()
+        if include_content:
+            return result.scalars().all()
+        return [dict(row) for row in result.mappings().all()]
 
     async def get_by_slug(self, slug: str) -> Optional[BlogPost]:
         result = await self._session.execute(select(BlogPost).where(BlogPost.slug == slug))

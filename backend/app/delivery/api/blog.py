@@ -46,6 +46,7 @@ async def get_posts(
     published: Optional[bool] = Query(None),
     limit: int = Query(100, ge=1, le=200),
     offset: int = Query(0, ge=0),
+    include_content: bool = Query(True, description="false — без текста статей (для списков)"),
     current_user: Optional[User] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -61,7 +62,7 @@ async def get_posts(
             )
 
     repo = SqlAlchemyBlogRepository(db)
-    return await repo.list_posts(published, limit, offset)
+    return await repo.list_posts(published, limit, offset, include_content)
 
 
 @router.get("/by-id/{post_id}", response_model=BlogPostSchema)

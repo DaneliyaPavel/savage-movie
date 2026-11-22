@@ -57,6 +57,46 @@ export async function getBlogPosts(published?: boolean): Promise<BlogPost[]> {
   return apiGet<BlogPost[]>(`/api/blog${query ? `?${query}` : ''}`)
 }
 
+/**
+ * Карточка статьи для списков: то же, что BlogPost, но без текста.
+ * Текст статьи — десятки КБ на статью (12 статей ≈ 85 КБ несжатого JSON), а списку
+ * (лента блога, «похожие статьи», счётчик в меню) он не нужен.
+ */
+export type BlogPostSummary = Omit<BlogPost, 'content'> & { content: null }
+
+/**
+ * Список без текстов. Бэкенд сам не отдаёт `content` по `include_content=false`;
+ * `content: null` выставляется и здесь, чтобы старый бэкенд (параметр не знает и шлёт
+ * тексты) не раздувал ни ответ, ни payload страницы, в который Next кладёт props
+ * клиентских компонентов.
+ */
+export function toBlogSummaries(posts: BlogPost[]): BlogPostSummary[] {
+  return posts.map(post => ({ ...post, content: null }))
+}
+
+function blogListQuery(published?: boolean): string {
+  const params = new URLSearchParams()
+  if (published !== undefined) {
+    params.append('published', published.toString())
+  }
+  params.append('include_content', 'false')
+  return params.toString()
+}
+
+export async function getBlogSummaries(published?: boolean): Promise<BlogPostSummary[]> {
+  return toBlogSummaries(await apiGet<BlogPost[]>(`/api/blog?${blogListQuery(published)}`))
+}
+
+export async function getBlogSummariesServer(
+  published?: boolean,
+  cookies?: { get: (name: string) => { value: string } | undefined }
+): Promise<BlogPostSummary[]> {
+  const { apiGet: apiGetServer } = await import('./server')
+  return toBlogSummaries(
+    await apiGetServer<BlogPost[]>(`/api/blog?${blogListQuery(published)}`, cookies)
+  )
+}
+
 export async function getBlogPost(id: string): Promise<BlogPost> {
   return apiGet<BlogPost>(`/api/blog/by-id/${id}`)
 }

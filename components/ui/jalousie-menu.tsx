@@ -6,8 +6,7 @@ import Image from 'next/image'
 import { useMenu } from './menu-context'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '@/lib/i18n-context'
-import { getProjects } from '@/features/projects/api'
-import { getBlogPosts } from '@/lib/api/blog'
+import { getSiteCounts } from '@/lib/api/site-counts'
 import { cn } from '@/lib/utils'
 
 // Ещё в 2× крупнее — viewBox 25×12.5
@@ -110,10 +109,10 @@ export function JalousieMenu() {
     let cancelled = false
     async function loadCounts() {
       try {
-        const [projects, blogPosts] = await Promise.allSettled([getProjects(), getBlogPosts(true)])
+        const counts = await getSiteCounts()
         if (cancelled) return
-        setProjectsCount(projects.status === 'fulfilled' ? projects.value.length : null)
-        setBlogCount(blogPosts.status === 'fulfilled' ? blogPosts.value.length : null)
+        setProjectsCount(counts.projects)
+        setBlogCount(counts.blog)
       } catch {
         if (cancelled) return
         // keep nulls; counts are optional UI sugar

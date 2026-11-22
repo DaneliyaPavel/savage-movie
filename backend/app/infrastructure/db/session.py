@@ -10,6 +10,12 @@ engine = create_async_engine(
     settings.database_url,
     echo=False,  # Установить True для отладки SQL запросов
     future=True,
+    # Пул уже есть (QueuePool: 5 постоянных соединений + до 10 сверх, на процесс uvicorn).
+    # pre_ping проверяет соединение перед выдачей: после рестарта Postgres или обрыва сети
+    # первый запрос иначе получил бы 500 на «мёртвом» соединении из пула. recycle не даёт
+    # держать соединение дольше получаса: так его не закроет сетевой экран или сам сервер.
+    pool_pre_ping=True,
+    pool_recycle=1800,
 )
 
 # Создаем session factory

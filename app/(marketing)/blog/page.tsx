@@ -2,7 +2,7 @@
  * Страница блога
  */
 import type { Metadata } from 'next'
-import { getBlogPostsServer, type BlogPost } from '@/lib/api/blog'
+import { getBlogSummariesServer, type BlogPost } from '@/lib/api/blog'
 import { TopBar } from '@/components/ui/top-bar'
 import { JalousieMenu } from '@/components/ui/jalousie-menu'
 import BlogPageClient from './blog-client'
@@ -35,7 +35,9 @@ export const metadata: Metadata = {
 export default async function BlogPage() {
   let posts: BlogPost[] = []
   try {
-    posts = await getBlogPostsServer(true)
+    // Без текстов статей: лента показывает карточки, а тексты попадали в HTML страницы
+    // (~90 КБ из 196 КБ несжатого ответа)
+    posts = await getBlogSummariesServer(true)
   } catch {
     posts = []
   }

@@ -136,15 +136,18 @@ function buildJsonLd(directions: ResolvedDirection[]) {
 export default async function ServicesPage() {
   // Без портфолио раздел деградирует до текстовой версии — заголовки, копия и
   // CTA остаются на месте, исчезают только кадры и ссылки на работы.
-  const projects = await getProjectsServer().catch((error: unknown) => {
-    logger.error('Не удалось загрузить проекты для раздела направлений', error, {
-      route: SERVICES_PATH,
-    })
-    return [] as Project[]
-  })
+  // Портфолио и id шоурила — два независимых запроса к бэкенду: ждём их вместе
+  const [projects, showreelId] = await Promise.all([
+    getProjectsServer().catch((error: unknown) => {
+      logger.error('Не удалось загрузить проекты для раздела направлений', error, {
+        route: SERVICES_PATH,
+      })
+      return [] as Project[]
+    }),
+    getShowreelPlaybackId(),
+  ])
 
   const directions = resolveDirections(projects)
-  const showreelId = await getShowreelPlaybackId()
   const montage = heroMontage(directions)
   // Кадр выхода выбран раскадровкой отдельно от монтажа, см. lib/services/frames.ts
   const closing = closingFrame(projects, montage)
